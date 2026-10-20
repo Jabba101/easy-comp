@@ -48,7 +48,8 @@ namespace
         "Pick a preset, or play your track and turn PUNCH and SUSTAIN either way from the middle (the middle changes nothing). "
         "Hover over anything for an explanation. Double-click a knob to reset it.";
 
-    constexpr float lowestDb = -60.0f;   // the display's range
+    constexpr float lowestDb = -60.0f;          // the display's range
+    constexpr float meterFallPerUpdateDb = 0.75f;   // about 22 dB per second at 30 updates a second
 }
 
 //==============================================================================
@@ -56,11 +57,10 @@ namespace
 //==============================================================================
 void GainChangeMeter::setChange (float boostDb, float cutDb)
 {
-    constexpr float fallPerUpdateDb = 0.75f;
-
+    // Jump up instantly so short hits show, then fall back gently so your eye can follow it.
     const auto fallBack = [] (float shown, float latest)
     {
-        return latest >= shown ? latest : juce::jmax (latest, shown - fallPerUpdateDb);
+        return latest >= shown ? latest : juce::jmax (latest, shown - meterFallPerUpdateDb);
     };
 
     const float nextBoost = fallBack (shownBoost, boostDb);

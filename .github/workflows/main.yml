@@ -29,7 +29,22 @@ jobs:
         run: cmake -S . -B build
 
       - name: Build the plugins
-        run: cmake --build build --config Release --parallel
+        shell: bash
+        run: cmake --build build --config Release --parallel 2>&1 | tee build-log.txt
+
+      # If the build fails, this copies the error lines onto the run's summary
+      # page, so they're easy to find (and to paste to Claude).
+      - name: Show any build errors
+        if: failure()
+        shell: bash
+        run: |
+          [ -f build-log.txt ] || exit 0
+          errors=$(grep -E ": (fatal )?error|error [A-Z]+[0-9]+|CMake Error" build-log.txt | cut -c1-400 | head -n 25 || true)
+          [ -n "$errors" ] || exit 0
+          errors=${errors//'%'/'%25'}
+          errors=${errors//$'\r'/}
+          errors=${errors//$'\n'/'%0A'}
+          echo "::error title=Build errors::$errors"
 
       # Writes a note on the run's summary page saying which plugins were made.
       - name: List the finished plugins
