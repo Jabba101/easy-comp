@@ -21,6 +21,7 @@ public:
 
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+    using EasyProcessor::processBlock;   // (keeps JUCE's double-precision version visible - it's never used)
     juce::AudioProcessorEditor* createEditor() override;
 
     /** The most gain reduction (dB, as a positive number) since the meter last

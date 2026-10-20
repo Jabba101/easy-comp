@@ -31,6 +31,23 @@ jobs:
       - name: Build the plugins
         run: cmake --build build --config Release --parallel
 
+      # Writes a note on the run's summary page saying which plugins were made.
+      - name: List the finished plugins
+        shell: bash
+        run: |
+          cd "build/Finished Plugins"
+          list=""
+          for bundle in *.vst3; do
+            [ -d "$bundle" ] || continue
+            size=$(du -sk "$bundle" | awk '{ printf "%.1f MB", $1 / 1024 }')
+            list="${list:+$list, }$bundle ($size)"
+          done
+          if [ -z "$list" ]; then
+            echo "::error title=No plugins were built::The Finished Plugins folder is empty"
+            exit 1
+          fi
+          echo "::notice title=Plugins built::$list"
+
       - name: Save the finished plugins
         uses: actions/upload-artifact@v7
         with:

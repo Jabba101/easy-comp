@@ -53,6 +53,11 @@ public:
 
     void setReleaseTime (float releaseMs) noexcept   { currentReleaseMs = releaseMs; }
 
+    /** Whether it may also turn the sound DOWN (for effects that can make
+        things louder, like a transient shaper). A compressor only ever makes
+        things quieter, so by default it only turns up. */
+    void allowTurningDown (bool shouldAllow) noexcept   { lowestGainDb = shouldAllow ? -(double) maxGainDb : 0.0; }
+
     /** Start again from 0 dB and re-learn quickly. Used when a preset is
         loaded: a big change all at once, so rather than risk a second of the
         old (possibly much louder) setting, it starts quiet. */
@@ -111,7 +116,7 @@ public:
 
         // In near-silence there's nothing to measure, so it keeps its last value.
         if (loudnessIn > quietestLoudness && loudnessOut > 0.0)
-            autoTargetDb = juce::jlimit (0.0, (double) maxGainDb, 10.0 * std::log10 (loudnessIn / loudnessOut));
+            autoTargetDb = juce::jlimit (lowestGainDb, (double) maxGainDb, 10.0 * std::log10 (loudnessIn / loudnessOut));
 
         const double riseRate = relearning ? relearnRiseRate : autoRiseRate;
         autoGainDb += (autoTargetDb - autoGainDb) * (autoTargetDb < autoGainDb ? autoFallRate : riseRate);
@@ -219,4 +224,5 @@ private:
     int    relearnAverageLength = 0, relearnSamplesLeft = 0;
     double relearnTotalIn = 0.0, relearnTotalOut = 0.0;
     float  currentReleaseMs = 100.0f;
+    double lowestGainDb = 0.0;   // 0 = only ever turns up (see allowTurningDown)
 };

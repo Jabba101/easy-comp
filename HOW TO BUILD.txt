@@ -2,7 +2,9 @@ EASY PLUGINS - getting the plugins onto your PC (Windows)
 ==========================================================
 
 Right now this project makes:
-    Easy Comp       a compressor
+    Easy Comp        a compressor (evens out the volume)
+    Easy Transient   a transient shaper (more or less punch and ring
+                     on every hit or note)
 
 Every time the project changes on GitHub, GitHub builds the plugins for you
 on its own Windows computers. You just download and install them.
@@ -95,12 +97,33 @@ YOUR FIRST FIVE MINUTES WITH EASY COMP
 
 
 ====================================================================
+YOUR FIRST FIVE MINUTES WITH EASY TRANSIENT
+====================================================================
+   1. Put it on a drum track (or anything with clear hits or plucks)
+      and pick a preset from the preset menu.
+   2. Turn PUNCH up for a snappier start to each hit, or down to soften
+      a harsh one. Watch the display: green shows where it got louder.
+   3. Turn SUSTAIN down to shorten the ring and room after each hit
+      (red in the display), or up to make the tail longer and bigger.
+   4. Switch AUTO-GAIN on, then click BYPASS on and off to compare.
+   5. Small amounts go a long way: if the hits start to sound clicky
+      or the tails pumpy, back off, or lower MIX to blend in the
+      original.
+   Before or after Easy Comp? Either works, so try both. With Easy
+   Transient first, the compressor then evens out what you shaped (more
+   controlled). With Easy Transient last, its punch comes through
+   untouched (punchier).
+
+
+====================================================================
 CHANGING THINGS
 ====================================================================
-   - Built-in presets: Plugins\EasyComp\Presets.h - one line each.
+   - Built-in presets: Presets.h in each plugin's folder (e.g.
+                       Plugins\EasyComp\Presets.h) - one line each.
    - Colours:          the Palette list at the top of Shared\Look.h.
-   - Help text:        the knobInfo list in Plugins\EasyComp\PluginEditor.cpp.
-   - The sound:        Effects\Compressor.h - commented step by step.
+   - Help text:        the knobInfo list in each plugin's PluginEditor.cpp.
+   - The sound:        Effects\Compressor.h and Effects\TransientShaper.h -
+                       commented step by step.
 
 
 ====================================================================
@@ -112,6 +135,7 @@ WHAT'S IN THIS FOLDER
 
    Effects\               The sound-shaping code (no windows or knobs):
      Compressor.h           the compressor
+     TransientShaper.h      the transient shaper
      LoudnessMatcher.h      AUTO-GAIN (shared by every plugin)
 
    Shared\                The parts every plugin shares: the look, the
@@ -119,6 +143,7 @@ WHAT'S IN THIS FOLDER
                           saving with your projects.
 
    Plugins\EasyComp\      Easy Comp's knobs, window and presets.
+   Plugins\EasyTransient\ Easy Transient's knobs, window and presets.
 
    On a Mac, the same folder builds VST3 and AU versions (needs Xcode and
    CMake: run "cmake --preset release" then "cmake --build --preset release").
