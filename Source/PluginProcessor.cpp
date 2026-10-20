@@ -123,6 +123,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyCompAudioProcessor::crea
                                               return text.getFloatValue();
                                           })));
 
+    // The two buttons, added in 1.2 (hence the "3").
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { ParamIDs::autoGain, 3 }, "Auto-Gain", false));
+    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { ParamIDs::bypass, 3 }, "Bypass", false));
+
     return layout;
 }
 
@@ -140,6 +144,11 @@ EasyCompAudioProcessor::EasyCompAudioProcessor()
     makeupValue    = parameters.getRawParameterValue (ParamIDs::makeup);
     mixValue       = parameters.getRawParameterValue (ParamIDs::mix);
     lowCutValue    = parameters.getRawParameterValue (ParamIDs::lowCut);
+    autoGainValue  = parameters.getRawParameterValue (ParamIDs::autoGain);
+    bypassValue    = parameters.getRawParameterValue (ParamIDs::bypass);
+
+    bypassParameter = dynamic_cast<juce::AudioParameterBool*> (parameters.getParameter (ParamIDs::bypass));
+    jassert (bypassParameter != nullptr);
 }
 
 //==============================================================================
@@ -148,6 +157,8 @@ void EasyCompAudioProcessor::prepareToPlay (double sampleRate, int /*samplesPerB
     compressor.prepare (sampleRate, getCurrentSettings());
     meterReductionDb.store (0.0f);
     graphLevelDb.store (Compressor::silenceDb);
+    autoGainDb.store (0.0f);
+    autoGainRestartRequested.store (false);
 }
 
 bool EasyCompAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -170,11 +181,16 @@ void EasyCompAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         buffer.clear (channel, 0, buffer.getNumSamples());
 
     compressor.setSettings (getCurrentSettings());
+
+    if (autoGainRestartRequested.exchange (false))
+        compressor.restartAutoGain();   // a preset was just loaded
+
     const auto result = compressor.process (buffer);
 
     // Keep the biggest values until the meter and graph next ask for them.
     storeIfBigger (meterReductionDb, result.maxReductionDb);
     storeIfBigger (graphLevelDb, result.maxLevelDb);
+    autoGainDb.store (result.autoGainDb);
 }
 
 Compressor::Settings EasyCompAudioProcessor::getCurrentSettings() const noexcept
@@ -187,6 +203,8 @@ Compressor::Settings EasyCompAudioProcessor::getCurrentSettings() const noexcept
     settings.makeupDb    = makeupValue->load();
     settings.mix         = mixValue->load() / 100.0f;   // the knob shows %, the maths wants 0..1
     settings.lowCutHz    = lowCutValue->load();
+    settings.autoGain    = autoGainValue->load() > 0.5f;
+    settings.bypassed    = bypassValue->load() > 0.5f;
     return settings;
 }
 
@@ -215,6 +233,10 @@ void EasyCompAudioProcessor::loadPreset (int presetIndex)
     setKnob (ParamIDs::makeup,    preset.makeupDb);
     setKnob (ParamIDs::mix,       preset.mixPercent);
     setKnob (ParamIDs::lowCut,    preset.lowCutHz);
+
+    // A preset changes everything at once, so AUTO-GAIN starts again from
+    // 0 dB rather than risk briefly playing the new sound much too loud.
+    autoGainRestartRequested.store (true);
 }
 
 //==============================================================================
@@ -241,14 +263,21 @@ void EasyCompAudioProcessor::setStateInformation (const void* data, int sizeInBy
 
     auto savedSettings = juce::ValueTree::fromXml (*xml);
 
-    // Projects saved with version 1.0 have no IGNORE BELOW setting. Open
-    // them with it switched off, so they sound exactly as they did.
-    if (! savedSettings.getChildWithProperty ("id", ParamIDs::lowCut).isValid())
+    // Projects saved with an older version are missing the newer settings
+    // (IGNORE BELOW, AUTO-GAIN, BYPASS). Open them with those at their
+    // defaults - all switched off - so they sound exactly as they did.
+    for (auto* parameter : getParameters())
     {
-        juce::ValueTree lowCutSetting ("PARAM");
-        lowCutSetting.setProperty ("id", ParamIDs::lowCut, nullptr);
-        lowCutSetting.setProperty ("value", Compressor::lowCutOffHz, nullptr);
-        savedSettings.appendChild (lowCutSetting, nullptr);
+        if (auto* setting = dynamic_cast<juce::RangedAudioParameter*> (parameter))
+        {
+            if (! savedSettings.getChildWithProperty ("id", setting->paramID).isValid())
+            {
+                juce::ValueTree missing ("PARAM");
+                missing.setProperty ("id", setting->paramID, nullptr);
+                missing.setProperty ("value", setting->convertFrom0to1 (setting->getDefaultValue()), nullptr);
+                savedSettings.appendChild (missing, nullptr);
+            }
+        }
     }
 
     parameters.replaceState (savedSettings);

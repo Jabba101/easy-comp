@@ -133,9 +133,11 @@ YOUR FIRST FIVE MINUTES WITH IT
       "crack", faster = softer.
    4. Change RELEASE and watch the meter: try to have it drop back near
       zero just before the next hit.
-   5. Use MAKE-UP so it's the same loudness with the plugin on and off
-      (use your DAW's bypass button to compare). Louder always sounds
-      "better", so match levels before you judge.
+   5. Switch AUTO-GAIN on, then click BYPASS on and off to compare.
+      AUTO-GAIN keeps the volume the same either way, so you hear what
+      the compression is doing rather than just "louder" (louder always
+      sounds "better", which fools everyone's ears). It takes a second
+      or two to settle after you change something.
    6. On a drum bus, if every kick drum makes the whole kit duck and
       "pump", turn up IGNORE BELOW (try 80-150 Hz) so the kick stops
       setting it off.

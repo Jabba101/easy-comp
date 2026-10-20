@@ -61,6 +61,18 @@ namespace
     constexpr const char* lowCutNote =
         "Keeps the kick and bass from setting it off. Only changes what it listens to - your sound isn't filtered.";
 
+    constexpr const char* bypassHint =
+        "Switches the compressor off so you hear your original sound - click on and off to compare. "
+        "Tip: switch AUTO-GAIN on first, so you're comparing the sound itself, not one being louder than the other.";
+
+    constexpr const char* autoGainHint =
+        "Keeps the volume coming out the same as the volume going in, so BYPASS compares the sound, not the "
+        "loudness. It listens over a few seconds and adjusts smoothly. While it's on, it sets MAKE-UP for you.";
+
+    constexpr const char* makeupAutoHint =
+        "AUTO-GAIN is on, so it's setting the volume for you - the box shows how much it's adding right now. "
+        "Switch AUTO-GAIN off to set MAKE-UP by hand again.";
+
     constexpr const char* presetHint =
         "Starting points for drums. Pick one, then adjust THRESHOLD until the meter bounces about 3-6 dB on the hits "
         "(more if you want an obviously squashed sound).";
@@ -160,10 +172,13 @@ void EasyCompLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int
     const float arcRadius      = (size - trackThickness) * 0.5f;
     const juce::PathStrokeType stroke (trackThickness, juce::PathStrokeType::curved, juce::PathStrokeType::rounded);
 
+    // A switched-off knob (MAKE-UP while AUTO-GAIN is on) is drawn faded.
+    const float alpha = slider.isEnabled() ? 1.0f : 0.3f;
+
     // The grey track that the value travels along
     juce::Path track;
     track.addCentredArc (centre.x, centre.y, arcRadius, arcRadius, 0.0f, startAngle, endAngle, true);
-    g.setColour (slider.findColour (juce::Slider::rotarySliderOutlineColourId));
+    g.setColour (slider.findColour (juce::Slider::rotarySliderOutlineColourId).withMultipliedAlpha (alpha));
     g.strokePath (track, stroke);
 
     // The coloured part showing the current value
@@ -171,16 +186,16 @@ void EasyCompLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int
     {
         juce::Path value;
         value.addCentredArc (centre.x, centre.y, arcRadius, arcRadius, 0.0f, startAngle, angle, true);
-        g.setColour (slider.findColour (juce::Slider::rotarySliderFillColourId));
+        g.setColour (slider.findColour (juce::Slider::rotarySliderFillColourId).withMultipliedAlpha (alpha));
         g.strokePath (value, stroke);
     }
 
     // The knob itself
     const float bodyRadius = arcRadius - trackThickness * 1.5f;
     const auto body = juce::Rectangle<float> (bodyRadius * 2.0f, bodyRadius * 2.0f).withCentre (centre);
-    g.setColour (Palette::knobBody);
+    g.setColour (Palette::knobBody.withMultipliedAlpha (alpha));
     g.fillEllipse (body);
-    g.setColour (Palette::panelEdge.brighter (0.25f));
+    g.setColour (Palette::panelEdge.brighter (0.25f).withMultipliedAlpha (alpha));
     g.drawEllipse (body, 1.0f);
 
     // The pointer line
@@ -188,7 +203,7 @@ void EasyCompLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int
     juce::Path pointer;
     pointer.addRoundedRectangle (-pointerWidth * 0.5f, -bodyRadius * 0.82f,
                                  pointerWidth, bodyRadius * 0.5f, pointerWidth * 0.5f);
-    g.setColour (slider.findColour (juce::Slider::thumbColourId));
+    g.setColour (slider.findColour (juce::Slider::thumbColourId).withMultipliedAlpha (alpha));
     g.fillPath (pointer, juce::AffineTransform::rotation (angle).translated (centre.x, centre.y));
 }
 
@@ -310,16 +325,23 @@ void GainReductionMeter::paint (juce::Graphics& g)
 //==============================================================================
 // Compression curve graph
 //==============================================================================
-void CurveGraph::update (const Compressor::Settings& newSettings, float inputLevelDb)
+void CurveGraph::update (const Compressor::Settings& newSettings, float inputLevelDb, float newAutoGainDb)
 {
     const auto differs = [] (float a, float b) { return std::abs (a - b) > 0.001f; };
 
-    // Only these four change the shape of the curve.
+    // Only these change what the graph shows. (AUTO-GAIN moves gradually, so
+    // its amount only counts once it has moved by a visible 0.05 dB.)
     const bool curveChanged = differs (newSettings.thresholdDb, settings.thresholdDb)
                            || differs (newSettings.ratio,       settings.ratio)
                            || differs (newSettings.makeupDb,    settings.makeupDb)
-                           || differs (newSettings.mix,         settings.mix);
+                           || differs (newSettings.mix,         settings.mix)
+                           || newSettings.autoGain != settings.autoGain
+                           || newSettings.bypassed != settings.bypassed
+                           || (newSettings.autoGain && std::abs (newAutoGainDb - autoGainDb) > 0.05f);
     settings = newSettings;
+
+    if (curveChanged)
+        autoGainDb = newAutoGainDb;
 
     // The dot jumps up instantly and falls back gently, like the meter.
     constexpr float fallPerUpdateDb = 1.0f;   // about 30 dB per second at 30 updates a second
@@ -420,7 +442,7 @@ void CurveGraph::paint (juce::Graphics& g)
     for (int i = 0; i <= steps; ++i)
     {
         const float inDb  = lowestDb + (highestDb - lowestDb) * (float) i / (float) steps;
-        const auto onPlot = toScreen (plot, inDb, Compressor::staticOutputDb (inDb, settings));
+        const auto onPlot = toScreen (plot, inDb, Compressor::staticOutputDb (inDb, settings, autoGainDb));
 
         if (i == 0)
             curve.startNewSubPath (onPlot);
@@ -442,12 +464,77 @@ void CurveGraph::paint (juce::Graphics& g)
     if (dotLevelDb > lowestDb)
     {
         const float inDb   = juce::jmin (dotLevelDb, highestDb);
-        const auto onCurve = toScreen (plot, inDb, Compressor::staticOutputDb (inDb, settings));
+        const auto onCurve = toScreen (plot, inDb, Compressor::staticOutputDb (inDb, settings, autoGainDb));
 
         g.setColour (Palette::accent.withAlpha (0.3f));
         g.fillEllipse (juce::Rectangle<float> (20.0f, 20.0f).withCentre (onCurve));
         g.setColour (Palette::textBright);
         g.fillEllipse (juce::Rectangle<float> (10.0f, 10.0f).withCentre (onCurve));
+    }
+
+    // While bypassed, fade the graph and say so plainly.
+    if (settings.bypassed)
+    {
+        g.setColour (Palette::background.withAlpha (0.65f));
+        g.fillRect (plot);
+
+        const auto badge = juce::Rectangle<float> (230.0f, 58.0f).withCentre (plot.getCentre());
+        g.setColour (Palette::panel);
+        g.fillRoundedRectangle (badge, 8.0f);
+        g.setColour (Palette::meterHigh);
+        g.drawRoundedRectangle (badge.reduced (0.75f), 8.0f, 1.5f);
+
+        auto lines = badge.reduced (10.0f, 9.0f);
+        g.setFont (juce::Font (juce::FontOptions (17.0f, juce::Font::bold)));
+        g.drawText ("BYPASSED", lines.removeFromTop (lines.getHeight() * 0.55f), juce::Justification::centred, false);
+        g.setColour (Palette::textDim);
+        g.setFont (juce::Font (juce::FontOptions (12.5f)));
+        g.drawText ("You're hearing the original sound", lines, juce::Justification::centred, false);
+    }
+}
+
+//==============================================================================
+// Light-up buttons
+//==============================================================================
+LightButton::LightButton (const juce::String& buttonText, juce::Colour colourWhenOn)
+    : juce::Button (buttonText), lightColour (colourWhenOn)
+{
+    setClickingTogglesState (true);   // each click flips it on/off
+}
+
+void LightButton::paintButton (juce::Graphics& g, bool isMouseOver, bool isMouseDown)
+{
+    const bool on = getToggleState();
+    const auto bounds = getLocalBounds().toFloat().reduced (0.5f);
+
+    g.setColour (on ? lightColour.withAlpha (0.14f) : Palette::panel);
+    g.fillRoundedRectangle (bounds, 7.0f);
+
+    g.setColour (on ? lightColour : (isMouseOver ? Palette::textDim : Palette::panelEdge));
+    g.drawRoundedRectangle (bounds, 7.0f, 1.0f);
+
+    // The LED, with a soft glow when lit
+    auto content = bounds.reduced (12.0f, 0.0f);
+    const auto led = content.removeFromLeft (10.0f).withSizeKeepingCentre (10.0f, 10.0f);
+
+    if (on)
+    {
+        g.setColour (lightColour.withAlpha (0.3f));
+        g.fillEllipse (led.expanded (4.0f));
+    }
+
+    g.setColour (on ? lightColour : Palette::knobTrack);
+    g.fillEllipse (led);
+
+    content.removeFromLeft (9.0f);
+    g.setColour (on || isMouseOver ? Palette::textBright : Palette::textDim);
+    g.setFont (juce::Font (juce::FontOptions (13.5f, juce::Font::bold)));
+    g.drawText (getButtonText(), content, juce::Justification::centredLeft, false);
+
+    if (isMouseDown)
+    {
+        g.setColour (juce::Colours::black.withAlpha (0.15f));
+        g.fillRoundedRectangle (bounds, 7.0f);
     }
 }
 
@@ -536,7 +623,28 @@ EasyCompAudioProcessorEditor::EasyCompAudioProcessorEditor (EasyCompAudioProcess
     presetMenu.addMouseListener (this, true);
     addAndMakeVisible (presetMenu);
 
-    graph.update (audioProcessor.getCurrentSettings(), Compressor::silenceDb);
+    // BYPASS and AUTO-GAIN buttons, connected to their settings
+    bypassAttachment   = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (
+        audioProcessor.parameters, ParamIDs::bypass, bypassButton);
+    autoGainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (
+        audioProcessor.parameters, ParamIDs::autoGain, autoGainButton);
+
+    for (auto* button : { &bypassButton, &autoGainButton })
+    {
+        button->addMouseListener (this, false);
+        addAndMakeVisible (*button);
+    }
+
+    // While AUTO-GAIN is on, the MAKE-UP box shows how much it's adding.
+    auto& makeupSlider = knobs[makeupKnob].slider;
+    makeupSlider.textFromValueFunction = [this, manualText = makeupSlider.textFromValueFunction] (double value)
+    {
+        if (showingAutoGain)
+            return "Auto +" + juce::String (shownAutoGainDb, 1) + " dB";
+
+        return manualText != nullptr ? manualText (value) : juce::String (value, 1);
+    };
+
     graph.addMouseListener (this, false);
     addAndMakeVisible (graph);
 
@@ -551,7 +659,8 @@ EasyCompAudioProcessorEditor::EasyCompAudioProcessorEditor (EasyCompAudioProcess
     setLookAndFeel (&lookAndFeel);
 
     setSize (1100, 600);
-    startTimerHz (30);   // refresh the meter and graph 30 times a second
+    refreshLiveDisplays();
+    startTimerHz (30);   // refresh the meter, graph and AUTO-GAIN readout 30 times a second
 }
 
 EasyCompAudioProcessorEditor::~EasyCompAudioProcessorEditor()
@@ -565,6 +674,8 @@ EasyCompAudioProcessorEditor::~EasyCompAudioProcessorEditor()
     }
 
     presetMenu.removeMouseListener (this);
+    bypassButton.removeMouseListener (this);
+    autoGainButton.removeMouseListener (this);
     graph.removeMouseListener (this);
     meter.removeMouseListener (this);
 
@@ -607,9 +718,13 @@ void EasyCompAudioProcessorEditor::resized()
 {
     auto area = getLocalBounds().reduced (20);
 
-    // Header: title on the left, presets on the right
+    // Header: title on the left; BYPASS, AUTO-GAIN and the presets on the right
     auto header = area.removeFromTop (50);
     presetMenu.setBounds (header.removeFromRight (300).withSizeKeepingCentre (300, 34));
+    header.removeFromRight (10);
+    autoGainButton.setBounds (header.removeFromRight (136).withSizeKeepingCentre (136, 34));
+    header.removeFromRight (10);
+    bypassButton.setBounds (header.removeFromRight (116).withSizeKeepingCentre (116, 34));
     titleArea = header;
     area.removeFromTop (14);
 
@@ -668,8 +783,35 @@ void EasyCompAudioProcessorEditor::resized()
 //==============================================================================
 void EasyCompAudioProcessorEditor::timerCallback()
 {
+    refreshLiveDisplays();
+}
+
+void EasyCompAudioProcessorEditor::refreshLiveDisplays()
+{
+    const auto settings = audioProcessor.getCurrentSettings();
+    const float autoGainDb = audioProcessor.getAutoGainDb();
+
     meter.setGainReduction (audioProcessor.takeGainReductionForMeter());
-    graph.update (audioProcessor.getCurrentSettings(), audioProcessor.takeInputLevelForGraph());
+    graph.update (settings, audioProcessor.takeInputLevelForGraph(), autoGainDb);
+
+    // AUTO-GAIN takes over from MAKE-UP: fade that knob, and show the amount
+    // AUTO-GAIN is adding in its box (in green, like the AUTO-GAIN light).
+    auto& makeupSlider = knobs[makeupKnob].slider;
+    const float roundedDb = std::round (autoGainDb * 10.0f) / 10.0f;
+
+    if (settings.autoGain != showingAutoGain)
+    {
+        showingAutoGain = settings.autoGain;
+        shownAutoGainDb = roundedDb;
+        makeupSlider.setEnabled (! showingAutoGain);
+        makeupSlider.setColour (juce::Slider::textBoxTextColourId, showingAutoGain ? Palette::meterLow : Palette::textBright);
+        makeupSlider.updateText();
+    }
+    else if (showingAutoGain && std::abs (roundedDb - shownAutoGainDb) > 0.01f)
+    {
+        shownAutoGainDb = roundedDb;
+        makeupSlider.updateText();
+    }
 }
 
 void EasyCompAudioProcessorEditor::mouseEnter (const juce::MouseEvent& event)
@@ -693,12 +835,16 @@ void EasyCompAudioProcessorEditor::showHintFor (const juce::Component* component
     {
         if (isPartOf (knobs[i].slider) || isPartOf (knobs[i].label))
         {
-            hintBar.setHint (knobInfo[i].name, knobInfo[i].hint);
+            hintBar.setHint (knobInfo[i].name, i == makeupKnob && showingAutoGain ? makeupAutoHint : knobInfo[i].hint);
             return;
         }
     }
 
-    if (isPartOf (presetMenu))
+    if (isPartOf (bypassButton))
+        hintBar.setHint ("BYPASS", bypassHint);
+    else if (isPartOf (autoGainButton))
+        hintBar.setHint ("AUTO-GAIN", autoGainHint);
+    else if (isPartOf (presetMenu))
         hintBar.setHint ("PRESETS", presetHint);
     else if (isPartOf (graph))
         hintBar.setHint ("COMPRESSION CURVE", graphHint);

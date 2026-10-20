@@ -30,6 +30,11 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override                     { return true; }
 
+    //==== Bypass ==============================================================
+    // Hands the BYPASS button to the DAW too, so the DAW's own bypass button
+    // and the one in the plugin window are the same switch.
+    juce::AudioProcessorParameter* getBypassParameter() const override   { return bypassParameter; }
+
     //==== Basic info for the DAW ==============================================
     const juce::String getName() const override         { return JucePlugin_Name; }
     bool acceptsMidi() const override                   { return false; }
@@ -65,6 +70,10 @@ public:
         Safe to call from the window while audio is playing. */
     float takeInputLevelForGraph() noexcept       { return graphLevelDb.exchange (Compressor::silenceDb); }
 
+    /** How many dB AUTO-GAIN is adding right now (it keeps measuring even
+        while it's switched off, so it's ready the moment you switch it on). */
+    float getAutoGainDb() const noexcept          { return autoGainDb.load(); }
+
     /** All the knob values right now, in the form the compressor uses. */
     Compressor::Settings getCurrentSettings() const noexcept;
 
@@ -79,10 +88,15 @@ private:
     std::atomic<float>* makeupValue    = nullptr;
     std::atomic<float>* mixValue       = nullptr;
     std::atomic<float>* lowCutValue    = nullptr;
+    std::atomic<float>* autoGainValue  = nullptr;
+    std::atomic<float>* bypassValue    = nullptr;
+    juce::AudioParameterBool* bypassParameter = nullptr;
 
     Compressor compressor;
     std::atomic<float> meterReductionDb { 0.0f };
     std::atomic<float> graphLevelDb { Compressor::silenceDb };
+    std::atomic<float> autoGainDb { 0.0f };
+    std::atomic<bool>  autoGainRestartRequested { false };   // set by loadPreset, acted on by the audio
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EasyCompAudioProcessor)
 };

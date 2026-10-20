@@ -17,6 +17,8 @@ namespace ParamIDs
     inline constexpr const char* makeup    = "makeup";
     inline constexpr const char* mix       = "mix";
     inline constexpr const char* lowCut    = "lowcut";   // added in version 1.1
+    inline constexpr const char* autoGain  = "autogain"; // added in version 1.2
+    inline constexpr const char* bypass    = "bypass";   // added in version 1.2
 }
 
 //==============================================================================
@@ -34,6 +36,8 @@ namespace ParamIDs
 
     "ignore below" is the low-cut for what the compressor listens to:
     20 means off.
+
+    Presets don't touch the BYPASS and AUTO-GAIN buttons.
 */
 struct CompressorPreset
 {

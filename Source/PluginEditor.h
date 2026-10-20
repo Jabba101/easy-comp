@@ -59,9 +59,10 @@ private:
 class CurveGraph : public juce::Component
 {
 public:
-    /** Call ~30 times a second with the current knob values and the loudest
-        level the compressor heard since last time. Only repaints on changes. */
-    void update (const Compressor::Settings& newSettings, float inputLevelDb);
+    /** Call ~30 times a second with the current settings, the loudest level the
+        compressor heard since last time, and the current AUTO-GAIN amount.
+        Only repaints when something changed. */
+    void update (const Compressor::Settings& newSettings, float inputLevelDb, float newAutoGainDb);
 
     void paint (juce::Graphics&) override;
 
@@ -73,7 +74,21 @@ private:
     juce::Point<float> toScreen (juce::Rectangle<float> plot, float inDb, float outDb) const;
 
     Compressor::Settings settings;
+    float autoGainDb = 0.0f;
     float dotLevelDb = Compressor::silenceDb;   // jumps up instantly, falls back smoothly
+};
+
+//==============================================================================
+/** An on/off button with a little "LED" that lights up when it's on. */
+class LightButton : public juce::Button
+{
+public:
+    LightButton (const juce::String& buttonText, juce::Colour colourWhenOn);
+
+    void paintButton (juce::Graphics&, bool isMouseOver, bool isMouseDown) override;
+
+private:
+    juce::Colour lightColour;
 };
 
 //==============================================================================
@@ -106,6 +121,7 @@ public:
 
 private:
     void timerCallback() override;
+    void refreshLiveDisplays();
     void showHintFor (const juce::Component* componentUnderMouse);
     void markPresetAsEdited();
 
@@ -121,11 +137,21 @@ private:
 
     // Threshold, Ratio | Attack, Release | Make-up, Mix | Ignore Below
     std::array<Knob, 7> knobs;
+    static constexpr size_t makeupKnob = 4;
+
     juce::ComboBox presetMenu;
+    LightButton bypassButton   { "BYPASS",    Palette::meterHigh };
+    LightButton autoGainButton { "AUTO-GAIN", Palette::meterLow };
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> bypassAttachment, autoGainAttachment;
+
     CurveGraph graph;
     GainReductionMeter meter;
     HintBar hintBar;
     bool isLoadingPreset = false;
+
+    // What the MAKE-UP box is showing while AUTO-GAIN is on
+    bool  showingAutoGain = false;
+    float shownAutoGainDb = 0.0f;
 
     // Areas worked out in resized() and drawn in paint()
     juce::Rectangle<int> titleArea, graphPanel, meterPanel, lowCutNoteArea;
