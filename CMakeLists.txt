@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.5.1)
+project(EasyPlugins VERSION 1.6.0)
 
 # Build the Visual C++ runtime into the plugins themselves, so they also work
 # on a PC that doesn't have Visual Studio installed. (No effect on macOS / Linux.)
@@ -38,6 +38,7 @@ set(SHARED_SOURCES
     Shared/PresetBrowser.h  Shared/PresetBrowser.cpp
     Shared/Widgets.h        Shared/Widgets.cpp
     Shared/Parameters.h
+    Effects/FastMath.h
     Effects/LoudnessMatcher.h)
 
 set(FINISHED_PLUGINS_FOLDER "${CMAKE_BINARY_DIR}/Finished Plugins")
@@ -95,7 +96,7 @@ endfunction()
 add_easy_plugin(EasyComp
     NAME        "Easy Comp"
     CODE        Ezcp
-    VERSION     1.4.0
+    VERSION     1.5.0
     BUNDLE_ID   com.homestudio.easycomp
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/Compressor.h
@@ -108,7 +109,7 @@ add_easy_plugin(EasyComp
 add_easy_plugin(EasyTransient
     NAME        "Easy Transient"
     CODE        Eztr
-    VERSION     1.1.1
+    VERSION     1.2.0
     BUNDLE_ID   com.homestudio.easytransient
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/TransientShaper.h

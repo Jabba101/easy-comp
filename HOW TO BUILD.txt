@@ -149,6 +149,8 @@ WHAT'S IN THIS FOLDER
      Compressor.h           the compressor
      TransientShaper.h      the transient shaper
      LoudnessMatcher.h      AUTO-GAIN (shared by every plugin)
+     FastMath.h             quick decibel maths and helpers for working on
+                            several samples at once (shared by every plugin)
 
    Shared\                The parts every plugin shares: the look, the
                           help bar, BYPASS / AUTO-GAIN, the preset menu,
