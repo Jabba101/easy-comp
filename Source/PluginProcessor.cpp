@@ -10,6 +10,25 @@ namespace
         return maximumLength > 0 ? text.substring (0, maximumLength) : text;
     }
 
+    juce::String formatLowCut (float hz)
+    {
+        if (hz <= Compressor::lowCutOffHz + 0.5f)
+            return "Off";
+
+        return juce::String (juce::roundToInt (hz)) + " Hz";
+    }
+
+    /** Keeps the bigger of the stored value and a new one, without locking
+        (so the audio thread never has to wait for the plugin window). */
+    void storeIfBigger (std::atomic<float>& store, float newValue) noexcept
+    {
+        float previous = store.load();
+
+        while (newValue > previous && ! store.compare_exchange_weak (previous, newValue))
+        {
+        }
+    }
+
     juce::String formatMilliseconds (float ms)
     {
         if (ms < 1.0f)
@@ -64,6 +83,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyCompAudioProcessor::crea
     juce::NormalisableRange<float> makeupRange (0.0f, 24.0f, 0.1f);
     juce::NormalisableRange<float> mixRange (0.0f, 100.0f, 1.0f);
 
+    juce::NormalisableRange<float> lowCutRange (Compressor::lowCutOffHz, 500.0f, 1.0f);
+    lowCutRange.setSkewForCentre (100.0f);
+
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
     layout.add (makeParameter (ParamIDs::threshold, "Threshold", thresholdRange, defaults.thresholdDb,
@@ -84,6 +106,23 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyCompAudioProcessor::crea
     layout.add (makeParameter (ParamIDs::mix, "Mix", mixRange, defaults.mixPercent,
                                [] (float v) { return juce::String (juce::roundToInt (v)) + "%"; }));
 
+    // Added in 1.1. The "2" is a version number for your DAW; it lets
+    // projects saved with 1.0 open cleanly (they get this knob set to Off).
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        juce::ParameterID { ParamIDs::lowCut, 2 }, "Ignore Below", lowCutRange, defaults.lowCutHz,
+        juce::AudioParameterFloatAttributes()
+            .withStringFromValueFunction ([] (float value, int maximumLength)
+                                          {
+                                              return limitLength (formatLowCut (value), maximumLength);
+                                          })
+            .withValueFromStringFunction ([] (const juce::String& text)
+                                          {
+                                              if (text.trim().equalsIgnoreCase ("off"))
+                                                  return Compressor::lowCutOffHz;
+
+                                              return text.getFloatValue();
+                                          })));
+
     return layout;
 }
 
@@ -100,6 +139,7 @@ EasyCompAudioProcessor::EasyCompAudioProcessor()
     releaseValue   = parameters.getRawParameterValue (ParamIDs::release);
     makeupValue    = parameters.getRawParameterValue (ParamIDs::makeup);
     mixValue       = parameters.getRawParameterValue (ParamIDs::mix);
+    lowCutValue    = parameters.getRawParameterValue (ParamIDs::lowCut);
 }
 
 //==============================================================================
@@ -107,6 +147,7 @@ void EasyCompAudioProcessor::prepareToPlay (double sampleRate, int /*samplesPerB
 {
     compressor.prepare (sampleRate, getCurrentSettings());
     meterReductionDb.store (0.0f);
+    graphLevelDb.store (Compressor::silenceDb);
 }
 
 bool EasyCompAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -129,16 +170,11 @@ void EasyCompAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         buffer.clear (channel, 0, buffer.getNumSamples());
 
     compressor.setSettings (getCurrentSettings());
-    const float blockReductionDb = compressor.process (buffer);
+    const auto result = compressor.process (buffer);
 
-    // Keep the biggest reduction until the meter next asks for it. (A
-    // lock-free "max", so the audio thread never has to wait for the UI.)
-    float previous = meterReductionDb.load();
-
-    while (blockReductionDb > previous
-           && ! meterReductionDb.compare_exchange_weak (previous, blockReductionDb))
-    {
-    }
+    // Keep the biggest values until the meter and graph next ask for them.
+    storeIfBigger (meterReductionDb, result.maxReductionDb);
+    storeIfBigger (graphLevelDb, result.maxLevelDb);
 }
 
 Compressor::Settings EasyCompAudioProcessor::getCurrentSettings() const noexcept
@@ -150,6 +186,7 @@ Compressor::Settings EasyCompAudioProcessor::getCurrentSettings() const noexcept
     settings.releaseMs   = releaseValue->load();
     settings.makeupDb    = makeupValue->load();
     settings.mix         = mixValue->load() / 100.0f;   // the knob shows %, the maths wants 0..1
+    settings.lowCutHz    = lowCutValue->load();
     return settings;
 }
 
@@ -177,6 +214,7 @@ void EasyCompAudioProcessor::loadPreset (int presetIndex)
     setKnob (ParamIDs::release,   preset.releaseMs);
     setKnob (ParamIDs::makeup,    preset.makeupDb);
     setKnob (ParamIDs::mix,       preset.mixPercent);
+    setKnob (ParamIDs::lowCut,    preset.lowCutHz);
 }
 
 //==============================================================================
@@ -196,9 +234,24 @@ void EasyCompAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 void EasyCompAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     // Restores the knob positions when your DAW project is opened.
-    if (auto xml = getXmlFromBinary (data, sizeInBytes))
-        if (xml->hasTagName (parameters.state.getType()))
-            parameters.replaceState (juce::ValueTree::fromXml (*xml));
+    auto xml = getXmlFromBinary (data, sizeInBytes);
+
+    if (xml == nullptr || ! xml->hasTagName (parameters.state.getType()))
+        return;
+
+    auto savedSettings = juce::ValueTree::fromXml (*xml);
+
+    // Projects saved with version 1.0 have no IGNORE BELOW setting. Open
+    // them with it switched off, so they sound exactly as they did.
+    if (! savedSettings.getChildWithProperty ("id", ParamIDs::lowCut).isValid())
+    {
+        juce::ValueTree lowCutSetting ("PARAM");
+        lowCutSetting.setProperty ("id", ParamIDs::lowCut, nullptr);
+        lowCutSetting.setProperty ("value", Compressor::lowCutOffHz, nullptr);
+        savedSettings.appendChild (lowCutSetting, nullptr);
+    }
+
+    parameters.replaceState (savedSettings);
 }
 
 //==============================================================================

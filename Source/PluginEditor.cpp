@@ -11,8 +11,8 @@ namespace
         const char* hint;
     };
 
-    // In on-screen order: two knobs in each of the three panels.
-    const std::array<KnobInfo, 6> knobInfo
+    // In on-screen order (see knobGroups below for which panel each is in).
+    const std::array<KnobInfo, 7> knobInfo
     {{
         { ParamIDs::threshold, "THRESHOLD",
           "The volume where squeezing starts. Turn it down (left) until the meter moves on your loudest hits. "
@@ -37,13 +37,37 @@ namespace
         { ParamIDs::mix, "MIX",
           "Blends your original sound with the compressed one. 100% = fully compressed. Heavy settings at 30-50% is the "
           "classic 'parallel' drum trick: the hit of the original plus the thickness of the squashed copy." },
+
+        { ParamIDs::lowCut, "IGNORE BELOW",
+          "Stops low notes (kick, bass, floor-tom boom) from setting off the compressor. It only changes what it reacts "
+          "to - never the tone of your sound. Try 80-150 Hz on a drum bus or overheads if the kick makes everything 'pump'." },
     }};
 
-    const std::array<const char*, 3> groupNames { "HOW MUCH", "HOW FAST", "OUTPUT" };
+    // The four knob panels, numbered in the order you'd usually set them.
+    struct KnobGroup
+    {
+        const char* name;
+        size_t firstKnob, numKnobs;
+    };
+
+    const std::array<KnobGroup, 4> knobGroups
+    {{
+        { "HOW MUCH",          0, 2 },
+        { "HOW FAST",          2, 2 },
+        { "OUTPUT",            4, 2 },
+        { "WHAT IT REACTS TO", 6, 1 },
+    }};
+
+    constexpr const char* lowCutNote =
+        "Keeps the kick and bass from setting it off. Only changes what it listens to - your sound isn't filtered.";
 
     constexpr const char* presetHint =
         "Starting points for drums. Pick one, then adjust THRESHOLD until the meter bounces about 3-6 dB on the hits "
         "(more if you want an obviously squashed sound).";
+
+    constexpr const char* graphHint =
+        "Along the bottom: how loud your sound goes in. Up the side: how loud it comes out. Dotted line = untouched. "
+        "The bend is the THRESHOLD; the flatter the line after it, the higher the RATIO. The dot is your sound as it plays.";
 
     constexpr const char* meterHint =
         "How much the compressor is turning the sound down right now. Around 3-6 dB on each hit is a natural "
@@ -284,6 +308,150 @@ void GainReductionMeter::paint (juce::Graphics& g)
 }
 
 //==============================================================================
+// Compression curve graph
+//==============================================================================
+void CurveGraph::update (const Compressor::Settings& newSettings, float inputLevelDb)
+{
+    const auto differs = [] (float a, float b) { return std::abs (a - b) > 0.001f; };
+
+    // Only these four change the shape of the curve.
+    const bool curveChanged = differs (newSettings.thresholdDb, settings.thresholdDb)
+                           || differs (newSettings.ratio,       settings.ratio)
+                           || differs (newSettings.makeupDb,    settings.makeupDb)
+                           || differs (newSettings.mix,         settings.mix);
+    settings = newSettings;
+
+    // The dot jumps up instantly and falls back gently, like the meter.
+    constexpr float fallPerUpdateDb = 1.0f;   // about 30 dB per second at 30 updates a second
+
+    const float next = inputLevelDb >= dotLevelDb ? inputLevelDb
+                                                  : juce::jmax (inputLevelDb, dotLevelDb - fallPerUpdateDb);
+
+    const bool dotMoved = differs (next, dotLevelDb) && juce::jmax (next, dotLevelDb) > lowestDb;
+    dotLevelDb = next;
+
+    if (curveChanged || dotMoved)
+        repaint();
+}
+
+juce::Rectangle<float> CurveGraph::getPlotArea() const
+{
+    // Leave room on the left and at the bottom for the scale numbers and captions.
+    auto area = getLocalBounds().toFloat();
+    area.removeFromLeft (46.0f);
+    area.removeFromBottom (34.0f);
+    area.removeFromTop (4.0f);
+    area.removeFromRight (6.0f);
+
+    const float side = juce::jmin (area.getWidth(), area.getHeight());
+    return area.withSizeKeepingCentre (side, side);
+}
+
+juce::Point<float> CurveGraph::toScreen (juce::Rectangle<float> plot, float inDb, float outDb) const
+{
+    const auto proportion = [] (float db) { return (db - lowestDb) / (highestDb - lowestDb); };
+
+    return { plot.getX() + proportion (inDb) * plot.getWidth(),
+             plot.getBottom() - proportion (outDb) * plot.getHeight() };
+}
+
+void CurveGraph::paint (juce::Graphics& g)
+{
+    const auto plot = getPlotArea();
+
+    g.setColour (Palette::background);
+    g.fillRoundedRectangle (plot.expanded (1.0f), 6.0f);
+
+    // Grid lines and scale numbers every 12 dB
+    g.setFont (juce::Font (juce::FontOptions (11.0f)));
+
+    for (int db = (int) lowestDb; db <= (int) highestDb; db += 12)
+    {
+        const auto gridPoint = toScreen (plot, (float) db, (float) db);
+
+        if (db > (int) lowestDb && db < (int) highestDb)
+        {
+            g.setColour (Palette::panelEdge);
+            g.drawVerticalLine (juce::roundToInt (gridPoint.x), plot.getY(), plot.getBottom());
+            g.drawHorizontalLine (juce::roundToInt (gridPoint.y), plot.getX(), plot.getRight());
+        }
+
+        g.setColour (Palette::textDim);
+
+        g.drawText (juce::String (db), juce::Rectangle<float> (plot.getX() - 34.0f, gridPoint.y - 7.0f, 28.0f, 14.0f),
+                    juce::Justification::centredRight, false);
+
+        if (db > (int) lowestDb)   // the corner is already labelled on the side
+            g.drawText (juce::String (db), juce::Rectangle<float> (gridPoint.x - 20.0f, plot.getBottom() + 4.0f, 40.0f, 14.0f),
+                        juce::Justification::centred, false);
+    }
+
+    // Axis captions
+    g.setFont (juce::Font (juce::FontOptions (11.0f, juce::Font::bold)));
+    g.drawText ("LEVEL IN (dB)", juce::Rectangle<float> (plot.getX(), plot.getBottom() + 19.0f, plot.getWidth(), 14.0f),
+                juce::Justification::centred, false);
+    {
+        juce::Graphics::ScopedSaveState rotated (g);
+        const juce::Point<float> centre (plot.getX() - 39.0f, plot.getCentreY());
+        g.addTransform (juce::AffineTransform::rotation (-juce::MathConstants<float>::halfPi, centre.x, centre.y));
+        g.drawText ("LEVEL OUT (dB)", juce::Rectangle<float> (plot.getHeight(), 14.0f).withCentre (centre),
+                    juce::Justification::centred, false);
+    }
+
+    // Everything from here on stays inside the plot.
+    juce::Graphics::ScopedSaveState clipped (g);
+    g.reduceClipRegion (plot.toNearestInt());
+
+    // The dotted line: what comes out with no compression at all
+    const float dots[] = { 3.0f, 5.0f };
+    g.setColour (Palette::textDim.withAlpha (0.7f));
+    g.drawDashedLine ({ toScreen (plot, lowestDb, lowestDb), toScreen (plot, highestDb, highestDb) }, dots, 2, 1.5f);
+
+    // The threshold: where the bend starts
+    const float dashes[] = { 6.0f, 4.0f };
+    const float thresholdX = toScreen (plot, settings.thresholdDb, lowestDb).x;
+    g.setColour (Palette::accent.withAlpha (0.35f));
+    g.drawDashedLine ({ thresholdX, plot.getY(), thresholdX, plot.getBottom() }, dashes, 2, 1.0f);
+
+    // The curve itself (the same maths the audio uses), with a soft fill underneath
+    juce::Path curve;
+    constexpr int steps = 240;
+
+    for (int i = 0; i <= steps; ++i)
+    {
+        const float inDb  = lowestDb + (highestDb - lowestDb) * (float) i / (float) steps;
+        const auto onPlot = toScreen (plot, inDb, Compressor::staticOutputDb (inDb, settings));
+
+        if (i == 0)
+            curve.startNewSubPath (onPlot);
+        else
+            curve.lineTo (onPlot);
+    }
+
+    juce::Path underCurve (curve);
+    underCurve.lineTo (plot.getBottomRight());
+    underCurve.lineTo (plot.getBottomLeft());
+    underCurve.closeSubPath();
+    g.setColour (Palette::accent.withAlpha (0.08f));
+    g.fillPath (underCurve);
+
+    g.setColour (Palette::accent);
+    g.strokePath (curve, juce::PathStrokeType (2.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+
+    // The dot: your sound, right now
+    if (dotLevelDb > lowestDb)
+    {
+        const float inDb   = juce::jmin (dotLevelDb, highestDb);
+        const auto onCurve = toScreen (plot, inDb, Compressor::staticOutputDb (inDb, settings));
+
+        g.setColour (Palette::accent.withAlpha (0.3f));
+        g.fillEllipse (juce::Rectangle<float> (20.0f, 20.0f).withCentre (onCurve));
+        g.setColour (Palette::textBright);
+        g.fillEllipse (juce::Rectangle<float> (10.0f, 10.0f).withCentre (onCurve));
+    }
+}
+
+//==============================================================================
 // Hint bar
 //==============================================================================
 void HintBar::setHint (const juce::String& newTitle, const juce::String& newText)
@@ -368,6 +536,10 @@ EasyCompAudioProcessorEditor::EasyCompAudioProcessorEditor (EasyCompAudioProcess
     presetMenu.addMouseListener (this, true);
     addAndMakeVisible (presetMenu);
 
+    graph.update (audioProcessor.getCurrentSettings(), Compressor::silenceDb);
+    graph.addMouseListener (this, false);
+    addAndMakeVisible (graph);
+
     meter.addMouseListener (this, false);
     addAndMakeVisible (meter);
 
@@ -378,8 +550,8 @@ EasyCompAudioProcessorEditor::EasyCompAudioProcessorEditor (EasyCompAudioProcess
     // window picks up the custom look (including the value boxes).
     setLookAndFeel (&lookAndFeel);
 
-    setSize (980, 430);
-    startTimerHz (30);   // refresh the meter 30 times a second
+    setSize (1100, 600);
+    startTimerHz (30);   // refresh the meter and graph 30 times a second
 }
 
 EasyCompAudioProcessorEditor::~EasyCompAudioProcessorEditor()
@@ -393,6 +565,7 @@ EasyCompAudioProcessorEditor::~EasyCompAudioProcessorEditor()
     }
 
     presetMenu.removeMouseListener (this);
+    graph.removeMouseListener (this);
     meter.removeMouseListener (this);
 
     setLookAndFeel (nullptr);
@@ -414,10 +587,19 @@ void EasyCompAudioProcessorEditor::paint (juce::Graphics& g)
     g.drawText ("A simple compressor - hover over anything for help", title,
                 juce::Justification::centredLeft, false);
 
-    // The three knob panels, numbered in the order you'd usually set them
+    // The four knob panels, numbered in the order you'd usually set them
     for (size_t i = 0; i < groupPanels.size(); ++i)
-        drawPanel (g, groupPanels[i], juce::String ((int) i + 1), groupNames[i]);
+        drawPanel (g, groupPanels[i], juce::String ((int) i + 1), knobGroups[i].name);
 
+    // A short note beside the IGNORE BELOW knob, since it's the least obvious one
+    juce::AttributedString note;
+    note.append (lowCutNote, juce::Font (juce::FontOptions (13.0f)), Palette::textDim);
+    note.setJustification (juce::Justification::centredLeft);
+    note.setWordWrap (juce::AttributedString::byWord);
+    note.setLineSpacing (2.0f);
+    note.draw (g, lowCutNoteArea.toFloat());
+
+    drawPanel (g, graphPanel, {}, "COMPRESSION CURVE");
     drawPanel (g, meterPanel, {}, "GAIN REDUCTION");
 }
 
@@ -435,19 +617,29 @@ void EasyCompAudioProcessorEditor::resized()
     hintBar.setBounds (area.removeFromBottom (66));
     area.removeFromBottom (14);
 
-    // Meter on the right
-    meterPanel = area.removeFromRight (130);
-    meter.setBounds (meterPanel.reduced (14, 12).withTrimmedTop (24));
-    area.removeFromRight (14);
-
-    // Three panels of two knobs each
     constexpr int gap = 14;
-    const int panelWidth = (area.getWidth() - 2 * gap) / 3;
 
-    for (size_t group = 0; group < groupPanels.size(); ++group)
+    // Right-hand side: the meter, and the curve graph (square) beside it
+    meterPanel = area.removeFromRight (140);
+    meter.setBounds (meterPanel.reduced (14, 12).withTrimmedTop (24));
+    area.removeFromRight (gap);
+
+    graphPanel = area.removeFromRight (area.getHeight());
+    graph.setBounds (graphPanel.reduced (12, 12).withTrimmedTop (24));
+    area.removeFromRight (gap);
+
+    // Left-hand side: the four knob panels, two by two
+    const int panelWidth  = (area.getWidth()  - gap) / 2;
+    const int panelHeight = (area.getHeight() - gap) / 2;
+
+    for (size_t group = 0; group < knobGroups.size(); ++group)
     {
-        groupPanels[group] = area.removeFromLeft (panelWidth);
-        area.removeFromLeft (gap);
+        const int column = (int) group % 2;
+        const int row    = (int) group / 2;
+
+        groupPanels[group] = { area.getX() + column * (panelWidth + gap),
+                               area.getY() + row * (panelHeight + gap),
+                               panelWidth, panelHeight };
 
         auto inside = groupPanels[group].reduced (10, 12).withTrimmedTop (26);
         const int columnWidth = inside.getWidth() / 2;
@@ -457,16 +649,19 @@ void EasyCompAudioProcessorEditor::resized()
         const int knobSize = juce::jmin (columnWidth,
                                          inside.getHeight() - nameHeight - spacing - valueBoxHeight);
 
-        for (size_t k = 0; k < 2; ++k)
+        for (size_t k = 0; k < knobGroups[group].numKnobs; ++k)
         {
-            auto& knob  = knobs[group * 2 + k];
-            auto column = inside.removeFromLeft (columnWidth)
-                                .withSizeKeepingCentre (columnWidth, nameHeight + spacing + knobSize + valueBoxHeight);
+            auto& knob = knobs[knobGroups[group].firstKnob + k];
+            auto columnArea = inside.removeFromLeft (columnWidth)
+                                    .withSizeKeepingCentre (columnWidth, nameHeight + spacing + knobSize + valueBoxHeight);
 
-            knob.label.setBounds (column.removeFromTop (nameHeight));
-            column.removeFromTop (spacing);
-            knob.slider.setBounds (column);   // the knob, with its value box underneath
+            knob.label.setBounds (columnArea.removeFromTop (nameHeight));
+            columnArea.removeFromTop (spacing);
+            knob.slider.setBounds (columnArea);   // the knob, with its value box underneath
         }
+
+        if (knobGroups[group].numKnobs == 1)
+            lowCutNoteArea = inside.reduced (4, 0);   // the spare column holds the short note
     }
 }
 
@@ -474,6 +669,7 @@ void EasyCompAudioProcessorEditor::resized()
 void EasyCompAudioProcessorEditor::timerCallback()
 {
     meter.setGainReduction (audioProcessor.takeGainReductionForMeter());
+    graph.update (audioProcessor.getCurrentSettings(), audioProcessor.takeInputLevelForGraph());
 }
 
 void EasyCompAudioProcessorEditor::mouseEnter (const juce::MouseEvent& event)
@@ -504,6 +700,8 @@ void EasyCompAudioProcessorEditor::showHintFor (const juce::Component* component
 
     if (isPartOf (presetMenu))
         hintBar.setHint ("PRESETS", presetHint);
+    else if (isPartOf (graph))
+        hintBar.setHint ("COMPRESSION CURVE", graphHint);
     else if (isPartOf (meter))
         hintBar.setHint ("GAIN REDUCTION", meterHint);
     else

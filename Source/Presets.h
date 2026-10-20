@@ -16,6 +16,7 @@ namespace ParamIDs
     inline constexpr const char* release   = "release";
     inline constexpr const char* makeup    = "makeup";
     inline constexpr const char* mix       = "mix";
+    inline constexpr const char* lowCut    = "lowcut";   // added in version 1.1
 }
 
 //==============================================================================
@@ -30,6 +31,9 @@ namespace ParamIDs
 
     To add your own: copy a line, change the name and numbers, and change the
     8 in std::array<CompressorPreset, 8> to the new number of presets.
+
+    "ignore below" is the low-cut for what the compressor listens to:
+    20 means off.
 */
 struct CompressorPreset
 {
@@ -40,17 +44,18 @@ struct CompressorPreset
     float releaseMs;    //  10 .. 1000
     float makeupDb;     //   0 .. 24
     float mixPercent;   //   0 .. 100
+    float lowCutHz;     //  20 (off) .. 500
 };
 
 inline constexpr std::array<CompressorPreset, 8> drumPresets
 {{
-    //  name                          thresh  ratio  attack  release  make-up    mix
-    { "Default (all-rounder)",        -20.0f,  4.0f,  10.0f,  100.0f,    0.0f, 100.0f },
-    { "Kick - Punch",                 -18.0f,  4.0f,  25.0f,   80.0f,    3.0f, 100.0f },
-    { "Snare - Crack",                -20.0f,  4.0f,  15.0f,  100.0f,    3.0f, 100.0f },
-    { "Toms - Fuller",                -24.0f,  3.0f,   5.0f,  200.0f,    4.0f, 100.0f },
-    { "Overheads - Smooth",           -18.0f,  2.0f,  20.0f,  250.0f,    2.0f, 100.0f },
-    { "Room Mics - Crushed",          -35.0f, 12.0f,   1.0f,  300.0f,   10.0f, 100.0f },
-    { "Drum Bus - Glue",              -16.0f,  2.0f,  30.0f,  150.0f,    2.0f, 100.0f },
-    { "Drum Bus - Parallel Smash",    -40.0f, 10.0f,   1.0f,  120.0f,   12.0f,  35.0f },
+    //  name                          thresh  ratio  attack  release  make-up    mix  ignore below
+    { "Default (all-rounder)",        -20.0f,  4.0f,  10.0f,  100.0f,    0.0f, 100.0f,   20.0f },
+    { "Kick - Punch",                 -18.0f,  4.0f,  25.0f,   80.0f,    3.0f, 100.0f,   20.0f },
+    { "Snare - Crack",                -20.0f,  4.0f,  15.0f,  100.0f,    3.0f, 100.0f,  100.0f },
+    { "Toms - Fuller",                -24.0f,  3.0f,   5.0f,  200.0f,    4.0f, 100.0f,   20.0f },
+    { "Overheads - Smooth",           -18.0f,  2.0f,  20.0f,  250.0f,    2.0f, 100.0f,  120.0f },
+    { "Room Mics - Crushed",          -35.0f, 12.0f,   1.0f,  300.0f,   10.0f, 100.0f,   20.0f },
+    { "Drum Bus - Glue",              -16.0f,  2.0f,  30.0f,  150.0f,    2.0f, 100.0f,  100.0f },
+    { "Drum Bus - Parallel Smash",    -40.0f, 10.0f,   1.0f,  120.0f,   12.0f,  35.0f,   80.0f },
 }};

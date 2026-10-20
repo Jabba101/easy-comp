@@ -54,6 +54,29 @@ private:
 };
 
 //==============================================================================
+/** The compression curve: how loud the sound comes out (up the side) for each
+    level going in (along the bottom), with a dot showing your sound as it plays. */
+class CurveGraph : public juce::Component
+{
+public:
+    /** Call ~30 times a second with the current knob values and the loudest
+        level the compressor heard since last time. Only repaints on changes. */
+    void update (const Compressor::Settings& newSettings, float inputLevelDb);
+
+    void paint (juce::Graphics&) override;
+
+private:
+    static constexpr float lowestDb  = -60.0f;   // the graph's range, both ways
+    static constexpr float highestDb = 0.0f;
+
+    juce::Rectangle<float> getPlotArea() const;
+    juce::Point<float> toScreen (juce::Rectangle<float> plot, float inDb, float outDb) const;
+
+    Compressor::Settings settings;
+    float dotLevelDb = Compressor::silenceDb;   // jumps up instantly, falls back smoothly
+};
+
+//==============================================================================
 /** The strip along the bottom that explains whatever the mouse is over. */
 class HintBar : public juce::Component
 {
@@ -96,15 +119,17 @@ private:
     EasyCompAudioProcessor& audioProcessor;
     EasyCompLookAndFeel lookAndFeel;   // declared before the components that use it
 
-    std::array<Knob, 6> knobs;         // Threshold, Ratio | Attack, Release | Make-up, Mix
+    // Threshold, Ratio | Attack, Release | Make-up, Mix | Ignore Below
+    std::array<Knob, 7> knobs;
     juce::ComboBox presetMenu;
+    CurveGraph graph;
     GainReductionMeter meter;
     HintBar hintBar;
     bool isLoadingPreset = false;
 
     // Areas worked out in resized() and drawn in paint()
-    juce::Rectangle<int> titleArea, meterPanel;
-    std::array<juce::Rectangle<int>, 3> groupPanels;
+    juce::Rectangle<int> titleArea, graphPanel, meterPanel, lowCutNoteArea;
+    std::array<juce::Rectangle<int>, 4> groupPanels;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EasyCompAudioProcessorEditor)
 };

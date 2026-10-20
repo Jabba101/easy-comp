@@ -8,10 +8,10 @@
 /**
     The plugin as your DAW sees it.
 
-    This class is the plumbing: it creates the six parameters (the knobs your
-    DAW can see, save and automate), hands their values to the Compressor once
-    per block of audio, and reports how much gain reduction is happening so the
-    meter can show it. The sound-shaping maths lives in Compressor.h.
+    This class is the plumbing: it creates the parameters (the knobs your DAW
+    can see, save and automate), hands their values to the Compressor once per
+    block of audio, and reports what's happening so the meter and the curve
+    graph can show it. The sound-shaping maths lives in Compressor.h.
 */
 class EasyCompAudioProcessor : public juce::AudioProcessor
 {
@@ -51,19 +51,25 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     //==== Used by the plugin window ===========================================
-    /** The six parameters, plus the glue that keeps knobs and DAW in sync. */
+    /** The parameters, plus the glue that keeps knobs and DAW in sync. */
     juce::AudioProcessorValueTreeState parameters;
 
-    /** Sets all six knobs to one of the presets in Presets.h. */
+    /** Sets all the knobs to one of the presets in Presets.h. */
     void loadPreset (int presetIndex);
 
     /** The most gain reduction (dB, as a positive number) since the meter last
         asked. Safe to call from the window while audio is playing. */
     float takeGainReductionForMeter() noexcept    { return meterReductionDb.exchange (0.0f); }
 
+    /** The loudest level the compressor heard (dB) since the graph last asked.
+        Safe to call from the window while audio is playing. */
+    float takeInputLevelForGraph() noexcept       { return graphLevelDb.exchange (Compressor::silenceDb); }
+
+    /** All the knob values right now, in the form the compressor uses. */
+    Compressor::Settings getCurrentSettings() const noexcept;
+
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
-    Compressor::Settings getCurrentSettings() const noexcept;
 
     // Direct, lock-free access to each knob's current value from the audio thread.
     std::atomic<float>* thresholdValue = nullptr;
@@ -72,9 +78,11 @@ private:
     std::atomic<float>* releaseValue   = nullptr;
     std::atomic<float>* makeupValue    = nullptr;
     std::atomic<float>* mixValue       = nullptr;
+    std::atomic<float>* lowCutValue    = nullptr;
 
     Compressor compressor;
     std::atomic<float> meterReductionDb { 0.0f };
+    std::atomic<float> graphLevelDb { Compressor::silenceDb };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EasyCompAudioProcessor)
 };

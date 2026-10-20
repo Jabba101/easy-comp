@@ -8,7 +8,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyComp VERSION 1.0.0)
+project(EasyComp VERSION 1.1.0)
 
 # Build the Visual C++ runtime into the plugin itself, so it also works on a
 # PC that doesn't have Visual Studio installed. (No effect on macOS / Linux.)
