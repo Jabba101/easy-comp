@@ -1,0 +1,32 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 22, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "windows-release",
+      "displayName": "Windows Release",
+      "description": "Optimised build of the plugin for real use in your DAW.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "architecture": { "value": "x64", "strategy": "external" },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "cl.exe",
+        "CMAKE_CXX_COMPILER": "cl.exe"
+      },
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+    },
+    {
+      "name": "release",
+      "displayName": "Release (macOS / Linux)",
+      "description": "Optimised build of the plugin for real use in your DAW.",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" },
+      "condition": { "type": "notEquals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "windows-release", "configurePreset": "windows-release" },
+    { "name": "release", "configurePreset": "release", "configuration": "Release" }
+  ]
+}
