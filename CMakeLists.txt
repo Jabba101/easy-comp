@@ -1,5 +1,5 @@
 # =============================================================================
-#  Easy Plugins - beginner-friendly mixing plugins (VST3 / AU), built on JUCE
+#  Aardvark Easy Suite - beginner-friendly mixing plugins (VST3 / AU), built on JUCE
 #
 #  You don't need to edit this file to build them. JUCE (the free audio
 #  framework they're built on) is downloaded automatically the first time
@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.6.0)
+project(EasyPlugins VERSION 1.7.0)
 
 # Build the Visual C++ runtime into the plugins themselves, so they also work
 # on a PC that doesn't have Visual Studio installed. (No effect on macOS / Linux.)
@@ -56,9 +56,9 @@ function(add_easy_plugin target)
     juce_add_plugin(${target}
         VERSION                     ${PLUGIN_VERSION}
         PRODUCT_NAME                "${PLUGIN_NAME}"
-        COMPANY_NAME                "Home Studio"     # shown as the plugin's maker
+        COMPANY_NAME                "Aardvark Easy Suite"   # the maker: DAWs list the plugins in a folder with this name
         BUNDLE_ID                   ${PLUGIN_BUNDLE_ID}
-        PLUGIN_MANUFACTURER_CODE    Hmst              # 4 characters, the same for every plugin
+        PLUGIN_MANUFACTURER_CODE    Hmst              # 4 characters, the same for every plugin - never change it
         PLUGIN_CODE                 ${PLUGIN_CODE}
         FORMATS                     VST3 AU           # AU is only built on a Mac
         IS_SYNTH                    FALSE
@@ -96,7 +96,7 @@ endfunction()
 add_easy_plugin(EasyComp
     NAME        "Easy Comp"
     CODE        Ezcp
-    VERSION     1.5.0
+    VERSION     1.5.1
     BUNDLE_ID   com.homestudio.easycomp
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/Compressor.h
@@ -106,10 +106,10 @@ add_easy_plugin(EasyComp
                 Plugins/EasyComp/PluginEditor.h
                 Plugins/EasyComp/PluginEditor.cpp)
 
-add_easy_plugin(EasyTransient
-    NAME        "Easy Transient"
+add_easy_plugin(EasyTransient          # (called Easy Transient up to 1.2.0)
+    NAME        "Easy Trans"
     CODE        Eztr
-    VERSION     1.2.0
+    VERSION     1.2.1
     BUNDLE_ID   com.homestudio.easytransient
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/TransientShaper.h
@@ -118,3 +118,16 @@ add_easy_plugin(EasyTransient
                 Plugins/EasyTransient/PluginProcessor.cpp
                 Plugins/EasyTransient/PluginEditor.h
                 Plugins/EasyTransient/PluginEditor.cpp)
+
+add_easy_plugin(EasyGate
+    NAME        "Easy Gate"
+    CODE        Ezgt
+    VERSION     1.0.0
+    BUNDLE_ID   com.homestudio.easygate
+    CATEGORIES  Fx Dynamics
+    SOURCES     Effects/Gate.h
+                Plugins/EasyGate/Presets.h
+                Plugins/EasyGate/PluginProcessor.h
+                Plugins/EasyGate/PluginProcessor.cpp
+                Plugins/EasyGate/PluginEditor.h
+                Plugins/EasyGate/PluginEditor.cpp)

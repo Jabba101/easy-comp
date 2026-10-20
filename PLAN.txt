@@ -1,8 +1,10 @@
 ====================================================================
 THE PLAN: WHAT'S BEING BUILT NEXT
 ====================================================================
-   Each part is built and tested as its own plugin first. Once they all
-   work, they're combined into one channel strip.
+   The suite is called Aardvark Easy Suite: that's the folder your DAW
+   lists the plugins in. Each part is built and tested as its own
+   plugin first. Once they all work, they're combined into one
+   channel strip.
 
 
 ====================================================================
@@ -10,21 +12,25 @@ THE CHANNEL STRIP, IN SIGNAL ORDER
 ====================================================================
    1. INPUT         Trim, and a polarity (phase) flip for multi-mic drums.
 
-   2. GATE          For toms, and for kick and snare bleed. It filters
-                    what it listens to (like Easy Comp's IGNORE BELOW),
-                    so a kick in the snare mic doesn't open the snare's
-                    gate.
+   2. GATE          Easy Gate (done). For toms, and for kick and snare
+                    bleed. IGNORE BELOW and IGNORE ABOVE filter what it
+                    listens to, so a kick in the snare mic doesn't open
+                    the snare's gate.
 
-   3. ANALOG VIBE   The "preamp" knob. 0 = clean (switched off, costs
-                    nothing), middle = analog warmth, full = saturation:
-                    a beefy rough edge on rock bass, a growl on synths.
-                    Level-matched, so it changes the tone, not the
-                    volume. Keeps the lowest notes clean at high
+   3. ANALOG VIBE   Easy Amp. The "preamp" knob: 0 = clean (switched
+                    off, costs nothing), middle = analog warmth, full =
+                    saturation: a beefy rough edge on rock bass, a growl
+                    on synths. Level-matched, so it changes the tone,
+                    not the volume. Keeps the lowest notes clean at high
                     settings. (Heavier amp-style distortion for guitars
                     and leads will be a separate plugin.)
 
-   4. EQ            High- and low-pass filters, low and high shelves,
-                    and two bell bands. Two modes:
+   4. EQ            Easy EQ. High- and low-pass filters, low and high
+                    shelves, and two bell bands, with the curve drawn so
+                    you can see and drag it. The bells get narrower the
+                    harder you boost or cut, which is part of what makes
+                    API's EQs sound musical (our own take, not a copy).
+                    Two modes:
                       CHANNEL           normal EQ (the default)
                       BUS & MASTERING   linear phase: keeps the timing
                                         of the sound intact, adds a short
@@ -32,10 +38,10 @@ THE CHANNEL STRIP, IN SIGNAL ORDER
                     BUS & MASTERING gets a precision setting: lower means
                     less delay and less smear before hits.
 
-   5. DE-ESSER      Adjustable frequency range, and it turns down only the
-                    harsh band, not the whole track. LISTEN button to hear
-                    what it's catching. Presets for vocals, harsh cymbals
-                    and bright hi-hats.
+   5. DE-ESSER      Easy DS. Adjustable frequency range, and it turns
+                    down only the harsh band, not the whole track. LISTEN
+                    button to hear what it's catching. Presets for
+                    vocals, harsh cymbals and bright hi-hats.
 
    6. COMPRESSOR    Easy Comp, plus:
                       CHARACTER   our own take on feedback compression,
@@ -43,13 +49,13 @@ THE CHANNEL STRIP, IN SIGNAL ORDER
                                   (not a copy)
                       a THRUST-style option for IGNORE BELOW
 
-   7. TRANSIENT     Easy Transient.
+   7. TRANSIENT     Easy Trans.
 
-   8. OUTPUT        Level, and a hard clipper: a ceiling control, an
-                    optional softness knob (0 = hard), and a light that
-                    shows how much it's shaving off. If it's regularly
-                    taking more than 2-3 dB, turn the track down earlier
-                    in the chain.
+   8. OUTPUT        Level, and Easy Clip: a hard clipper with a ceiling
+                    control, an optional softness knob (0 = hard), and a
+                    light that shows how much it's shaving off. If it's
+                    regularly taking more than 2-3 dB, turn the track
+                    down earlier in the chain.
 
    Occasional extras:
    - EQ order switch: the EQ after the compressor.
@@ -60,9 +66,9 @@ THE CHANNEL STRIP, IN SIGNAL ORDER
 RULES FOR EVERYTHING
 ====================================================================
    - Anything switched off costs no processor time.
-   - Oversampling only for the ANALOG VIBE and the clipper: Off while
-     mixing, 4x or 8x when exporting (it switches by itself in DAWs that
-     say they're exporting), plus a manual switch for fine-tuning.
+   - Oversampling only for Easy Amp and Easy Clip: Off while mixing, 4x
+     or 8x when exporting (it switches by itself in DAWs that say
+     they're exporting), plus a manual switch for fine-tuning.
    - The strip keeps the same small delay at every oversampling setting,
      so drum mics never shift against each other.
    - No oversampling for the compressor (CHARACTER included) unless real
@@ -74,14 +80,16 @@ RULES FOR EVERYTHING
 ====================================================================
 BUILD ORDER
 ====================================================================
-   1. Easy Gate            reuses most of the compressor's workings
-   2. De-esser             the same
+   1. Easy Gate            done (1.0.0)
+   2. Easy DS              the de-esser: reuses most of the compressor's
+                           workings
    3. Easy Comp update     CHARACTER switch and the THRUST-style option
    4. Easy EQ              the biggest design job (the curve display)
-   5. Saturation plugin    with the clipper: both need the oversampling
+   5. Easy Amp, Easy Clip  separate plugins, both need the oversampling
    6. The channel strip
 
-   Separately: the gated reverb (a send effect, not part of the strip).
+   Separately: Bitch-Slap, the gated reverb - a send effect, not part of
+   the strip, with a MIX knob and a reverb LENGTH knob.
 
 
 ====================================================================
@@ -95,6 +103,13 @@ LATER
 ====================================================================
 DONE
 ====================================================================
+   - Easy Gate 1.0.0: THRESHOLD, RANGE, ATTACK, HOLD, RELEASE, IGNORE
+     BELOW / ABOVE, a sidechain input, LISTEN, and a 2 ms look-ahead so
+     the start of every hit gets through. 17 presets. Uses about half
+     the processor time of Easy Comp.
+   - The new names: the maker is now Aardvark Easy Suite (it was Home
+     Studio), and Easy Transient is now Easy Trans (1.2.1). Projects
+     and your own presets keep working.
    - Easy Comp 1.5.0 and Easy Transient 1.2.0: the faster engine, about a
      third of the processor time while playing, and almost none on silent
      tracks. The sound is unchanged.

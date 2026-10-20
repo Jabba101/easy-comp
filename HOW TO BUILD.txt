@@ -1,10 +1,12 @@
-EASY PLUGINS - getting the plugins onto your PC (Windows)
-==========================================================
+AARDVARK EASY SUITE - getting the plugins onto your PC (Windows)
+=================================================================
 
 Right now this project makes:
-    Easy Comp        a compressor (evens out the volume)
-    Easy Transient   a transient shaper (more or less punch and ring
-                     on every hit or note)
+    Easy Comp    a compressor (evens out the volume)
+    Easy Trans   a transient shaper (more or less punch and ring on
+                 every hit or note) - called Easy Transient up to 1.2.0
+    Easy Gate    a gate (silences the noise and bleed between the
+                 sounds you want)
 
 Every time the project changes on GitHub, GitHub builds the plugins for you
 on its own Windows computers. You just download and install them.
@@ -18,8 +20,8 @@ GETTING THE LATEST PLUGINS FROM GITHUB
  2. Click the newest run with a green tick. (A yellow dot means it's
     still building - it takes about 10 minutes.)
 
- 3. Scroll down to "Artifacts" and click "Easy-Plugins-Windows" to
-    download it.
+ 3. Scroll down to "Artifacts" and click "Aardvark-Easy-Suite-Windows"
+    to download it.
 
  4. Before unzipping: right-click the downloaded file > Properties. If
     there's an "Unblock" tick-box at the bottom, tick it and click OK.
@@ -32,12 +34,19 @@ GETTING THE LATEST PLUGINS FROM GITHUB
        C:\Program Files\Common Files\VST3
     replacing the old ones. Windows will ask for administrator
     permission - click Continue.
+    Updating from Easy Transient? It's now called Easy Trans, so also
+    DELETE the old "Easy Transient.vst3" folder there. Otherwise your
+    DAW finds two copies of the same plugin.
 
  7. Open your DAW and rescan your plugins. They're listed under
-    "Home Studio", in effects / dynamics.
+    "Aardvark Easy Suite" (it used to be "Home Studio"), in effects /
+    dynamics.
 
  Your projects keep working: newer versions open older projects with
- any new features switched off, so they sound exactly as they did.
+ any new features switched off, so they sound exactly as they did. That
+ includes projects that used Easy Transient: your DAW recognises the
+ plugin by a hidden code that never changes, so they open with Easy
+ Trans and your settings.
 
  If a build shows a red cross:
     Click on the run, then on the job, copy the red error lines, and
@@ -105,7 +114,7 @@ YOUR FIRST FIVE MINUTES WITH EASY COMP
 
 
 ====================================================================
-YOUR FIRST FIVE MINUTES WITH EASY TRANSIENT
+YOUR FIRST FIVE MINUTES WITH EASY TRANS
 ====================================================================
    1. Put it on a drum track (or anything with clear hits or plucks)
       and pick a preset from the preset menu.
@@ -119,12 +128,48 @@ YOUR FIRST FIVE MINUTES WITH EASY TRANSIENT
       original.
    Before or after Easy Comp? Either works, so try both. With Easy
    Transient first, the compressor then evens out what you shaped (more
-   controlled). With Easy Transient last, its punch comes through
+   controlled). With Easy Trans last, its punch comes through
    untouched (punchier).
 
    The presets cover drums, bass, guitars, keys, vocals, strings, brass
    and the mix bus. Unlike the compressor's, they work the same however
    loud your track is.
+
+
+====================================================================
+YOUR FIRST FIVE MINUTES WITH EASY GATE
+====================================================================
+   1. Put it on a track with noise or bleed between the sounds you
+      want - a tom or snare mic, a noisy guitar amp, a vocal - and
+      pick a preset for it.
+   2. Play the track and watch the display. The grey shape is what the
+      gate hears; the dashed line is THRESHOLD. Move THRESHOLD so the
+      hits (or notes, or words) go over the line and the bleed or noise
+      between them stays under it. The red shading shows where it's
+      turning the sound down.
+   3. RANGE sets how much quieter it gets between hits. 15-25 dB
+      sounds natural on drums; FULL is complete silence.
+   4. HOLD and RELEASE set how it closes: longer lets each hit ring out,
+      shorter is tighter. If tails get chopped off, make them longer.
+   5. Bleed still opening it? Use IGNORE BELOW (e.g. the kick in a
+      snare mic) or IGNORE ABOVE (e.g. cymbals in a tom mic). Click
+      LISTEN to hear what the gate hears while you set them.
+   6. Click BYPASS on and off to compare.
+
+   It looks 2 ms ahead, so the start of every hit gets through. To do
+   that it delays your track by 2 ms - your DAW makes up for it by
+   itself ("delay compensation", on by default in every major DAW).
+
+   The sidechain: with OPENED BY set to SIDECHAIN, another track opens
+   the gate instead - for example the snare's close mic opening the
+   room mics (the preset "Room Mics - 80s Gated Snare"). Every DAW does
+   the routing differently: search your DAW's help for "sidechain". If
+   the display says NOTHING IS COMING INTO THE SIDECHAIN, the routing
+   isn't connected yet.
+
+   The presets are set up for tracks recorded at a normal level (the
+   loudest peaks around -8 dB on your DAW's meter): move THRESHOLD to
+   suit yours.
 
 
 ====================================================================
@@ -134,8 +179,8 @@ CHANGING THINGS
                        Plugins\EasyComp\Presets.h) - one line each.
    - Colours:          the Palette list at the top of Shared\Look.h.
    - Help text:        the knobInfo list in each plugin's PluginEditor.cpp.
-   - The sound:        Effects\Compressor.h and Effects\TransientShaper.h -
-                       commented step by step.
+   - The sound:        Effects\Compressor.h, Effects\TransientShaper.h and
+                       Effects\Gate.h - commented step by step.
 
 
 ====================================================================
@@ -149,6 +194,7 @@ WHAT'S IN THIS FOLDER
    Effects\               The sound-shaping code (no windows or knobs):
      Compressor.h           the compressor
      TransientShaper.h      the transient shaper
+     Gate.h                 the gate
      LoudnessMatcher.h      AUTO-GAIN (shared by every plugin)
      FastMath.h             quick decibel maths and helpers for working on
                             several samples at once (shared by every plugin)
@@ -158,7 +204,9 @@ WHAT'S IN THIS FOLDER
                           saving with your projects.
 
    Plugins\EasyComp\      Easy Comp's knobs, window and presets.
-   Plugins\EasyTransient\ Easy Transient's knobs, window and presets.
+   Plugins\EasyTransient\ Easy Trans's knobs, window and presets (the
+                          folder keeps the old name).
+   Plugins\EasyGate\      Easy Gate's knobs, window and presets.
 
    On a Mac, the same folder builds VST3 and AU versions (needs Xcode and
    CMake: run "cmake --preset release" then "cmake --build --preset release").

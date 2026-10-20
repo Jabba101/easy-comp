@@ -52,9 +52,11 @@ void EasyLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int wid
     const float alpha = slider.isEnabled() ? 1.0f : 0.3f;
 
     // A knob whose middle is "no change" (like a transient shaper's PUNCH)
-    // fills from the top; other knobs fill from the left end.
+    // fills from the top; one that's off at its right-hand end (like a gate's
+    // IGNORE ABOVE) fills from there; other knobs fill from the left end.
     const bool fromCentre = slider.getProperties().getWithDefault ("fillFromCentre", false);
-    const float fillStart = fromCentre ? (startAngle + endAngle) * 0.5f : startAngle;
+    const bool fromEnd    = slider.getProperties().getWithDefault ("fillFromEnd", false);
+    const float fillStart = fromCentre ? (startAngle + endAngle) * 0.5f : (fromEnd ? endAngle : startAngle);
 
     // The grey track that the value travels along
     juce::Path track;

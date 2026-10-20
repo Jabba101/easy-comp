@@ -54,7 +54,7 @@ private:
 };
 
 //==============================================================================
-/** The Easy Transient window: the shared header and help bar (from
+/** The Easy Trans window: the shared header and help bar (from
     EasyWindow), with the knobs, the display and the meter in between. */
 class EasyTransientAudioProcessorEditor : public EasyWindow
 {

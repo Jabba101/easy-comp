@@ -1,12 +1,22 @@
 #include "EasyProcessor.h"
 
+juce::AudioProcessor::BusesProperties EasyProcessor::makeBuses (bool withSidechain)
+{
+    auto buses = BusesProperties()
+                     .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
+                     .withOutput ("Output", juce::AudioChannelSet::stereo(), true);
+
+    // The sidechain: a second input your DAW can send another track to
+    // (it's only listened to when the plugin is set to use it).
+    return withSidechain ? buses.withInput ("Sidechain", juce::AudioChannelSet::stereo(), true) : buses;
+}
+
 EasyProcessor::EasyProcessor (const juce::String& stateName,
                               juce::AudioProcessorValueTreeState::ParameterLayout parameterLayout,
                               std::vector<Preset> presets,
-                              juce::StringArray presetIDs)
-    : AudioProcessor (BusesProperties()
-                          .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
-                          .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
+                              juce::StringArray presetIDs,
+                              bool withSidechain)
+    : AudioProcessor (makeBuses (withSidechain)),
       parameters (*this, nullptr, stateName, std::move (parameterLayout)),
       builtInPresets (std::move (presets)),
       presetParameterIDs (std::move (presetIDs))
@@ -15,10 +25,12 @@ EasyProcessor::EasyProcessor (const juce::String& stateName,
     jassert (bypassParameter != nullptr);   // every plugin must call addCommonParameters()
 }
 
-void EasyProcessor::addCommonParameters (juce::AudioProcessorValueTreeState::ParameterLayout& layout)
+void EasyProcessor::addCommonParameters (juce::AudioProcessorValueTreeState::ParameterLayout& layout, bool withAutoGain)
 {
     // (The "3" is a version number for your DAW: these arrived in Easy Comp 1.2.)
-    layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { CommonIDs::autoGain, 3 }, "Auto-Gain", false));
+    if (withAutoGain)
+        layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { CommonIDs::autoGain, 3 }, "Auto-Gain", false));
+
     layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { CommonIDs::bypass, 3 }, "Bypass", false));
 }
 
@@ -30,7 +42,19 @@ bool EasyProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
     if (output != juce::AudioChannelSet::mono() && output != juce::AudioChannelSet::stereo())
         return false;
 
-    return output == layouts.getMainInputChannelSet();
+    if (output != layouts.getMainInputChannelSet())
+        return false;
+
+    // The sidechain (if there is one) can be mono, stereo or switched off.
+    for (int bus = 1; bus < layouts.inputBuses.size(); ++bus)
+    {
+        const auto& sidechain = layouts.getChannelSet (true, bus);
+
+        if (! sidechain.isDisabled() && sidechain != juce::AudioChannelSet::mono() && sidechain != juce::AudioChannelSet::stereo())
+            return false;
+    }
+
+    return true;
 }
 
 //==============================================================================

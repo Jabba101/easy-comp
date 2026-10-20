@@ -6,7 +6,9 @@
 
 //==============================================================================
 /**
-    Easy Transient as your DAW sees it.
+    Easy Trans as your DAW sees it. (It was called Easy Transient up to
+    version 1.2.0. Your DAW recognises it by a code that hasn't changed, so
+    projects that used Easy Transient open with Easy Trans.)
 
     The shared parts (BYPASS, AUTO-GAIN, presets, saving with your project)
     come from EasyProcessor. This adds the shaper's knobs, hands their values
@@ -44,6 +46,9 @@ public:
 
     /** All the settings right now, in the form the shaper uses. */
     TransientShaper::Settings getCurrentSettings() const noexcept;
+
+    /** Your own presets stay where Easy Transient kept them. */
+    juce::String getPresetFolderName() const override   { return "Easy Transient"; }
 
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();

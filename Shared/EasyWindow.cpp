@@ -6,6 +6,9 @@ namespace
         "Switches the plugin off so you hear your original sound - click on and off to compare. "
         "Tip: switch AUTO-GAIN on first, so you're comparing the sound itself, not one being louder than the other.";
 
+    constexpr const char* bypassHintWithoutAutoGain =
+        "Switches the plugin off so you hear your original sound - click on and off to compare.";
+
     constexpr const char* autoGainHint =
         "Keeps the volume coming out the same as the volume going in, so BYPASS compares the sound, not the "
         "loudness. It listens over a few seconds and adjusts smoothly.";
@@ -20,18 +23,22 @@ EasyWindow::EasyWindow (EasyProcessor& p, const juce::String& titleText, const j
     : AudioProcessorEditor (&p), easyProcessor (p),
       title (titleText), subtitle (subtitleText), gettingStarted (gettingStartedHint)
 {
-    // BYPASS and AUTO-GAIN, connected to their settings
-    bypassAttachment   = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (
+    // BYPASS and AUTO-GAIN (if this plugin has it), connected to their settings
+    bypassAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (
         easyProcessor.parameters, CommonIDs::bypass, bypassButton);
-    autoGainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (
-        easyProcessor.parameters, CommonIDs::autoGain, autoGainButton);
     addAndMakeVisible (bypassButton);
-    addAndMakeVisible (autoGainButton);
-    addHint (bypassButton, "BYPASS", bypassHint);
-    addHint (autoGainButton, "AUTO-GAIN", autoGainHint);
+    addHint (bypassButton, "BYPASS", easyProcessor.hasAutoGain() ? bypassHint : bypassHintWithoutAutoGain);
+
+    if (easyProcessor.hasAutoGain())
+    {
+        autoGainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (
+            easyProcessor.parameters, CommonIDs::autoGain, autoGainButton);
+        addAndMakeVisible (autoGainButton);
+        addHint (autoGainButton, "AUTO-GAIN", autoGainHint);
+    }
 
     // Presets
-    presetBrowser.setPresets (JucePlugin_Name, easyProcessor.getBuiltInPresets());
+    presetBrowser.setPresets (easyProcessor.getPresetFolderName(), easyProcessor.getBuiltInPresets());
 
     presetBrowser.onPresetChosen = [this] (const Preset& preset)
     {
@@ -102,8 +109,13 @@ void EasyWindow::resized()
     auto header = area.removeFromTop (50);
     presetBrowser.setBounds (header.removeFromRight (370).withSizeKeepingCentre (370, 34));   // room for long preset names
     header.removeFromRight (10);
-    autoGainButton.setBounds (header.removeFromRight (136).withSizeKeepingCentre (136, 34));
-    header.removeFromRight (10);
+
+    if (auto* second = easyProcessor.hasAutoGain() ? &autoGainButton : headerButton)
+    {
+        second->setBounds (header.removeFromRight (136).withSizeKeepingCentre (136, 34));
+        header.removeFromRight (10);
+    }
+
     bypassButton.setBounds (header.removeFromRight (116).withSizeKeepingCentre (116, 34));
     titleArea = header;
     area.removeFromTop (14);

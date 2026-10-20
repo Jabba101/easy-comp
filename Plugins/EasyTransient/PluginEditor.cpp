@@ -301,10 +301,10 @@ void MomentDisplay::paint (juce::Graphics& g)
 }
 
 //==============================================================================
-// The Easy Transient window
+// The Easy Trans window
 //==============================================================================
 EasyTransientAudioProcessorEditor::EasyTransientAudioProcessorEditor (EasyTransientAudioProcessor& p)
-    : EasyWindow (p, "EASY TRANSIENT", "Shape the punch and tail of every hit - hover over anything for help", gettingStartedHint),
+    : EasyWindow (p, "EASY TRANS", "Shape the punch and tail of every hit - hover over anything for help", gettingStartedHint),
       shaperProcessor (p),
       incoming ((size_t) MomentDisplay::numMoments)
 {

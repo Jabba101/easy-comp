@@ -7,9 +7,10 @@
 //==============================================================================
 /**
     The parts of the window every Easy plugin shares: the title, the BYPASS
-    and AUTO-GAIN buttons, the preset box, and the help bar that explains
-    whatever the mouse is over. Each plugin adds its own knobs and displays
-    in the space in between (see layoutBody and paintBody).
+    and AUTO-GAIN buttons (AUTO-GAIN only in plugins that have it), the
+    preset box, and the help bar that explains whatever the mouse is over.
+    Each plugin adds its own knobs and displays in the space in between (see
+    layoutBody and paintBody).
 */
 class EasyWindow : public juce::AudioProcessorEditor,
                    private juce::Timer
@@ -24,6 +25,9 @@ public:
 
     void mouseEnter (const juce::MouseEvent&) override;
     void mouseExit (const juce::MouseEvent&) override;
+
+    /** The line under the title. */
+    const juce::String& getSubtitle() const noexcept   { return subtitle; }
 
     // (public so the parts can be found and tested)
     LightButton bypassButton   { "BYPASS",    Palette::meterHigh };
@@ -41,6 +45,10 @@ protected:
 
     /** Called 30 times a second: update meters and graphs here. */
     virtual void refreshLiveDisplays() {}
+
+    /** A plugin without AUTO-GAIN can put a button of its own in the header,
+        where AUTO-GAIN would be (add it to the window as usual first). */
+    void putInHeader (juce::Component& button)    { headerButton = &button; }
 
     //==== The help bar ========================================================
     /** What the help bar says while the mouse is over this component (or anything inside it). */
@@ -71,6 +79,7 @@ private:
     std::vector<Hint> hints;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> bypassAttachment, autoGainAttachment;
     juce::Rectangle<int> titleArea;
+    juce::Component* headerButton = nullptr;
     juce::Component::SafePointer<juce::Component> hovered;   // (clears itself if that part is rebuilt)
     bool loadingPreset = false;
 

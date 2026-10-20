@@ -149,6 +149,7 @@ namespace FastMath
         friend forcedinline Vec4 min (Vec4 a, Vec4 b) noexcept { return { _mm_min_ps (b.v, a.v) }; }
         friend forcedinline Vec4 max (Vec4 a, Vec4 b) noexcept { return { _mm_max_ps (b.v, a.v) }; }
         friend forcedinline Vec4 sqrt (Vec4 a) noexcept         { return { _mm_sqrt_ps (a.v) }; }
+        friend forcedinline Vec4 abs (Vec4 a) noexcept          { return { _mm_andnot_ps (_mm_set1_ps (-0.0f), a.v) }; }
 
         /** Comparisons give a mask: all bits set where true. */
         friend forcedinline Vec4 operator<  (Vec4 a, Vec4 b) noexcept { return { _mm_cmplt_ps (a.v, b.v) }; }
@@ -182,6 +183,7 @@ namespace FastMath
         friend forcedinline Vec4 min (Vec4 a, Vec4 b) noexcept { return each (a, b, [] (float x, float y) { return std::min (x, y); }); }
         friend forcedinline Vec4 max (Vec4 a, Vec4 b) noexcept { return each (a, b, [] (float x, float y) { return std::max (x, y); }); }
         friend forcedinline Vec4 sqrt (Vec4 a) noexcept         { return each (a, a, [] (float x, float) { return std::sqrt (x); }); }
+        friend forcedinline Vec4 abs (Vec4 a) noexcept          { return each (a, a, [] (float x, float) { return std::abs (x); }); }
 
         friend forcedinline Vec4 operator<  (Vec4 a, Vec4 b) noexcept { return each (a, b, [] (float x, float y) { return maskFor (x <  y); }); }
         friend forcedinline Vec4 operator<= (Vec4 a, Vec4 b) noexcept { return each (a, b, [] (float x, float y) { return maskFor (x <= y); }); }

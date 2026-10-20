@@ -21,21 +21,31 @@ namespace CommonIDs
 class EasyProcessor : public juce::AudioProcessor
 {
 public:
-    /** stateName: the name the settings are saved under in projects (never change it). */
+    /** stateName: the name the settings are saved under in projects (never change it).
+        withSidechain: also take a second input that another track can be sent to. */
     EasyProcessor (const juce::String& stateName,
                    juce::AudioProcessorValueTreeState::ParameterLayout parameterLayout,
                    std::vector<Preset> builtInPresets,
-                   juce::StringArray presetParameterIDs);
+                   juce::StringArray presetParameterIDs,
+                   bool withSidechain = false);
 
     /** The plugin's settings, plus the glue that keeps knobs and DAW in sync. */
     juce::AudioProcessorValueTreeState parameters;
 
-    /** Adds the BYPASS and AUTO-GAIN buttons to a parameter layout. Every plugin calls this. */
-    static void addCommonParameters (juce::AudioProcessorValueTreeState::ParameterLayout&);
+    /** Adds the BYPASS button, and the AUTO-GAIN button unless withAutoGain is
+        false, to a parameter layout. Every plugin calls this. */
+    static void addCommonParameters (juce::AudioProcessorValueTreeState::ParameterLayout&, bool withAutoGain = true);
+
+    /** True if this plugin has an AUTO-GAIN button. */
+    bool hasAutoGain() const    { return parameters.getParameter (CommonIDs::autoGain) != nullptr; }
 
     //==== Presets =============================================================
     const std::vector<Preset>& getBuiltInPresets() const noexcept   { return builtInPresets; }
     const juce::StringArray& getPresetParameterIDs() const noexcept { return presetParameterIDs; }
+
+    /** The name your own presets are kept under (Documents > Easy Plugins > this).
+        It stays the same even if the plugin is renamed, so they're always found. */
+    virtual juce::String getPresetFolderName() const                { return JucePlugin_Name; }
 
     /** Sets the knobs to a preset (BYPASS and AUTO-GAIN are left alone). Any
         knob the preset doesn't mention goes back to its default. */
@@ -83,6 +93,8 @@ protected:
     virtual void presetLoaded() {}
 
 private:
+    static BusesProperties makeBuses (bool withSidechain);
+
     std::vector<Preset> builtInPresets;
     juce::StringArray presetParameterIDs;
     juce::AudioParameterBool* bypassParameter = nullptr;

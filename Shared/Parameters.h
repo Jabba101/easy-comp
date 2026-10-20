@@ -19,6 +19,21 @@ namespace Format
         if (ms < 10.0f)  return juce::String (ms, 1) + " ms";
         return juce::String (juce::roundToInt (ms)) + " ms";
     }
+
+    /** "150 Hz", "2.5 kHz" */
+    inline juce::String hertz (float hz)
+    {
+        if (hz < 999.5f)  return juce::String (juce::roundToInt (hz)) + " Hz";
+        return juce::String (hz / 1000.0f, 1) + " kHz";
+    }
+
+    /** Understands "150", "150 Hz", "2.5k" and "2.5 kHz". */
+    inline float hertzFromText (const juce::String& text)
+    {
+        const auto cleaned = text.trim().toLowerCase();
+        const float value = cleaned.getFloatValue();
+        return cleaned.containsChar ('k') ? value * 1000.0f : value;
+    }
 }
 
 //==============================================================================
