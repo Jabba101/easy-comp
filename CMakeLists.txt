@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.5.0)
+project(EasyPlugins VERSION 1.5.1)
 
 # Build the Visual C++ runtime into the plugins themselves, so they also work
 # on a PC that doesn't have Visual Studio installed. (No effect on macOS / Linux.)
@@ -108,7 +108,7 @@ add_easy_plugin(EasyComp
 add_easy_plugin(EasyTransient
     NAME        "Easy Transient"
     CODE        Eztr
-    VERSION     1.1.0
+    VERSION     1.1.1
     BUNDLE_ID   com.homestudio.easytransient
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/TransientShaper.h

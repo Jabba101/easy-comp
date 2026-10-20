@@ -37,8 +37,8 @@ namespace
         "Switch AUTO-GAIN off to set OUTPUT by hand again.";
 
     constexpr const char* displayHint =
-        "The last couple of seconds of your sound: grey = the original, amber = after shaping. With PUNCH up, the amber "
-        "peaks stand above the grey at each hit; with SUSTAIN down, the amber tail drops away sooner.";
+        "The last couple of seconds of your sound: grey = the original, amber = after shaping. Green shows where it came out "
+        "louder, red where quieter. The scale moves to fit your track, so the peaks always stay in view.";
 
     constexpr const char* meterHint =
         "How much it's turning the sound up (green, above the line) and down (red, below) right now. PUNCH works on the "
@@ -48,7 +48,6 @@ namespace
         "Pick a preset, or play your track and turn PUNCH and SUSTAIN either way from the middle (the middle changes nothing). "
         "Hover over anything for an explanation. Double-click a knob to reset it.";
 
-    constexpr float lowestDb = -60.0f;          // the display's range
     constexpr float meterFallPerUpdateDb = 0.75f;   // about 22 dB per second at 30 updates a second
 }
 
@@ -141,7 +140,31 @@ void MomentDisplay::addMoments (const EasyTransientAudioProcessor::Moment* newMo
         next = (next + 1) % numMoments;
     }
 
+    fitScale();
     repaint();
+}
+
+void MomentDisplay::fitScale()
+{
+    // Keep the loudest moment of the last couple of seconds 12-21 dB below the
+    // top edge - about a quarter of the way down - whatever the track's level.
+    constexpr float headroomDb = 12.0f, stepDb = 6.0f;
+
+    float loudest = TransientShaper::silenceDb;
+    for (auto& moment : history)
+        loudest = std::max ({ loudest, moment.inDb, moment.outDb });
+
+    if (loudest < -90.0f)
+        return;   // silence: leave the scale where it was
+
+    // Make room at once when it gets louder; zoom back in only once it's clearly quieter
+    const float needed = loudest + headroomDb;
+    if (! hasFitted || needed > targetTopDb || needed < targetTopDb - stepDb - 3.0f)
+        targetTopDb = juce::jlimit (-24.0f, 24.0f, std::ceil (needed / stepDb) * stepDb);
+
+    // Glide there (quickly when making room, gently when zooming in), or jump the first time
+    topDb = hasFitted ? topDb + juce::jlimit (-1.0f, 3.0f, targetTopDb - topDb) : targetTopDb;
+    hasFitted = true;
 }
 
 void MomentDisplay::setBypassed (bool isBypassed)
@@ -166,27 +189,27 @@ juce::Rectangle<float> MomentDisplay::getPlotArea() const
 void MomentDisplay::paint (juce::Graphics& g)
 {
     const auto plot = getPlotArea();
-    const auto yFor = [&] (float db) { return plot.getBottom() - (juce::jlimit (lowestDb, 0.0f, db) - lowestDb) / -lowestDb * plot.getHeight(); };
+    const float bottomDb = topDb - rangeDb;
+    const auto yFor = [&] (float db) { return plot.getY() + (topDb - juce::jlimit (bottomDb, topDb, db)) / rangeDb * plot.getHeight(); };
     const auto xFor = [&] (int age) { return plot.getRight() - (float) age / (float) (numMoments - 1) * plot.getWidth(); };   // age 0 = now
 
     g.setColour (Palette::background);
     g.fillRoundedRectangle (plot.expanded (1.0f), 6.0f);
 
-    // Grid and scale
+    // Grid and scale, every 12 dB. The 0 dB line - the loudest a recording can
+    // be before it clips - is a little brighter.
     g.setFont (juce::Font (juce::FontOptions (11.0f)));
 
-    for (int db = 0; db >= (int) lowestDb; db -= 12)
+    for (int db = 12 * (int) std::floor (topDb / 12.0f); (float) db > bottomDb; db -= 12)
     {
         const float y = yFor ((float) db);
 
-        if (db > (int) lowestDb && db < 0)
-        {
-            g.setColour (Palette::panelEdge);
-            g.drawHorizontalLine (juce::roundToInt (y), plot.getX(), plot.getRight());
-        }
+        g.setColour (db == 0 ? Palette::textDim.withAlpha (0.55f) : Palette::panelEdge);
+        g.drawHorizontalLine (juce::roundToInt (y), plot.getX(), plot.getRight());
 
         g.setColour (Palette::textDim);
-        g.drawText (juce::String (db), juce::Rectangle<float> (0.0f, y - 7.0f, plot.getX() - 6.0f, 14.0f), juce::Justification::centredRight, false);
+        g.drawText ((db > 0 ? "+" : "") + juce::String (db), juce::Rectangle<float> (0.0f, y - 7.0f, plot.getX() - 6.0f, 14.0f),
+                    juce::Justification::centredRight, false);
     }
 
     g.drawText ("2 seconds ago", juce::Rectangle<float> (plot.getX(), plot.getBottom() + 4.0f, 120.0f, 14.0f), juce::Justification::centredLeft, false);
