@@ -1,184 +1,124 @@
-EASY COMP - turning this folder into a plugin you can use (Windows)
-====================================================================
+EASY PLUGINS - getting the plugins onto your PC (Windows)
+==========================================================
 
-There are two ways to build the plugin. Pick one:
+Right now this project makes:
+    Easy Comp       a compressor
 
-  OPTION 1 - Let GitHub build it for you. Nothing to install.
-             About 15 minutes, mostly waiting.
-  OPTION 2 - Build it on your own PC with Visual Studio (free, but an
-             8-10 GB install). About 30-60 minutes the first time.
-
-Both make exactly the same plugin. Neither involves typing commands.
+Every time the project changes on GitHub, GitHub builds the plugins for you
+on its own Windows computers. You just download and install them.
 
 
 ====================================================================
-OPTION 1: LET GITHUB BUILD IT FOR YOU
+GETTING THE LATEST PLUGINS FROM GITHUB
 ====================================================================
-GitHub can build the plugin on its own Windows computers. This is free:
-a private repository gets 2,000 free build minutes a month, and one
-build takes roughly 10.
+ 1. Go to your repository on github.com and click the "Actions" tab.
 
- 1. Unzip EasyComp.zip anywhere (your Downloads folder is fine).
+ 2. Click the newest run with a green tick. (A yellow dot means it's
+    still building - it takes about 10 minutes.)
 
- 2. On github.com, click the "+" at the top right > "New repository".
-    Name it  easy-comp , choose "Private", and click "Create repository".
+ 3. Scroll down to "Artifacts" and click "Easy-Plugins-Windows" to
+    download it.
 
- 3. On the page that appears, click the link "uploading an existing file".
-
- 4. In File Explorer, open the EasyComp folder, press Ctrl+A to select
-    everything inside it (including the .github folder), and drag it all
-    onto the GitHub page. When the files are listed, click
-    "Commit changes".
-
- 5. Check that the file list on your repository's main page includes a
-    .github folder. (If it doesn't, see "If the .github folder is
-    missing" below.)
-
- 6. Click the "Actions" tab. "Build Easy Comp" will be running (yellow
-    dot). After about 10 minutes it turns into a green tick.
-
- 7. Click on that run, scroll down to "Artifacts", and click
-    "Easy-Comp-Windows" to download it.
-
- 8. Before unzipping: right-click the downloaded file > Properties. If
+ 4. Before unzipping: right-click the downloaded file > Properties. If
     there's an "Unblock" tick-box at the bottom, tick it and click OK.
-    (This stops Windows treating the plugin as an untrusted download.)
-    Then unzip it and copy the "Easy Comp.vst3" folder into:
+    (This stops Windows treating the plugins as untrusted downloads.)
+    Then unzip it.
+
+ 5. Close your DAW (it keeps plugin files locked while it's open).
+
+ 6. Copy every ".vst3" folder from the download into:
        C:\Program Files\Common Files\VST3
-    Windows will ask for administrator permission - click Continue.
+    replacing the old ones. Windows will ask for administrator
+    permission - click Continue.
 
- 9. Open your DAW and rescan your plugins. It appears as "Easy Comp"
-    by "Home Studio", under effects / dynamics.
+ 7. Open your DAW and rescan your plugins. They're listed under
+    "Home Studio", in effects / dynamics.
 
- If the .github folder is missing after uploading:
-    Actions tab > "set up a workflow yourself" > delete the example text >
-    open EasyComp\.github\workflows\build.yml in Notepad, copy all of it,
-    paste it in > "Commit changes". The build then starts by itself.
+ Your projects keep working: newer versions open older projects with
+ any new features switched off, so they sound exactly as they did.
 
- If the build shows a red cross:
-    Click on the run, then on "Windows VST3", copy the red error lines,
-    and paste them to Claude.
-
- Changing the plugin later:
-    Upload the changed files to the repository again (same as step 3-4,
-    GitHub replaces the old ones). It rebuilds by itself. Download the
-    new artifact, close your DAW, and copy the new "Easy Comp.vst3" over
-    the old one.
+ If a build shows a red cross:
+    Click on the run, then on the job, copy the red error lines, and
+    paste them to Claude.
 
 
 ====================================================================
-OPTION 2: BUILD IT ON YOUR PC WITH VISUAL STUDIO
+BUILDING ON YOUR OWN PC INSTEAD (Visual Studio)
 ====================================================================
+ Only needed if you'd rather not use GitHub.
 
-1. INSTALL VISUAL STUDIO (free)
-   - Go to https://visualstudio.microsoft.com/downloads/ and download
-     "Visual Studio Community" (the free edition).
-   - Run the installer. When it asks what you want to install, tick
-     "Desktop development with C++" and click Install.
-     (Roughly 8-10 GB. Leave the options inside that box as they are.)
-   - Restart your PC if it asks you to.
+ 1. Install Visual Studio Community (free) from
+    https://visualstudio.microsoft.com/downloads/ - when the installer
+    asks, tick "Desktop development with C++". (Roughly 8-10 GB.)
 
-2. PUT THIS FOLDER SOMEWHERE SIMPLE
-   - Make a folder called Dev on your C: drive.
-   - Right-click EasyComp.zip > "Extract All...", choose C:\Dev as the
-     destination, and click Extract.
-   - You should now have C:\Dev\EasyComp, with CMakeLists.txt directly
-     inside it.
-   Why not Documents? It's often synced by OneDrive (which would try to
-   upload thousands of build files) and its long path can trip Windows'
-   260-character path limit.
+ 2. On your GitHub repository page, click the green "Code" button >
+    "Download ZIP". Make a folder called Dev on your C: drive and
+    extract the zip there, so you have e.g. C:\Dev\easy-comp-main with
+    CMakeLists.txt directly inside it. (Avoid Documents: OneDrive and
+    long paths cause trouble.)
 
-3. OPEN IT IN VISUAL STUDIO
-   - Start Visual Studio and choose "Open a local folder" on the start
-     screen (or File > Open > Folder...). Select C:\Dev\EasyComp.
-   - In the toolbar at the top, the configuration box should say
-     "Windows Release". If it doesn't, pick that from the drop-down.
-   - Visual Studio now sets up the project. The first time, it also
-     downloads JUCE (the free audio framework the plugin is built on),
-     so it needs internet and a few minutes. It's ready when the Output
-     panel at the bottom says:  CMake generation finished.
+ 3. Start Visual Studio > "Open a local folder" > pick that folder.
+    The configuration box at the top should say "Windows Release".
+    Wait for "CMake generation finished" in the Output panel (the
+    first time, it also downloads JUCE, so it needs internet).
 
-4. BUILD IT
-   - Menu: Build > Build All   (or press Ctrl+Shift+B).
-   - The first build takes a few minutes. When it's done, the Output
-     panel says "Build All succeeded" (or "Build succeeded").
+ 4. Build > Build All (Ctrl+Shift+B). When it says "Build succeeded",
+    the plugins are in:
+       C:\Dev\easy-comp-main\out\build\windows-release\Finished Plugins
+    Install them as in steps 5-7 above.
 
-5. INSTALL THE PLUGIN
-   - In File Explorer, go to:
-       C:\Dev\EasyComp\out\build\windows-release\EasyComp_artefacts\Release\VST3
-   - Copy "Easy Comp.vst3" from there into:
-       C:\Program Files\Common Files\VST3
-     Windows will ask for administrator permission - click Continue.
-     ("Easy Comp.vst3" is a folder on Windows. That's normal - copy the
-     whole thing.)
-   - Open your DAW and rescan your plugins. It appears as "Easy Comp"
-     by "Home Studio", under effects / dynamics.
-
- If something goes wrong:
-   - Build errors: open View > Error List, copy the red lines, and paste
-     them to Claude. Most problems are a quick fix.
-
- Changing the plugin later:
-   After editing a file: Build > Build All again, close your DAW, and
-   copy the new "Easy Comp.vst3" over the old one.
+ Build errors: View > Error List, copy the red lines, paste them to Claude.
 
 
 ====================================================================
-YOUR FIRST FIVE MINUTES WITH IT
+YOUR FIRST FIVE MINUTES WITH EASY COMP
 ====================================================================
-   1. Put it on a snare track and pick "Snare - Crack" from the preset menu.
-   2. Play a loud section. Turn THRESHOLD down until the meter jumps about
-      3-6 dB on each hit.
-   3. Change ATTACK and listen to the start of each hit: slower = more
-      "crack", faster = softer.
-   4. Change RELEASE and watch the meter: try to have it drop back near
-      zero just before the next hit.
+   1. Put it on a track and pick a preset for the instrument from the
+      preset menu (top right). The help bar shows a tip for it.
+   2. Play a loud section. Turn THRESHOLD down until the meter shows
+      about what the tip suggests.
+   3. Change ATTACK and listen to the start of each note or hit:
+      slower = more punch, faster = softer.
+   4. Change RELEASE and watch the meter: it should fall back between
+      notes or hits, not stay down all the time.
    5. Switch AUTO-GAIN on, then click BYPASS on and off to compare.
       AUTO-GAIN keeps the volume the same either way, so you hear what
       the compression is doing rather than just "louder" (louder always
-      sounds "better", which fools everyone's ears). It takes a second
-      or two to settle after you change something.
-   6. On a drum bus, if every kick drum makes the whole kit duck and
-      "pump", turn up IGNORE BELOW (try 80-150 Hz) so the kick stops
-      setting it off.
-   Watch the COMPRESSION CURVE as you turn THRESHOLD and RATIO: the bend
-   moves with THRESHOLD, and the line flattens as RATIO goes up.
-   Hover over any control for a plain-English explanation.
+      sounds "better", which fools everyone's ears).
+   6. On vocals, bass or a whole mix, try REACTS TO: AVERAGE for a
+      smoother, more natural squeeze. On a mix or drum bus, if the kick
+      makes everything "pump", turn up IGNORE BELOW (try 80-150 Hz).
+   Hover over anything for a plain-English explanation.
 
-
-====================================================================
-IF YOUR DAW DOESN'T SHOW THE PLUGIN
-====================================================================
-   - Check that your DAW scans C:\Program Files\Common Files\VST3, and
-     that you copied the whole "Easy Comp.vst3" folder.
-   - Windows won't let you replace the plugin? Close your DAW first -
-     DAWs keep the plugin file open while they're running.
+   Found settings you like? Preset menu > "Save current settings as a
+   preset...". Your presets are kept in Documents > Easy Plugins.
 
 
 ====================================================================
 CHANGING THINGS
 ====================================================================
-   - Presets:   Source\Presets.h - one line per preset.
-   - Colours:   the Palette list at the top of Source\PluginEditor.h.
-   - Help text: the knobInfo list near the top of Source\PluginEditor.cpp.
-   - The sound: Source\Compressor.h - commented step by step.
+   - Built-in presets: Plugins\EasyComp\Presets.h - one line each.
+   - Colours:          the Palette list at the top of Shared\Look.h.
+   - Help text:        the knobInfo list in Plugins\EasyComp\PluginEditor.cpp.
+   - The sound:        Effects\Compressor.h - commented step by step.
 
 
 ====================================================================
 WHAT'S IN THIS FOLDER
 ====================================================================
-   CMakeLists.txt            The build recipe (downloads JUCE automatically).
-   CMakePresets.json         Tells Visual Studio to make an optimised build.
-   .github\workflows\build.yml
-                             The instructions GitHub follows to build it.
-   Source\Compressor.h       The sound: detector (with IGNORE BELOW),
-                             threshold/ratio curve, attack/release, make-up
-                             and mix.
-   Source\Presets.h          The drum presets and parameter names.
-   Source\PluginProcessor.*  Connects the compressor to your DAW: knobs,
-                             automation, saving with your project.
-   Source\PluginEditor.*     The window: knobs, curve graph, meter, preset
-                             menu, help bar.
+   CMakeLists.txt         The build recipe (downloads JUCE automatically).
+   CMakePresets.json      Tells Visual Studio to make an optimised build.
+   .github\workflows\     The instructions GitHub follows to build them.
+
+   Effects\               The sound-shaping code (no windows or knobs):
+     Compressor.h           the compressor
+     LoudnessMatcher.h      AUTO-GAIN (shared by every plugin)
+
+   Shared\                The parts every plugin shares: the look, the
+                          help bar, BYPASS / AUTO-GAIN, the preset menu,
+                          saving with your projects.
+
+   Plugins\EasyComp\      Easy Comp's knobs, window and presets.
 
    On a Mac, the same folder builds VST3 and AU versions (needs Xcode and
    CMake: run "cmake --preset release" then "cmake --build --preset release").
@@ -188,7 +128,7 @@ WHAT'S IN THIS FOLDER
 A NOTE ON JUCE'S LICENCE
 ====================================================================
    JUCE is free to use under the AGPLv3 open-source licence, or under a
-   commercial JUCE licence. Building this for your own music is fine -
+   commercial JUCE licence. Building these for your own music is fine -
    keep the GitHub repository private. If you ever share or sell the
-   plugin, read the licence terms at https://juce.com first - they decide
+   plugins, read the licence terms at https://juce.com first - they decide
    whether you'd need to share your source code or buy a licence.

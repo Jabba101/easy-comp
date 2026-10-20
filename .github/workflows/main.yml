@@ -1,11 +1,12 @@
-# Builds the Windows version of Easy Comp on GitHub's own Windows computers.
+# Builds the Windows versions of the Easy plugins on GitHub's own Windows
+# computers.
 #
 # It runs by itself whenever files in this repository are uploaded or changed.
-# You can also start it by hand: Actions tab > "Build Easy Comp" > "Run workflow".
-# When it finishes (green tick), the plugin is under "Artifacts" at the bottom
-# of that run's page.
+# You can also start it by hand: Actions tab > "Build Easy Plugins" > "Run workflow".
+# When it finishes (green tick), the plugins are under "Artifacts" at the
+# bottom of that run's page.
 
-name: Build Easy Comp
+name: Build Easy Plugins
 
 on:
   push:
@@ -18,7 +19,7 @@ jobs:
   windows:
     name: Windows VST3
     runs-on: windows-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
 
     steps:
       - name: Get the project files
@@ -27,13 +28,13 @@ jobs:
       - name: Set up the build (downloads JUCE)
         run: cmake -S . -B build
 
-      - name: Build the plugin
+      - name: Build the plugins
         run: cmake --build build --config Release --parallel
 
-      - name: Save the finished plugin
+      - name: Save the finished plugins
         uses: actions/upload-artifact@v7
         with:
-          name: Easy-Comp-Windows
-          path: build/EasyComp_artefacts/Release/VST3/
+          name: Easy-Plugins-Windows
+          path: build/Finished Plugins/
           if-no-files-found: error
           retention-days: 30
