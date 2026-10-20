@@ -295,6 +295,6 @@ void PresetBrowser::paint (juce::Graphics& g)
     else
     {
         g.setColour (Palette::textBright);
-        g.drawText (shownName + (shownEdited ? " (edited)" : ""), area, juce::Justification::centredLeft, true);
+        g.drawFittedText (shownName + (shownEdited ? " (edited)" : ""), area, juce::Justification::centredLeft, 1, 0.85f);
     }
 }

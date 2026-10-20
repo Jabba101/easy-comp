@@ -32,7 +32,10 @@
 
       3. SHAPE    PUNCH turns the attack gap into a volume change (up for
                   more snap, down for softer), SUSTAIN does the same with
-                  the tail gap (up for more ring, down for tighter).
+                  the tail gap (up for more ring, down for tighter). Small
+                  gaps count for more than their size, so a strum, a piano
+                  chord or a sung word responds about as readily as a drum
+                  hit out of silence (without the drums going over the top).
 
       4. APPLY    One volume change per sample, the same on every channel,
                   then OUTPUT (or AUTO-GAIN), MIX and BYPASS as usual.
@@ -178,8 +181,8 @@ public:
             const float tailWeight   = juce::jlimit (0.0f, 1.0f, (lingerDb + 60.0f) / 10.0f);
 
             // 3. SHAPE - turn the gaps into a volume change
-            float changeDb = smoothedPunch.getNextValue()   * punchScale   * attackGapDb * attackWeight
-                           + smoothedSustain.getNextValue() * sustainScale * tailGapDb   * tailWeight;
+            float changeDb = smoothedPunch.getNextValue()   * shapeCurve (attackGapDb) * attackWeight
+                           + smoothedSustain.getNextValue() * shapeCurve (tailGapDb)   * tailWeight;
             changeDb = juce::jlimit (-maxChangeDb, maxChangeDb, changeDb);
 
             currentChangeDb = changeDb + changeSmoothing * (currentChangeDb - changeDb);   // (a touch of smoothing)
@@ -211,9 +214,16 @@ public:
     }
 
 private:
-    static constexpr float punchScale   = 0.5f;    // 100% PUNCH = half the attack gap (up to ~+11 dB on a sharp hit)
-    static constexpr float sustainScale = 0.6f;    // 100% SUSTAIN = 60% of the tail gap
+    static constexpr float curveLimitDb = 12.0f;   // the most 100% PUNCH or SUSTAIN can do from one gap
+    static constexpr float curveSpanDb  = 8.0f;    // small gaps: 12 / 8 = 1.5 dB of change per dB of gap
     static constexpr float maxTailGapDb = 20.0f;   // (so a long tail can't be boosted without limit)
+
+    /** The volume change (dB) a gap makes at 100%: about 1.5 dB per dB for
+        small gaps, levelling off towards 12 dB for big ones. */
+    static float shapeCurve (float gapDb) noexcept
+    {
+        return curveLimitDb * (1.0f - std::exp (-gapDb / curveSpanDb));
+    }
 
     /** One step of a follower: rise towards a louder level at riseCoefficient,
         fall towards a quieter one at fallCoefficient. */

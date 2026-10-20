@@ -100,7 +100,7 @@ void EasyWindow::resized()
 
     // Header: title on the left; BYPASS, AUTO-GAIN and the presets on the right
     auto header = area.removeFromTop (50);
-    presetBrowser.setBounds (header.removeFromRight (300).withSizeKeepingCentre (300, 34));
+    presetBrowser.setBounds (header.removeFromRight (370).withSizeKeepingCentre (370, 34));   // room for long preset names
     header.removeFromRight (10);
     autoGainButton.setBounds (header.removeFromRight (136).withSizeKeepingCentre (136, 34));
     header.removeFromRight (10);

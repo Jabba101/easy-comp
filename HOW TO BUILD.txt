@@ -95,6 +95,14 @@ YOUR FIRST FIVE MINUTES WITH EASY COMP
    Found settings you like? Preset menu > "Save current settings as a
    preset...". Your presets are kept in Documents > Easy Plugins.
 
+   The presets cover drums, bass, guitars, keys, vocals, strings, brass
+   and wind, and the mix bus, with versions for different styles (for
+   example "Vocal - Rock & Metal" or "Kick - Hip-Hop & R&B"). They're set
+   up for tracks recorded at a normal level - the loudest peaks around
+   -8 dB on your DAW's meter. If your track is much louder or quieter,
+   the meter will show more or less than the tip says: just move
+   THRESHOLD until it matches.
+
 
 ====================================================================
 YOUR FIRST FIVE MINUTES WITH EASY TRANSIENT
@@ -113,6 +121,10 @@ YOUR FIRST FIVE MINUTES WITH EASY TRANSIENT
    Transient first, the compressor then evens out what you shaped (more
    controlled). With Easy Transient last, its punch comes through
    untouched (punchier).
+
+   The presets cover drums, bass, guitars, keys, vocals, strings, brass
+   and the mix bus. Unlike the compressor's, they work the same however
+   loud your track is.
 
 
 ====================================================================
