@@ -1,0 +1,18 @@
+# category | name | threshold | range | attack | hold | release | ignore below | ignore above | materials ("a<b" = a keyed by b's sidechain) | tip
+| Default settings | -40 | 40 | 0.5 | 50 | 150 | 20 | 20000 | toms, snare | x
+Drums | Kick - Natural | -24 | 20 | 0.3 | 50 | 150 | 20 | 5000 | kick | x
+Drums | Kick - Tight | -22 | 35 | 0.3 | 30 | 90 | 20 | 5000 | kick | x
+Drums | Snare - Natural | -20 | 18 | 0.3 | 80 | 200 | 200 | 20000 | snare | x
+Drums | Snare - Tight & Dry | -18 | 30 | 0.3 | 30 | 90 | 200 | 20000 | snare | x
+Drums | Toms - Natural | -20 | 20 | 0.5 | 150 | 400 | 20 | 3000 | toms | x
+Drums | Toms - Tight & Clean | -20 | 40 | 0.5 | 60 | 200 | 20 | 3000 | toms | x
+Drums | Room Mics - 80s Gated Snare | -20 | 80 | 0.5 | 300 | 30 | 200 | 20000 | room<snare | x
+Guitars | Electric Guitar - Amp Noise | -40 | 25 | 0.5 | 50 | 120 | 150 | 20000 | guitar_noisy | x
+Guitars | Distorted Guitar - Tight Stops | -38 | 80 | 0.3 | 20 | 60 | 150 | 20000 | guitar_noisy | x
+Guitars | Clean Guitar - Hum Between Parts | -46 | 18 | 1 | 150 | 300 | 150 | 20000 | guitar_clean_noisy | x
+Bass | Bass - Amp Hum | -47 | 20 | 1 | 80 | 150 | 20 | 20000 | bass_noisy | x
+Vocals | Vocal - Gentle Clean-Up | -46 | 12 | 1 | 200 | 300 | 20 | 20000 | vocal_noisy | x
+Vocals | Vocal - Remove Headphone Bleed | -44 | 30 | 1 | 250 | 300 | 20 | 20000 | vocal_noisy | x
+Vocals | Speech - Room Noise | -47 | 12 | 2 | 250 | 300 | 20 | 20000 | speech_noisy | x
+Sidechain Tricks | Bass - Locked to the Kick | -24 | 15 | 0.5 | 40 | 100 | 20 | 5000 | bass_noisy<kick | x
+Sidechain Tricks | Synth Pad - Chopped by a Rhythm | -30 | 80 | 0.5 | 20 | 50 | 20 | 20000 | guitar_clean_noisy<snare | x

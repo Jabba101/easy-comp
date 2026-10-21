@@ -1,0 +1,46 @@
+# category | name | punch | sustain | output | mix | materials | tip
+ | Default settings | 0 | 0 | 0 | 100 | drumbus_rock | Changes nothing yet. Turn PUNCH and SUSTAIN either way from the middle and listen.
+
+Drums | Kick - More Click | 35 | 0 | 0 | 100 | kick_rock, kick_hiphop | Brings out the beater's attack so the kick cuts through the mix. More PUNCH = more click.
+Drums | Kick - Tighter | 10 | -40 | 0 | 100 | kick_rock, kick_hiphop | Shortens a boomy kick so it doesn't smear into the bass. Less SUSTAIN = shorter.
+Drums | Kick - Bigger Boom | 0 | 30 | 0 | 100 | kick_hiphop, kick_rock | Lets the kick ring out longer, for a deep, booming low end in hip-hop and R&B. Check it doesn't cover up the bass.
+Drums | Snare - More Crack | 35 | 0 | 0 | 100 | snare_rock, snare_funk | Brings out the stick hitting the head - great on a snare that sounds a bit flat.
+Drums | Snare - Less Ring | 10 | -35 | 0 | 100 | snare_rock, snare_jazz | Tames ring and room on the snare for a drier, tighter hit.
+Drums | Snare - Fatter | 0 | 35 | 0 | 100 | snare_rock | More body and ring after each hit, for a big rock or ballad snare.
+Drums | Snare - Softer | -30 | 0 | 0 | 100 | snare_jazz, snare_funk | Rounds off a harsh, spiky snare - nice in jazz, ballads and acoustic songs.
+Drums | Toms - Less Ring | 15 | -40 | 0 | 100 | toms | Stops toms ringing on between fills - often quicker than gating them.
+Drums | Toms - Bigger | 10 | 30 | 0 | 100 | toms | Longer, bigger toms for huge fills.
+Drums | Hi-Hat - Crisper | 30 | -15 | 0 | 100 | hihat | Sharper, more defined hi-hat hits with less wash between them.
+Drums | Overheads - Less Room | 0 | -30 | 0 | 100 | overheads_kit, overheads_breaks | Dries up a roomy kit: the hits stay, the room behind them drops back.
+Drums | Overheads - More Snap | 25 | 0 | 0 | 100 | overheads_kit, overheads_breaks | Brings the hits forward across the whole kit.
+Drums | Room Mics - Bigger Room | -10 | 40 | 0 | 100 | room | Pushes the room's echo up after each hit for a bigger space.
+Drums | Drum Bus - Punchier | 25 | 0 | 0 | 100 | drumbus_rock, drumbus_breaks | Adds snap to the whole kit. Switch AUTO-GAIN on so you're comparing punch, not volume.
+Drums | Drum Bus - Tighter | 15 | -25 | 0 | 100 | drumbus_rock, drumbus_electronic | Shorter tails and sharper hits, for tight, dry drums in rock, metal and modern pop.
+Drums | Drum Bus - Softer | -20 | 10 | 0 | 100 | drumbus_breaks, overheads_kit | Takes the edge off spiky drums for a softer, more relaxed feel - jazz, ballads, acoustic.
+Drums | Percussion - Snappier | 25 | -15 | 0 | 100 | percussion | Crisper, more defined percussion that cuts through without being turned up.
+
+Bass | Bass - More Definition | 30 | 0 | 0 | 100 | bass_fingered, bass_picked | Brings out the start of each note so the bass line is clearer in a busy mix.
+Bass | Bass - Tighter | 10 | -25 | 0 | 100 | bass_fingered, bass_picked | Shortens each note for a tighter groove that locks in with the kick.
+Bass | Bass - Softer Slaps | -30 | 0 | 0 | 100 | bass_slap | Tames spiky slaps, pops and harsh picking.
+Bass | 808 & Synth Bass - More Knock | 40 | 0 | 0 | 100 | bass_808, bass_synth | Adds a click to the start of each note, so an 808 or synth bass is heard even on small speakers.
+
+Guitars | Acoustic Guitar - More Attack | 50 | 0 | 0 | 100 | gtr_acoustic_strum, gtr_acoustic_finger | Clearer strums and picked notes that cut through the mix.
+Guitars | Acoustic Guitar - Softer Strums | -50 | 0 | 0 | 100 | gtr_acoustic_strum | Tames harsh, spiky strumming for a smoother sound.
+Guitars | Acoustic Guitar - Less Room | 0 | -40 | 0 | 100 | gtr_acoustic_finger | Dries up a guitar recorded in a roomy space.
+Guitars | Electric Guitar - Tighter Chugs | 15 | -30 | 0 | 100 | gtr_distorted | Tighter, more defined palm-muted chugs for rock and metal.
+Guitars | Electric Guitar - More Ring | 0 | 35 | 0 | 100 | gtr_clean | Lets clean chords and notes ring out longer.
+Guitars | Electric Guitar - Funk Snap | 30 | -15 | 0 | 100 | gtr_funk | Snappier, choppier funk and R&B rhythm parts.
+
+Keys | Piano - More Definition | 40 | 0 | 0 | 100 | piano_pop, piano_ragtime | Clearer note starts, so the piano cuts through a busy mix.
+Keys | Piano - Softer Attack | -40 | 0 | 0 | 100 | piano_ballad, piano_ragtime | A gentler, rounder attack for ballads and quiet songs.
+Keys | Piano - Less Room | 0 | -40 | 0 | 100 | piano_ballad | Dries up a piano recorded in a roomy space, or a pedal tail that's too long.
+Keys | Synth Pluck - Snappier | 40 | -20 | 0 | 100 | synth_pluck | Sharper, tighter plucks and arpeggios.
+
+Vocals | Vocal - Less Room | 0 | -20 | 0 | 100 | vocal_pop, speech | Dries up a vocal recorded in an echoey room. Use small amounts - too much makes the words sound choppy.
+Vocals | Vocal - More Bite | 30 | 0 | 0 | 100 | vocal_rock, speech | A little more edge at the start of each word, for rap and rock vocals.
+
+Strings & Brass | Brass - More Punch | 40 | 0 | 0 | 100 | brass_section | Stabbier, punchier horn hits for funk, soul and pop.
+Strings & Brass | Strings - Softer Attack | -40 | 0 | 0 | 100 | strings_section, violin_solo | Smooths scratchy bow attacks for a softer string sound.
+
+Mix Bus | Mix Bus - A Little More Punch | 15 | 0 | 0 | 100 | mix_rock, mix_song | A subtle lift to the hits across the whole mix. Keep it small - a little goes a long way here.
+Mix Bus | Mix Bus - A Little Tighter | 5 | -15 | 0 | 100 | mix_edm, mix_hiphop | Slightly shorter tails across the whole mix, for a tighter, more modern sound.

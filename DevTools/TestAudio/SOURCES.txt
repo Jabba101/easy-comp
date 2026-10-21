@@ -1,0 +1,38 @@
+WHERE THE TEST AUDIO COMES FROM
+===============================
+The test material (about 1 GB of WAVs) isn't kept in the repository: it's
+rebuilt from free sample collections on GitHub, then arranged into
+realistic tracks by the scripts in ../PresetTuning (make_material.py,
+gate_material.py, ds_material.py). setup_workspace.sh does all of it.
+
+Each collection is a partial ("sparse") checkout of a public repository,
+at the exact commit used, or a list of single files. Check each project's
+own licence before using the audio for anything else.
+
+  /home/claude/samples/librosa-data         https://github.com/librosa/data
+      commit 38f4b06556fa0ff1acda5e677d8ba05d1bc0fff0
+      files  /audio/*.hq.ogg  /index.json  /audio/snare-accelerate.ogg
+
+  /home/claude/samples/tonejs-audio         https://github.com/Tonejs/audio
+      commit efd8296360f9526e379bfbe5c1698ff54d6a1d34
+      files  /drum-samples/acoustic-kit/*  /drum-samples/Kit3/*  /drum-samples/Kit8/*
+             /drum-samples/breakbeat8/*  /drum-samples/breakbeat9/*  /drum-samples/breakbeat13/*
+             /drum-samples/loops/*  /drum-samples/*.mp3  /loop/*.mp3
+
+  /home/claude/samples/tonejs-instruments   https://github.com/nbrosowsky/tonejs-instruments
+      commit 622c2f1c32c8cfce4158ddc3eb26e518ddef37e5
+      files  /samples/<instrument>/*.wav for bass-electric, guitar-acoustic, guitar-electric,
+             guitar-nylon, piano, saxophone, trumpet, trombone, french-horn, violin, cello,
+             flute, organ, harmonium, contrabass
+
+  /home/claude/samples/audiomnist/wav       AudioMNIST (spoken digits, 16+ speakers)
+      https://github.com/soerenab/AudioMNIST - the 960 files in audiomnist_urls.txt,
+      downloaded flat into wav/; audiomnist_meta.json is the speakers list
+      (data/audioMNIST_meta.txt in that project)
+
+  /home/claude/samples/virtuosity/flac      Virtuosity Drums (a real acoustic kit)
+      https://github.com/sfzinstruments/virtuosity_drums - the 442 files in
+      virtuosity_urls.txt, downloaded flat into flac/
+
+The tools also need ffmpeg (to decode mp3/ogg/flac) and Python 3 with
+numpy, scipy and matplotlib.

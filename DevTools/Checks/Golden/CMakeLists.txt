@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.22)
+project(GoldenCapture VERSION 1.0.0)
+add_subdirectory(/home/claude/deps/juce-9.0.4 juce)
+juce_add_console_app(GoldenCapture PRODUCT_NAME "GoldenCapture")
+target_sources(GoldenCapture PRIVATE Capture.cpp v12-source/PluginProcessor.cpp v12-source/PluginEditor.cpp)
+target_include_directories(GoldenCapture PRIVATE v12-source .)
+target_compile_definitions(GoldenCapture PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Comp")
+target_link_libraries(GoldenCapture PRIVATE juce::juce_audio_utils PUBLIC juce::juce_recommended_config_flags)

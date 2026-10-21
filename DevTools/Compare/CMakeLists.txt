@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 3.22)
+project(CompareHarness VERSION 1.0.0)
+add_subdirectory(/home/claude/deps/juce-9.0.4 juce)
+juce_add_console_app(Harness PRODUCT_NAME "Harness")
+target_sources(Harness PRIVATE Harness.cpp)
+target_compile_definitions(Harness PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_compile_options(Harness PRIVATE -g)
+target_link_libraries(Harness PRIVATE juce::juce_audio_formats juce::juce_audio_basics
+                      PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags)
+set_target_properties(Harness PROPERTIES CXX_STANDARD 20)

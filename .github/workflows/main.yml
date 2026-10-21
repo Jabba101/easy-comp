@@ -1,7 +1,8 @@
 # Builds the Windows versions of the Aardvark Easy Suite plugins on GitHub's
 # own Windows computers.
 #
-# It runs by itself whenever files in this repository are uploaded or changed.
+# It runs by itself whenever files in this repository are uploaded or changed
+# (except changes to just the DevTools folder, which isn't part of the plugins).
 # You can also start it by hand: Actions tab > "Build Aardvark Easy Suite" > "Run workflow".
 # When it finishes (green tick), the plugins are under "Artifacts" at the
 # bottom of that run's page.
@@ -10,6 +11,8 @@ name: Build Aardvark Easy Suite
 
 on:
   push:
+    paths-ignore:
+      - 'DevTools/**'
   workflow_dispatch:
 
 permissions:

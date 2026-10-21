@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.22)
+project(DSCheck VERSION 1.0.0)
+add_subdirectory(/home/claude/deps/juce-9.0.4 juce)
+juce_add_console_app(DSEngineCheck PRODUCT_NAME "DSEngineCheck")
+target_sources(DSEngineCheck PRIVATE EngineCheck.cpp)
+target_include_directories(DSEngineCheck PRIVATE /home/claude/EasyPlugins/Effects)
+target_compile_definitions(DSEngineCheck PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_link_libraries(DSEngineCheck PRIVATE juce::juce_audio_basics PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)

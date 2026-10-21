@@ -263,6 +263,9 @@ CHANGING THINGS
 WHAT'S IN THIS FOLDER
 ====================================================================
    PLAN.txt               What's planned next, and in what order.
+   DevTools\              The testing and preset-tuning tools - not part of
+                          the plugins, kept so that work is never lost (see
+                          DevTools\README.txt).
    CMakeLists.txt         The build recipe (downloads JUCE automatically).
    CMakePresets.json      Tells Visual Studio to make an optimised build.
    .github\workflows\     The instructions GitHub follows to build them.

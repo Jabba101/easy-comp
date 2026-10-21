@@ -1,0 +1,20 @@
+# Which material each preset is checked on:  plugin | preset name | material, material, ...
+
+comp | Default settings | vocal_pop, drumbus_rock, bass_fingered
+comp | Kick - Punch | kick_rock, kick_hiphop
+comp | Snare - Crack | snare_rock, snare_funk
+comp | Toms - Fuller | toms
+comp | Overheads - Smooth | overheads_kit, overheads_breaks
+comp | Room Mics - Crushed | room
+comp | Drum Bus - Glue | drumbus_rock, drumbus_breaks
+comp | Drum Bus - Parallel Smash | drumbus_rock, drumbus_breaks
+
+transient | Default settings | drumbus_rock
+transient | Kick - More Click | kick_rock, kick_hiphop
+transient | Kick - Tighter | kick_rock, kick_hiphop
+transient | Snare - More Crack | snare_rock, snare_funk
+transient | Snare - Less Ring | snare_rock, snare_jazz
+transient | Toms - Less Ring | toms
+transient | Overheads - Less Room | overheads_kit, overheads_breaks
+transient | Room Mics - Bigger Room | room
+transient | Drum Bus - Punchier | drumbus_rock, drumbus_breaks

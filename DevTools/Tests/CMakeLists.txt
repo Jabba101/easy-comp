@@ -1,0 +1,30 @@
+cmake_minimum_required(VERSION 3.22)
+project(EasyPluginsVerify VERSION 1.0.0)
+add_subdirectory(/home/claude/deps/juce-9.0.4 juce)
+
+set(P /home/claude/EasyPlugins)
+set(SHARED ${P}/Shared/EasyProcessor.cpp ${P}/Shared/EasyWindow.cpp ${P}/Shared/Look.cpp ${P}/Shared/PresetBrowser.cpp ${P}/Shared/Widgets.cpp)
+
+juce_add_console_app(CompTests PRODUCT_NAME "CompTests")
+target_sources(CompTests PRIVATE CompTests.cpp ${P}/Plugins/EasyComp/PluginProcessor.cpp ${P}/Plugins/EasyComp/PluginEditor.cpp ${SHARED})
+target_include_directories(CompTests PRIVATE ${P}/Plugins/EasyComp ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(CompTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Comp")
+target_link_libraries(CompTests PRIVATE juce::juce_audio_utils PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
+juce_add_console_app(TransientTests PRODUCT_NAME "TransientTests")
+target_sources(TransientTests PRIVATE TransientTests.cpp ${P}/Plugins/EasyTransient/PluginProcessor.cpp ${P}/Plugins/EasyTransient/PluginEditor.cpp ${SHARED})
+target_include_directories(TransientTests PRIVATE ${P}/Plugins/EasyTransient ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(TransientTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Trans")
+target_link_libraries(TransientTests PRIVATE juce::juce_audio_utils PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
+juce_add_console_app(GateTests PRODUCT_NAME "GateTests")
+target_sources(GateTests PRIVATE GateTests.cpp ${P}/Plugins/EasyGate/PluginProcessor.cpp ${P}/Plugins/EasyGate/PluginEditor.cpp ${SHARED})
+target_include_directories(GateTests PRIVATE ${P}/Plugins/EasyGate ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(GateTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Gate")
+target_link_libraries(GateTests PRIVATE juce::juce_audio_utils PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
+juce_add_console_app(DSTests PRODUCT_NAME "DSTests")
+target_sources(DSTests PRIVATE DSTests.cpp ${P}/Plugins/EasyDS/PluginProcessor.cpp ${P}/Plugins/EasyDS/PluginEditor.cpp ${SHARED})
+target_include_directories(DSTests PRIVATE ${P}/Plugins/EasyDS ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(DSTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy DS")
+target_link_libraries(DSTests PRIVATE juce::juce_audio_utils PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)

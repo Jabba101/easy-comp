@@ -1,0 +1,75 @@
+# category | name | threshold | ratio | attack | release | make-up | mix | ignore below | reacts to | style | low end | target GR | materials | tip
+ | Default settings | -20 | 4 | 10 | 100 | 0 | 100 | 20 | peaks | modern | normal | 0 | vocal_pop, drumbus_rock, bass_fingered | An all-round starting point. Turn THRESHOLD down until the meter moves about 3-6 dB on the loud parts.
+
+Drums | Kick - Punch | -26.0 | 4 | 25 | 80 | 2.5 | 100 | 20 | peaks | modern | normal | 4.5 | kick_rock, kick_hiphop | The slow attack lets the beater's click through. Aim for 3-6 dB on each kick.
+Drums | Kick - Rock & Metal | -22.0 | 6 | 10 | 50 | 3.5 | 100 | 20 | peaks | modern | normal | 5.5 | kick_metal, kick_rock | Makes every kick the same size, even in fast double-kick parts - the quick RELEASE recovers between hits. Aim for 4-8 dB.
+Drums | Kick - Hip-Hop & R&B | -21.0 | 4 | 5 | 150 | 3.0 | 100 | 20 | peaks | modern | normal | 4.5 | kick_hiphop, kick_rock | Rounds off the click and holds up the body, for a fat, full kick. Aim for 3-6 dB on each kick.
+Drums | Snare - Crack | -24.5 | 4 | 15 | 100 | 3.5 | 100 | 100 | peaks | modern | normal | 4.5 | snare_rock, snare_funk | Keeps the stick's crack while evening out the hits. Aim for 3-6 dB on each hit.
+Drums | Snare - Fat | -23.0 | 5 | 3 | 120 | 5.5 | 100 | 100 | peaks | modern | normal | 7 | snare_rock | Clamps the first crack and brings up the body and ring, for a big rock snare. Aim for 6-10 dB on each hit.
+Drums | Snare - Jazz & Funk | -24.5 | 2.5 | 15 | 80 | 2.5 | 100 | 100 | peaks | modern | normal | 3 | snare_funk, snare_jazz | A light touch that keeps ghost notes and accents feeling natural. Aim for 2-4 dB on the loud hits.
+Drums | Snare - Vintage Thick | -23.5 | 4 | 10 | 120 | 4.0 | 100 | 100 | peaks | vintage | normal | 5 | snare_rock, snare_funk | VINTAGE follows each hit down closely, bringing up the body and ring for a thick, full snare. Aim for 4-6 dB on each hit.
+Drums | Toms - Fuller | -22.0 | 3 | 5 | 200 | 4.0 | 100 | 20 | peaks | modern | normal | 5 | toms | Brings up the ring of the toms. Aim for 4-6 dB on each hit.
+Drums | Hi-Hat - Even | -29.5 | 3 | 2 | 60 | 2.5 | 100 | 300 | peaks | modern | normal | 3 | hihat | Evens out a hi-hat played unevenly. IGNORE BELOW stops kick spill setting it off. Aim for 2-4 dB.
+Drums | Overheads - Smooth | -24.5 | 2 | 20 | 250 | 2.0 | 100 | 120 | peaks | modern | normal | 2 | overheads_kit, overheads_breaks | Gentle control of the whole kit and cymbals. Aim for just 1-3 dB.
+Drums | Overheads - Rock | -28.5 | 4 | 10 | 120 | 4.5 | 100 | 150 | peaks | modern | normal | 4.5 | overheads_kit, overheads_breaks | Brings the cymbals and the whole kit forward, for a bigger, more exciting sound. Aim for 3-6 dB.
+Drums | Room Mics - Crushed | -31.5 | 12 | 1 | 300 | 12.0 | 100 | 20 | peaks | modern | normal | 13 | room | Squashes the room sound for size and excitement. 10 dB or more is fine here - blend it in with the fader.
+Drums | Drum Bus - Glue | -22.5 | 2 | 30 | 150 | 1.5 | 100 | 100 | peaks | modern | normal | 2 | drumbus_rock, drumbus_breaks | Makes the kit sound like one instrument. Aim for 1-3 dB: if you can clearly hear it working, back off.
+Drums | Drum Bus - Rock & Pop | -24.0 | 4 | 30 | 100 | 2.5 | 100 | 80 | peaks | modern | normal | 4 | drumbus_rock, drumbus_breaks | Punchy, upfront drums: the slow ATTACK keeps every hit sharp. Aim for 3-5 dB on the loud hits.
+Drums | Drum Bus - Hip-Hop & EDM | -22.0 | 6 | 10 | 60 | 3.5 | 100 | 20 | peaks | modern | normal | 6 | drumbus_electronic, drumbus_breaks | Hard and fast, for in-your-face drums. The kick makes the rest pump a little - turn IGNORE BELOW up (80-150 Hz) if you don't want that.
+Drums | Drum Bus - Jazz & Acoustic | -21.5 | 1.5 | 30 | 250 | 1.0 | 100 | 100 | average | modern | normal | 1.5 | drumbus_breaks, overheads_kit | Barely there: keeps all the natural dynamics of the playing. Aim for 1-2 dB.
+Drums | Drum Bus - Parallel Smash | -31.5 | 10 | 1 | 120 | 14.0 | 35 | 80 | peaks | modern | normal | 17 | drumbus_rock, drumbus_breaks | Heavy squash blended under the original (MIX 35%). Turn MIX up for more thickness, down for more natural.
+Drums | Drum Bus - Vintage Glue | -27.0 | 4 | 30 | 150 | 3.0 | 100 | 20 | peaks | vintage | thrust | 3.5 | drumbus_rock, drumbus_breaks | Our take on the classic console drum bus: VINTAGE glues the kit together and THRUST keeps the kick hitting hard. Aim for 3-5 dB on the loud hits.
+Drums | Drum Bus - Punch (THRUST) | -29.0 | 4 | 20 | 80 | 3.0 | 100 | 20 | peaks | modern | thrust | 4.5 | drumbus_rock, drumbus_breaks | THRUST makes the compressor hear less of the kick, so the low end punches through while the snare and cymbals are held in check. Aim for 3-6 dB.
+Drums | Percussion - Even | -21.5 | 3 | 5 | 100 | 2.5 | 100 | 20 | peaks | modern | normal | 3 | percussion | Evens out shakers, tambourine, congas and hand drums so they sit steadily in the groove. Aim for 2-4 dB.
+
+Bass | Bass - Steady | -26.0 | 4 | 10 | 120 | 4.0 | 100 | 20 | average | modern | normal | 5 | bass_fingered, bass_picked | Keeps every note the same size so the bass sits solidly under the mix - works in most styles. Aim for 4-6 dB.
+Bass | Bass - Rock & Punk | -23.5 | 4 | 5 | 80 | 4.0 | 100 | 20 | peaks | modern | normal | 5 | bass_picked | For a picked bass: catches the pick's spikes and keeps the growl steady. Aim for 4-6 dB.
+Bass | Bass - Slap & Funk | -23.0 | 6 | 1 | 80 | 5.0 | 100 | 20 | peaks | modern | normal | 6 | bass_slap | Catches the big slaps and pops so they don't jump out. Aim for 6-10 dB on the pops.
+Bass | Upright Bass - Jazz & Folk | -25.5 | 2.5 | 15 | 200 | 3.5 | 100 | 20 | average | modern | normal | 3 | bass_upright | Light control that keeps the feel of the playing. Aim for 2-4 dB.
+Bass | Bass - Metal | -19.5 | 8 | 3 | 60 | 5.5 | 100 | 20 | peaks | modern | normal | 7 | bass_metal | Holds a heavy bass completely steady so the guitars can sit on top. Aim for 6-10 dB.
+Bass | Synth Bass & 808 | -16.5 | 4 | 20 | 150 | 3.5 | 100 | 20 | average | modern | normal | 4 | bass_808, bass_synth | Keeps a synth bass or 808 at a steady level. On long 808s, a slower RELEASE (300 ms or more) stops the tail swelling up. Aim for 3-6 dB.
+Bass | Bass - Vintage Thick | -24.0 | 4 | 10 | 150 | 4.5 | 100 | 20 | peaks | vintage | normal | 5 | bass_picked, bass_fingered | Old-school feedback smoothing: holds every note up and keeps the growl thick and steady. Aim for 4-6 dB.
+
+Guitars | Electric Guitar - Clean | -28.5 | 3 | 10 | 150 | 3.5 | 100 | 20 | average | modern | normal | 4 | gtr_clean | Evens out a clean part so the quiet notes don't get lost. Aim for 3-5 dB.
+Guitars | Electric Guitar - Funk | -24.0 | 4 | 2 | 60 | 4.5 | 100 | 20 | peaks | modern | normal | 5 | gtr_funk | Snappy control for choppy funk and R&B rhythm parts. Aim for 4-6 dB.
+Guitars | Electric Guitar - Distorted | -19.5 | 2 | 20 | 150 | 1.5 | 100 | 20 | peaks | modern | normal | 2 | gtr_distorted | Distortion already squashes the sound, so only a little is needed - just to steady it. Aim for 1-3 dB.
+Guitars | Electric Guitar - Lead | -22.0 | 5 | 10 | 300 | 5.0 | 100 | 20 | average | modern | normal | 6 | gtr_lead | Holds long notes up so solos sing and sustain. Aim for 5-8 dB.
+Guitars | Acoustic Guitar - Strummed | -27.5 | 4 | 15 | 120 | 4.0 | 100 | 80 | peaks | modern | normal | 4.5 | gtr_acoustic_strum | Evens out a strummed part so it sits steadily behind the vocal. Aim for 3-6 dB.
+Guitars | Acoustic Guitar - Fingerpicked | -24.5 | 2.5 | 15 | 200 | 3.0 | 100 | 80 | average | modern | normal | 3 | gtr_acoustic_finger | Gentle and natural - keeps the dynamics of the playing. Aim for 2-4 dB.
+
+Keys | Piano - Pop & Rock | -24.0 | 4 | 10 | 120 | 4.0 | 100 | 20 | peaks | modern | normal | 4.5 | piano_pop, piano_ragtime | Holds a piano steady so it sits forward in a busy mix. Aim for 3-6 dB.
+Keys | Piano - Ballad & Jazz | -22.5 | 2 | 30 | 300 | 2.0 | 100 | 20 | average | modern | normal | 2 | piano_ballad, piano_ragtime | Just takes the edge off the loudest chords, keeping the feel of the playing. Aim for 1-3 dB.
+Keys | Electric Piano - Smooth | -22.5 | 3 | 15 | 200 | 3.5 | 100 | 20 | average | modern | normal | 4 | epiano | Smooths an electric piano for soul, R&B and pop. Aim for 3-5 dB.
+Keys | Organ - Steady | -22.5 | 2 | 30 | 300 | 2.0 | 100 | 20 | average | modern | normal | 2 | organ | An organ has little natural dynamics, so this just steadies the level. Aim for 1-3 dB.
+Keys | Synth Pad - Smooth | -20.5 | 2 | 50 | 400 | 2.0 | 100 | 20 | average | modern | normal | 2 | synth_pad | Gently steadies a pad so it stays in the background. Aim for 1-3 dB.
+Keys | Synth Lead - Upfront | -18.5 | 4 | 5 | 100 | 3.0 | 100 | 20 | peaks | modern | normal | 4 | synth_lead | Keeps a lead line upfront and even. Aim for 3-6 dB.
+Keys | Synth Pluck & Arp | -19.0 | 3 | 2 | 80 | 2.0 | 100 | 20 | peaks | modern | normal | 3 | synth_pluck | Tightens plucks and arpeggios so every note is the same size. Aim for 2-4 dB.
+
+Vocals | Vocal - Pop & R&B | -28.5 | 4 | 5 | 80 | 6.0 | 100 | 100 | average | modern | normal | 6 | vocal_pop | Keeps every word clear and upfront. Aim for 5-8 dB on the loud words.
+Vocals | Vocal - Rock & Metal | -31.0 | 6 | 3 | 60 | 7.0 | 100 | 100 | peaks | modern | normal | 7 | vocal_rock, vocal_metal | Holds a belted or screamed vocal on top of loud guitars. Aim for 6-10 dB.
+Vocals | Vocal - Ballad & Acoustic | -22.0 | 2.5 | 15 | 200 | 3.0 | 100 | 100 | average | modern | normal | 3 | vocal_ballad | Smooths the loud notes but keeps the emotion of the quiet ones. Aim for 2-4 dB on the loud notes.
+Vocals | Vocal - Rap & Hip-Hop | -26.0 | 5 | 3 | 60 | 5.5 | 100 | 100 | peaks | modern | normal | 6 | speech | Keeps every word at the same level so the lyrics come through the beat. Aim for 5-8 dB.
+Vocals | Vocal - Jazz & Soul | -23.5 | 2 | 20 | 250 | 3.5 | 100 | 100 | average | modern | normal | 2.5 | vocal_jazz | Lets the singer's dynamics breathe - it just catches the biggest notes. Aim for 2-3 dB.
+Vocals | Vocal - Country & Folk | -27.5 | 3 | 10 | 150 | 6.0 | 100 | 100 | average | modern | normal | 4 | vocal_country | A warm, steady vocal that still sounds natural. Aim for 3-5 dB.
+Vocals | Vocal - Vintage Smooth | -29.0 | 3 | 10 | 150 | 5.0 | 100 | 100 | average | vintage | normal | 5 | vocal_pop, vocal_rock | A smooth, forgiving squeeze that keeps every word forward without sounding squashed. Aim for 4-6 dB on the loud words.
+Vocals | Vocal - Second Compressor | -24.5 | 2 | 30 | 200 | 2.0 | 100 | 100 | average | modern | normal | 2 | vocal_pop | For a second Easy Comp after the first: a little more smoothing (1-3 dB) sounds more natural than one compressor doing it all.
+Vocals | Vocal - Parallel Thickener | -33.5 | 10 | 1 | 150 | 12.5 | 30 | 100 | peaks | modern | normal | 12 | vocal_pop | Blends a heavily squashed copy under the original (MIX 30%), for a thicker vocal that keeps its dynamics.
+Vocals | Backing Vocals - Tucked In | -25.5 | 5 | 5 | 100 | 6.5 | 100 | 100 | average | modern | normal | 6 | vocal_backing | Holds harmonies and doubles steady so they sit behind the lead. Aim for 5-8 dB.
+Vocals | Spoken Word & Podcast | -27.0 | 3 | 10 | 150 | 5.0 | 100 | 80 | average | modern | normal | 5 | speech | Keeps a speaking voice at an easy, even level. Aim for 4-6 dB.
+
+Strings, Brass & Wind | Strings - Section | -23.0 | 2 | 30 | 300 | 2.0 | 100 | 20 | average | modern | normal | 2 | strings_section | Gentle control for a string section that keeps the swells. Aim for 1-3 dB.
+Strings, Brass & Wind | Strings - Solo Violin & Cello | -23.0 | 2.5 | 20 | 200 | 3.5 | 100 | 20 | average | modern | normal | 3 | violin_solo, cello_solo | Smooths a solo string part so the quiet notes aren't lost. Aim for 2-4 dB.
+Strings, Brass & Wind | Brass Section - Punchy | -24.0 | 4 | 10 | 100 | 4.0 | 100 | 20 | peaks | modern | normal | 4.5 | brass_section | Tight, punchy horn stabs for funk, soul and pop. Aim for 3-6 dB.
+Strings, Brass & Wind | Horns - Solo Trumpet & Sax | -24.0 | 3 | 10 | 150 | 3.5 | 100 | 20 | average | modern | normal | 4 | trumpet_solo, sax_solo | Evens out a solo horn without losing its expression. Aim for 3-5 dB.
+Strings, Brass & Wind | Flute & Woodwind - Gentle | -18.5 | 2 | 15 | 200 | 2.0 | 100 | 20 | average | modern | normal | 2 | flute_solo | Light control for flute, clarinet and other woodwind. Aim for 1-3 dB.
+
+Mix Bus & Master | Mix Bus - Glue (Pop & Rock) | -20.5 | 2 | 30 | 200 | 1.5 | 100 | 100 | average | modern | normal | 2 | mix_rock, mix_song | Ties the whole mix together. Aim for 1-3 dB - if you can clearly hear it working, back off.
+Mix Bus & Master | Mix Bus - Hip-Hop & EDM | -28.0 | 4 | 30 | 100 | 2.5 | 100 | 120 | peaks | modern | normal | 3 | mix_hiphop, mix_edm | Firmer glue with punch. IGNORE BELOW stops the kick and bass making the whole mix pump. Aim for 2-4 dB.
+Mix Bus & Master | Mix Bus - Jazz, Folk & Classical | -21.0 | 1.5 | 30 | 400 | 1.0 | 100 | 100 | average | modern | normal | 1 | mix_jazz, mix_acoustic, mix_orchestral | Barely-there control that keeps all the natural dynamics. Aim for about 1 dB - you should hardly hear it.
+Mix Bus & Master | Mix Bus - Vintage Glue | -24.5 | 2 | 30 | 200 | 1.5 | 100 | 20 | peaks | vintage | thrust | 2 | mix_song, mix_rock | Classic bus glue: VINTAGE ties the mix together and THRUST stops the kick and bass making it pump. Aim for 1-3 dB.
+Mix Bus & Master | Group Bus - Glue | -21.5 | 2 | 20 | 200 | 2.0 | 100 | 80 | average | modern | normal | 2 | bus_instruments, vocal_backing | Ties a group of tracks together - guitars, keys or backing vocals sent to one bus. Aim for 1-3 dB.
+Mix Bus & Master | Master - Light Touch | -16.5 | 1.5 | 30 | 300 | 1.0 | 100 | 100 | average | modern | normal | 1.5 | master_rock, master_song | A gentle 1-2 dB of control for a finished mix, at the very end of the chain. (For real loudness, a limiter comes after it.)
+
+Sidechain Tricks | Bass - Ducked by the Kick | -19.5 | 4 | 1 | 100 | 0 | 100 | 20 | peaks | modern | normal | 5 | bass_picked<kick_rock, bass_fingered<kick_rock | Send the kick to the sidechain and set LISTENS TO: SIDECHAIN. The bass dips on every kick so the two don't fight. Aim for 3-6 dB on each kick.
+Sidechain Tricks | Music - Ducked Under a Voice | -33.0 | 4 | 20 | 500 | 0 | 100 | 100 | average | modern | normal | 8 | mix_song<speech, synth_pad<speech | For podcasts and voice-overs: send the voice to the sidechain, LISTENS TO: SIDECHAIN. The music dips while someone talks and comes back in the pauses. Aim for 6-10 dB.
+Sidechain Tricks | Synth Pad - Pumping to the Kick | -23.5 | 10 | 0.5 | 180 | 0 | 100 | 20 | peaks | modern | normal | 10 | synth_pad<kick_hiphop, synth_pad<kick_rock | The dance-music pump: send the kick to the sidechain, LISTENS TO: SIDECHAIN. The pad ducks hard on every kick and swells back in between. Aim for 8-12 dB.

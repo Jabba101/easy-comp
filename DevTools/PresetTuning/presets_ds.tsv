@@ -1,0 +1,15 @@
+# category | name | from | to | threshold | range | turns down (band / whole) | materials | tip
+| Default settings | 5000 | 20000 | -8 | 6 | band | vocal_male, vocal_female, speech_male, speech_female | Play your track and watch the display. Set THRESHOLD so the amber line goes over the dashed line on the S sounds only.
+Vocals | Male Vocal | 4000 | 20000 | -8 | 6 | band | vocal_male, speech_male | Softens the S and SH sounds of a lower voice. If S sounds start to lisp, lower RANGE; if they still hiss, lower THRESHOLD.
+Vocals | Female Vocal | 5500 | 20000 | -8 | 6 | band | vocal_female, speech_female | Softens the S sounds of a higher voice, and leaves the air and sparkle above them alone.
+Vocals | Rap & Fast Delivery | 4500 | 20000 | -10 | 8 | band | speech_fast | Firm and quick, for fast lines full of S and T sounds: keeps the words crisp without the hiss.
+Vocals | Soft & Breathy Vocal | 5000 | 20000 | -8 | 4 | band | vocal_breathy | A light touch for close, breathy singing: tames the S sounds and leaves the breath alone.
+Vocals | Backing Vocals | 4500 | 20000 | -10 | 10 | band | vocal_backing | Firmer: stacked voices pile their S sounds up, so these come down more and sit behind the lead.
+Vocals | Very Sibilant Vocal | 5000 | 20000 | -10 | 9 | band | vocal_harsh | For a singer or a bright mic with really sharp S sounds. Still lispy? Lower RANGE a little.
+Vocals | Classic (Whole Sound) | 5000 | 20000 | -8 | 4 | whole | vocal_male, vocal_female, speech_male | The classic de-esser: the whole voice dips for a moment on each S. Firmer, with an old-school sound.
+Vocals | Speech & Podcasts | 4500 | 20000 | -8 | 6 | band | speech_male, speech_female | For voice-overs and podcasts: evens out sharp S sounds, which get tiring on headphones.
+Drums | Overheads - Harsh Cymbals | 2500 | 8000 | 0 | 6 | band | overheads_cymbals | Tames the loud crash hits on the overheads and leaves the rest of the kit alone.
+Drums | Hi-Hat - Too Bright | 6000 | 20000 | 6 | 6 | band | hihat_bright | On a hi-hat mic: turns down just the sharpest, brightest hits, so the hat sits back in the mix.
+Drums | Room Mics - Splashy | 2000 | 8000 | 0 | 6 | band | room_splashy | Tames the cymbal splash in room mics, so you can turn the room up for size without it getting harsh.
+Guitars | Acoustic Guitar - String Squeaks | 2000 | 5000 | -6 | 6 | band | gtr_squeaks | Turns down the squeak of fingers sliding along the strings between chords.
+Mix | Mix Bus - Gentle | 5000 | 20000 | -6 | 3 | band | mix_song | A gentle touch on a whole mix: takes the edge off the harshest S sounds and cymbals only.
