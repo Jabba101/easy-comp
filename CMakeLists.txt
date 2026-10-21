@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.10.0)
+project(EasyPlugins VERSION 1.10.1)
 
 # Build the Visual C++ runtime into the plugins themselves, so they also work
 # on a PC that doesn't have Visual Studio installed. (No effect on macOS / Linux.)
@@ -156,7 +156,7 @@ add_easy_plugin(EasyDS
 add_easy_plugin(BitchSlap
     NAME        "Bitch-Slap"
     CODE        Ezbs
-    VERSION     1.0.0
+    VERSION     1.0.1
     BUNDLE_ID   com.homestudio.bitchslap
     CATEGORIES  Fx Reverb
     SOURCES     Effects/GatedReverb.h

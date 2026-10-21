@@ -125,6 +125,18 @@ inline const SlapPreset slapPresets[] =
     { "Vocals", "Vocal - 80s Shout",                       20.0f, 220.0f, 0, n8,
       "On a shouted vocal or a gang chant: big and wide, but it stops before it blurs the words." },
 
+    // ---- The whole mix ---------------------------------------------------------------
+    // (Everything in a mix feeds the reverb at once, so it comes out far louder
+    // than on one drum: these MIX settings were measured on real mixes.)
+    { "Mix Bus", "Mix Bus - Subtle Size",                  11.0f, 120.0f, 0, n8,
+      "On the whole mix: a touch of room that makes it sound bigger and more glued, without sounding like reverb. Jazz too." },
+    { "Mix Bus", "Mix Bus - Rock & Punk Punch",            16.0f, 150.0f, 0, n8,
+      "On the whole mix: a short, tight burst behind everything - more size and excitement, still tight. A little MIX goes a long way." },
+    { "Mix Bus", "Mix Bus - 80s Space",                    17.0f, 250.0f, 0, n8,
+      "On the whole mix: the glossy 80s ambience, for synthwave and retro rock. It sits behind the mix - push MIX up for more." },
+    { "Mix Bus", "Mix Bus - Synced 1/16 (Darksynth)",      19.0f, 300.0f, 1, n16,
+      "On the whole mix: every burst lasts exactly a 16th note at your song's tempo, so the space pulses in time with the beat." },
+
     // ---- FX send: reverb only ----------------------------------------------------
     { "FX Send (Reverb Only)", "Send - 80s Snare & Toms", 100.0f, 350.0f, 0, n8,
       "For an FX bus: reverb only. Send the snare and toms to the bus, and set how much you hear with the bus fader." },

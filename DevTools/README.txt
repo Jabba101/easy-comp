@@ -102,6 +102,8 @@ Prototypes/
       EngineCheck  against a plain direct convolution, LENGTH changes, speed
       SlapBench    JUCE's FFT vs PFFFT, and JUCE's Convolution
       SpikeProbe   time per 64-sample block, by position in the cycle
+      MixBusCheck  how loud the reverb is on full mixes, per LENGTH (wet vs
+                   dry, K-weighted): what the Mix Bus presets' MIX is set from
 
 Look/
     The photoreal "field case" knob test (Blender scene and renders) for

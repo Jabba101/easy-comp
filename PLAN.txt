@@ -126,6 +126,10 @@ LATER
 ====================================================================
 DONE
 ====================================================================
+   - Bitch-Slap 1.0.1: four Mix Bus presets (Subtle Size, Rock & Punk
+     Punch, 80s Space, Synced 1/16). On a whole mix the reverb comes out
+     far louder than on one drum, so their MIX (11-19%) was set by
+     measuring the reverb on real mixes.
    - Bitch-Slap 1.0.0: the gated reverb - the "burst" kind (the 80s
      digital way): every sound, ghost notes and bleed included, gets
      its own burst of wide reverb that stops dead. MIX (up to 50% it
