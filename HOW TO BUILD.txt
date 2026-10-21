@@ -7,6 +7,7 @@ Right now this project makes:
                  every hit or note) - called Easy Transient up to 1.2.0
     Easy Gate    a gate (silences the noise and bleed between the
                  sounds you want)
+    Easy DS      a de-esser (tames harsh S sounds, and harsh cymbals)
 
 Every time the project changes on GitHub, GitHub builds the plugins for you
 on its own Windows computers. You just download and install them.
@@ -173,14 +174,49 @@ YOUR FIRST FIVE MINUTES WITH EASY GATE
 
 
 ====================================================================
+YOUR FIRST FIVE MINUTES WITH EASY DS
+====================================================================
+   1. Put it on a vocal (or overheads, a hi-hat, a whole mix) and pick
+      a preset for it.
+   2. Play the track and watch the display. The grey shape is your
+      sound and the amber line is the harsh band (where the S sounds
+      are). The dashed line is THRESHOLD: it follows the rest of your
+      sound up and down, so it works the same whether the singer is
+      whispering or belting. Set THRESHOLD so the amber line goes over
+      the dashed line on the S sounds only, not on ordinary words. The
+      red shading and the meter show where it turns down.
+   3. RANGE is the most it turns down. 3-6 dB sounds natural; much
+      more and the S sounds start to lisp (sounding like "th").
+   4. Not sure where the harshness is? Play the part with the most S
+      sounds (or the harshest cymbals) and click FIND. It listens for 8
+      seconds, then sets FROM and TO for you.
+   5. Click LISTEN to hear only what it's taking out: you should hear
+      just the S sounds, not the words.
+   6. TURNS DOWN: HARSH BAND (the usual) dips only the harsh band, so
+      the rest of your sound is untouched. WHOLE SOUND dips everything
+      for the moment of each S - the classic, old-school style.
+   7. Click BYPASS on and off to compare.
+
+   Like Easy Gate, it looks 2 ms ahead (so it's already turned down as
+   each S starts) and your DAW makes up for the 2 ms by itself.
+
+   The presets cover vocals (male, female, rap, breathy, backing, very
+   sibilant, the classic style, speech and podcasts), drums (overheads,
+   hi-hat, room mics), acoustic guitar string squeaks and the mix bus.
+   Unlike the compressor's, the vocal presets work the same however loud
+   your track is.
+
+
+====================================================================
 CHANGING THINGS
 ====================================================================
    - Built-in presets: Presets.h in each plugin's folder (e.g.
                        Plugins\EasyComp\Presets.h) - one line each.
    - Colours:          the Palette list at the top of Shared\Look.h.
    - Help text:        the knobInfo list in each plugin's PluginEditor.cpp.
-   - The sound:        Effects\Compressor.h, Effects\TransientShaper.h and
-                       Effects\Gate.h - commented step by step.
+   - The sound:        Effects\Compressor.h, Effects\TransientShaper.h,
+                       Effects\Gate.h and Effects\DeEsser.h - commented
+                       step by step.
 
 
 ====================================================================
@@ -195,6 +231,8 @@ WHAT'S IN THIS FOLDER
      Compressor.h           the compressor
      TransientShaper.h      the transient shaper
      Gate.h                 the gate
+     DeEsser.h              the de-esser
+     HarshnessFinder.h      Easy DS's FIND button
      LoudnessMatcher.h      AUTO-GAIN (shared by every plugin)
      FastMath.h             quick decibel maths and helpers for working on
                             several samples at once (shared by every plugin)
@@ -207,6 +245,7 @@ WHAT'S IN THIS FOLDER
    Plugins\EasyTransient\ Easy Trans's knobs, window and presets (the
                           folder keeps the old name).
    Plugins\EasyGate\      Easy Gate's knobs, window and presets.
+   Plugins\EasyDS\        Easy DS's knobs, window and presets.
 
    On a Mac, the same folder builds VST3 and AU versions (needs Xcode and
    CMake: run "cmake --preset release" then "cmake --build --preset release").

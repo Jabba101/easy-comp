@@ -139,6 +139,22 @@ namespace FastMath
         static forcedinline Vec4 broadcast (float x) noexcept         { return { _mm_set1_ps (x) }; }
         forcedinline void store (float* destination) const noexcept   { _mm_storeu_ps (destination, v); }
 
+        /** Four numbers given one by one; or a pair given as two: { low, low, high, high }. */
+        static forcedinline Vec4 of (float a, float b, float c, float d) noexcept   { return { _mm_setr_ps (a, b, c, d) }; }
+        static forcedinline Vec4 pairOf (float low, float high) noexcept           { return { _mm_setr_ps (low, low, high, high) }; }
+
+        /** { a0, a1, b0, b1 } and { a0, a1, b2, b3 }: halves of two Vec4s put together. */
+        static forcedinline Vec4 lowerHalves (Vec4 a, Vec4 b) noexcept             { return { _mm_movelh_ps (a.v, b.v) }; }
+        static forcedinline Vec4 lowerThenUpper (Vec4 a, Vec4 b) noexcept          { return { _mm_shuffle_ps (a.v, b.v, _MM_SHUFFLE (3, 2, 1, 0)) }; }
+
+        /** One of the four numbers (0 to 3). */
+        template <int lane>
+        forcedinline float get() const noexcept    { return _mm_cvtss_f32 (_mm_shuffle_ps (v, v, _MM_SHUFFLE (lane, lane, lane, lane))); }
+
+        /** Four rows of four turned into four columns: what was number j of
+            row i becomes number i of row j. */
+        static forcedinline void transpose (Vec4& a, Vec4& b, Vec4& c, Vec4& d) noexcept   { _MM_TRANSPOSE4_PS (a.v, b.v, c.v, d.v); }
+
         friend forcedinline Vec4 operator+ (Vec4 a, Vec4 b) noexcept { return { _mm_add_ps (a.v, b.v) }; }
         friend forcedinline Vec4 operator- (Vec4 a, Vec4 b) noexcept { return { _mm_sub_ps (a.v, b.v) }; }
         friend forcedinline Vec4 operator* (Vec4 a, Vec4 b) noexcept { return { _mm_mul_ps (a.v, b.v) }; }
@@ -168,6 +184,22 @@ namespace FastMath
         static forcedinline Vec4 load (const float* source) noexcept { return { { source[0], source[1], source[2], source[3] } }; }
         static forcedinline Vec4 broadcast (float x) noexcept         { return { { x, x, x, x } }; }
         forcedinline void store (float* destination) const noexcept   { for (int i = 0; i < 4; ++i) destination[i] = v[i]; }
+
+        static forcedinline Vec4 of (float a, float b, float c, float d) noexcept   { return { { a, b, c, d } }; }
+        static forcedinline Vec4 pairOf (float low, float high) noexcept           { return { { low, low, high, high } }; }
+        static forcedinline Vec4 lowerHalves (Vec4 a, Vec4 b) noexcept             { return { { a.v[0], a.v[1], b.v[0], b.v[1] } }; }
+        static forcedinline Vec4 lowerThenUpper (Vec4 a, Vec4 b) noexcept          { return { { a.v[0], a.v[1], b.v[2], b.v[3] } }; }
+
+        template <int lane>
+        forcedinline float get() const noexcept    { return v[lane]; }
+
+        static forcedinline void transpose (Vec4& a, Vec4& b, Vec4& c, Vec4& d) noexcept
+        {
+            Vec4* rows[] = { &a, &b, &c, &d };
+            for (int i = 0; i < 4; ++i)
+                for (int j = i + 1; j < 4; ++j)
+                    std::swap (rows[i]->v[j], rows[j]->v[i]);
+        }
 
         template <typename Function>
         static forcedinline Vec4 each (Vec4 a, Vec4 b, Function f) noexcept { return { { f (a.v[0], b.v[0]), f (a.v[1], b.v[1]), f (a.v[2], b.v[2]), f (a.v[3], b.v[3]) } }; }

@@ -38,10 +38,10 @@ THE CHANNEL STRIP, IN SIGNAL ORDER
                     BUS & MASTERING gets a precision setting: lower means
                     less delay and less smear before hits.
 
-   5. DE-ESSER      Easy DS. Adjustable frequency range, and it turns
-                    down only the harsh band, not the whole track. LISTEN
-                    button to hear what it's catching. Presets for
-                    vocals, harsh cymbals and bright hi-hats.
+   5. DE-ESSER      Easy DS (done). FROM and TO set the harsh band, FIND
+                    sets them for you, and it turns down just the harsh
+                    band or (TURNS DOWN: WHOLE SOUND) everything, the
+                    classic style. LISTEN to hear what it's catching.
 
    6. COMPRESSOR    Easy Comp, plus:
                       CHARACTER   our own take on feedback compression,
@@ -58,8 +58,22 @@ THE CHANNEL STRIP, IN SIGNAL ORDER
                     down earlier in the chain.
 
    Occasional extras:
-   - EQ order switch: the EQ after the compressor.
+   - Changing the order: the panels stay where they are, and a small
+     "signal flow" row along the top (GATE -> DRIVE -> EQ -> ...) shows
+     the order the sound goes through. To start with, a few named
+     orders or swap switches rather than free dragging: e.g. "EQ after
+     the compressor", "De-ess before drive". Presets can set the order
+     too. Changing it while playing crossfades (no clicks), and the
+     strip's small delay stays the same whatever the order (Easy Gate
+     and Easy DS share one 2 ms look-ahead).
    - Sidechain input, so the kick can duck the bass.
+
+   Strip presets to include:
+   - A couple of lo-fi presets: a broad de-ess (TURNS DOWN: WHOLE
+     SOUND) together with overdriven saturation from Easy Amp. Try the
+     de-esser both before and after the drive: before stops S sounds
+     distorting into a spitty hiss; after tames the fizz the drive
+     adds.
 
 
 ====================================================================
@@ -81,8 +95,7 @@ RULES FOR EVERYTHING
 BUILD ORDER
 ====================================================================
    1. Easy Gate            done (1.0.0)
-   2. Easy DS              the de-esser: reuses most of the compressor's
-                           workings
+   2. Easy DS              done (1.0.0)
    3. Easy Comp update     CHARACTER switch and the THRUST-style option
    4. Easy EQ              the biggest design job (the curve display)
    5. Easy Amp, Easy Clip  separate plugins, both need the oversampling
@@ -103,6 +116,14 @@ LATER
 ====================================================================
 DONE
 ====================================================================
+   - Easy DS 1.0.0: FROM, TO, FIND, THRESHOLD, RANGE, TURNS DOWN (HARSH
+     BAND or WHOLE SOUND), LISTEN, and a 2 ms look-ahead. THRESHOLD is
+     compared with the rest of the sound (and, half as much, how loud
+     it's been lately), so it works whether the singer whispers or
+     belts, and still catches a loud crash cymbal over the kick. 14
+     presets, tuned on real recorded speech (16 speakers), sung vocals
+     with real S sounds, and a real drum kit. Uses about the same
+     processor time as Easy Comp.
    - Easy Gate 1.0.0: THRESHOLD, RANGE, ATTACK, HOLD, RELEASE, IGNORE
      BELOW / ABOVE, a sidechain input, LISTEN, and a 2 ms look-ahead so
      the start of every hit gets through. 17 presets. Uses about half

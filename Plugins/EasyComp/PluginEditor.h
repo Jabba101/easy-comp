@@ -4,21 +4,6 @@
 #include "PluginProcessor.h"
 
 //==============================================================================
-/** The vertical LED meter showing how many dB the compressor is turning the
-    sound down right now. */
-class GainReductionMeter : public juce::Component
-{
-public:
-    /** Feed it the latest reduction in dB (a positive number), ~30 times a second. */
-    void setGainReduction (float reductionDb);
-
-    void paint (juce::Graphics&) override;
-
-private:
-    float shownDb = 0.0f;   // what's drawn: jumps up instantly, falls back smoothly
-};
-
-//==============================================================================
 /** The compression curve: how loud the sound comes out (up the side) for each
     level going in (along the bottom), with a dot showing your sound as it plays. */
 class CurveGraph : public juce::Component

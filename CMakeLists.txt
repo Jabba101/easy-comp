@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.7.0)
+project(EasyPlugins VERSION 1.8.0)
 
 # Build the Visual C++ runtime into the plugins themselves, so they also work
 # on a PC that doesn't have Visual Studio installed. (No effect on macOS / Linux.)
@@ -131,3 +131,17 @@ add_easy_plugin(EasyGate
                 Plugins/EasyGate/PluginProcessor.cpp
                 Plugins/EasyGate/PluginEditor.h
                 Plugins/EasyGate/PluginEditor.cpp)
+
+add_easy_plugin(EasyDS
+    NAME        "Easy DS"
+    CODE        Ezds
+    VERSION     1.0.0
+    BUNDLE_ID   com.homestudio.easyds
+    CATEGORIES  Fx Dynamics
+    SOURCES     Effects/DeEsser.h
+                Effects/HarshnessFinder.h
+                Plugins/EasyDS/Presets.h
+                Plugins/EasyDS/PluginProcessor.h
+                Plugins/EasyDS/PluginProcessor.cpp
+                Plugins/EasyDS/PluginEditor.h
+                Plugins/EasyDS/PluginEditor.cpp)

@@ -53,3 +53,18 @@ private:
     bool ignoreClicks = false;
     juce::ParameterAttachment attachment;
 };
+
+//==============================================================================
+/** The vertical LED meter showing how many dB the plugin is turning the
+    sound down right now (0 at the top, 24 dB at the bottom). */
+class GainReductionMeter : public juce::Component
+{
+public:
+    /** Feed it the latest reduction in dB (a positive number), ~30 times a second. */
+    void setGainReduction (float reductionDb);
+
+    void paint (juce::Graphics&) override;
+
+private:
+    float shownDb = 0.0f;   // what's drawn: jumps up instantly, falls back smoothly
+};
