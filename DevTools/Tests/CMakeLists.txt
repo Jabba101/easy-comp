@@ -28,3 +28,14 @@ target_sources(DSTests PRIVATE DSTests.cpp ${P}/Plugins/EasyDS/PluginProcessor.c
 target_include_directories(DSTests PRIVATE ${P}/Plugins/EasyDS ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(DSTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy DS")
 target_link_libraries(DSTests PRIVATE juce::juce_audio_utils PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
+add_library(pffft STATIC ${P}/ThirdParty/pffft/pffft.c ${P}/ThirdParty/pffft/pffft_common.c)
+target_include_directories(pffft PUBLIC ${P}/ThirdParty/pffft)
+target_compile_definitions(pffft PUBLIC PFFFT_STATIC_DEFINE)
+set_target_properties(pffft PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+juce_add_console_app(SlapTests PRODUCT_NAME "SlapTests")
+target_sources(SlapTests PRIVATE SlapTests.cpp ${P}/Plugins/BitchSlap/PluginProcessor.cpp ${P}/Plugins/BitchSlap/PluginEditor.cpp ${SHARED})
+target_include_directories(SlapTests PRIVATE ${P}/Plugins/BitchSlap ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(SlapTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Bitch-Slap")
+target_link_libraries(SlapTests PRIVATE pffft juce::juce_audio_utils PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)

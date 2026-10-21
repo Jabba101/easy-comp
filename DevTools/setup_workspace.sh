@@ -50,6 +50,18 @@ place Checks/Golden    "$W/golden"
 place Compare          "$W/opt/harness2"
 place Bench            "$W/bench2"
 place FastMathFit      "$W/opt/fit"
+place Prototypes/BitchSlap/Engine "$W/slapdev"
+
+# Bitch-Slap's listening examples (the ones you approved), which its tests
+# measure against: stored here as FLAC, decoded back to WAV
+if command -v ffmpeg > /dev/null; then
+    mkdir -p "$W/presetcheck/slap_material"
+    for f in "$D/TestAudio/BitchSlap/"*.flac; do
+        ffmpeg -v error -y -i "$f" -c:a pcm_s24le "$W/presetcheck/slap_material/$(basename "${f%.flac}").wav"
+    done
+else
+    echo "(no ffmpeg: Bitch-Slap's example audio wasn't decoded - SlapTests skips the checks that use it)"
+fi
 
 echo "Tools in place. (Build them with cmake: see DevTools/README.txt.)"
 

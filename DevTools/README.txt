@@ -21,7 +21,8 @@ changed files into it before committing).
 WHAT'S HERE
 ====================================================================
 Tests/                 -> /home/claude/verify2
-    One program per plugin: CompTests, TransientTests, GateTests, DSTests.
+    One program per plugin: CompTests, TransientTests, GateTests, DSTests,
+    SlapTests (Bitch-Slap: its reverb against a plain, slow convolution).
     The sound (against theory and real material), the DAW plumbing
     (settings, saving, presets, buses), the window (and PNG renders of
     it), skipping silence (must match working through it), and speed
@@ -31,7 +32,9 @@ Tests/                 -> /home/claude/verify2
       cmake -S /home/claude/verify2 -B /home/claude/verify2/build-release -G Ninja -DCMAKE_BUILD_TYPE=Release
       cmake --build /home/claude/verify2/build --target CompTests
       /home/claude/verify2/build/CompTests_artefacts/Debug/CompTests <folder for the PNGs>
-    GateTests and DSTests read material from /home/claude/presetcheck.
+    GateTests and DSTests read material from /home/claude/presetcheck;
+    SlapTests also /home/claude/presetcheck/slap_material (the approved
+    listening examples, from TestAudio/BitchSlap).
 
 PresetTuning/          -> /home/claude/presetcheck
     presets_comp.tsv, presets_transient.tsv, presets_ds.tsv: the preset
@@ -50,6 +53,8 @@ PresetTuning/          -> /home/claude/presetcheck
 
 TestAudio/
     Where the test audio comes from (SOURCES.txt) and the download lists.
+    BitchSlap/: the Bitch-Slap listening examples the user approved (FLAC;
+    setup_workspace.sh decodes them to presetcheck/slap_material).
 
 Checks/GateEngine/     -> /home/claude/gatecheck
 Checks/DSEngine/       -> /home/claude/dscheck
@@ -58,7 +63,8 @@ Checks/DSEngine/       -> /home/claude/dscheck
 Checks/Host/           -> /home/claude/gatecheck/host
     Loads the built VST3s the way a DAW does. GateHost: names, latency,
     buses. CompHost: the settings the DAW sees, the sidechain bus, and
-    that a sound in the sidechain turns the track down.
+    that a sound in the sidechain turns the track down. SlapHost: Bitch-
+    Slap's settings, buses, delay and tail, a hit's burst, saving.
       xvfb-run -a CompHost_artefacts/Release/CompHost "<path>/Easy Comp.vst3"
 Checks/Golden/         -> /home/claude/golden
     Recordings of Easy Comp 1.2 (v12-source) for a set of scenarios, and
@@ -92,6 +98,10 @@ Prototypes/
     BitchSlap: the gated reverb models (slap.py: the slammed room and the
     burst; kit.py builds real-drum test grooves from the Virtuosity kit,
     every mic of each hit; render.py writes the listening examples).
+    BitchSlap/Engine (-> /home/claude/slapdev): the C++ engine on its own.
+      EngineCheck  against a plain direct convolution, LENGTH changes, speed
+      SlapBench    JUCE's FFT vs PFFFT, and JUCE's Convolution
+      SpikeProbe   time per 64-sample block, by position in the cycle
 
 Look/
     The photoreal "field case" knob test (Blender scene and renders) for
@@ -160,6 +170,30 @@ Easy DS
     capped at RANGE; S-curve smoothing 2 ms / 40 ms; 2 ms look-ahead.
     Tuned on real speech (AudioMNIST), vocals and a real kit (Virtuosity
     Drums).
+Bitch-Slap (Effects/GatedReverb.h explains the rest)
+  - The "burst" kind of gated reverb, chosen by ear over a gated room:
+    the mono sum convolved with noise (L and R different), shaped: 2 ms
+    gap, opens over 2 ms, sags 4 dB across LENGTH, slams shut over the
+    last 12 ms; tone 180 Hz - 9 kHz (2nd-order filters on the output,
+    which is the same as filtering the burst). LENGTH = hit to shut.
+  - Level fixed (not per LENGTH): noise 0.0100 per sample at 48 kHz
+    (x sqrt(48k / rate)) = the approved snare example at MIX 50%.
+    MIX: dry = min(1, 2(1 - mix)), wet = min(1, 2 mix).
+  - FFT convolution with PFFFT (ThirdParty/pffft): ~15x faster than
+    JUCE's FFT. JUCE's own Convolution took 1.5-7.8% of a core for a
+    1 s burst; ours ~0.45%. Pieces: 7 x B, 7 x 8B, then 64B ones (B = 64
+    at 44.1/48 kHz: the biggest power of 2 inside the 2 ms gap, so the
+    engine's wait costs no plugin delay). Each size starts exactly when
+    its first output is due (offset = size - B).
+  - Overlap-ADD (not overlap-save) and LENGTH changes only just after a
+    64B boundary: so each stretch of input is in one slot only and every
+    sound keeps exactly one LENGTH. (Overlap-save shared each stretch
+    between two slots, and a change chopped recent bursts into 85 ms
+    on/off pieces - caught by the test that moves LENGTH 0-200 ms after
+    a hit.) Pieces are rebuilt in place, lazily, when a slot of a newer
+    LENGTH first reaches them.
+  - Rests after LENGTH-max + 3 x 64B + 50 ms of silence; MIX 0% and
+    BYPASS rest at once (after the 20 ms fade).
 All plugins
   - Anything switched off costs nothing; digital silence is skipped with
     rest(), which must end up where working through would have.
