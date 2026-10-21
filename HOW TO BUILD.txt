@@ -22,8 +22,11 @@ GETTING THE LATEST PLUGINS FROM GITHUB
  2. Click the newest run with a green tick. (A yellow dot means it's
     still building - it takes about 10 minutes.)
 
- 3. Scroll down to "Artifacts" and click "Aardvark-Easy-Suite-Windows"
-    to download it.
+ 3. Scroll down to "Artifacts" and click the download there. Its name
+    ends with when it was built (year-month-day-time, UK time): e.g.
+    "Aardvark-Easy-Suite-Windows-2026-10-21-1935" was built on 21
+    October 2026 at 19:35. The zip in your Downloads folder keeps that
+    name, so you can always tell which one is the newest.
 
  4. Before unzipping: right-click the downloaded file > Properties. If
     there's an "Unblock" tick-box at the bottom, tick it and click OK.

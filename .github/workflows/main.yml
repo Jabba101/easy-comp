@@ -5,7 +5,9 @@
 # (except changes to just the DevTools folder, which isn't part of the plugins).
 # You can also start it by hand: Actions tab > "Build Aardvark Easy Suite" > "Run workflow".
 # When it finishes (green tick), the plugins are under "Artifacts" at the
-# bottom of that run's page.
+# bottom of that run's page. The download's name ends with the date and time
+# it was built (UK time), e.g. Aardvark-Easy-Suite-Windows-2026-10-21-1935,
+# so you can always tell which one is the newest.
 
 name: Build Aardvark Easy Suite
 
@@ -25,6 +27,12 @@ jobs:
     timeout-minutes: 60
 
     steps:
+      # GitHub's computers run on UTC. Switching this one to UK time makes the
+      # download's name, and the dates of the files inside it, match your clock.
+      - name: Use UK time
+        shell: pwsh
+        run: tzutil /s "GMT Standard Time"
+
       - name: Get the project files
         uses: actions/checkout@v7
 
@@ -66,10 +74,14 @@ jobs:
           fi
           echo "::notice title=Plugins built::$list"
 
+      - name: Name the download after when it was built
+        shell: pwsh
+        run: '"BUILT=" + (Get-Date -Format "yyyy-MM-dd-HHmm") | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8'
+
       - name: Save the finished plugins
         uses: actions/upload-artifact@v7
         with:
-          name: Aardvark-Easy-Suite-Windows
+          name: Aardvark-Easy-Suite-Windows-${{ env.BUILT }}
           path: build/Finished Plugins/
           if-no-files-found: error
           retention-days: 30
