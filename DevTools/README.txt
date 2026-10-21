@@ -89,6 +89,9 @@ Prototypes/
     CompVintage: Python models used to design VINTAGE and THRUST (lib.py
     holds the shared pieces; v3.py, thd.py, hiratio.py the comparisons).
     DeEsser: models used to design Easy DS's detector.
+    BitchSlap: the gated reverb models (slap.py: the slammed room and the
+    burst; kit.py builds real-drum test grooves from the Virtuosity kit,
+    every mic of each hit; render.py writes the listening examples).
 
 Look/
     The photoreal "field case" knob test (Blender scene and renders) for

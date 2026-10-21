@@ -30,8 +30,9 @@ own licence before using the audio for anything else.
       downloaded flat into wav/; audiomnist_meta.json is the speakers list
       (data/audioMNIST_meta.txt in that project)
 
-  /home/claude/samples/virtuosity/flac      Virtuosity Drums (a real acoustic kit)
-      https://github.com/sfzinstruments/virtuosity_drums - the 442 files in
+  /home/claude/samples/virtuosity/flac      Virtuosity Drums (a real acoustic kit: overheads,
+                                            room, and the kick and snare mics)
+      https://github.com/sfzinstruments/virtuosity_drums - the files in
       virtuosity_urls.txt, downloaded flat into flac/
 
 The tools also need ffmpeg (to decode mp3/ogg/flac) and Python 3 with
