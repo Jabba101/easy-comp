@@ -11,7 +11,7 @@ namespace
         const char* hint;
     };
 
-    // In on-screen order (see knobGroups below for which panel each is in).
+    // In on-screen order (see layoutBody for which panel each is in).
     const std::array<KnobInfo, 7> knobInfo
     {{
         { CompIDs::threshold, "THRESHOLD",
@@ -43,24 +43,27 @@ namespace
           "what it reacts to - never the tone of your sound. Try 80-150 Hz if the low end makes everything 'pump'." },
     }};
 
-    // The four knob panels, numbered in the order you'd usually set them.
-    struct KnobGroup
-    {
-        const char* name;
-        size_t firstKnob, numKnobs;
-    };
-
-    const std::array<KnobGroup, 4> knobGroups
-    {{
-        { "HOW MUCH",          0, 2 },
-        { "HOW FAST",          2, 2 },
-        { "OUTPUT",            4, 2 },
-        { "WHAT IT REACTS TO", 6, 1 },
-    }};
+    // The five panels, numbered in the order you'd usually set them.
+    const std::array<const char*, 5> panelNames { "HOW MUCH", "HOW FAST", "OUTPUT", "WHAT IT REACTS TO", "CHARACTER" };
 
     constexpr const char* reactsToHint =
         "PEAKS reacts to every sharp peak - tight control, best for drums, percussion and anything punchy. "
         "AVERAGE follows the overall level instead - smoother and more natural on vocals, bass, guitars and whole mixes.";
+
+    constexpr const char* listensToHint =
+        "THIS TRACK: it listens to your track itself (the usual). SIDECHAIN: it listens to another track your DAW sends "
+        "to its sidechain input instead - e.g. the kick turning the bass down a little on every hit, or music dipping "
+        "under a voice.";
+
+    constexpr const char* styleHint =
+        "MODERN: clean and precise. VINTAGE: our take on the classic 'feedback' style - it listens to its own result, "
+        "follows loud passages closely and eases back gently when the sound drops away. Thicker, with more glue: great "
+        "on drum buses, bass and mixes.";
+
+    constexpr const char* lowEndHint =
+        "THRUST: the compressor hears less and less of the low end the lower it goes (and a little more of the bright, "
+        "edgy range), so the kick and bass punch through instead of setting it off. Only changes what it reacts to - you "
+        "may need to lower THRESHOLD a little.";
 
     constexpr const char* makeupAutoHint =
         "AUTO-GAIN is on, so it's setting the volume for you - the box shows how much it's adding right now. "
@@ -69,6 +72,10 @@ namespace
     constexpr const char* graphHint =
         "Along the bottom: how loud your sound goes in. Up the side: how loud it comes out. Dotted line = untouched. "
         "The bend is the THRESHOLD; the flatter the line after it, the higher the RATIO. The dot is your sound as it plays.";
+
+    constexpr const char* graphSidechainHint =
+        "Along the bottom: how loud the SIDECHAIN is (the other track it's listening to). Up the side: how loud your "
+        "sound comes out at that moment. The bend is the THRESHOLD; the dot moves with the sidechain as it plays.";
 
     constexpr const char* meterHint =
         "How much the compressor is turning the sound down right now. Around 3-6 dB on the loud parts is a natural "
@@ -92,6 +99,7 @@ void CurveGraph::update (const Compressor::Settings& newSettings, float inputLev
                            || differs (newSettings.ratio,       settings.ratio)
                            || differs (newSettings.makeupDb,    settings.makeupDb)
                            || differs (newSettings.mix,         settings.mix)
+                           || newSettings.vintage  != settings.vintage
                            || newSettings.autoGain != settings.autoGain
                            || newSettings.bypassed != settings.bypassed
                            || (newSettings.autoGain && std::abs (newAutoGainDb - autoGainDb) > 0.05f);
@@ -111,6 +119,16 @@ void CurveGraph::update (const Compressor::Settings& newSettings, float inputLev
 
     if (curveChanged || dotMoved)
         repaint();
+}
+
+void CurveGraph::setSidechainStatus (bool isListeningToSidechain, bool isSidechainMissing)
+{
+    if (isListeningToSidechain != listeningToSidechain || isSidechainMissing != sidechainMissing)
+    {
+        listeningToSidechain = isListeningToSidechain;
+        sidechainMissing     = isSidechainMissing;
+        repaint();
+    }
 }
 
 juce::Rectangle<float> CurveGraph::getPlotArea() const
@@ -229,34 +247,82 @@ void CurveGraph::paint (juce::Graphics& g)
         g.fillEllipse (juce::Rectangle<float> (10.0f, 10.0f).withCentre (onCurve));
     }
 
-    // While bypassed, fade the graph and say so plainly.
-    if (settings.bypassed)
+    // While listening to the sidechain, say so (the dot is the other track).
+    if (listeningToSidechain && ! settings.bypassed && ! sidechainMissing)
+    {
+        const auto caption = juce::Rectangle<float> (plot.getX() + 8.0f, plot.getY() + 8.0f, 196.0f, 24.0f);
+        g.setColour (Palette::panel.withAlpha (0.92f));
+        g.fillRoundedRectangle (caption, 6.0f);
+        g.setColour (Palette::accent);
+        g.drawRoundedRectangle (caption.reduced (0.75f), 6.0f, 1.2f);
+        g.setFont (juce::Font (juce::FontOptions (12.0f, juce::Font::bold)));
+        g.drawText ("LISTENING TO THE SIDECHAIN", caption, juce::Justification::centred, false);
+    }
+
+    // While bypassed, or with nothing coming into the sidechain, fade the
+    // graph and say so plainly.
+    if (settings.bypassed || sidechainMissing)
     {
         g.setColour (Palette::background.withAlpha (0.65f));
         g.fillRect (plot);
 
-        const auto badge = juce::Rectangle<float> (230.0f, 58.0f).withCentre (plot.getCentre());
-        g.setColour (Palette::panel);
-        g.fillRoundedRectangle (badge, 8.0f);
-        g.setColour (Palette::meterHigh);
-        g.drawRoundedRectangle (badge.reduced (0.75f), 8.0f, 1.5f);
-
-        auto lines = badge.reduced (10.0f, 9.0f);
-        g.setFont (juce::Font (juce::FontOptions (17.0f, juce::Font::bold)));
-        g.drawText ("BYPASSED", lines.removeFromTop (lines.getHeight() * 0.55f), juce::Justification::centred, false);
-        g.setColour (Palette::textDim);
-        g.setFont (juce::Font (juce::FontOptions (12.5f)));
-        g.drawText ("You're hearing the original sound", lines, juce::Justification::centred, false);
+        if (settings.bypassed)
+            drawBadge (g, plot, Palette::meterHigh, "BYPASSED", "You're hearing the original sound");
+        else
+            drawBadge (g, plot, Palette::meterHigh, "NOTHING IS COMING INTO THE SIDECHAIN",
+                       "Send a track to Easy Comp's sidechain in your DAW, or set LISTENS TO: THIS TRACK");
     }
+}
+
+void CurveGraph::drawBadge (juce::Graphics& g, juce::Rectangle<float> plot, juce::Colour colour,
+                            const juce::String& title, const juce::String& text) const
+{
+    // The title on one or two lines, then the explanation on one or two.
+    const juce::Font titleFont (juce::FontOptions (17.0f, juce::Font::bold)), textFont (juce::FontOptions (12.5f));
+    const float width = juce::jmin (plot.getWidth() - 24.0f,
+                                    juce::jmax (230.0f, juce::GlyphArrangement::getStringWidth (titleFont, title) + 40.0f,
+                                                juce::GlyphArrangement::getStringWidth (textFont, text) + 40.0f));
+    const auto lines = [] (const juce::Font& font, const juce::String& t, float space)
+    {
+        return juce::GlyphArrangement::getStringWidth (font, t) > space ? 2 : 1;
+    };
+
+    const int titleLines = lines (titleFont, title, width - 20.0f), textLines = lines (textFont, text, width - 20.0f);
+    const float height = 18.0f + 22.0f * (float) titleLines + 17.0f * (float) textLines;
+    const auto badge = juce::Rectangle<float> (width, height).withCentre (plot.getCentre());
+
+    g.setColour (Palette::panel);
+    g.fillRoundedRectangle (badge, 8.0f);
+    g.setColour (colour);
+    g.drawRoundedRectangle (badge.reduced (0.75f), 8.0f, 1.5f);
+
+    auto area = badge.reduced (10.0f, 9.0f);
+    g.setFont (titleFont);
+    g.drawFittedText (title, area.removeFromTop (22.0f * (float) titleLines).toNearestInt(), juce::Justification::centred, titleLines, 0.9f);
+    g.setColour (Palette::textDim);
+    g.setFont (textFont);
+    g.drawFittedText (text, area.toNearestInt(), juce::Justification::centred, textLines, 0.9f);
 }
 
 //==============================================================================
 // The Easy Comp window
 //==============================================================================
+EasyCompAudioProcessorEditor::Switch::Switch (juce::RangedAudioParameter& parameter, const juce::String& name,
+                                              const juce::StringArray& options)
+    : choices (parameter, options, Palette::accent)
+{
+    label.setText (name, juce::dontSendNotification);
+    label.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
+    label.setJustificationType (juce::Justification::centred);
+}
+
 EasyCompAudioProcessorEditor::EasyCompAudioProcessorEditor (EasyCompAudioProcessor& p)
     : EasyWindow (p, "EASY COMP", "A simple compressor - hover over anything for help", gettingStartedHint),
       compProcessor (p),
-      reactsToSwitch (*p.parameters.getParameter (CompIDs::reactsTo), { "PEAKS", "AVERAGE" }, Palette::accent)
+      reactsTo  (*p.parameters.getParameter (CompIDs::reactsTo),  "REACTS TO",  { "PEAKS", "AVERAGE" }),
+      listensTo (*p.parameters.getParameter (CompIDs::listensTo), "LISTENS TO", { "THIS TRACK", "SIDECHAIN" }),
+      style     (*p.parameters.getParameter (CompIDs::character), "STYLE",      { "MODERN", "VINTAGE" }),
+      lowEnd    (*p.parameters.getParameter (CompIDs::lowEnd),    "LOW END",    { "NORMAL", "THRUST" })
 {
     for (size_t i = 0; i < knobs.size(); ++i)
     {
@@ -302,31 +368,43 @@ EasyCompAudioProcessorEditor::EasyCompAudioProcessorEditor (EasyCompAudioProcess
         return manualText != nullptr ? manualText (value) : juce::String (value, 1);
     };
 
-    reactsToLabel.setText ("REACTS TO", juce::dontSendNotification);
-    reactsToLabel.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
-    reactsToLabel.setJustificationType (juce::Justification::centred);
-    addAndMakeVisible (reactsToLabel);
-    addAndMakeVisible (reactsToSwitch);
-    addHint (reactsToLabel, "REACTS TO", reactsToHint);
-    addHint (reactsToSwitch, "REACTS TO", reactsToHint);
-
-    reactsToSwitch.onUserChange = [this] { knobMoved(); };
+    addSwitch (reactsTo,  reactsToHint);
+    addSwitch (listensTo, listensToHint);   // (not part of presets: it depends on how your tracks are routed)
+    addSwitch (style,     styleHint);
+    addSwitch (lowEnd,    lowEndHint);
 
     addAndMakeVisible (graph);
-    addHint (graph, "COMPRESSION CURVE", graphHint);
+    addHint (graph, [this]
+    {
+        return std::make_pair (juce::String ("COMPRESSION CURVE"),
+                               juce::String (compProcessor.usesSidechain() ? graphSidechainHint : graphHint));
+    });
 
     addAndMakeVisible (meter);
     addHint (meter, "GAIN REDUCTION", meterHint);
 
-    finishSetup (1100, 600);
+    finishSetup (1340, 600);
+}
+
+void EasyCompAudioProcessorEditor::addSwitch (Switch& choice, const char* hint)
+{
+    const auto name = choice.label.getText();
+    addAndMakeVisible (choice.label);
+    addAndMakeVisible (choice.choices);
+    addHint (choice.label, name, hint);
+    addHint (choice.choices, name, hint);
+
+    // LISTENS TO isn't part of presets, so changing it doesn't "edit" one.
+    if (&choice != &listensTo)
+        choice.choices.onUserChange = [this] { knobMoved(); };
 }
 
 //==============================================================================
 void EasyCompAudioProcessorEditor::paintBody (juce::Graphics& g)
 {
-    // The four knob panels, numbered in the order you'd usually set them
+    // The five panels, numbered in the order you'd usually set them
     for (size_t i = 0; i < groupPanels.size(); ++i)
-        drawPanel (g, groupPanels[i], juce::String ((int) i + 1), knobGroups[i].name);
+        drawPanel (g, groupPanels[i], juce::String ((int) i + 1), panelNames[i]);
 
     drawPanel (g, graphPanel, {}, "COMPRESSION CURVE");
     drawPanel (g, meterPanel, {}, "GAIN REDUCTION");
@@ -345,46 +423,82 @@ void EasyCompAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
     graph.setBounds (graphPanel.reduced (12, 12).withTrimmedTop (24));
     area.removeFromRight (gap);
 
-    // Left-hand side: the four knob panels, two by two
-    const int panelWidth  = (area.getWidth()  - gap) / 2;
-    const int panelHeight = (area.getHeight() - gap) / 2;
-
-    for (size_t group = 0; group < knobGroups.size(); ++group)
+    // Left-hand side: the five panels in two rows - HOW MUCH, HOW FAST and
+    // OUTPUT along the top, WHAT IT REACTS TO and CHARACTER along the bottom.
+    // Each panel is split into columns: a knob, or a switch with its name.
+    struct Column
     {
-        const int column = (int) group % 2;
-        const int row    = (int) group / 2;
+        Knob* knob = nullptr;
+        Switch* choice = nullptr;
+    };
 
-        groupPanels[group] = { area.getX() + column * (panelWidth + gap),
-                               area.getY() + row * (panelHeight + gap),
-                               panelWidth, panelHeight };
+    const std::array<std::vector<Column>, 5> panels
+    {{
+        { { &knobs[0] }, { &knobs[1] } },                                  // THRESHOLD, RATIO
+        { { &knobs[2] }, { &knobs[3] } },                                  // ATTACK, RELEASE
+        { { &knobs[4] }, { &knobs[5] } },                                  // MAKE-UP, MIX
+        { { &knobs[6] }, { nullptr, &reactsTo }, { nullptr, &listensTo } }, // IGNORE BELOW, REACTS TO, LISTENS TO
+        { { nullptr, &style }, { nullptr, &lowEnd } },                     // STYLE, LOW END
+    }};
 
-        auto inside = groupPanels[group].reduced (10, 12).withTrimmedTop (26);
-        const int columnWidth = inside.getWidth() / 2;
+    const std::array<std::pair<size_t, size_t>, 2> rows { { { 0, 3 }, { 3, 2 } } };   // (first panel, how many)
 
-        // Each column is: name, knob, value box - kept together and centred.
-        constexpr int nameHeight = 20, spacing = 4, valueBoxHeight = 24;
-        const int knobSize = juce::jmin (columnWidth,
-                                         inside.getHeight() - nameHeight - spacing - valueBoxHeight);
+    constexpr int panelPadding = 20;   // (10 on each side, inside each panel)
+    constexpr int nameHeight = 20, spacing = 4, valueBoxHeight = 24;
+    const int rowHeight = (area.getHeight() - gap) / 2;
+    const int insideHeight = rowHeight - 12 - 12 - 26;
 
-        for (size_t k = 0; k < knobGroups[group].numKnobs; ++k)
+    // How wide a column is in each row, and the knob size that fits in all of them
+    const auto columnWidthOf = [&] (const std::pair<size_t, size_t>& row)
+    {
+        size_t columns = 0;
+
+        for (size_t i = row.first; i < row.first + row.second; ++i)
+            columns += panels[i].size();
+
+        return (float) (area.getWidth() - gap * ((int) row.second - 1) - panelPadding * (int) row.second) / (float) columns;
+    };
+
+    int knobSize = insideHeight - nameHeight - spacing - valueBoxHeight;
+
+    for (auto& row : rows)
+        knobSize = juce::jmin (knobSize, (int) columnWidthOf (row));
+
+    for (size_t r = 0; r < rows.size(); ++r)
+    {
+        auto rowArea = r == 0 ? area.removeFromTop (rowHeight) : area.withTrimmedTop (gap);
+        const float columnWidth = columnWidthOf (rows[r]);
+
+        for (size_t i = rows[r].first; i < rows[r].first + rows[r].second; ++i)
         {
-            auto& knob = knobs[knobGroups[group].firstKnob + k];
-            auto columnArea = inside.removeFromLeft (columnWidth)
-                                    .withSizeKeepingCentre (columnWidth, nameHeight + spacing + knobSize + valueBoxHeight);
+            const bool last = i + 1 == rows[r].first + rows[r].second;
+            const int numColumns = (int) panels[i].size();
+            const int width = last ? rowArea.getWidth() : juce::roundToInt (columnWidth * (float) numColumns) + panelPadding;
+            groupPanels[i] = rowArea.removeFromLeft (width);
+            rowArea.removeFromLeft (gap);
 
-            knob.label.setBounds (columnArea.removeFromTop (nameHeight));
-            columnArea.removeFromTop (spacing);
-            knob.slider.setBounds (columnArea);   // the knob, with its value box underneath
-        }
+            auto inside = groupPanels[i].reduced (panelPadding / 2, 12).withTrimmedTop (26);
+            const int thisColumnWidth = inside.getWidth() / numColumns;
 
-        if (knobGroups[group].numKnobs == 1)
-        {
-            // The spare column holds REACTS TO: its name, then PEAKS / AVERAGE,
-            // lined up with the IGNORE BELOW knob beside it.
-            auto spare = inside.withSizeKeepingCentre (inside.getWidth(), nameHeight + spacing + knobSize + valueBoxHeight);
-            reactsToLabel.setBounds (spare.removeFromTop (nameHeight));
-            spare.removeFromTop (spacing + 6);
-            reactsToSwitch.setBounds (spare.withSizeKeepingCentre (juce::jmin (spare.getWidth() - 4, 112), 80));
+            for (auto& column : panels[i])
+            {
+                // Each column is: name, then the knob and its value box (or the switch) - kept together and centred.
+                auto columnArea = inside.removeFromLeft (thisColumnWidth)
+                                        .withSizeKeepingCentre (thisColumnWidth, nameHeight + spacing + knobSize + valueBoxHeight);
+
+                if (column.knob != nullptr)
+                {
+                    column.knob->label.setBounds (columnArea.removeFromTop (nameHeight));
+                    columnArea.removeFromTop (spacing);
+                    column.knob->slider.setBounds (columnArea);   // the knob, with its value box underneath
+                }
+                else
+                {
+                    column.choice->label.setBounds (columnArea.removeFromTop (nameHeight));
+                    columnArea.removeFromTop (spacing + 6);
+                    column.choice->choices.setBounds (columnArea.withSizeKeepingCentre (juce::jmin (columnArea.getWidth() - 12, 122), 76));
+                }
+            }
         }
     }
 }
@@ -397,6 +511,7 @@ void EasyCompAudioProcessorEditor::refreshLiveDisplays()
 
     meter.setGainReduction (compProcessor.takeGainReductionForMeter());
     graph.update (settings, compProcessor.takeInputLevelForGraph(), autoGainDb);
+    graph.setSidechainStatus (compProcessor.usesSidechain(), compProcessor.isSidechainMissing());
 
     // AUTO-GAIN takes over from MAKE-UP: fade that knob, and show the amount
     // AUTO-GAIN is adding in its box (in green, like the AUTO-GAIN light).

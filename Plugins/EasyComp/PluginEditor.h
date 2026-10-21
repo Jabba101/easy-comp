@@ -14,6 +14,10 @@ public:
         Only repaints when something changed. */
     void update (const Compressor::Settings& newSettings, float inputLevelDb, float newAutoGainDb);
 
+    /** Whether it's listening to the sidechain (LISTENS TO), and whether
+        nothing is coming into it. */
+    void setSidechainStatus (bool isListeningToSidechain, bool isSidechainMissing);
+
     void paint (juce::Graphics&) override;
 
 private:
@@ -22,10 +26,12 @@ private:
 
     juce::Rectangle<float> getPlotArea() const;
     juce::Point<float> toScreen (juce::Rectangle<float> plot, float inDb, float outDb) const;
+    void drawBadge (juce::Graphics&, juce::Rectangle<float> plot, juce::Colour, const juce::String& title, const juce::String& text) const;
 
     Compressor::Settings settings;
     float autoGainDb = 0.0f;
     float dotLevelDb = Compressor::silenceDb;   // jumps up instantly, falls back smoothly
+    bool listeningToSidechain = false, sidechainMissing = false;
 };
 
 //==============================================================================
@@ -48,15 +54,25 @@ private:
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attachment;
     };
 
+    /** A setting with a few named choices: its name, and the light-up buttons. */
+    struct Switch
+    {
+        Switch (juce::RangedAudioParameter& parameter, const juce::String& name, const juce::StringArray& options);
+
+        juce::Label label;
+        ChoiceSwitch choices;
+    };
+
+    void addSwitch (Switch&, const char* hint);
+
     EasyCompAudioProcessor& compProcessor;
 
     // Threshold, Ratio | Attack, Release | Make-up, Mix | Ignore Below
     std::array<Knob, 7> knobs;
     static constexpr size_t makeupKnob = 4;
 
-    // REACTS TO: PEAKS / AVERAGE (beside IGNORE BELOW)
-    juce::Label reactsToLabel;
-    ChoiceSwitch reactsToSwitch;
+    // REACTS TO and LISTENS TO (beside IGNORE BELOW); STYLE and LOW END (CHARACTER)
+    Switch reactsTo, listensTo, style, lowEnd;
 
     CurveGraph graph;
     GainReductionMeter meter;
@@ -67,7 +83,7 @@ private:
 
     // Areas worked out in layoutBody() and drawn in paintBody()
     juce::Rectangle<int> graphPanel, meterPanel;
-    std::array<juce::Rectangle<int>, 4> groupPanels;
+    std::array<juce::Rectangle<int>, 5> groupPanels;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EasyCompAudioProcessorEditor)
 };

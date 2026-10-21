@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <complex>
 #include "FastMath.h"
 #include "LoudnessMatcher.h"
 
@@ -15,8 +16,10 @@
     What happens to every single sample:
 
       1. DETECT   How loud is it right now? (the louder of left/right, in dB)
-                  If IGNORE BELOW is on, the detector hears a copy with the
-                  low end filtered out - the audio itself is never filtered.
+                  It listens to your track, or with LISTENS TO: SIDECHAIN, to
+                  another track sent to it. IGNORE BELOW and THRUST change what
+                  it hears (filtered copies) - the audio itself is never
+                  filtered.
       2. DECIDE   Compare that with Threshold and Ratio: how many dB *should*
                   it be turned down? This is called the "gain computer".
       3. SMOOTH   Move towards that amount, quickly or slowly, depending on
@@ -29,6 +32,34 @@
     Everything in step 4 is one volume change per sample, applied equally to
     every channel. That's why the original sound is never filtered or delayed,
     and why BYPASS can fade between the two without any phasing.
+
+    CHARACTER: MODERN or VINTAGE - two ways of doing steps 2 and 3.
+
+      MODERN   "Feed-forward": it decides from the sound coming in, then
+               smooths that decision. Clean and precise: the knobs do exactly
+               what they say.
+      VINTAGE  Our own take on "feedback" compression, the classic style of
+               many old studio compressors (in the zone of the API 2500's OLD
+               setting, not a copy). It listens to the sound *after* its own
+               turning-down: the more it turns down, the less it hears, so it
+               settles itself. The way it's tuned here:
+                 - ATTACK means the same as in MODERN while it's grabbing.
+                 - While the sound stays loud, it follows it closely, letting
+                   go faster than RELEASE says; when the sound drops away, it
+                   eases back more slowly. Both by the square root of RATIO:
+                   twice as fast, and twice as slowly, at 4:1. Thicker, with
+                   more "glue" and less pumping.
+                 - The same RATIO and THRESHOLD give the same amount on a
+                   steady sound, and a soft knee about 9 dB wide.
+                 - A side effect we like: on low notes it wobbles the volume
+                   less within each wave, so it adds less distortion than
+                   MODERN at the same settings.
+
+    THRUST (LOW END: THRUST): the detector hears the low end turned down -
+    3 dB less for every octave lower, from about 2 kHz down to 20 Hz - and the
+    bright, edgy range a little louder. Our take on a famous console trick:
+    the kick and bass punch through instead of setting the compressor off,
+    and it reacts more like your ears do. (Again, only what it listens to.)
 
     How it's organised, to use as little of your computer as possible: the
     steps above go through a short run of samples at a time (64), each step
@@ -45,14 +76,15 @@
 
     Design choices (so you know what you're listening to):
 
-      - Feed-forward, and it reacts either to PEAKS (every sharp peak - suits
-        drums and anything punchy) or to the AVERAGE level over about 15 ms
-        (smoother and more natural on vocals, bass and whole mixes). The two
-        are matched so a steady tone reads the same either way.
+      - It reacts either to PEAKS (every sharp peak - suits drums and
+        anything punchy) or to the AVERAGE level over about 15 ms (smoother
+        and more natural on vocals, bass and whole mixes). The two are
+        matched so a steady tone reads the same either way.
       - Stereo-linked: both channels always get exactly the same gain change,
         so a loud hit on one side doesn't pull the stereo image around.
-      - A fixed 6 dB "soft knee": compression fades in gradually, starting
-        3 dB below the threshold, instead of switching on abruptly.
+      - A "soft knee": compression fades in gradually around the threshold
+        (MODERN: from 3 dB below to 3 dB above), instead of switching on
+        abruptly.
       - No look-ahead, so zero latency. That also means the Mix knob
         (parallel compression) lines up perfectly, with no phasing.
 */
@@ -74,6 +106,8 @@ public:
         float mix         = 1.0f;    //   0 (only the original) .. 1 (only the compressed)
         float lowCutHz    = 20.0f;   //  20 (off) .. 500 Hz - IGNORE BELOW
         bool  reactToAverage = false; // REACTS TO: false = PEAKS, true = AVERAGE
+        bool  vintage     = false;   // CHARACTER: false = MODERN, true = VINTAGE
+        bool  thrust      = false;   // LOW END: false = NORMAL, true = THRUST
         bool  autoGain    = false;   // AUTO-GAIN: match the volume coming out to the volume going in
         bool  bypassed    = false;   // BYPASS: let the original sound straight through
     };
@@ -112,12 +146,19 @@ public:
         meanSquare = 0.0f;
         meanSquareFade.setBase (1.0 - (double) averagingCoefficient);
 
+        thrustShape = designThrust (sampleRate);
+
         hasPreviousSettings = false;
         setSettings (initialSettings, true);
         currentReductionDb = 0.0f;
 
         for (auto& filter : detectorFilters)
             filter.reset();
+
+        for (auto& filter : thrustFilters)
+            filter.reset();
+
+        wasListeningToKey = false;
     }
 
     /** Hands over the latest settings; call this once per block of audio.
@@ -159,10 +200,22 @@ public:
             attackCoefficient = timeToCoefficient (settings.attackMs);
 
         if (moved (settings.releaseMs, previousSettings.releaseMs))
-        {
             releaseCoefficient = timeToCoefficient (settings.releaseMs);
-            releaseFade.setBase ((double) releaseCoefficient);
+
+        // VINTAGE's own speeds, which also depend on RATIO (see makeLoop). The
+        // same goes for these: they change how fast it moves, never the
+        // amount, so they're set straight from where RATIO is heading.
+        if (moved (settings.attackMs, previousSettings.attackMs) || moved (settings.releaseMs, previousSettings.releaseMs)
+             || moved (settings.ratio, previousSettings.ratio))
+        {
+            const float ratio = std::max (1.0f, settings.ratio);
+            vintageAttackKeep  = timeToCoefficient (settings.attackMs * ratio);
+            vintageReleaseKeep = timeToCoefficient (settings.releaseMs * std::sqrt (ratio));
+            steadyLoop = makeLoop (settings.ratio);
         }
+
+        vintage = settings.vintage;
+        releaseFade.setBase ((double) (vintage ? vintageReleaseKeep : releaseCoefficient));
 
         autoGain.setReleaseTime (settings.releaseMs);
 
@@ -190,6 +243,13 @@ public:
         lowCutActive = wantLowCut;
         reactToAverage = settings.reactToAverage;
 
+        // THRUST: its filters start fresh each time it's switched on.
+        if (settings.thrust && ! thrustActive)
+            for (auto& filter : thrustFilters)
+                filter.reset();
+
+        thrustActive = settings.thrust;
+
         // If anything that shapes the compressed sound has moved, AUTO-GAIN
         // predicts the new loudness straight away from the curve (it can't
         // wait for the next drum hit to find out), then re-learns quickly by
@@ -205,15 +265,33 @@ public:
     void restartAutoGain() noexcept   { autoGain.restart(); }
 
     /** Compresses the audio in place. Reports the most gain reduction and the
-        loudest detector level during this block, for the meter and graph. */
-    BlockResult process (juce::AudioBuffer<float>& buffer) noexcept
+        loudest detector level during this block, for the meter and graph.
+        key: what the compressor listens to instead of the audio itself (the
+        sidechain, for LISTENS TO: SIDECHAIN), or nullptr for the audio. It
+        can have any number of channels (none = it hears silence). */
+    BlockResult process (juce::AudioBuffer<float>& buffer, const juce::AudioBuffer<float>* key = nullptr) noexcept
     {
         const int numSamples = buffer.getNumSamples();
+        jassert (key == nullptr || key->getNumSamples() >= numSamples);
 
         BlockResult result;
         float loudestDetected = 0.0f;
 
-        resting = restingAllowed && FastMath::isSilent (buffer) && canRest();
+        // Switching between your track and the sidechain: the detector's
+        // filters start fresh (they were following the other sound), and
+        // AUTO-GAIN re-learns quickly.
+        const bool listeningToKey = key != nullptr;
+
+        if (listeningToKey != wasListeningToKey)
+        {
+            for (auto& filter : detectorFilters)  filter.reset();
+            for (auto& filter : thrustFilters)    filter.reset();
+
+            autoGain.soundChanged();
+            wasListeningToKey = listeningToKey;
+        }
+
+        resting = restingAllowed && FastMath::isSilent (buffer) && (key == nullptr || FastMath::isSilent (*key)) && canRest();
 
         if (resting)
         {
@@ -221,8 +299,14 @@ public:
         }
         else
         {
+            const int numChannels    = buffer.getNumChannels();
+            const int numKeyChannels = key != nullptr ? std::min (key->getNumChannels(), maxChannels)
+                                                      : std::min (numChannels, maxChannels);
+            const float* const* keyChannels = key != nullptr ? key->getArrayOfReadPointers()
+                                                             : buffer.getArrayOfReadPointers();
+
             for (int start = 0; start < numSamples; start += Work::size)
-                processRun (buffer.getArrayOfWritePointers(), buffer.getNumChannels(), start,
+                processRun (buffer.getArrayOfWritePointers(), numChannels, keyChannels, numKeyChannels, start,
                             std::min (Work::size, numSamples - start), result, loudestDetected);
         }
 
@@ -245,7 +329,7 @@ public:
     void allowResting (bool shouldAllow) noexcept       { restingAllowed = shouldAllow; }
 
     /** The "gain computer": for a sound at levelDb, how many dB should it be
-        turned down? This is Threshold and Ratio, with a soft knee. */
+        turned down? This is Threshold and Ratio, with a soft knee (MODERN). */
     static float gainReductionFor (float levelDb, float thresholdDb, float ratio) noexcept
     {
         const float overDb   = levelDb - thresholdDb;   // how far above the threshold (negative = below)
@@ -277,12 +361,44 @@ public:
                              Vec4::select (overDb >= halfKnee, slope * overDb, inKnee));
     }
 
+    /** VINTAGE's curve: how many dB a steady sound at levelDb ends up turned
+        down by, once the loop has settled. (Nearly the same as MODERN's -
+        the knee is shaped a little differently.) */
+    static float vintageReductionFor (float levelDb, float thresholdDb, float ratio) noexcept
+    {
+        const float overDb   = levelDb - thresholdDb;
+        const float slope    = std::max (0.0f, ratio - 1.0f);
+        const float halfKnee = vintageHalfKnee (ratio);
+
+        // Settled means: turned down by exactly what it asks for when it hears
+        // the turned-down sound (see Loop). The same three cases as step 3,
+        // with nothing left over from before.
+        const float fullyOver = overDb * slope / (1.0f + slope);
+
+        if (overDb - fullyOver >= halfKnee)
+            return fullyOver;
+
+        if (overDb <= -halfKnee)
+            return 0.0f;
+
+        const float fromKnee = overDb + halfKnee;
+        return fromKnee - 2.0f * fromKnee / (1.0f + std::sqrt (1.0f + slope / halfKnee * fromKnee));
+    }
+
+    /** How many dB a steady sound at levelDb is turned down by, for these
+        settings (MODERN or VINTAGE). */
+    static float steadyReductionFor (float levelDb, const Settings& settings) noexcept
+    {
+        return settings.vintage ? vintageReductionFor (levelDb, settings.thresholdDb, settings.ratio)
+                                : gainReductionFor (levelDb, settings.thresholdDb, settings.ratio);
+    }
+
     /** The input -> output "curve" for a steady sound (so attack and release
         don't come into it): threshold, ratio and knee, plus make-up (or the
         current AUTO-GAIN amount) and mix. This is exactly what the graph draws. */
     static float staticOutputDb (float inputDb, const Settings& settings, float currentAutoGainDb = 0.0f) noexcept
     {
-        const float reductionGain = juce::Decibels::decibelsToGain (-gainReductionFor (inputDb, settings.thresholdDb, settings.ratio));
+        const float reductionGain = juce::Decibels::decibelsToGain (-steadyReductionFor (inputDb, settings));
 
         const float gain = settings.autoGain
             ? ((1.0f - settings.mix) + settings.mix * reductionGain) * juce::Decibels::decibelsToGain (currentAutoGainDb)
@@ -291,9 +407,73 @@ public:
         return inputDb + juce::Decibels::gainToDecibels (gain, silenceDb);
     }
 
+    //==========================================================================
+    /** THRUST's filter: four gentle steps, each a first-order shelf. */
+    static constexpr int numThrustSteps = 4;
+
+    struct ThrustStep
+    {
+        float b0 = 1.0f, b1 = 0.0f, a1 = 0.0f;
+    };
+
+    using ThrustShape = std::array<ThrustStep, (size_t) numThrustSteps>;
+
+    /** Works out THRUST's filter for a sample rate: rising 3 dB per octave
+        from 20 Hz, levelling off above about 2 kHz, and exactly 0 dB at 1 kHz. */
+    static ThrustShape designThrust (double rate) noexcept
+    {
+        // Each step rises 6 dB per octave between two corners an octave
+        // (a factor of 1.94) apart, then sits flat until the next step starts
+        // another 1.94 times higher - which averages out to 3 dB per octave.
+        constexpr double lowestHz = 20.0, highestHz = 4000.0;
+        const double spacing = std::pow (highestHz / lowestHz, 1.0 / (2.0 * numThrustSteps));
+        const double pi = juce::MathConstants<double>::pi;
+        const auto warped = [rate, pi] (double hz) { return std::tan (pi * std::min (hz, 0.49 * rate) / rate); };
+
+        std::array<double, numThrustSteps> b0 {}, b1 {}, a1 {};
+        double startHz = lowestHz;
+
+        for (size_t i = 0; i < (size_t) numThrustSteps; ++i)
+        {
+            const double rise = warped (startHz), level = warped (startHz * spacing);
+            b0[i] = (1.0 + rise) / (1.0 + level);
+            b1[i] = (rise - 1.0) / (1.0 + level);
+            a1[i] = (level - 1.0) / (1.0 + level);
+            startHz *= spacing * spacing;
+        }
+
+        ThrustShape shape;
+
+        for (size_t i = 0; i < shape.size(); ++i)
+            shape[i] = { (float) b0[i], (float) b1[i], (float) a1[i] };
+
+        // Turned up or down as a whole so 1 kHz comes through unchanged.
+        const double gainAt1k = std::pow (10.0, thrustResponseDb (shape, 1000.0, rate) / 20.0);
+        shape[0].b0 = (float) (b0[0] / gainAt1k);
+        shape[0].b1 = (float) (b1[0] / gainAt1k);
+        return shape;
+    }
+
+    /** How much louder (dB) THRUST makes the detector hear a frequency. */
+    static double thrustResponseDb (const ThrustShape& shape, double hz, double rate) noexcept
+    {
+        const std::complex<double> z = std::polar (1.0, -2.0 * juce::MathConstants<double>::pi * hz / rate);   // one sample's delay
+        std::complex<double> response (1.0, 0.0);
+
+        for (auto& step : shape)
+            response *= ((double) step.b0 + (double) step.b1 * z) / (1.0 + (double) step.a1 * z);
+
+        return 20.0 * std::log10 (std::abs (response));
+    }
+
 private:
-    static constexpr float kneeWidthDb = 6.0f;
-    static constexpr int   maxChannels = LoudnessMatcher::maxChannels;
+    static constexpr float kneeWidthDb        = 6.0f;   // MODERN's soft knee
+    static constexpr float vintageKneeWidthDb = 9.0f;   // VINTAGE's, roughly, going in
+    static constexpr int   maxChannels        = LoudnessMatcher::maxChannels;
+
+    /** Half of VINTAGE's knee, measured on the turned-down sound it hears.
+        It narrows as RATIO goes up, so the knee going in stays about 9 dB. */
+    static float vintageHalfKnee (float ratio) noexcept   { return vintageKneeWidthDb / (std::max (1.0f, ratio) + 1.0f); }
 
     //==========================================================================
     /** Room to work in, for one run of samples. */
@@ -301,31 +481,30 @@ private:
     {
         static constexpr int size = 64;   // samples per run (a multiple of 4)
 
-        float peak[size] {}, meanSquare[size] {}, detected[size] {}, levelDb[size] {}, target[size] {}, reduction[size] {},
-              threshold[size] {}, ratio[size] {}, mix[size] {}, makeup[size] {}, autoAmount[size] {}, bypass[size] {},
-              compressedOnly[size] {}, withMakeup[size] {}, autoGains[size] {}, gains[size] {}, shownReduction[size] {};
+        float peak[size] {}, meanSquare[size] {}, detected[size] {}, levelDb[size] {}, target[size] {}, over[size] {},
+              reduction[size] {}, threshold[size] {}, ratio[size] {}, mix[size] {}, makeup[size] {}, autoAmount[size] {},
+              bypass[size] {}, compressedOnly[size] {}, withMakeup[size] {}, autoGains[size] {}, gains[size] {},
+              shownReduction[size] {};
         double heard[size] {};
     };
 
     /** Steps 1 to 4 for numSamples (at most Work::size) samples from start. */
-    void processRun (float* const* channels, int numChannels, int start, int numSamples,
-                     BlockResult& result, float& loudestDetected) noexcept
+    void processRun (float* const* channels, int numChannels, const float* const* keyChannels, int numKeyChannels,
+                     int start, int numSamples, BlockResult& result, float& loudestDetected) noexcept
     {
         using FastMath::Vec4;
         auto& w = work;
-        const int numDetected = std::min (numChannels, maxChannels);
-        const int numInFours  = FastMath::roundUpToFour (numSamples);
+        const int numHeard   = std::min (numChannels, maxChannels);
+        const int numInFours = FastMath::roundUpToFour (numSamples);
 
         // 1. DETECT - the louder of the channels at each instant. (And, for
-        //    AUTO-GAIN, how loud each instant sounds to our ears.) One sample
-        //    after another: the filters and AVERAGE carry on from the last one.
-        //    (Mono and stereo, nearly always what's used, get their own versions.)
-        if (numDetected == 2)       lowCutActive ? detect<2, true> (channels, start, numSamples, 2)
-                                                 : detect<2, false> (channels, start, numSamples, 2);
-        else if (numDetected == 1)  lowCutActive ? detect<1, true> (channels, start, numSamples, 1)
-                                                 : detect<1, false> (channels, start, numSamples, 1);
-        else                        lowCutActive ? detect<0, true> (channels, start, numSamples, numDetected)
-                                                 : detect<0, false> (channels, start, numSamples, numDetected);
+        //    AUTO-GAIN, how loud each instant of your track sounds to our
+        //    ears.) One sample after another: the filters and AVERAGE carry on
+        //    from the last one. (Mono and stereo, nearly always what's used,
+        //    get their own versions.)
+        if (numKeyChannels == numHeard && numHeard == 2)       detectWithFilters<2> (channels, numHeard, keyChannels, numKeyChannels, start, numSamples);
+        else if (numKeyChannels == numHeard && numHeard == 1)  detectWithFilters<1> (channels, numHeard, keyChannels, numKeyChannels, start, numSamples);
+        else                                                   detectWithFilters<0> (channels, numHeard, keyChannels, numKeyChannels, start, numSamples);
 
         //    The knobs at each sample (they only change while gliding to a new setting).
         const FastMath::KnobRun threshold  (smoothedThreshold,  w.threshold,  numSamples);
@@ -337,67 +516,34 @@ private:
 
         // 2. DECIDE - how much should each sample be turned down? (Each sample
         //    on its own, so four at a time.) AVERAGE: x sqrt 2, so a steady
-        //    tone reads the same as with PEAKS.
+        //    tone reads the same as with PEAKS. VINTAGE decides as it goes,
+        //    in step 3 (what it hears depends on what it's just done), so
+        //    here it only needs how far over the threshold each sample is.
         const auto two = Vec4::broadcast (2.0f);
 
-        for (int i = 0; i < numInFours; i += 4)
+        const auto levelAt = [&] (int i) noexcept
         {
             const auto detected = reactToAverage ? sqrt (two * Vec4::load (w.meanSquare + i)) : Vec4::load (w.peak + i);
             const auto levelDb  = FastMath::gainToDecibels (detected, silenceDb);
             detected.store (w.detected + i);
             levelDb.store (w.levelDb + i);
-            gainReductionFor (levelDb, threshold.at (i), ratio.at (i)).store (w.target + i);
-        }
+            return levelDb;
+        };
+
+        if (vintage)
+            for (int i = 0; i < numInFours; i += 4)
+                (levelAt (i) - threshold.at (i)).store (w.over + i);
+        else
+            for (int i = 0; i < numInFours; i += 4)
+                gainReductionFor (levelAt (i), threshold.at (i), ratio.at (i)).store (w.target + i);
 
         // 3. SMOOTH - head towards each target at attack or release speed, one
         //    sample after another. (AUTO-GAIN also keeps a tally of how much
         //    loudness there has been recently at each level, following the
-        //    outline of the hits.) Worked on with copies, close at hand.
-        {
-            float outlineDb = levelOutlineDb, reductionDb = currentReductionDb, loudest = loudestDetected;
-            const float outlineFall = outlineFallPerSample, attack = attackCoefficient, release = releaseCoefficient;
-
-            // (The tally's current 1 dB step is kept close at hand while the
-            // outline stays in it - usually for many samples in a row.)
-            double* const tally = recentLoudnessByLevel.data();
-            int step = -1;
-            double stepTotal = 0.0;
-
-            for (int i = 0; i < numSamples; ++i)
-            {
-                loudest = std::max (loudest, w.detected[i]);
-                outlineDb = std::max (w.levelDb[i], outlineDb - outlineFall);
-
-                if (const int bin = (int) (outlineDb - lowestTalliedDb); bin >= 0)
-                {
-                    const int thisStep = std::min (bin, levelBins - 1);
-
-                    if (thisStep != step)
-                    {
-                        if (step >= 0)
-                            tally[step] = stepTotal;
-
-                        step = thisStep;
-                        stepTotal = tally[step];
-                    }
-
-                    stepTotal += w.heard[i];
-                }
-
-                const float targetReductionDb = w.target[i];
-                const float coefficient = targetReductionDb > reductionDb ? attack : release;
-
-                reductionDb = targetReductionDb + coefficient * (reductionDb - targetReductionDb);
-                w.reduction[i] = reductionDb;
-            }
-
-            if (step >= 0)
-                tally[step] = stepTotal;
-
-            levelOutlineDb = outlineDb;
-            currentReductionDb = reductionDb;
-            loudestDetected = loudest;
-        }
+        //    outline of the hits.)
+        if (! vintage)                smooth<false, false> (numSamples, ratio, loudestDetected);
+        else if (ratio.isGliding())   smooth<true, true>   (numSamples, ratio, loudestDetected);
+        else                          smooth<true, false>  (numSamples, ratio, loudestDetected);
 
         // 4. APPLY - four at a time again. The compressed sound blended with
         //    the original by Mix (original * (1 - mix) + compressed * mix),
@@ -445,21 +591,200 @@ private:
             juce::FloatVectorOperations::multiply (channels[ch] + start, w.gains, numSamples);
     }
 
-    /** Step 1 for a run of samples. fixedChannels is 1 or 2 for mono or stereo
-        (worked out specially), or 0 for any other number of channels. */
-    template <int fixedChannels, bool withLowCut>
-    void detect (float* const* channels, int start, int numSamples, int numDetected) noexcept
+    /** Step 3 for a run. vintage: MODERN or VINTAGE. ratioGliding: whether
+        RATIO is moving (VINTAGE then works its loop out afresh each sample). */
+    template <bool isVintage, bool ratioGliding>
+    void smooth (int numSamples, const FastMath::KnobRun& ratio, float& loudestDetected) noexcept
+    {
+        auto& w = work;
+
+        // Worked on with copies, close at hand.
+        float outlineDb = levelOutlineDb, reductionDb = currentReductionDb, loudest = loudestDetected;
+        const float outlineFall = outlineFallPerSample;
+        [[maybe_unused]] const float attack = attackCoefficient, release = releaseCoefficient;   // (MODERN)
+        [[maybe_unused]] const Loop loop = steadyLoop;                                           // (VINTAGE)
+
+        // (The tally's current 1 dB step is kept close at hand while the
+        // outline stays in it - usually for many samples in a row.)
+        double* const tally = recentLoudnessByLevel.data();
+        int step = -1;
+        double stepTotal = 0.0;
+
+        for (int i = 0; i < numSamples; ++i)
+        {
+            loudest = std::max (loudest, w.detected[i]);
+            outlineDb = std::max (w.levelDb[i], outlineDb - outlineFall);
+
+            if (const int bin = (int) (outlineDb - lowestTalliedDb); bin >= 0)
+            {
+                const int thisStep = std::min (bin, levelBins - 1);
+
+                if (thisStep != step)
+                {
+                    if (step >= 0)
+                        tally[step] = stepTotal;
+
+                    step = thisStep;
+                    stepTotal = tally[step];
+                }
+
+                stepTotal += w.heard[i];
+            }
+
+            if constexpr (isVintage)
+            {
+                if constexpr (ratioGliding)
+                    reductionDb = vintageStep (w.over[i], reductionDb, makeLoop (ratio.valueAt (i)));
+                else
+                    reductionDb = vintageStep (w.over[i], reductionDb, loop);
+            }
+            else
+            {
+                const float targetReductionDb = w.target[i];
+                const float coefficient = targetReductionDb > reductionDb ? attack : release;
+
+                reductionDb = targetReductionDb + coefficient * (reductionDb - targetReductionDb);
+            }
+
+            w.reduction[i] = reductionDb;
+        }
+
+        if (step >= 0)
+            tally[step] = stepTotal;
+
+        levelOutlineDb = outlineDb;
+        currentReductionDb = reductionDb;
+        loudestDetected = loudest;
+    }
+
+    //==========================================================================
+    /** VINTAGE's loop at one RATIO setting: everything step 3 needs that
+        doesn't change from sample to sample.
+
+        The loop: each sample, the reduction moves a little of the way (set
+        by attack or release) towards what the gain computer asks for when it
+        hears the sound *as turned down by that very reduction*. The two
+        depend on each other, so each sample is solved exactly (the "zero-
+        delay feedback" way) rather than with last sample's guess - which
+        keeps it stable however fast or hard it's set.
+
+        The gain computer in the loop pushes back by (RATIO - 1) dB for every
+        dB the turned-down sound is still over, so on a steady sound it
+        settles at exactly RATIO, like MODERN. */
+    struct Loop
+    {
+        /** One speed (attack or release). */
+        struct Speed
+        {
+            float keep = 1.0f;        // how much of the last reduction is kept each sample
+            float takeSlope = 0.0f;   // (1 - keep) x slope
+            float overScale = 1.0f;   // 1 / (1 + takeSlope)
+            float kneeScale = 0.0f;   // takeSlope / halfKnee
+        };
+
+        float slope     = 0.0f;   // RATIO - 1
+        float halfKnee  = 4.5f;   // half the knee (dB, on the turned-down sound)
+        float kneeCurve = 0.0f;   // slope / (4 x halfKnee): how sharply it bends in the knee
+        Speed attack, release;
+    };
+
+    Loop makeLoop (float ratio) const noexcept
+    {
+        Loop loop;
+        loop.slope     = std::max (0.0f, ratio - 1.0f);
+        loop.halfKnee  = vintageHalfKnee (ratio);
+        loop.kneeCurve = loop.slope / (4.0f * loop.halfKnee);
+
+        const auto speed = [&loop] (float keep)
+        {
+            Loop::Speed s;
+            s.keep      = keep;
+            s.takeSlope = (1.0f - keep) * loop.slope;
+            s.overScale = 1.0f / (1.0f + s.takeSlope);
+            s.kneeScale = s.takeSlope / loop.halfKnee;
+            return s;
+        };
+
+        // (VINTAGE's own attack and release: ATTACK x RATIO, which the loop
+        // speeds back up by RATIO while it's grabbing - so it grabs exactly
+        // as fast as ATTACK says - and RELEASE x the square root of RATIO.)
+        loop.attack  = speed (vintageAttackKeep);
+        loop.release = speed (vintageReleaseKeep);
+        return loop;
+    }
+
+    /** One sample of VINTAGE: where the reduction goes next, given how far
+        over the threshold the sound coming in is (over) and where the
+        reduction is now. */
+    static forcedinline float vintageStep (float over, float reduction, const Loop& loop) noexcept
+    {
+        // Which way is it heading? What the loop asks for, hearing the sound
+        // as it's turned down right now: more than now = attack, less = release.
+        const float overAfter = over - reduction;
+        float asked = 0.0f;
+
+        if (overAfter >= loop.halfKnee)
+            asked = loop.slope * overAfter;
+        else if (overAfter > -loop.halfKnee)
+            asked = loop.kneeCurve * (overAfter + loop.halfKnee) * (overAfter + loop.halfKnee);
+
+        const auto& speed = asked > reduction ? loop.attack : loop.release;
+        const float held  = speed.keep * reduction;   // where it would go with nothing over
+
+        // Solved exactly: try "still clearly over" first (the usual case
+        // while compressing), then "clearly under" (letting go), and if
+        // neither fits, it's in the knee.
+        const float fullyOver = (held + speed.takeSlope * over) * speed.overScale;
+
+        if (over - fullyOver >= loop.halfKnee)
+            return fullyOver;
+
+        if (over - held <= -loop.halfKnee)
+            return held;
+
+        const float fromKnee = over + loop.halfKnee, beyondHeld = fromKnee - held;
+        return fromKnee - 2.0f * beyondHeld / (1.0f + std::sqrt (1.0f + speed.kneeScale * beyondHeld));
+    }
+
+    //==========================================================================
+    /** Step 1, choosing the version with exactly the filters that are on. */
+    template <int fixedChannels>
+    void detectWithFilters (float* const* channels, int numHeard, const float* const* keyChannels, int numKeyChannels,
+                            int start, int numSamples) noexcept
+    {
+        if (lowCutActive)
+            thrustActive ? detect<fixedChannels, true, true>  (channels, numHeard, keyChannels, numKeyChannels, start, numSamples)
+                         : detect<fixedChannels, true, false> (channels, numHeard, keyChannels, numKeyChannels, start, numSamples);
+        else
+            thrustActive ? detect<fixedChannels, false, true>  (channels, numHeard, keyChannels, numKeyChannels, start, numSamples)
+                         : detect<fixedChannels, false, false> (channels, numHeard, keyChannels, numKeyChannels, start, numSamples);
+    }
+
+    /** Step 1 for a run of samples. fixedChannels is 1 or 2 when both your
+        track and what the detector hears are mono or stereo (worked out
+        specially), or 0 for anything else. */
+    template <int fixedChannels, bool withLowCut, bool withThrust>
+    void detect (float* const* channels, int numHeard, const float* const* keyChannels, int numKeyChannels,
+                 int start, int numSamples) noexcept
     {
         constexpr size_t capacity = fixedChannels > 0 ? (size_t) fixedChannels : (size_t) maxChannels;
-        const int count = fixedChannels > 0 ? fixedChannels : numDetected;
+        const int count      = fixedChannels > 0 ? fixedChannels : numKeyChannels;   // what the detector hears
+        const int heardCount = fixedChannels > 0 ? fixedChannels : numHeard;         // your track, for AUTO-GAIN
 
         // Copies of everything that carries on from sample to sample, close at hand
         DetectorFilter lowCutFilters[capacity];
+        ThrustFilter thrustCopies[withThrust ? capacity : 1];
 
         for (int ch = 0; ch < count; ++ch)
+        {
             lowCutFilters[ch] = detectorFilters[(size_t) ch];
 
-        const auto coefficients = lowCut;
+            if constexpr (withThrust)
+                thrustCopies[ch] = thrustFilters[(size_t) ch];
+        }
+
+        [[maybe_unused]] const auto coefficients = lowCut;
+        [[maybe_unused]] const auto thrust = thrustShape;
         const float averaging = averagingCoefficient;
         float squared = meanSquare;
         auto& w = work;
@@ -471,8 +796,14 @@ private:
 
             for (int ch = 0; ch < count; ++ch)
             {
-                const float sample = channels[ch][start + i];
-                const float forDetector = withLowCut ? lowCutFilters[ch].highPass (sample, coefficients) : sample;
+                float forDetector = keyChannels[ch][start + i];
+
+                if constexpr (withLowCut)
+                    forDetector = lowCutFilters[ch].highPass (forDetector, coefficients);
+
+                if constexpr (withThrust)
+                    forDetector = thrustCopies[ch].process (forDetector, thrust);
+
                 peak = std::max (peak, std::abs (forDetector));
             }
 
@@ -501,7 +832,7 @@ private:
         {
             LoudnessMatcher::EarFilter ears[capacity];
 
-            for (int ch = 0; ch < count; ++ch)
+            for (int ch = 0; ch < heardCount; ++ch)
                 ears[ch] = autoGain.earFilter (ch);
 
             for (int i = 0; i < numSamples; ++i)
@@ -509,7 +840,7 @@ private:
                 const float peak = peakAt (i);
                 double heard = 0.0;
 
-                for (int ch = 0; ch < count; ++ch)
+                for (int ch = 0; ch < heardCount; ++ch)
                     heard += ears[ch].measure (channels[ch][start + i]);
 
                 w.heard[i] = heard;
@@ -520,12 +851,17 @@ private:
                 w.meanSquare[i] = squared;
             }
 
-            for (int ch = 0; ch < count; ++ch)
+            for (int ch = 0; ch < heardCount; ++ch)
                 autoGain.earFilter (ch) = ears[ch];
         }
 
         for (int ch = 0; ch < count; ++ch)
+        {
             detectorFilters[(size_t) ch] = lowCutFilters[ch];
+
+            if constexpr (withThrust)
+                thrustFilters[(size_t) ch] = thrustCopies[ch];
+        }
 
         meanSquare = squared;
     }
@@ -549,24 +885,33 @@ private:
                 if (! filter.hasFallenSilent())
                     return false;
 
+        if (thrustActive)
+            for (auto& filter : thrustFilters)
+                if (! filter.hasFallenSilent())
+                    return false;
+
         // The detector only gets quieter from here (for AVERAGE, as it fades out),
         // so if even the first sample is below the knee, they all are.
         const float firstDetected = reactToAverage ? std::sqrt (2.0f * (meanSquare + (0.0f - meanSquare) * averagingCoefficient))
                                                    : 0.0f;
         const float overDb = FastMath::gainToDecibels (firstDetected, silenceDb) - smoothedThreshold.getTargetValue();
-        return overDb <= -kneeWidthDb * 0.5f;
+        const float halfKnee = vintage ? vintageHalfKnee (smoothedRatio.getTargetValue()) : kneeWidthDb * 0.5f;
+        return overDb <= -halfKnee;
     }
 
     /** Moves on by numSamples of digital silence, just as working through them would. */
     void rest (int numSamples, BlockResult& result, float& loudestDetected) noexcept
     {
-        // (What IGNORE BELOW's filters had left was under a billionth.)
+        // (What IGNORE BELOW's and THRUST's filters had left was under a billionth.)
         for (auto& filter : detectorFilters)
+            filter.reset();
+
+        for (auto& filter : thrustFilters)
             filter.reset();
 
         // Nothing is over the threshold, so the compressor lets go at the
         // RELEASE speed (the meter shows the first, biggest, of those)...
-        const float first = releaseCoefficient * currentReductionDb;
+        const float first = (vintage ? vintageReleaseKeep : releaseCoefficient) * currentReductionDb;
         result.maxReductionDb = std::max (result.maxReductionDb, first * (1.0f - smoothedBypass.getTargetValue()));
         currentReductionDb = (float) ((double) currentReductionDb * releaseFade (numSamples));
 
@@ -586,14 +931,14 @@ private:
 
     /** How much louder (as a power ratio) the compressed sound would be with
         the "to" settings than with the "from" settings, judging by the curve
-        and the recent tally of levels. Attack, release and IGNORE BELOW don't
-        change the curve, so for those it says "no change" and AUTO-GAIN
-        relies on listening to the next hits instead. */
+        and the recent tally of levels. Attack, release, IGNORE BELOW and
+        THRUST don't change the curve, so for those it says "no change" and
+        AUTO-GAIN relies on listening to the next hits instead. */
     double predictedLoudnessChange (const Settings& from, const Settings& to) const noexcept
     {
         const auto compressedGain = [] (float levelDb, const Settings& s)
         {
-            return (double) ((1.0f - s.mix) + s.mix * juce::Decibels::decibelsToGain (-gainReductionFor (levelDb, s.thresholdDb, s.ratio)));
+            return (double) ((1.0f - s.mix) + s.mix * juce::Decibels::decibelsToGain (-steadyReductionFor (levelDb, s)));
         };
 
         double before = 0.0, after = 0.0;
@@ -623,7 +968,7 @@ private:
         return moved (a.thresholdDb, b.thresholdDb) || moved (a.ratio, b.ratio)
             || moved (a.attackMs, b.attackMs)       || moved (a.releaseMs, b.releaseMs)
             || moved (a.mix, b.mix)                 || moved (a.lowCutHz, b.lowCutHz)
-            || a.reactToAverage != b.reactToAverage;
+            || a.reactToAverage != b.reactToAverage || a.vintage != b.vintage || a.thrust != b.thrust;
     }
 
     //==========================================================================
@@ -655,6 +1000,33 @@ private:
         bool hasFallenSilent() const noexcept   { return std::abs (s1) < 1.0e-9f && std::abs (s2) < 1.0e-9f; }
     };
 
+    /** THRUST's filter, one per channel: the four steps one after another.
+        (Each step remembers what went into it and what came out last time.) */
+    struct ThrustFilter
+    {
+        std::array<float, (size_t) numThrustSteps + 1> previous {};   // [0]: last input; [i + 1]: step i's last output
+
+        forcedinline float process (float x, const ThrustShape& shape) noexcept
+        {
+            for (size_t i = 0; i < shape.size(); ++i)
+            {
+                const float y = shape[i].b0 * x + (shape[i].b1 * previous[i] - shape[i].a1 * previous[i + 1]);
+                previous[i] = x;
+                x = y;
+            }
+
+            previous[shape.size()] = x;
+            return x;
+        }
+
+        void reset() noexcept   { previous.fill (0.0f); }
+
+        bool hasFallenSilent() const noexcept
+        {
+            return std::all_of (previous.begin(), previous.end(), [] (float s) { return std::abs (s) < 1.0e-9f; });
+        }
+    };
+
     /** Turns a time in ms into the per-sample smoothing factor used in step 3.
         After that much time, the smoothing has covered about 63% of the way. */
     float timeToCoefficient (float milliseconds) const noexcept
@@ -674,9 +1046,20 @@ private:
     float makeupAsGain       = 1.0f;
     float currentReductionDb = 0.0f;   // how many dB it's turning down right now (always >= 0)
 
+    // CHARACTER
+    bool  vintage = false;
+    float vintageAttackKeep = 0.0f, vintageReleaseKeep = 0.0f;
+    Loop  steadyLoop;   // VINTAGE's loop at the current RATIO
+
     bool lowCutActive = false;
     LowCutCoefficients lowCut;
     std::array<DetectorFilter, (size_t) maxChannels> detectorFilters;
+
+    bool thrustActive = false;
+    ThrustShape thrustShape {};
+    std::array<ThrustFilter, (size_t) maxChannels> thrustFilters;
+
+    bool wasListeningToKey = false;   // (the sidechain, last block)
 
     bool  reactToAverage = false;
     float meanSquare = 0.0f, averagingCoefficient = 0.0f;   // for REACTS TO: AVERAGE

@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.8.0)
+project(EasyPlugins VERSION 1.9.0)
 
 # Build the Visual C++ runtime into the plugins themselves, so they also work
 # on a PC that doesn't have Visual Studio installed. (No effect on macOS / Linux.)
@@ -96,7 +96,7 @@ endfunction()
 add_easy_plugin(EasyComp
     NAME        "Easy Comp"
     CODE        Ezcp
-    VERSION     1.5.1
+    VERSION     1.6.0
     BUNDLE_ID   com.homestudio.easycomp
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/Compressor.h

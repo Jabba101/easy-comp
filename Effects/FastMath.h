@@ -326,6 +326,12 @@ namespace FastMath
         /** The values at samples i to i + 3. */
         forcedinline Vec4 at (int i) const noexcept   { return gliding ? Vec4::load (values + i) : Vec4::broadcast (steady); }
 
+        /** The value at sample i. */
+        forcedinline float valueAt (int i) const noexcept   { return gliding ? values[i] : steady; }
+
+        /** True while it's gliding (so the value changes from sample to sample). */
+        bool isGliding() const noexcept               { return gliding; }
+
     private:
         const float* values;
         float steady;

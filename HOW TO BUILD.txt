@@ -100,6 +100,25 @@ YOUR FIRST FIVE MINUTES WITH EASY COMP
    6. On vocals, bass or a whole mix, try REACTS TO: AVERAGE for a
       smoother, more natural squeeze. On a mix or drum bus, if the kick
       makes everything "pump", turn up IGNORE BELOW (try 80-150 Hz).
+   7. CHARACTER, for flavour:
+        STYLE: MODERN     clean and precise - the knobs do exactly what
+                          they say.
+        STYLE: VINTAGE    our take on the classic "feedback" compressors
+                          (in the zone of the API 2500's OLD setting): it
+                          follows loud passages closely and eases back
+                          gently when the sound drops away. Thicker, more
+                          glue, less pumping - and it adds less distortion
+                          to low notes than MODERN. Try it on the drum bus,
+                          bass and the mix bus.
+        LOW END: THRUST   the compressor hears less and less of the low
+                          end the lower it goes (and a little more of the
+                          bright, edgy range), so the kick and bass punch
+                          through instead of setting it off. It only changes
+                          what it reacts to, never your tone. You may need
+                          THRESHOLD a little lower.
+      Flick STYLE between MODERN and VINTAGE while the track plays
+      (with AUTO-GAIN on): the amount of squeeze stays about the same,
+      the feel changes.
    Hover over anything for a plain-English explanation.
 
    Found settings you like? Preset menu > "Save current settings as a
@@ -107,11 +126,32 @@ YOUR FIRST FIVE MINUTES WITH EASY COMP
 
    The presets cover drums, bass, guitars, keys, vocals, strings, brass
    and wind, and the mix bus, with versions for different styles (for
-   example "Vocal - Rock & Metal" or "Kick - Hip-Hop & R&B"). They're set
-   up for tracks recorded at a normal level - the loudest peaks around
-   -8 dB on your DAW's meter. If your track is much louder or quieter,
-   the meter will show more or less than the tip says: just move
-   THRESHOLD until it matches.
+   example "Vocal - Rock & Metal" or "Kick - Hip-Hop & R&B"), and VINTAGE
+   and THRUST versions (e.g. "Drum Bus - Vintage Glue"). They're set up
+   for tracks recorded at a normal level - the loudest peaks around -8 dB
+   on your DAW's meter. If your track is much louder or quieter, the
+   meter will show more or less than the tip says: just move THRESHOLD
+   until it matches.
+
+   The sidechain: with LISTENS TO set to SIDECHAIN, the compressor reacts
+   to another track instead of your own - for example the kick turning
+   the bass down a little on every hit ("ducking": the preset "Bass -
+   Ducked by the Kick"), or music dipping under a voice. The presets
+   under "Sidechain Tricks" say what to send. Your DAW does the routing,
+   just like for Easy Gate. In Samplitude: in Easy Comp's plugin window,
+   open the "Sidechain Input" menu at the top, switch on "Sidechain In"
+   and pick the track to listen to (e.g. the kick). Then set LISTENS TO:
+   SIDECHAIN. If the graph says NOTHING IS COMING INTO THE SIDECHAIN,
+   the routing isn't connected yet.
+
+   Updated from Easy Comp 1.5 and there's no "Sidechain Input" menu for
+   Easy Comp in Samplitude? Samplitude remembers what each plugin could
+   do when it last scanned it. Close Samplitude, then delete the file
+   VSTPlugins.ini in C:\ProgramData\Boris FX\ (in the Samplitude folder
+   for your version, e.g. Samplitude2026 - ProgramData is hidden, so
+   paste the path into File Explorer's address bar). Start Samplitude
+   and let it scan your plugins again. (If you'd added extra plugin
+   folders under System options > Effects > VST/ReWire, add them again.)
 
 
 ====================================================================

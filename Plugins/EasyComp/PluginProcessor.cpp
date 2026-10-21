@@ -50,12 +50,19 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyCompAudioProcessor::crea
 
     layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { CompIDs::reactsTo, 4 }, "Reacts To",
                                                               juce::StringArray { "Peaks", "Average" }, (int) defaults.reactsTo));
+
+    layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { CompIDs::character, 5 }, "Style",
+                                                              juce::StringArray { "Modern", "Vintage" }, (int) defaults.style));
+    layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { CompIDs::lowEnd, 5 }, "Low End",
+                                                              juce::StringArray { "Normal", "Thrust" }, (int) defaults.lowEnd));
+    layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { CompIDs::listensTo, 5 }, "Listens To",
+                                                              juce::StringArray { "This Track", "Sidechain" }, (int) ListensTo::listensToTrack));
     return layout;
 }
 
 //==============================================================================
 EasyCompAudioProcessor::EasyCompAudioProcessor()
-    : EasyProcessor ("EasyCompSettings", createParameterLayout(), makeCompressorPresets(), compressorPresetIDs())
+    : EasyProcessor ("EasyCompSettings", createParameterLayout(), makeCompressorPresets(), compressorPresetIDs(), true)
 {
     thresholdValue = parameters.getRawParameterValue (CompIDs::threshold);
     ratioValue     = parameters.getRawParameterValue (CompIDs::ratio);
@@ -65,6 +72,9 @@ EasyCompAudioProcessor::EasyCompAudioProcessor()
     mixValue       = parameters.getRawParameterValue (CompIDs::mix);
     lowCutValue    = parameters.getRawParameterValue (CompIDs::lowCut);
     reactsToValue  = parameters.getRawParameterValue (CompIDs::reactsTo);
+    characterValue = parameters.getRawParameterValue (CompIDs::character);
+    lowEndValue    = parameters.getRawParameterValue (CompIDs::lowEnd);
+    listensToValue = parameters.getRawParameterValue (CompIDs::listensTo);
     autoGainValue  = parameters.getRawParameterValue (CommonIDs::autoGain);
     bypassValue    = parameters.getRawParameterValue (CommonIDs::bypass);
 }
@@ -72,27 +82,53 @@ EasyCompAudioProcessor::EasyCompAudioProcessor()
 //==============================================================================
 void EasyCompAudioProcessor::prepareToPlay (double sampleRate, int /*samplesPerBlock*/)
 {
+    currentSampleRate = sampleRate;
     compressor.prepare (sampleRate, getCurrentSettings());
     meterReductionDb.store (0.0f);
     graphLevelDb.store (Compressor::silenceDb);
     autoGainDb.store (0.0f);
     autoGainRestartRequested.store (false);
+    sidechainMissing.store (false);
+    samplesSinceTrackSound = samplesSinceSidechainSound = 1 << 30;
 }
 
 void EasyCompAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;   // avoids CPU spikes from ultra-tiny numbers
 
-    // Standard housekeeping: silence any output channels that have no input.
-    for (auto channel = getTotalNumInputChannels(); channel < getTotalNumOutputChannels(); ++channel)
-        buffer.clear (channel, 0, buffer.getNumSamples());
+    // Your track (in, and once compressed, out), and the sidechain - with no
+    // channels if the DAW has switched it off (or, to be safe, hasn't sent it).
+    auto track = getBusBuffer (buffer, false, 0);
+    const bool sidechainSent = getBusCount (true) > 1
+                            && buffer.getNumChannels() >= getChannelIndexInProcessBlockBuffer (true, 1, 0) + getChannelCountOfBus (true, 1);
+    auto sidechain = sidechainSent ? getBusBuffer (buffer, true, 1)
+                                   : juce::AudioBuffer<float> (buffer.getArrayOfWritePointers(), 0, buffer.getNumSamples());
+    const bool wantsSidechain = usesSidechain();
 
     compressor.setSettings (getCurrentSettings());
 
     if (autoGainRestartRequested.exchange (false))
         compressor.restartAutoGain();   // a preset was just loaded
 
-    const auto result = compressor.process (buffer);
+    // LISTENS TO: SIDECHAIN with nothing coming in can't compress, so the
+    // window says so (once your track has been playing for a moment without it).
+    if (wantsSidechain)
+    {
+        const int n = buffer.getNumSamples();
+        const bool sidechainHasSound = sidechain.getNumChannels() > 0 && ! FastMath::isSilent (sidechain);
+        samplesSinceTrackSound     = FastMath::isSilent (track) ? juce::jmin (samplesSinceTrackSound + n, 1 << 30) : 0;
+        samplesSinceSidechainSound = sidechainHasSound ? 0 : juce::jmin (samplesSinceSidechainSound + n, 1 << 30);
+
+        const int patience = (int) (1.5 * currentSampleRate);
+        sidechainMissing.store (samplesSinceSidechainSound > patience && samplesSinceTrackSound < patience);
+    }
+    else
+    {
+        sidechainMissing.store (false);
+        samplesSinceSidechainSound = 1 << 30;
+    }
+
+    const auto result = compressor.process (track, wantsSidechain ? &sidechain : nullptr);
 
     // Keep the biggest values until the meter and graph next ask for them.
     storeIfBigger (meterReductionDb, result.maxReductionDb);
@@ -111,6 +147,8 @@ Compressor::Settings EasyCompAudioProcessor::getCurrentSettings() const noexcept
     settings.mix         = mixValue->load() / 100.0f;   // the knob shows %, the maths wants 0..1
     settings.lowCutHz    = lowCutValue->load();
     settings.reactToAverage = reactsToValue->load() > 0.5f;
+    settings.vintage     = characterValue->load() > 0.5f;
+    settings.thrust      = lowEndValue->load() > 0.5f;
     settings.autoGain    = autoGainValue->load() > 0.5f;
     settings.bypassed    = bypassValue->load() > 0.5f;
     return settings;

@@ -43,11 +43,10 @@ THE CHANNEL STRIP, IN SIGNAL ORDER
                     band or (TURNS DOWN: WHOLE SOUND) everything, the
                     classic style. LISTEN to hear what it's catching.
 
-   6. COMPRESSOR    Easy Comp, plus:
-                      CHARACTER   our own take on feedback compression,
-                                  in the zone of the API 2500's OLD mode
-                                  (not a copy)
-                      a THRUST-style option for IGNORE BELOW
+   6. COMPRESSOR    Easy Comp (done), with CHARACTER: STYLE MODERN or
+                    VINTAGE (our own take on feedback compression, in the
+                    zone of the API 2500's OLD mode, not a copy) and LOW
+                    END: THRUST.
 
    7. TRANSIENT     Easy Trans.
 
@@ -66,7 +65,8 @@ THE CHANNEL STRIP, IN SIGNAL ORDER
      too. Changing it while playing crossfades (no clicks), and the
      strip's small delay stays the same whatever the order (Easy Gate
      and Easy DS share one 2 ms look-ahead).
-   - Sidechain input, so the kick can duck the bass.
+   - Sidechain input, so the kick can duck the bass (done in Easy Gate
+     and Easy Comp; the strip will share one sidechain input).
 
    Strip presets to include:
    - A couple of lo-fi presets: a broad de-ess (TURNS DOWN: WHOLE
@@ -96,7 +96,7 @@ BUILD ORDER
 ====================================================================
    1. Easy Gate            done (1.0.0)
    2. Easy DS              done (1.0.0)
-   3. Easy Comp update     CHARACTER switch and the THRUST-style option
+   3. Easy Comp update     done (1.6.0)
    4. Easy EQ              the biggest design job (the curve display)
    5. Easy Amp, Easy Clip  separate plugins, both need the oversampling
    6. The channel strip
@@ -116,6 +116,14 @@ LATER
 ====================================================================
 DONE
 ====================================================================
+   - Easy Comp 1.6.0: CHARACTER - STYLE: MODERN or VINTAGE, and LOW END:
+     NORMAL or THRUST - and a sidechain input (LISTENS TO). VINTAGE
+     follows loud passages closely and eases back gently when the sound
+     drops away; the same peak amount as MODERN, and less distortion on
+     low notes. THRUST: the detector hears 3 dB less per octave below
+     about 2 kHz. 9 new presets (VINTAGE / THRUST versions, and "Sidechain
+     Tricks"). MODERN sounds exactly as before, and old projects open on
+     MODERN, NORMAL and THIS TRACK.
    - Easy DS 1.0.0: FROM, TO, FIND, THRESHOLD, RANGE, TURNS DOWN (HARSH
      BAND or WHOLE SOUND), LISTEN, and a 2 ms look-ahead. THRESHOLD is
      compared with the rest of the sound (and, half as much, how loud
