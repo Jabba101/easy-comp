@@ -116,6 +116,9 @@ LATER
    - The optional Cold War look: choose a direction from the mockups
      (A, B, C or a mix). The current clean look stays too.
    - A resizable window.
+   - Once the essentials are perfected: an effects window you can open
+     from the strip, with easy versions of the effects you use a lot -
+     e.g. a slapback delay on vocals.
 
 
 ====================================================================
