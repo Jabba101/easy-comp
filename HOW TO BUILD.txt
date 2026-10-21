@@ -8,6 +8,7 @@ Right now this project makes:
     Easy Gate    a gate (silences the noise and bleed between the
                  sounds you want)
     Easy DS      a de-esser (tames harsh S sounds, and harsh cymbals)
+    Bitch-Slap   a gated reverb (the big 80s burst that stops dead)
 
 Every time the project changes on GitHub, GitHub builds the plugins for you
 on its own Windows computers. You just download and install them.
@@ -41,7 +42,7 @@ GETTING THE LATEST PLUGINS FROM GITHUB
 
  7. Open your DAW and rescan your plugins. They're listed under
     "Aardvark Easy Suite" (it used to be "Home Studio"), in effects /
-    dynamics.
+    dynamics - and Bitch-Slap in effects / reverb.
 
  Your projects keep working: newer versions open older projects with
  any new features switched off, so they sound exactly as they did. That
@@ -248,6 +249,48 @@ YOUR FIRST FIVE MINUTES WITH EASY DS
 
 
 ====================================================================
+YOUR FIRST FIVE MINUTES WITH BITCH-SLAP
+====================================================================
+   The 80s gated reverb: every hit - each snare, tom, ghost note, even
+   the bleed - gets its own burst of big, wide reverb that stops dead.
+
+   1. Put it on a snare or tom track and pick a preset, or play the
+      track and turn up MIX. Up to 50% it only adds reverb (at 50% the
+      burst is about as loud as the snare). Above 50% it also turns
+      your original sound down, until 100% = reverb only.
+   2. Set LENGTH: how long each burst lasts before it slams shut,
+      counted from the hit. Short (100-200 ms) for fast songs, long
+      (400-700 ms) for the huge 80s sound. Watch the display: each
+      amber block is a burst, and it should end before the next snare
+      hit. The bar in the display's top corner shows LENGTH on the
+      same time scale.
+   3. SYNC: TEMPO sets LENGTH as a note length instead (1/8, 1/4...),
+      following your song's tempo - even when it changes. The line
+      under SYNC shows what that works out to in milliseconds (with
+      SYNC OFF, it shows how your LENGTH fits the song).
+   4. Click BYPASS on and off to compare.
+
+   Moving LENGTH never clicks or chops a burst: each hit keeps the
+   burst it started with, and the new LENGTH starts with the next hits.
+
+   As an FX send (the classic way - several drums sharing one reverb):
+     In Samplitude: Track menu > Insert New Track > New AUX Bus. Put
+     Bitch-Slap on the AUX bus as a track effect and pick a preset from
+     "FX Send (Reverb Only)" (MIX 100%). Then use each drum track's
+     AUX-Send slider in the mixer to send it to the bus; the bus's fader
+     sets how much reverb you hear overall.
+
+   Wide or mono: the burst is wide (different on the left and right).
+   On a mono track, your DAW may give the plugin a mono output, and the
+   burst is mono too. For the full width, use a send (above) or put it
+   on a stereo track.
+
+   It adds no delay to your track, and uses very little of your
+   processor (about half a percent of one core, even with 1-second
+   bursts) - nothing at all when bypassed, at MIX 0%, or in silence.
+
+
+====================================================================
 CHANGING THINGS
 ====================================================================
    - Built-in presets: Presets.h in each plugin's folder (e.g.
@@ -255,8 +298,8 @@ CHANGING THINGS
    - Colours:          the Palette list at the top of Shared\Look.h.
    - Help text:        the knobInfo list in each plugin's PluginEditor.cpp.
    - The sound:        Effects\Compressor.h, Effects\TransientShaper.h,
-                       Effects\Gate.h and Effects\DeEsser.h - commented
-                       step by step.
+                       Effects\Gate.h, Effects\DeEsser.h and
+                       Effects\GatedReverb.h - commented step by step.
 
 
 ====================================================================
@@ -276,6 +319,7 @@ WHAT'S IN THIS FOLDER
      Gate.h                 the gate
      DeEsser.h              the de-esser
      HarshnessFinder.h      Easy DS's FIND button
+     GatedReverb.h          Bitch-Slap's reverb
      LoudnessMatcher.h      AUTO-GAIN (shared by every plugin)
      FastMath.h             quick decibel maths and helpers for working on
                             several samples at once (shared by every plugin)
@@ -289,6 +333,10 @@ WHAT'S IN THIS FOLDER
                           folder keeps the old name).
    Plugins\EasyGate\      Easy Gate's knobs, window and presets.
    Plugins\EasyDS\        Easy DS's knobs, window and presets.
+   Plugins\BitchSlap\     Bitch-Slap's knobs, window and presets.
+
+   ThirdParty\pffft\      PFFFT, the fast FFT behind Bitch-Slap's reverb
+                          (someone else's free code - see its README.txt).
 
    On a Mac, the same folder builds VST3 and AU versions (needs Xcode and
    CMake: run "cmake --preset release" then "cmake --build --preset release").
@@ -302,3 +350,7 @@ A NOTE ON JUCE'S LICENCE
    keep the GitHub repository private. If you ever share or sell the
    plugins, read the licence terms at https://juce.com first - they decide
    whether you'd need to share your source code or buy a licence.
+
+   Bitch-Slap also uses PFFFT (ThirdParty\pffft), which is free under a
+   BSD-style licence. Its only condition: if you give the plugins to
+   anyone, include the text of ThirdParty\pffft\LICENSE.txt with them.

@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.9.0)
+project(EasyPlugins VERSION 1.10.0)
 
 # Build the Visual C++ runtime into the plugins themselves, so they also work
 # on a PC that doesn't have Visual Studio installed. (No effect on macOS / Linux.)
@@ -42,6 +42,13 @@ set(SHARED_SOURCES
     Effects/LoudnessMatcher.h)
 
 set(FINISHED_PLUGINS_FOLDER "${CMAKE_BINARY_DIR}/Finished Plugins")
+
+# ---- PFFFT: the fast FFT behind Bitch-Slap's reverb (ThirdParty/pffft/README.txt)
+add_library(pffft STATIC ThirdParty/pffft/pffft.c ThirdParty/pffft/pffft_common.c)
+target_include_directories(pffft PUBLIC ThirdParty/pffft)
+target_compile_definitions(pffft PUBLIC PFFFT_STATIC_DEFINE)
+target_compile_options(pffft PRIVATE $<$<C_COMPILER_ID:MSVC>:/FImalloc.h>)   # (pffft.c uses _alloca but forgets this header on Windows)
+set_target_properties(pffft PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # add_easy_plugin(<target>
 #     NAME        "<the name your DAW shows>"
@@ -145,3 +152,17 @@ add_easy_plugin(EasyDS
                 Plugins/EasyDS/PluginProcessor.cpp
                 Plugins/EasyDS/PluginEditor.h
                 Plugins/EasyDS/PluginEditor.cpp)
+
+add_easy_plugin(BitchSlap
+    NAME        "Bitch-Slap"
+    CODE        Ezbs
+    VERSION     1.0.0
+    BUNDLE_ID   com.homestudio.bitchslap
+    CATEGORIES  Fx Reverb
+    SOURCES     Effects/GatedReverb.h
+                Plugins/BitchSlap/Presets.h
+                Plugins/BitchSlap/PluginProcessor.h
+                Plugins/BitchSlap/PluginProcessor.cpp
+                Plugins/BitchSlap/PluginEditor.h
+                Plugins/BitchSlap/PluginEditor.cpp)
+target_link_libraries(BitchSlap PRIVATE pffft)

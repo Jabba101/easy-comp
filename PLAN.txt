@@ -50,11 +50,13 @@ THE CHANNEL STRIP, IN SIGNAL ORDER
 
    7. TRANSIENT     Easy Trans.
 
-   8. GATED REVERB  Bitch-Slap, right on the track: punch in a big gated
-                    reverb without hunting for a reverb plugin. MIX, and
-                    LENGTH (how long it rings before it slams shut).
-                    Switched off, it costs nothing. Also its own plugin,
-                    for using it as a send on a bus.
+   8. GATED REVERB  Bitch-Slap (done as its own plugin, 1.0.0), right on
+                    the track: punch in a big gated reverb without
+                    hunting for a reverb plugin. MIX, LENGTH (how long it
+                    rings before it slams shut) and SYNC (LENGTH as a
+                    note at the song's tempo). Switched off, it costs
+                    nothing. Its own plugin stays, for using it as a send
+                    on a bus.
 
    9. OUTPUT        Level, and Easy Clip: a hard clipper with a ceiling
                     control, an optional softness knob (0 = hard), and a
@@ -103,10 +105,10 @@ BUILD ORDER
    1. Easy Gate            done (1.0.0)
    2. Easy DS              done (1.0.0)
    3. Easy Comp update     done (1.6.0)
-   4. Easy EQ              the biggest design job (the curve display)
-   5. Easy Amp, Easy Clip  separate plugins, both need the oversampling
-   6. Bitch-Slap           the gated reverb: its own plugin first (works
-                           on the track or as a send), then on the strip
+   4. Bitch-Slap           done (1.0.0): the gated reverb, its own plugin
+                           (on the track or as a send); joins the strip later
+   5. Easy EQ              the biggest design job (the curve display)
+   6. Easy Amp, Easy Clip  separate plugins, both need the oversampling
    7. The channel strip    the Aardvark Easy Strip
 
 
@@ -124,6 +126,17 @@ LATER
 ====================================================================
 DONE
 ====================================================================
+   - Bitch-Slap 1.0.0: the gated reverb - the "burst" kind (the 80s
+     digital way): every sound, ghost notes and bleed included, gets
+     its own burst of wide reverb that stops dead. MIX (up to 50% it
+     only adds reverb; 100% = reverb only, for a send), LENGTH 50-1000
+     ms, SYNC: TEMPO (LENGTH as a note, 1/32 to 1/2, following the
+     song's tempo), BYPASS. A display of your hits and their bursts. 22
+     presets: snare, toms and kick, whole kit, electronic, vocals, FX
+     send, tempo sync - for rock, punk, synthwave, darksynth and jazz.
+     Moving LENGTH never clicks: each hit keeps the burst it started
+     with. No added delay; about half a percent of one core with
+     1-second bursts, nothing in silence, bypassed or at MIX 0%.
    - Easy Comp 1.6.0: CHARACTER - STYLE: MODERN or VINTAGE, and LOW END:
      NORMAL or THRUST - and a sidechain input (LISTENS TO). VINTAGE
      follows loud passages closely and eases back gently when the sound
