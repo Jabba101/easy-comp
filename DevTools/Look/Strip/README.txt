@@ -79,7 +79,11 @@ STYLE RULES
    HOURS / MINUTES under an old clock's counters. Exception: % sits to
    the RIGHT of the drums, printed as big as the digits ("35 %"), on
    every percentage. Other units may move beside their numbers too,
-   case by case, if underneath feels wrong after real use. The ticker shows the
+   case by case, if underneath feels wrong after real use.
+   Each counter has a FIXED number of drums, enough for its knob's
+   whole range (e.g. PUNCH / SUSTAIN, -100 to +100 %: a sign drum plus
+   three digits); unused drums show blank, so a counter never changes
+   width. The ticker shows the
    full value with its unit while you turn. (This replaces the "one
    counter per section" idea below.)
  - Mechanical drum counters (white digits on black drums, each digit on
