@@ -74,8 +74,11 @@ STYLE RULES
  - A drum counter under EVERY knob, sized to its knob (big under the
    main knob, compact under small ones, never too small to read at
    Medium). Numbers only on the drums (words like OFF too); the unit
-   (kHz, dB, ms, %) is printed small on the panel underneath, like the
-   HOURS / MINUTES under an old clock's counters. The ticker shows the
+   (kHz, dB, ms) is printed small on the panel underneath, like the
+   HOURS / MINUTES under an old clock's counters. Exception: % sits to
+   the RIGHT of the drums, printed as big as the digits ("35 %"), on
+   every percentage. Other units may move beside their numbers too,
+   case by case, if underneath feels wrong after real use. The ticker shows the
    full value with its unit while you turn. (This replaces the "one
    counter per section" idea below.)
  - Mechanical drum counters (white digits on black drums, each digit on
