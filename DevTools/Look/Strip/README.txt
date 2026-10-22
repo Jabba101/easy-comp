@@ -59,6 +59,10 @@ STYLE RULES
    colour by function (blue = frequency, red = level), section sizes.
  - No grids of identical knobs: group them (each EQ band its own tinted
    panel, frequency knob above and offset from its gain knob).
+ - Light colours mean the same everywhere: GREEN = a module is on;
+   AMBER = selected or a sound character choice (the view on the big
+   screen, VINTAGE); BLUE = a mode that adds delay and CPU (the EQ's
+   MASTER, oversampling at 4x and 8x).
  - Mechanical drum counters (white digits on black drums) show values:
    one per section, showing whichever knob you touch (or hover), back to
    the section's main value after a couple of seconds, with a small
@@ -85,7 +89,10 @@ The ticker is on by default and its hints matter as much as the sound.
          IGNORE ABOVE, OPENED BY (this track / sidechain)
  Amp     VIBE (biggest)
  EQ      HPF, LPF, low shelf, bell 1, bell 2, high shelf - a frequency and
-         a gain knob on every band, shelves included; CHANNEL / BUS
+         a gain knob on every band, shelves included; a lit MASTER
+         pushbutton (blue) for linear phase. Its hint: keeps the timing of
+         every sound intact, best on a drum bus or a finished mix; adds a
+         short delay and uses more power, so leave it off on single tracks.
  DS      THRESHOLD (biggest), FROM, TO, RANGE, TURNS DOWN (harsh band /
          whole sound), FIND, LISTEN
  Comp    THRESHOLD (biggest), RATIO, ATTACK, RELEASE, MAKE-UP, MIX,
