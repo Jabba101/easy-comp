@@ -1,5 +1,10 @@
 THE AARDVARK EASY STRIP - THE LOOK (reference, 22 October 2026)
 ================================================================
+What it's for: the default plugin on EVERY track - drums, bass,
+guitars, keys, synths, vocals, buses, and the master if it's good
+enough. (It started with drums; it isn't a drum strip.) So presets,
+hints and reference plates cover the whole mix, not just drums.
+
 strip_reference_v1.png   the chosen render: the look is settled on this.
                          Made with GPT Image 2 Edit from strip_wireframe.html
                          (screenshot attached) and the prompt below.
@@ -207,9 +212,9 @@ perforated), stencilled markings (unit code, DO NOT OPEN - NO
 USER-SERVICEABLE PARTS, hazard stripes), inspection / CALIBRATED tags
 with a date and initials, a riveted QC stamp, torque-spec labels near
 bolts, an engraved signal-flow plate showing the module order. A useful
-one for the EQ's spare space: an engraved drum FREQUENCY REFERENCE plate
-(kick thump ~60 Hz, snare body ~200 Hz, boxiness 400-600 Hz, stick
-attack 2-5 kHz, cymbal air 10 kHz+).
+one for the EQ's spare space: an engraved FREQUENCY REFERENCE plate for
+the whole mix (kick and bass weight, vocal body and presence, guitar
+crunch, boxiness, sibilance, air - with drum landmarks among them).
 Rules: static and subtle (part of the pre-rendered art, so no CPU cost;
 darker and quieter than the labels and controls), and never next to a
 control, so nothing is mistaken for a button.
