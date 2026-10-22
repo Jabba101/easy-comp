@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Easy Strip Wireframe</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@500&display=swap">
@@ -19,11 +20,11 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
 .frame{overflow-x:auto;max-width:100%}
 .panel{width:1800px;margin:0 auto;background:var(--case);border:3px solid #111;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;font-size:13px;letter-spacing:.4px;box-sizing:border-box}
 /* header */
-.hb{background:var(--gun2);border:2px solid #111;border-radius:8px;display:flex;align-items:center;gap:28px;padding:10px 18px 26px}
+.hb{background:var(--gun2);border:2px solid #111;border-radius:8px;display:flex;align-items:center;gap:24px;padding:5px 14px}
 .title{text-align:center;line-height:1;color:#f1efe8}
 .tt{font-family:var(--display);white-space:nowrap;display:inline-block}
 .ctl{position:relative;display:flex;align-items:center;gap:4px;height:34px}
-.cap{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:4px;white-space:nowrap;color:var(--muted);font-size:12px}
+.cap{white-space:nowrap;color:var(--muted);font-size:12px;order:-1;margin-right:6px}
 .ob{height:34px;box-sizing:border-box;padding:0 12px;border:2px solid #111;border-radius:4px;background:var(--gun);color:var(--face);display:flex;align-items:center;justify-content:center;font-weight:600;gap:6px}
 .ob.on{background:#f1efe8;color:#2c2c2a}.ob.lt{background:var(--face);color:#2c2c2a}
 .preset{width:280px;height:34px;box-sizing:border-box;background:#1a1a18;border:2px solid #854f0b;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:17px;color:var(--amberLit);letter-spacing:1px}
@@ -87,8 +88,12 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
 .io .cn b{width:11px;font-size:15px}
 .band .k{align-self:stretch}
 .ph{opacity:.6;font-size:12px;justify-self:center}
-.weapon{flex:1;min-height:150px;box-sizing:border-box;border:3px solid #111;border-radius:6px;background:repeating-linear-gradient(-45deg,#f2c230 0 12px,#151513 12px 24px);display:flex;align-items:center;justify-content:center;padding:12px}
-.wbtn{height:100%;max-height:176px;aspect-ratio:1;box-sizing:border-box;background:#d3d1c7;border:4px solid #111;border-radius:6px;box-shadow:0 0 0 4px #2c2c2a,inset 0 -6px 0 rgba(0,0,0,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--display);color:#2c2c2a;font-size:30px;letter-spacing:3px;line-height:1.15}
+.rblock{display:flex;flex-direction:column;gap:10px}
+.rcols{display:grid;grid-template-columns:404px 242px;gap:10px;align-items:stretch}
+.col.nat>.sl:last-child{flex:none}
+.col>.weapon:last-child{flex:1 1 0;min-height:0;position:relative}
+.weapon{min-height:0;box-sizing:border-box;border:3px solid #111;border-radius:6px;background:repeating-linear-gradient(-45deg,#f2c230 0 12px,#151513 12px 24px);display:flex;align-items:center;justify-content:center;padding:12px}
+.wbtn{position:absolute;top:8px;bottom:8px;left:50%;transform:translateX(-50%);box-sizing:border-box;background:#d3d1c7;border:4px solid #111;border-radius:6px;box-shadow:0 0 0 4px #2c2c2a,inset 0 -6px 0 rgba(0,0,0,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--display);color:#2c2c2a;font-size:17px;letter-spacing:1px;line-height:1.2}
 /* EQ module */
 .eq{gap:6px}
 .eqtop{display:grid;grid-template-columns:26px 1fr auto 1fr 26px;align-items:center;min-height:46px}
@@ -113,6 +118,7 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
 .mini{width:auto;padding:3px 6px;font-size:12px}
 .lampdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#1a1a18;border:1px solid #111;margin-left:5px;vertical-align:1px}
 .blue{background:#85b7eb;border-color:#185fa5;color:#042c53}
+.clipslot{flex:1;min-height:120px;border:2px dashed #6e6c66;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#8c8a83;font-weight:600;letter-spacing:3px}
 .ticker{height:52px;border:2px solid #854f0b;background:#1a1a18;border-radius:6px;display:flex;align-items:center;padding:0 18px;font-family:var(--mono);font-size:18px;color:var(--amberLit);white-space:nowrap;overflow:hidden}
 :focus-visible{outline:2px solid var(--amberLit);outline-offset:2px}
 </style>
@@ -121,7 +127,7 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
 <div class="frame"><div class="panel">
 
 <div class="hb">
-  <div class="title"><div><span class="tt" id="t1" style="font-size:30px;letter-spacing:5px">AARDVARK</span></div><div><span class="tt" id="t2" style="font-size:22px;letter-spacing:5px">EASY STRIP</span></div></div>
+  <div class="title"><div><span class="tt" id="t1" style="font-size:24px;letter-spacing:4px">AARDVARK</span></div><div><span class="tt" id="t2" style="font-size:18px;letter-spacing:4px">EASY STRIP</span></div></div>
   <div class="ctl"><div class="ob lt" style="padding:0;width:30px">◀</div><div class="preset">SNARE: ROCK</div><div class="ob lt" style="padding:0;width:30px">▶</div></div>
   <div class="grp">
     <div class="ctl"><div class="ob on">OFF</div><div class="ob">4×</div><div class="ob">8×</div><span class="cap">OVERSAMPLING</span></div>
@@ -199,8 +205,11 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
   <!-- ONE GRILLE UNDER AMP AND THE EQ -->
   <div class="grille" style="grid-column:2/4;grid-row:2;margin:0"></div>
 
+  <!-- RIGHT BLOCK: DS + COMP | TRANS + BITCH-SLAP + WEAPON SELECT, then CLIP underneath -->
+  <div class="rblock" style="grid-column:4/6;grid-row:1/3">
+  <div class="rcols">
   <!-- DS + COMP -->
-  <div class="col" style="grid-column:4;grid-row:1/3">
+  <div class="col nat">
     <div class="sl c-olive2">
       <div class="pr">Pr</div>
       <div class="tp"><div class="pb">DS</div><div class="act"></div></div>
@@ -221,11 +230,10 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
       </div>
       <div class="sec"><div class="hd"><em><span>4</span></em>WHAT IT REACTS TO</div><div class="rw" style="align-items:center"><div class="k S b"><i></i>IGNORE BELOW<span class="cn">OFF</span><span class="u">Hz</span></div><div class="pair"><span class="lb">REACTS TO</span><div class="bt lit">PEAKS</div><div class="bt">AVERAGE</div></div><div class="pair"><span class="lb">LISTENS TO</span><div class="bt lit">THIS TRACK</div><div class="bt">SIDECHAIN</div></div></div></div>
     </div>
-    <div class="weapon"><div class="wbtn"><span>WEAPON</span><span>SELECT</span></div></div>
   </div>
 
-  <!-- TRANS + BITCH-SLAP + CLIP -->
-  <div class="col" style="grid-column:5;grid-row:1/3">
+  <!-- TRANS + BITCH-SLAP + WEAPON SELECT -->
+  <div class="col">
     <div class="sl c-sand">
       <div class="pr">Pr</div>
       <div class="tp wide"><div class="pb">TRANS</div><svg class="meter" style="width:104px;height:44px" viewBox="0 0 126 52" role="img" aria-label="Gain change meter"><rect x="1" y="1" width="124" height="50" rx="3" fill="#f1efe8" stroke="#111" stroke-width="2"/><path d="M14 42 A52 52 0 0 1 112 42" fill="none" stroke="#2c2c2a"/><g fill="#2c2c2a" font-family="IBM Plex Mono, monospace" font-size="11" text-anchor="middle"><text x="18" y="32">-12</text><text x="63" y="13">0</text><text x="108" y="32">+12</text><text x="63" y="48">GAIN CHANGE</text></g><line x1="63" y1="48" x2="63" y2="18" stroke="#a32d2d" stroke-width="2"/></svg></div>
@@ -238,17 +246,12 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
       <div class="sec"><div class="hd"><em><span>1</span></em>HOW MUCH</div><div class="rw" style="align-items:center"><div class="k M"><i></i>MIX<span class="pc"><span class="cn"> 35</span><em>%</em></span></div><div style="font-size:12px;line-height:1.5;opacity:.85">0% DRY<br>50% BOTH<br>100% REVERB</div></div></div>
       <div class="sec"><div class="hd"><em><span>2</span></em>HOW LONG</div><div class="rw" style="align-items:center"><div class="k M"><i></i>LENGTH<span class="cn">0300</span><span class="u">ms</span></div><div class="pair"><span class="lb">SYNC</span><div class="bt lit" style="width:80px">OFF</div><div class="bt" style="width:80px">TEMPO</div></div></div></div>
     </div>
-    <div class="sl c-gun2">
-      <div class="pr">Pr</div>
-      <div class="tp"><div class="pb">CLIP</div><div class="act" style="background:#1a1a18"></div></div>
-      <div class="rw" style="justify-content:center;gap:6px"><div class="bt lit" style="width:84px">SIMPLE</div><div class="bt" style="width:100px">ADVANCED<span class="lampdot"></span></div></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;row-gap:8px;justify-items:center;align-items:end;margin-top:4px">
-        <div class="k M"><i></i>PUSH<span class="cn">+3.0</span><span class="u">dB</span></div>
-        <div class="k M o"><i></i>CEILING<span class="cn">-1.0</span><span class="u">dB</span></div>
-        <div class="k S"><i></i>SOFTNESS<span class="pc"><span class="cn">  0</span><em>%</em></span><span class="u">&nbsp;</span></div>
-        <div class="k S b"><i></i>PROTECT LOWS<span class="cn"> 80</span><span class="u">Hz</span></div>
-      </div>
-    </div>
+    <div class="weapon"><div class="wbtn"><span>WEAPON</span><span>SELECT</span></div></div>
+  </div>
+
+  </div>
+  <!-- CLIP: coming back as a horizontal slab here -->
+  <div class="clipslot">CLIP · HORIZONTAL · NEXT</div>
   </div>
 
   <!-- OUTPUT -->
@@ -276,6 +279,6 @@ document.querySelectorAll('svg.knob').forEach(function(s){
  el('circle',{cx:cx,cy:cy,r:r,fill:'#1a1a18',stroke:col,'stroke-width':3.5});
  el('line',{x1:cx,y1:cy,x2:cx,y2:cy-r+4,stroke:'#f1efe8','stroke-width':2.5,'stroke-linecap':'round'});
 });
-function fit(){var a=document.getElementById('t1'),b=document.getElementById('t2');if(!a||!b)return;b.style.fontSize='30px';b.style.letterSpacing='5px';var wa=a.getBoundingClientRect().width-5,wb=b.getBoundingClientRect().width-5;var f=30*wa/wb;b.style.fontSize=f.toFixed(2)+'px';b.style.letterSpacing=(5*f/30).toFixed(2)+'px';var d=a.getBoundingClientRect().width-b.getBoundingClientRect().width;if(Math.abs(d)>0.5){b.style.letterSpacing=(parseFloat(b.style.letterSpacing)+d/10).toFixed(2)+'px'}}
-(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(fit);setTimeout(fit,800);
+function fit(){var a=document.getElementById('t1'),b=document.getElementById('t2');if(!a||!b)return;b.style.fontSize='24px';b.style.letterSpacing='4px';var wa=a.getBoundingClientRect().width-4,wb=b.getBoundingClientRect().width-4;var f=24*wa/wb;b.style.fontSize=f.toFixed(2)+'px';b.style.letterSpacing=(4*f/24).toFixed(2)+'px';var d=a.getBoundingClientRect().width-b.getBoundingClientRect().width;if(Math.abs(d)>0.5){b.style.letterSpacing=(parseFloat(b.style.letterSpacing)+d/10).toFixed(2)+'px'}}
+function sq(){document.querySelectorAll('.wbtn').forEach(function(b){b.style.width=b.offsetHeight+'px'})}sq();window.addEventListener('resize',sq);(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(fit);setTimeout(fit,800);
 </script>

@@ -32,6 +32,8 @@ LAYOUT
    Direct2D (the graphics card), so bigger art costs memory, not CPU,
    and only while the window is open.
  - Widescreen proportions (16:9 or a little taller).
+ - The header is kept as slim as possible (no dead space): captions sit
+   beside their controls, not under them.
  - Header, left to right: the title in white military stencil capitals,
    AARDVARK centred over EASY STRIP (sized to exactly the same width);
    the preset window right beside it (wide, with arrow buttons; clicking
@@ -233,7 +235,9 @@ The ticker is on by default and its hints matter as much as the sound.
          0% your sound only, 50% both at full level, 100% reverb only;
          2 HOW LONG: LENGTH, SYNC as OFF / TEMPO pushbuttons (LENGTH's
          counter shows the note, e.g. 1/8, when synced)
- Clip    SIMPLE / ADVANCED (see PLAN.txt): the slab flips in place
+ Clip    Being redesigned as a HORIZONTAL slab, under Comp and WEAPON
+         SELECT, spanning both columns (the old upright slab is gone).
+         SIMPLE / ADVANCED (see PLAN.txt): the slab flips in place
          between the four everyday knobs (PUSH, CEILING, SOFTNESS,
          PROTECT LOWS) and the sound-design ones (TOP, BOTTOM, BIAS,
          BLEND); CEILING never moves; a lamp on ADVANCED when any hidden
@@ -264,9 +268,11 @@ LATER: EASY SFX
 A huge pushbutton at the bottom of the strip reading WEAPON SELECT opens
 the effects window, EASY SFX (the "effects window" in PLAN.txt: easy
 versions of effects used a lot, e.g. slapback delay on vocals). Not
-designed yet - the strip itself comes first. Its place: under Comp,
-above the ticker - a HUGE SQUARE button, WEAPON over SELECT in the
-stencil lettering, centred in a housing that fills the space, set in a
+designed yet - the strip itself comes first. Its place: in the right
+column under Bitch-Slap, its bottom level with Comp's natural bottom
+(Comp is never stretched to meet it) - a SQUARE button, WEAPON over
+SELECT in the stencil lettering, centred in a housing that fills that
+space, set in a
 classic black-and-yellow hazard-striped
 surround (in strip_wireframe_full_size.html).
 
