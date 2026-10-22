@@ -208,6 +208,16 @@ darker and quieter than the labels and controls), and never next to a
 control, so nothing is mistaken for a button.
 
 ====================================================================
+LATER: EASY SFX
+====================================================================
+A huge pushbutton at the bottom of the strip reading WEAPON SELECT opens
+the effects window, EASY SFX (the "effects window" in PLAN.txt: easy
+versions of effects used a lot, e.g. slapback delay on vocals). Not
+designed yet - the strip itself comes first. Reserve the space: it
+shares the bottom edge with the ticker (at one end of it, or a row of
+its own below).
+
+====================================================================
 STILL TO DECIDE
 ====================================================================
  - Each module's control sizes and places.

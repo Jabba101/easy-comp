@@ -120,7 +120,8 @@ LATER
    - A resizable window.
    - Once the essentials are perfected: an effects window you can open
      from the strip, with easy versions of the effects you use a lot -
-     e.g. a slapback delay on vocals.
+     e.g. a slapback delay on vocals. Its name: EASY SFX, opened by a
+     huge WEAPON SELECT button at the bottom of the strip.
 
 
 ====================================================================
