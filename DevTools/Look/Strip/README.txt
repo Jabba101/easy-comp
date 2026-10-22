@@ -98,7 +98,9 @@ The ticker is on by default and its hints matter as much as the sound.
  Input   TRIM, polarity flip
  Gate    THRESHOLD (biggest), RANGE, ATTACK, HOLD, RELEASE, IGNORE BELOW,
          IGNORE ABOVE, OPENED BY (this track / sidechain)
- Amp     VIBE (biggest)
+ Amp     one big knob, no name: its scale says what it does - CLEAN at
+         the bottom left (fully off), ANALOG at the top (the middle),
+         OVERDRIVE at the bottom right (fully up)
  EQ      HPF, LPF, low shelf, bell 1, bell 2, high shelf - a frequency and
          a gain knob on every band, shelves included; a lit MASTER
          pushbutton (blue) for linear phase. Its hint: keeps the timing of
