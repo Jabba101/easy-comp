@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
-/* Layout: one fixed-size hardware panel (1560 px, the strip at Medium-plus), scrolling sideways inside its own frame on narrow screens. Single dark look by design. */
+/* Layout: one fixed-size hardware panel (1800 px, the strip at 100%), scrolling sideways inside its own frame on narrow screens. Single dark look by design. */
 :root{
   --page:#1d1e1b; --ink:#e9e6dc; --muted:#a9a69b;
   --case:#2c2c2a; --olive:#27500a; --olive2:#3b6d11; --gun:#5f5e5a; --gun2:#444441; --sand:#b4b2a9;
@@ -14,10 +14,10 @@
   color-scheme:dark;
 }
 body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.intro{max-width:1560px;margin:0 auto 14px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:14px}
+.intro{max-width:1800px;margin:0 auto 14px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:14px}
 .intro b{color:var(--ink);font-weight:600}
 .frame{overflow-x:auto;max-width:100%}
-.panel{width:1560px;margin:0 auto;background:var(--case);border:3px solid #111;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;font-size:13px;letter-spacing:.4px;box-sizing:border-box}
+.panel{width:1800px;margin:0 auto;background:var(--case);border:3px solid #111;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;font-size:13px;letter-spacing:.4px;box-sizing:border-box}
 /* header */
 .hb{background:var(--gun2);border:2px solid #111;border-radius:8px;display:flex;align-items:center;gap:28px;padding:10px 18px 26px}
 .title{text-align:center;line-height:1;color:#f1efe8}
@@ -37,7 +37,7 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
 .plate{background:var(--face);color:#2c2c2a;border:2px solid var(--gun);border-radius:3px;font-family:var(--mono);padding:6px 12px;display:flex;align-items:center;gap:8px}
 .plate i{width:6px;height:6px;border-radius:50%;background:var(--gun)}
 /* main grid */
-.main{display:grid;grid-template-columns:68px 258px 430px 404px 242px 68px;gap:10px;align-items:stretch}
+.main{display:grid;grid-template-columns:68px 258px 652px 404px 242px 96px;gap:10px;align-items:stretch}
 .col{display:flex;flex-direction:column;gap:10px}
 .col>.sl:last-child{flex:1}
 .sl{position:relative;border:2px solid #111;border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:7px}
@@ -91,11 +91,34 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
 .weapon{color:#2c2c2a;font-family:var(--display);font-size:24px;letter-spacing:4px;position:relative}
 .weapon::before{content:"";position:absolute;inset:7px;background:#d3d1c7;border:2px solid #111;border-radius:3px}
 .weapon{z-index:0}.weapon::before{z-index:-1}
+/* EQ module */
+.eq{gap:6px}
+.eqtop{display:grid;grid-template-columns:26px 1fr auto 1fr 26px;align-items:center;min-height:46px}
+.eqtop .pr{position:static}
+.eqgrid{display:grid;grid-template-columns:70px 1.1fr 1fr .96fr 1.08fr 0px;gap:6px;flex:1}
+.eb{position:relative;border-radius:6px;padding:6px 2px 12px;display:flex;flex-direction:column;align-items:center;justify-content:space-between}
+.eb.dk{background:var(--gun);--ink:#f1efe8}.eb.lt{background:#888780;color:#2c2c2a;--ink:#1f1f1d}
+.eb .nm{font-weight:600;font-size:13px}
+.kb{display:flex;flex-direction:column;align-items:center;gap:2px}
+.es{display:flex;flex-direction:column;align-items:center;justify-content:space-around;padding:5px 0;background:#3a3a37;border-radius:6px;--ink:#f1efe8;text-align:center;line-height:1.1}
+.tgt{display:flex;gap:2px;margin-top:8px}.tgt span{width:32px;text-align:center;padding:2px 0;border-radius:2px;background:#2c2c2a;color:#888780;border:1.5px solid #111;font-weight:600;font-size:12px}
+.tgt span.on{background:var(--amber);color:#412402;border-color:#854f0b}
+.tgl{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;height:20px}.tgl i{width:13px;height:13px;border-radius:50%;background:var(--face);border:1px solid #111;position:relative;margin-top:7px}.tgl i::after{content:"";position:absolute;left:4px;top:-9px;width:4px;height:11px;background:var(--face);border:1px solid #111;border-radius:2px}
+.scr{position:absolute;width:8px;height:8px;border-radius:50%;background:#2c2c2a;box-shadow:inset 0 0 0 1.5px #888780}
+.scr::after{content:"";position:absolute;left:1px;right:1px;top:3.5px;height:1px;background:#888780}
+.eq .cn b{width:11px;height:19px;font-size:15px}
+.refplate{margin-top:4px;background:#2f2f2c;border:1px solid #111;border-radius:4px;padding:8px 12px;color:#a9a69b;font-family:var(--mono);font-size:12px;line-height:1.6;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);position:relative}
+.refplate b{color:#cfccc1;font-weight:500;letter-spacing:2px;display:block;margin-bottom:2px}
+.refplate .r2{display:grid;grid-template-columns:repeat(4,1fr);column-gap:14px}
+/* clip + output */
+.mini{width:auto;padding:3px 6px;font-size:12px}
+.lampdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#1a1a18;border:1px solid #111;margin-left:5px;vertical-align:1px}
+.blue{background:#85b7eb;border-color:#185fa5;color:#042c53}
 .ticker{height:52px;border:2px solid #854f0b;background:#1a1a18;border-radius:6px;display:flex;align-items:center;padding:0 18px;font-family:var(--mono);font-size:18px;color:var(--amberLit);white-space:nowrap;overflow:hidden}
 :focus-visible{outline:2px solid var(--amberLit);outline-offset:2px}
 </style>
 
-<div class="intro"><span><b>Easy Strip wireframe</b> · real proportions, 1560 pixels wide. EQ and Clip are placeholders.</span><span>Scroll sideways if your window is narrower than the panel.</span></div>
+<div class="intro"><span><b>Easy Strip wireframe</b> · real proportions at 100%, 1800 pixels wide.</span><span>Scroll sideways if your window is narrower than the panel.</span></div>
 <div class="frame"><div class="panel">
 
 <div class="hb">
@@ -145,18 +168,32 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
 
   <!-- CENTRE: SCREEN + EQ -->
   <div class="col">
-    <div class="screen"><svg viewBox="0 0 440 280" preserveAspectRatio="none" role="img" aria-label="EQ curve on the big screen"><g stroke="#1f4a22" stroke-width="1"><line x1="44" y1="10" x2="44" y2="270"/><line x1="154" y1="10" x2="154" y2="270"/><line x1="286" y1="10" x2="286" y2="270"/><line x1="396" y1="10" x2="396" y2="270"/><line x1="10" y1="60" x2="430" y2="60"/><line x1="10" y1="220" x2="430" y2="220"/></g><line x1="10" y1="140" x2="430" y2="140" stroke="#2f6a33" stroke-dasharray="4 5"/><path d="M10 182 C70 182 100 140 140 140 S190 62 220 62 S262 140 300 140 S370 156 430 112" fill="none" stroke="#8fe36a" stroke-width="3"/><circle cx="220" cy="62" r="6" fill="#8fe36a"/><circle cx="372" cy="150" r="6" fill="#8fe36a"/><g font-family="IBM Plex Mono, monospace" font-size="12" fill="#5fae58"><text x="48" y="22">50</text><text x="158" y="22">200</text><text x="290" y="22">1k</text><text x="400" y="22">5k</text></g></svg></div>
-    <div class="sl c-gun2">
-      <div class="pr">Pr</div>
-      <div class="tp wide"><div class="pb">EQ</div><span class="ph">PLACEHOLDER</span></div>
-      <div class="eqrow">
-        <div style="display:flex;flex-direction:column;justify-content:center;width:56px"><div class="k S b"><i></i>HPF<span class="cn">  40</span><span class="u">Hz</span></div></div>
-        <div class="band" style="background:var(--gun)"><span>LOW</span><div class="k S b" style="align-items:flex-start"><i></i></div><div class="k M r" style="align-items:flex-end;margin-top:-10px"><i></i></div><span class="cn">+2.0</span><span class="u">dB</span></div>
-        <div class="band" style="background:#888780;color:#2c2c2a"><span>BELL 1</span><div class="k S b" style="align-items:flex-start"><i></i></div><div class="k M r" style="align-items:flex-end;margin-top:-10px"><i></i></div><span class="cn">+4.5</span><span class="u">dB</span></div>
-        <div class="band" style="background:var(--gun)"><span>BELL 2</span><div class="k S b" style="align-items:flex-start"><i></i></div><div class="k M r" style="align-items:flex-end;margin-top:-10px"><i></i></div><span class="cn">-1.5</span><span class="u">dB</span></div>
-        <div class="band" style="background:#888780;color:#2c2c2a"><span>HIGH</span><div class="k S b" style="align-items:flex-start"><i></i></div><div class="k M r" style="align-items:flex-end;margin-top:-10px"><i></i></div><span class="cn">+3.0</span><span class="u">dB</span></div>
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:space-around;width:70px"><div class="bt" style="width:68px">MASTER</div><div class="k S b"><i></i>LPF<span class="cn"> 18k</span><span class="u">Hz</span></div></div>
+    <div class="screen"><svg viewBox="0 0 440 280" preserveAspectRatio="none" role="img" aria-label="EQ curve on the big screen"><g stroke="#1f4a22" stroke-width="1"><line x1="44" y1="10" x2="44" y2="270"/><line x1="154" y1="10" x2="154" y2="270"/><line x1="286" y1="10" x2="286" y2="270"/><line x1="396" y1="10" x2="396" y2="270"/><line x1="10" y1="60" x2="430" y2="60"/><line x1="10" y1="220" x2="430" y2="220"/></g><line x1="10" y1="140" x2="430" y2="140" stroke="#2f6a33" stroke-dasharray="4 5"/><path d="M10 120 C60 120 80 124 110 128 S170 64 210 64 S250 140 290 146 S370 148 430 146" fill="none" stroke="#8fe36a" stroke-width="3"/><path d="M10 140 C200 140 300 140 340 136 S400 104 430 102" fill="none" stroke="#e8b04a" stroke-width="3" stroke-dasharray="1 0"/><circle cx="210" cy="64" r="6" fill="#8fe36a"/><circle cx="96" cy="124" r="6" fill="#8fe36a"/><circle cx="390" cy="108" r="6" fill="#e8b04a"/><g font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500"><text x="352" y="262" fill="#8fe36a">MID</text><text x="392" y="262" fill="#e8b04a">SIDE</text></g><g font-family="IBM Plex Mono, monospace" font-size="12" fill="#5fae58"><text x="48" y="22">50</text><text x="158" y="22">200</text><text x="290" y="22">1k</text><text x="400" y="22">5k</text></g></svg></div>
+    <div class="sl c-gun2 eq">
+      <div class="eqtop"><span></span><span></span><div class="pb" style="width:170px;letter-spacing:3px">EQUALIZER</div><div class="bt" style="width:88px;justify-self:center">MASTER</div><div class="pr">Pr</div></div>
+      <div class="eqgrid">
+        <div class="es"><div class="kb"><svg class="knob" data-s="s" data-c="#378ADD" data-l="20,80,320" width="64" height="62"></svg>HPF<span class="cn">  40</span><span class="u">Hz</span></div><div class="kb"><svg class="knob" data-s="s" data-c="#378ADD" data-l="OFF,120,250" width="64" height="62"></svg>MONO<br>BASS<span class="cn"> OFF</span><span class="u">Hz</span></div><div class="kb"><svg class="knob" data-s="s" data-c="#378ADD" data-l="3k,8k,20k" width="64" height="62"></svg>LPF<span class="cn"> OFF</span><span class="u">Hz</span></div></div>
+        <div class="eb dk"><span class="scr" style="top:6px;right:7px"></span><span class="scr" style="bottom:70px;left:6px"></span><span class="nm">LOW</span>
+          <div class="tgl" style="margin:6px 0 2px"><span>BELL</span><i></i><span>SHELF</span></div>
+          <div class="kb" style="align-self:flex-start"><svg class="knob" data-s="s" data-c="#378ADD" data-l="30,50,100,200,400" width="112" height="86"></svg><span class="cn">  60</span><span class="u">Hz</span></div>
+          <div class="kb" style="align-self:flex-end;margin-top:10px"><svg class="knob" data-s="b" data-c="#E24B4A" data-l="-12,-6,0,+6,+12" width="112" height="104"></svg><span class="cn">+3.0</span><span class="u">dB</span></div>
+          <div class="tgt"><span>ST</span><span class="on">MID</span><span>SIDE</span></div></div>
+        <div class="eb lt"><span class="scr" style="top:6px;left:7px"></span><span class="nm">LOW MID</span>
+          <div class="kb" style="align-self:flex-start;margin:30px 0 0 2px"><svg class="knob" data-s="s" data-c="#378ADD" data-l="75,150,300,600,1.2k" width="112" height="86"></svg><span class="cn"> 210</span><span class="u">Hz</span></div>
+          <div class="kb" style="align-self:flex-end;margin-top:18px"><svg class="knob" data-s="b" data-c="#E24B4A" data-l="-12,-6,0,+6,+12" width="112" height="104"></svg><span class="cn">+4.5</span><span class="u">dB</span></div>
+          <div class="tgt" style="margin-top:12px"><span class="on">ST</span><span>MID</span><span>SIDE</span></div></div>
+        <div class="eb dk"><span class="scr" style="bottom:7px;right:6px"></span><span class="scr" style="top:40px;right:5px"></span><span class="nm">HIGH MID</span>
+          <div class="kb" style="align-self:flex-start;margin-top:22px"><svg class="knob" data-s="s" data-c="#378ADD" data-l="800,1.5k,3k,5k,8k" width="108" height="86"></svg><span class="cn">3.0k</span><span class="u">Hz</span></div>
+          <div class="kb" style="align-self:center;margin:6px 0 0 14px"><svg class="knob" data-s="b" data-c="#E24B4A" data-l="-12,-6,0,+6,+12" width="108" height="104"></svg><span class="cn">-1.5</span><span class="u">dB</span></div>
+          <div class="tgt" style="margin-top:18px"><span class="on">ST</span><span>MID</span><span>SIDE</span></div></div>
+        <div class="eb lt"><span class="scr" style="top:6px;right:7px"></span><span class="scr" style="bottom:9px;left:7px"></span><span class="nm">HIGH</span>
+          <div class="kb" style="align-self:flex-start;margin-top:4px"><svg class="knob" data-s="s" data-c="#378ADD" data-l="2.5k,5k,10k,15k,20k" width="112" height="86"></svg><span class="cn"> 12k</span><span class="u">Hz</span></div>
+          <div class="tgl" style="align-self:flex-start;margin:8px 0 0 8px"><span>BELL</span><i></i><span>SHELF</span></div>
+          <div class="kb" style="align-self:flex-end;margin-top:4px"><svg class="knob" data-s="b" data-c="#E24B4A" data-l="-12,-6,0,+6,+12" width="112" height="104"></svg><span class="cn">+3.0</span><span class="u">dB</span></div>
+          <div class="tgt"><span>ST</span><span>MID</span><span class="on">SIDE</span></div></div>
+        <div class="es" style="background:transparent"></div>
       </div>
+      <div class="refplate"><b>FREQUENCY REFERENCE</b><div class="r2"><span>WEIGHT 50–100</span><span>BODY 150–250</span><span>MUD 300–600</span><span>CRUNCH 1–3k</span><span>PRESENCE 2–5k</span><span>ATTACK 2–5k</span><span>SIBILANCE 5–9k</span><span>AIR 10k +</span></div></div>
     </div>
   </div>
 
@@ -202,12 +239,18 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
     <div class="sl c-gun2">
       <div class="pr">Pr</div>
       <div class="tp"><div class="pb">CLIP</div><div class="act" style="background:#1a1a18"></div></div>
-      <div class="rw" style="justify-content:center;padding:6px 0"><div class="k M o"><i></i>CEILING<span class="cn">-1.0</span><span class="u">dB</span></div><span class="ph" style="align-self:center;margin-left:18px">PLACEHOLDER</span></div>
+      <div class="rw" style="justify-content:center;gap:6px"><div class="bt lit" style="width:84px">SIMPLE</div><div class="bt" style="width:100px">ADVANCED<span class="lampdot"></span></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;row-gap:8px;justify-items:center;align-items:end;margin-top:4px">
+        <div class="k M"><i></i>PUSH<span class="cn">+3.0</span><span class="u">dB</span></div>
+        <div class="k M o"><i></i>CEILING<span class="cn">-1.0</span><span class="u">dB</span></div>
+        <div class="k S"><i></i>SOFTNESS<span class="pc"><span class="cn">  0</span><em>%</em></span><span class="u">&nbsp;</span></div>
+        <div class="k S b"><i></i>PROTECT LOWS<span class="cn"> 80</span><span class="u">Hz</span></div>
+      </div>
     </div>
   </div>
 
   <!-- OUTPUT -->
-  <div class="sl c-sand io"><b>OUTPUT</b><div class="mt"></div><div class="k M r"><i></i>LEVEL<span class="cn">+0.0</span><span class="u">dB</span></div></div>
+  <div class="sl c-sand io"><b>OUTPUT</b><div class="pair"><div class="bt mini" style="width:64px">PEAK</div><div class="bt mini lit" style="width:64px">LUFS</div></div><div class="mt"></div><div class="k"><span class="cn">-14.2</span><span class="u">LUFS</span></div><div class="k M r"><i></i>LEVEL<span class="cn">+0.0</span><span class="u">dB</span></div></div>
 </div>
 
 <div class="ticker">Threshold: how loud a sound has to get before the compressor starts turning it down.</div>
@@ -215,6 +258,22 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
 
 <script>
 document.querySelectorAll('.cn').forEach(function(e){var t=e.textContent;e.textContent='';for(var c of t){var b=document.createElement('b');b.textContent=(c===' ')?' ':c;e.appendChild(b)}});
+
+var NS='http://www.w3.org/2000/svg';
+document.querySelectorAll('svg.knob').forEach(function(s){
+ var w=+s.getAttribute('width'),h=+s.getAttribute('height'),big=s.dataset.s==='b';
+ var labels=s.dataset.l.split(','),n=labels.length,narrow=w<70;
+ var r=big?22:(narrow?12:15),fs=big?15:(narrow?12:14),lr=r+(big?20:(narrow?14:18));
+ var cx=w/2,cy=big?h/2+4:h/2+5,col=s.dataset.c;
+ var ink=getComputedStyle(s.parentNode).getPropertyValue('--ink').trim()||'#f1efe8';
+ s.setAttribute('viewBox','0 0 '+w+' '+h);s.setAttribute('aria-hidden','true');
+ function el(t,a){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);s.appendChild(e);return e}
+ labels.forEach(function(L,i){var a=(-135+270*i/(n-1))*Math.PI/180,sx=Math.sin(a),cy2=-Math.cos(a);
+  el('line',{x1:cx+sx*(r+5),y1:cy+cy2*(r+5),x2:cx+sx*(r+9),y2:cy+cy2*(r+9),stroke:ink,'stroke-width':1.5});
+  var t=el('text',{x:cx+sx*lr,y:cy+cy2*lr+fs*0.35,'text-anchor':'middle','font-size':fs,'font-weight':600,'font-family':"'IBM Plex Sans Condensed','Arial Narrow',sans-serif",fill:ink});t.textContent=L;});
+ el('circle',{cx:cx,cy:cy,r:r,fill:'#1a1a18',stroke:col,'stroke-width':3.5});
+ el('line',{x1:cx,y1:cy,x2:cx,y2:cy-r+4,stroke:'#f1efe8','stroke-width':2.5,'stroke-linecap':'round'});
+});
 function fit(){var a=document.getElementById('t1'),b=document.getElementById('t2');if(!a||!b)return;b.style.fontSize='30px';b.style.letterSpacing='5px';var wa=a.getBoundingClientRect().width-5,wb=b.getBoundingClientRect().width-5;var f=30*wa/wb;b.style.fontSize=f.toFixed(2)+'px';b.style.letterSpacing=(5*f/30).toFixed(2)+'px';var d=a.getBoundingClientRect().width-b.getBoundingClientRect().width;if(Math.abs(d)>0.5){b.style.letterSpacing=(parseFloat(b.style.letterSpacing)+d/10).toFixed(2)+'px'}}
 (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(fit);setTimeout(fit,800);
 </script>
