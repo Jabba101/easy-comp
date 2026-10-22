@@ -106,9 +106,9 @@ STYLE RULES
    counter per section" idea below.)
  - Every slab's top row is compact: the on/off button sits level with
    the Pr button (same centre line), and the gap under the row equals
-   the small gap above it. Meters that share that row (Comp's GAIN
-   REDUCTION, Trans's GAIN CHANGE) are slim EDGEWISE meters of the same
-   height - wide and flat, as real hardware uses when space is tight.
+   the small gap above it. No meters on Comp or Trans slabs (tried:
+   too small to be useful) - gain reduction and gain change are shown
+   on their pages of the big screen.
  - Mechanical drum counters (white digits on black drums, each digit on
    its own drum) are BIG - the largest text on the panel after the
    title - so the exact values read even with the window small. They
@@ -228,7 +228,7 @@ The ticker is on by default and its hints matter as much as the sound.
  Comp    THRESHOLD (biggest), RATIO, ATTACK, RELEASE, MAKE-UP, MIX,
          IGNORE BELOW, REACTS TO (peaks / average), STYLE (modern /
          vintage), LOW END (normal / thrust), LISTENS TO (this track /
-         sidechain); its gain reduction meter
+         sidechain) - its gain reduction is shown on the big screen
  Trans   a centre-zero GAIN CHANGE needle meter (-12 / 0 / +12) beside its
          on/off button; 1 SHAPE: PUNCH, SUSTAIN (marked - 0 +, the middle
          changes nothing); 2 OUTPUT: OUTPUT, MIX, AUTO GAIN (square,
