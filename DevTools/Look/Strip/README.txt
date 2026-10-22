@@ -69,8 +69,10 @@ STYLE RULES
    Neighbouring slabs always contrast. Light wear only. The outer case
    is original and uniform.
  - Uniform where the job is the same: the module on/off buttons
-   (identical square pushbuttons with the module name, backlit green
-   when on), the drum counters, the view buttons. Varied where the job
+   (identical square pushbuttons with the module name: the button stays
+   dark, and its LETTERING glows green when the module is on, dull grey
+   when off - so they read as switches, and a strip full of modules
+   that are on isn't a wall of bright buttons), the drum counters, the view buttons. Varied where the job
    differs: knob sizes by importance (one hero knob per module), knob
    colour by function (blue = frequency, red = level), section sizes.
  - No grids of identical knobs: group them (each EQ band its own tinted
