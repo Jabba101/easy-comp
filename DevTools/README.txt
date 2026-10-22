@@ -109,6 +109,10 @@ Look/
     The photoreal "field case" knob test (Blender scene and renders) for
     the optional Cold War look. The look mockups themselves are the
     claude.ai artifact "Easy Plugins Cold War Look".
+Look/Strip/
+    The Aardvark Easy Strip's look: the chosen reference render, the
+    wireframe it was made from, the prompt, and the layout and style
+    decisions (README.txt there).
 
 SpeedUpWorkbook/
     The before/after speed workbook from the 1.5 speed-up, and its script.
