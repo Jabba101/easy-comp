@@ -215,7 +215,8 @@ the effects window, EASY SFX (the "effects window" in PLAN.txt: easy
 versions of effects used a lot, e.g. slapback delay on vocals). Not
 designed yet - the strip itself comes first. Its place: a long oblong
 button under Comp, above the ticker, in the stencil lettering, set in a
-hazard-striped surround (in strip_wireframe_full_size.html).
+classic black-and-yellow hazard-striped
+surround (in strip_wireframe_full_size.html).
 
 ====================================================================
 STILL TO DECIDE
