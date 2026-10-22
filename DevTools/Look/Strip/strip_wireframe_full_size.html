@@ -45,6 +45,8 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
 .c-olive{background:var(--olive)}.c-olive2{background:var(--olive2)}.c-gun{background:var(--gun)}.c-gun2{background:var(--gun2)}.c-sand{background:var(--sand);color:#2c2c2a}
 .tp{display:grid;grid-template-columns:1fr 1fr;align-items:center;height:32px;padding-right:30px}
 .tp.wide{grid-template-columns:1fr auto;column-gap:8px}
+.tp.mid{grid-template-columns:26px 1fr auto 1fr 26px;padding-right:0}
+.tp.mid .pb{grid-column:3}
 .tp.solo{grid-template-columns:1fr;padding-left:30px}
 .pb{justify-self:center;min-width:74px;height:32px;padding:0 8px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;background:#151513;color:#9fe870;text-shadow:0 0 6px rgba(159,232,112,.55);border:2px solid #0b0b0a;box-shadow:inset 0 0 0 1px #3a3a37;border-radius:4px;font-weight:600}
 .pb.off{color:#8c8a83;text-shadow:none}
@@ -212,7 +214,7 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
   <div class="col nat">
     <div class="sl c-olive2">
       <div class="pr">Pr</div>
-      <div class="tp"><div class="pb">DS</div><div class="act"></div></div>
+      <div class="tp mid"><span></span><div class="pb">DS</div><div class="act"></div><span></span></div>
       <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:7px">
         <div class="sec"><div class="hd"><em><span>1</span></em>WHERE</div><div class="rw" style="align-items:center"><div class="k S b"><i></i>FROM<span class="cn">5.0</span><span class="u">kHz</span></div><div class="k S b"><i></i>TO<span class="cn">OFF</span><span class="u">kHz</span></div><div class="pair"><span class="lb">NOT SURE?</span><div class="bt" style="width:70px">FIND</div><div class="bt" style="width:70px">LISTEN</div></div></div></div>
         <div class="sec"><div class="hd"><em><span>2</span></em>HOW MUCH</div><div class="rw"><div class="k L"><i></i>THRESHOLD<span class="cn">-08.0</span><span class="u">dB</span></div><div class="k M"><i></i>RANGE<span class="cn">06.0</span><span class="u">dB</span></div></div></div>
