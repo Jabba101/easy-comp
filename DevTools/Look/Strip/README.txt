@@ -172,8 +172,18 @@ The ticker is on by default and its hints matter as much as the sound.
  Amp     one big knob, no name: its scale says what it does - CLEAN at
          the bottom left (fully off), ANALOG at the top (the middle),
          OVERDRIVE at the bottom right (fully up)
- EQ      HPF, LPF, low shelf, bell 1, bell 2, high shelf - a frequency and
-         a gain knob on every band, shelves included. MID-SIDE: each band
+ EQ      In the zone of API's 550 (not a clone): four overlapping bands
+         LOW, LOW MID, HIGH MID, HIGH, plus HPF and LPF; BELL / SHELF
+         switches on LOW and HIGH; proportional Q (narrower the harder
+         you boost or cut, so no Q knob); gain and each band's
+         frequencies printed around the knobs (gain in 2 / 4 / 6 / 9 / 12
+         steps either side of 0) as well as the counters. SEPARATE
+         frequency and gain knobs (faster than stacked/concentric ones,
+         which feel fiddly with a mouse); dragging a point on the big
+         screen's curve sets both at once. Knobs are SMOOTH by default;
+         SETUP has STEPPED (click between fixed musical points) - it only
+         changes how knobs move from then on: an in-between value from a
+         preset or project stays until that knob is touched. MID-SIDE: each band
          gets a small three-way target selector, STEREO / MID / SIDE (the
          knobs never change meaning); the big screen draws MID and SIDE
          in two colours; a MONO BASS knob keeps everything below its
