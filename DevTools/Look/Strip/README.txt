@@ -193,6 +193,21 @@ The ticker is on by default and its hints matter as much as the sound.
          exactly as their standalones)
 
 ====================================================================
+ATMOSPHERE IN THE DEAD SPACE
+====================================================================
+Empty areas get military-tech character: ventilation grilles (slotted or
+perforated), stencilled markings (unit code, DO NOT OPEN - NO
+USER-SERVICEABLE PARTS, hazard stripes), inspection / CALIBRATED tags
+with a date and initials, a riveted QC stamp, torque-spec labels near
+bolts, an engraved signal-flow plate showing the module order. A useful
+one for the EQ's spare space: an engraved drum FREQUENCY REFERENCE plate
+(kick thump ~60 Hz, snare body ~200 Hz, boxiness 400-600 Hz, stick
+attack 2-5 kHz, cymbal air 10 kHz+).
+Rules: static and subtle (part of the pre-rendered art, so no CPU cost;
+darker and quieter than the labels and controls), and never next to a
+control, so nothing is mistaken for a button.
+
+====================================================================
 STILL TO DECIDE
 ====================================================================
  - Each module's control sizes and places.
