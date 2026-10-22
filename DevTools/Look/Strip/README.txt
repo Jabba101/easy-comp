@@ -27,8 +27,8 @@ LAYOUT
    and SETUP (a cog button: ticker on/off, window size, DAY / DUSK /
    NIGHT, hover-shows-value, the EQ's MASTER precision; more can be
    added later).
- - A centred row of view buttons (Gate, Amp, EQ, DS, Comp, Trans, Slap,
-   Clip): warm white backlit faces like old studio pushbuttons; the one
+ - A centred row of view buttons (Gate, Amp, EQ, DS, Comp, Trans,
+   Bitch-Slap, Clip): warm white backlit faces like old studio pushbuttons; the one
    on the big screen is lit amber. The big screen changes ONLY when you
    press one (no automatic switching, no HOLD button). A MODEL plate on
    the left, the serial number plate on the right (click it: version
@@ -37,7 +37,7 @@ LAYOUT
    running low to high left to right, so each knob is under the part of
    the curve it changes.
  - Module slabs on both sides, in chain order: Input, Gate, Amp (left),
-   EQ (under the screen), DS, Comp, Trans, Slap, Clip (right), Output.
+   EQ (under the screen), DS, Comp, Trans, Bitch-Slap, Clip (right), Output.
    Tall input and output meters at the two ends.
  - Every knob is always on the panel: adjusting never needs a screen
    change. The small option buttons sit inside their own module.
@@ -142,7 +142,12 @@ The ticker is on by default and its hints matter as much as the sound.
          vintage), LOW END (normal / thrust), LISTENS TO (this track /
          sidechain); its gain reduction meter
  Trans   PUNCH, SUSTAIN, MIX (no OUTPUT knob on the strip)
- Slap    LENGTH, MIX, SYNC (LENGTH reads as notes when synced)
+ Bitch-Slap  (always BITCH-SLAP, never shortened: on square buttons it
+         sits on two lines, BITCH- / SLAP, same size as the others)
+         1 HOW MUCH: MIX, its scale printed with the standalone's guide -
+         0% your sound only, 50% both at full level, 100% reverb only;
+         2 HOW LONG: LENGTH, SYNC as OFF / TEMPO pushbuttons (LENGTH's
+         counter shows the note, e.g. 1/8, when synced)
  Clip    CEILING
  Output  LEVEL, and one AUTO-GAIN for the whole strip (the modules don't
          get their own AUTO-GAIN or output on the strip)
