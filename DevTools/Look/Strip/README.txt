@@ -71,7 +71,10 @@ STYLE RULES
    screen, VINTAGE); BLUE = a mode that adds delay and CPU (the EQ's
    MASTER, oversampling at 4x and 8x); RED = a warning (BYPASS on, the
    clip and peak lamps).
- - Mechanical drum counters (white digits on black drums) show values:
+ - Mechanical drum counters (white digits on black drums, each digit on
+   its own drum) are BIG - the largest text on the panel after the
+   title - so the exact values read even with the window small. They
+   show values:
    one per section, showing whichever knob you touch (or hover), back to
    the section's main value after a couple of seconds, with a small
    label saying which knob it is.
