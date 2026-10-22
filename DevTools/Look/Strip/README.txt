@@ -225,7 +225,9 @@ The ticker is on by default and its hints matter as much as the sound.
          BLEND); CEILING never moves; a lamp on ADVANCED when any hidden
          setting isn't neutral
  Output  LEVEL (the modules keep their own AUTO GAIN and output controls,
-         exactly as their standalones)
+         exactly as their standalones); the tall meter switches PEAK dB /
+         LUFS with a small pushbutton; a drum counter shows the
+         integrated LUFS (click to reset)
 
 ====================================================================
 ATMOSPHERE IN THE DEAD SPACE

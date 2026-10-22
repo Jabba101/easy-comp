@@ -59,7 +59,16 @@ THE CHANNEL STRIP, IN SIGNAL ORDER
                     nothing. Its own plugin stays, for using it as a send
                     on a bus.
 
-   9. OUTPUT        Level, and Easy Clip: first of all a brick-wall
+   9. OUTPUT        Level, and a LUFS meter: the tall output meter
+                    switches between PEAK dB and LUFS (loudness as ears
+                    hear it, what streaming services use) with one small
+                    pushbutton; a drum counter shows the song-so-far
+                    (integrated) LUFS, click it to reset; the ticker
+                    explains it and the usual targets (e.g. around -14
+                    LUFS for most streaming). Same K-weighted maths as
+                    AUTO-GAIN, so it costs almost nothing. Most useful on
+                    buses and the master.
+                    And Easy Clip: first of all a brick-wall
                     hard clipper. Two modes (the hidden settings keep
                     working - switching only shows or hides knobs):
                       SIMPLE    PUSH (drive into it), CEILING, SOFTNESS
