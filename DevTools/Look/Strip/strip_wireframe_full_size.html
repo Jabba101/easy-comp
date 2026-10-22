@@ -44,6 +44,7 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
 .c-olive{background:var(--olive)}.c-olive2{background:var(--olive2)}.c-gun{background:var(--gun)}.c-gun2{background:var(--gun2)}.c-sand{background:var(--sand);color:#2c2c2a}
 .tp{display:grid;grid-template-columns:1fr 1fr;align-items:center;min-height:52px;padding-right:30px}
 .tp.wide{grid-template-columns:1fr auto}
+.tp.solo{grid-template-columns:1fr;padding-left:30px}
 .pb{justify-self:center;min-width:74px;height:40px;padding:0 8px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;background:#151513;color:#9fe870;text-shadow:0 0 6px rgba(159,232,112,.55);border:2px solid #0b0b0a;box-shadow:inset 0 0 0 1px #3a3a37;border-radius:4px;font-weight:600}
 .pb.off{color:#6e6c66;text-shadow:none}
 .pr{position:absolute;top:7px;right:7px;width:26px;height:26px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:var(--face);color:#2c2c2a;border:2px solid #111;border-radius:3px;font-weight:600;font-size:12px}
@@ -136,7 +137,7 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
     </div>
     <div class="sl c-sand">
       <div class="pr">Pr</div>
-      <div class="tp"><div class="pb">AMP</div><span></span></div>
+      <div class="tp solo"><div class="pb">AMP</div></div>
       <svg viewBox="0 0 220 120" width="220" height="120" style="align-self:center" role="img" aria-label="Amp knob marked clean, analog and overdrive"><g stroke="#2c2c2a" stroke-width="2.5"><line x1="110" y1="22" x2="110" y2="30"/><line x1="66" y1="100" x2="72" y2="94"/><line x1="154" y1="100" x2="148" y2="94"/></g><circle cx="110" cy="64" r="30" fill="#1a1a18" stroke="#ef9f27" stroke-width="5"/><line x1="110" y1="64" x2="110" y2="40" stroke="#f1efe8" stroke-width="3.5" stroke-linecap="round"/><g font-family="IBM Plex Sans Condensed, Arial Narrow, sans-serif" font-size="13" font-weight="600" fill="#2c2c2a" text-anchor="middle"><text x="110" y="15">ANALOG</text><text x="44" y="116">CLEAN</text><text x="178" y="116">OVERDRIVE</text></g></svg>
       <div class="pc" style="align-self:center"><span class="cn"> 42</span><em>%</em></div>
     </div>
@@ -194,7 +195,7 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
     </div>
     <div class="sl c-olive">
       <div class="pr">Pr</div>
-      <div class="tp"><div class="pb off"><span>BITCH</span><span>SLAP</span></div><span></span></div>
+      <div class="tp solo"><div class="pb off"><span>BITCH</span><span>SLAP</span></div></div>
       <div class="sec"><div class="hd"><em><span>1</span></em>HOW MUCH</div><div class="rw" style="align-items:center"><div class="k M"><i></i>MIX<span class="pc"><span class="cn"> 35</span><em>%</em></span></div><div style="font-size:12px;line-height:1.5;opacity:.85">0% DRY<br>50% BOTH<br>100% REVERB</div></div></div>
       <div class="sec"><div class="hd"><em><span>2</span></em>HOW LONG</div><div class="rw" style="align-items:center"><div class="k M"><i></i>LENGTH<span class="cn">0300</span><span class="u">ms</span></div><div class="pair"><span class="lb">SYNC</span><div class="bt lit" style="width:80px">OFF</div><div class="bt" style="width:80px">TEMPO</div></div></div></div>
     </div>
