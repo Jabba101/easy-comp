@@ -95,6 +95,9 @@ STYLE RULES
  - Buttons look engineered: lettering centred on the button, and
    buttons that sit together are all the same width (never sized to
    their own word).
+ - Two-word buttons stack their words, one over the other, centred, with
+   no hyphen (BITCH over SLAP, AUTO over GAIN). AUTO GAIN is a big
+   square pushbutton.
  - All panel labels in CAPITALS (knobs, buttons, sections, presets): they
    stay clear when the window is small. The ticker's hints stay in
    normal sentence case, as they're read rather than glanced at.
