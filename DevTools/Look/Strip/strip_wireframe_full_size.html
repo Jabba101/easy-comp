@@ -121,6 +121,13 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
 .lampdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#1a1a18;border:1px solid #111;margin-left:5px;vertical-align:1px}
 .blue{background:#85b7eb;border-color:#185fa5;color:#042c53}
 .clipslot{flex:1;min-height:120px;border:2px dashed #6e6c66;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#8c8a83;font-weight:600;letter-spacing:3px}
+.cliph{flex:none}
+.ch{display:grid;grid-template-columns:96px 104px repeat(4,1fr);align-items:center;column-gap:6px;padding-right:36px}
+.chtop{display:flex;flex-direction:column;align-items:center;gap:8px}
+.kh{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;line-height:1.1;white-space:nowrap}
+.kh .kk i{display:block;width:34px;height:34px;border-radius:50%;background:#1a1a18;border:4px solid #888780;box-shadow:0 0 0 2px rgba(0,0,0,.35);box-sizing:border-box}
+.kh.o .kk i{border-color:var(--amber)}.kh.b .kk i{border-color:var(--blue)}
+.cv{display:inline-flex;align-items:center;gap:4px}.cv em{font-style:normal;font-size:13px;opacity:.8}.cv em.pct{font-family:var(--mono);font-size:17px;font-weight:500;opacity:1}
 .ticker{height:52px;border:2px solid #854f0b;background:#1a1a18;border-radius:6px;display:flex;align-items:center;padding:0 18px;font-family:var(--mono);font-size:18px;color:var(--amberLit);white-space:nowrap;overflow:hidden}
 :focus-visible{outline:2px solid var(--amberLit);outline-offset:2px}
 </style>
@@ -250,7 +257,18 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
     </div>
     <div class="weapon"><div class="wbtn"><span>WEAPON</span><span>SELECT</span></div></div>
   </div>
-
+  </div>
+  <!-- CLIP: horizontal, under Comp and WEAPON SELECT -->
+  <div class="sl c-gun2 cliph">
+    <div class="pr">Pr</div>
+    <div class="ch">
+      <div class="chtop"><div class="pb">CLIP</div><div class="act" style="background:#1a1a18"></div></div>
+      <div class="pair"><div class="bt lit" style="width:96px">SIMPLE</div><div class="bt" style="width:96px">ADVANCED<span class="lampdot"></span></div></div>
+      <div class="kh"><span>PUSH</span><span class="kk"><i></i></span><span class="cv"><span class="cn">+3.0</span><em>dB</em></span></div>
+      <div class="kh o"><span>CEILING</span><span class="kk"><i></i></span><span class="cv"><span class="cn">-1.0</span><em>dB</em></span></div>
+      <div class="kh"><span>SOFTNESS</span><span class="kk"><i></i></span><span class="cv"><span class="cn">  0</span><em class="pct">%</em></span></div>
+      <div class="kh b"><span>PROTECT LOWS</span><span class="kk"><i></i></span><span class="cv"><span class="cn"> 80</span><em>Hz</em></span></div>
+    </div>
   </div>
   </div>
 

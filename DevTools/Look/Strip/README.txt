@@ -240,9 +240,12 @@ The ticker is on by default and its hints matter as much as the sound.
          0% your sound only, 50% both at full level, 100% reverb only;
          2 HOW LONG: LENGTH, SYNC as OFF / TEMPO pushbuttons (LENGTH's
          counter shows the note, e.g. 1/8, when synced)
- Clip    Being redesigned as a HORIZONTAL slab (the old upright slab is
-         gone); its place is decided when it's designed - the strip is
-         kept as short as its real modules allow, with no reserved space.
+ Clip    A HORIZONTAL slab under Comp and WEAPON SELECT, spanning both
+         columns: CLIP button and lamp, SIMPLE / ADVANCED, then PUSH,
+         CEILING, SOFTNESS, PROTECT LOWS in a row (label above, knob,
+         counter with its unit beside it). In ADVANCED, the extra knobs
+         (TOP, BOTTOM, BIAS, BLEND) appear in the strip where the grille
+         is, under Amp and the EQ.
          SIMPLE / ADVANCED (see PLAN.txt): the slab flips in place
          between the four everyday knobs (PUSH, CEILING, SOFTNESS,
          PROTECT LOWS) and the sound-design ones (TOP, BOTTOM, BIAS,
