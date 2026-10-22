@@ -18,8 +18,15 @@ LAYOUT
    but used in a window beside the DAW's mixer, so it must read well
    small (about 960 wide). Fixed sizes (Small / Medium / Large), not
    free stretching.
- - Header: AARDVARK EASY STRIP in white military stencil capitals, the
-   preset readout, oversampling (mix / 4x / 8x), DIM, BYPASS.
+ - Header, left to right: the title in white military stencil capitals,
+   AARDVARK centred over EASY STRIP (sized to exactly the same width);
+   the preset window right beside it (wide, with arrow buttons; clicking
+   the name opens the preset list); then, grouped on the right:
+   OVERSAMPLING as three interlocking pushbuttons OFF / 4x / 8x (OFF lit
+   white, 4x and 8x lit blue), DIM, a BYPASS pushbutton lit red when on,
+   and SETUP (a cog button: ticker on/off, window size, DAY / DUSK /
+   NIGHT, hover-shows-value, the EQ's MASTER precision; more can be
+   added later).
  - A centred row of view buttons (Gate, Amp, EQ, DS, Comp, Trans, Slap,
    Clip): warm white backlit faces like old studio pushbuttons; the one
    on the big screen is lit amber. The big screen changes ONLY when you
@@ -62,7 +69,8 @@ STYLE RULES
  - Light colours mean the same everywhere: GREEN = a module is on;
    AMBER = selected or a sound character choice (the view on the big
    screen, VINTAGE); BLUE = a mode that adds delay and CPU (the EQ's
-   MASTER, oversampling at 4x and 8x).
+   MASTER, oversampling at 4x and 8x); RED = a warning (BYPASS on, the
+   clip and peak lamps).
  - Mechanical drum counters (white digits on black drums) show values:
    one per section, showing whichever knob you touch (or hover), back to
    the section's main value after a couple of seconds, with a small
