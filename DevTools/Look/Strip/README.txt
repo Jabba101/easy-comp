@@ -74,9 +74,34 @@ STYLE RULES
    backlit in the dark modes. One setting for every strip.
 
 ====================================================================
+THE CONTROLS
+====================================================================
+"Easy" means every control explained in plain language (the ticker),
+not fewer controls: each module keeps all of its standalone's controls.
+The ticker is on by default and its hints matter as much as the sound.
+
+ Input   TRIM, polarity flip
+ Gate    THRESHOLD (biggest), RANGE, ATTACK, HOLD, RELEASE, IGNORE BELOW,
+         IGNORE ABOVE, OPENED BY (this track / sidechain)
+ Amp     VIBE (biggest)
+ EQ      HPF, LPF, low shelf, bell 1, bell 2, high shelf - a frequency and
+         a gain knob on every band, shelves included; CHANNEL / BUS
+ DS      THRESHOLD (biggest), FROM, TO, RANGE, TURNS DOWN (harsh band /
+         whole sound), FIND, LISTEN
+ Comp    THRESHOLD (biggest), RATIO, ATTACK, RELEASE, MAKE-UP, MIX,
+         IGNORE BELOW, REACTS TO (peaks / average), STYLE (modern /
+         vintage), LOW END (normal / thrust), LISTENS TO (this track /
+         sidechain); its gain reduction meter
+ Trans   PUNCH, SUSTAIN, MIX (no OUTPUT knob on the strip)
+ Slap    LENGTH, MIX, SYNC (LENGTH reads as notes when synced)
+ Clip    CEILING
+ Output  LEVEL, and one AUTO-GAIN for the whole strip (the modules don't
+         get their own AUTO-GAIN or output on the strip)
+
+====================================================================
 STILL TO DECIDE
 ====================================================================
- - The exact controls of each module, their sizes and places.
+ - Each module's control sizes and places.
  - What the big screen shows for each module (EQ: the curve; Clip: the
    waveform with the ceiling and the cut peaks; and so on).
  - The final artwork: built to exact measurements (as with the Blender
