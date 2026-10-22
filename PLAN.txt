@@ -59,11 +59,24 @@ THE CHANNEL STRIP, IN SIGNAL ORDER
                     nothing. Its own plugin stays, for using it as a send
                     on a bus.
 
-   9. OUTPUT        Level, and Easy Clip: a hard clipper with a ceiling
-                    control, an optional softness knob (0 = hard), and a
-                    light that shows how much it's shaving off. If it's
-                    regularly taking more than 2-3 dB, turn the track
-                    down earlier in the chain.
+   9. OUTPUT        Level, and Easy Clip: first of all a brick-wall
+                    hard clipper. Two modes (the hidden settings keep
+                    working - switching only shows or hides knobs):
+                      SIMPLE    PUSH (drive into it), CEILING, SOFTNESS
+                                (0 = brick wall, up = rounder), PROTECT
+                                LOWS (below a chosen frequency the low end
+                                isn't clipped: kick and bass stay clean)
+                      ADVANCED  adds the sound-design knobs: TOP and
+                                BOTTOM (each half of the wave clipped
+                                differently, linkable), BIAS, BLEND
+                                (parallel clipping)
+                    A lamp on ADVANCED stays lit while any advanced
+                    setting isn't neutral, so nothing hidden surprises
+                    you. On the strip the Clip slab flips in place
+                    between the two (CEILING never moves). A readout
+                    shows how much it's shaving off; if it's regularly
+                    more than 2-3 dB, turn the track down earlier in
+                    the chain.
 
    Occasional extras:
    - Changing the order: the panels stay where they are, and a small

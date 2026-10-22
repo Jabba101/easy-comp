@@ -219,7 +219,11 @@ The ticker is on by default and its hints matter as much as the sound.
          0% your sound only, 50% both at full level, 100% reverb only;
          2 HOW LONG: LENGTH, SYNC as OFF / TEMPO pushbuttons (LENGTH's
          counter shows the note, e.g. 1/8, when synced)
- Clip    CEILING
+ Clip    SIMPLE / ADVANCED (see PLAN.txt): the slab flips in place
+         between the four everyday knobs (PUSH, CEILING, SOFTNESS,
+         PROTECT LOWS) and the sound-design ones (TOP, BOTTOM, BIAS,
+         BLEND); CEILING never moves; a lamp on ADVANCED when any hidden
+         setting isn't neutral
  Output  LEVEL (the modules keep their own AUTO GAIN and output controls,
          exactly as their standalones)
 
