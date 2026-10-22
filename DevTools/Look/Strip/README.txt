@@ -135,6 +135,11 @@ in one window, more compact (one counter per section, the big screen
 shared, hints on the ticker). Bonus: as the settings are identical,
 presets can be shared - load an Easy Comp preset into the strip's Comp
 section, or save the strip's DS settings as an Easy DS preset.
+Every module also gets its own PRESET button: a small square "Pr" button
+in the same place on every slab (top-right corner). It opens that
+module's presets - the same list as its standalone - and can save the
+module's settings. Loading one changes only that module; the strip's
+preset name then shows it's been changed (e.g. "SNARE: ROCK *").
 (The list below predates this rule: where it differs from a
 standalone, the standalone wins.)
 
