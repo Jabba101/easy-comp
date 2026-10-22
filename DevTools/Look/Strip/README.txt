@@ -173,7 +173,9 @@ The ticker is on by default and its hints matter as much as the sound.
          the bottom left (fully off), ANALOG at the top (the middle),
          OVERDRIVE at the bottom right (fully up)
  EQ      Its on/off button is a wide one reading EQUALIZER (the view
-         button stays EQ, square like the others). Layout: frequency knob
+         button stays EQ, square like the others), centred across the
+         slab; MASTER sits on the same centre line, exactly halfway
+         between EQUALIZER and the Pr button. Layout: frequency knob
          (blue, smaller) up-left, gain knob (red, bigger) offset down-right,
          painted scales as large as possible (13-14 px at 100%); bands of
          slightly different widths and knob positions, toggles and screws
