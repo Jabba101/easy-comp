@@ -213,9 +213,9 @@ LATER: EASY SFX
 A huge pushbutton at the bottom of the strip reading WEAPON SELECT opens
 the effects window, EASY SFX (the "effects window" in PLAN.txt: easy
 versions of effects used a lot, e.g. slapback delay on vocals). Not
-designed yet - the strip itself comes first. Reserve the space: it
-shares the bottom edge with the ticker (at one end of it, or a row of
-its own below).
+designed yet - the strip itself comes first. Its place: a long oblong
+button under Comp, above the ticker, in the stencil lettering, set in a
+hazard-striped surround (in strip_wireframe_full_size.html).
 
 ====================================================================
 STILL TO DECIDE
