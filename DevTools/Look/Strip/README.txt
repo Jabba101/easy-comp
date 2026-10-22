@@ -14,10 +14,19 @@ designed (see "Still to decide").
 ====================================================================
 LAYOUT
 ====================================================================
- - Widescreen (16:9 or a little taller), sized for a 1920x1080 screen
-   but used in a window beside the DAW's mixer, so it must read well
-   small (about 960 wide). Fixed sizes (Small / Medium / Large), not
-   free stretching.
+ - BIG by default: designed to be comfortable at 100% (about 1560 wide
+   in the full-size wireframe; at 67% it strains the eyes). You open it,
+   work on a track, close it - like a big hardware strip. Fixed zoom
+   steps 100 / 125 / 150 / 175 / 200%, chosen in SETUP and remembered
+   for every strip (the user usually works at 125-150%), each checked so
+   nothing blurs or misaligns.
+ - Future-proof for 4K: at Windows' 200% scaling it shows at the same
+   physical size, sharper. The photoreal art (case, slabs, knobs) is
+   rendered at 3x the base size; labels, counters, screens and meters
+   are drawn live as vectors, sharp at any size. JUCE 9 draws through
+   Direct2D (the graphics card), so bigger art costs memory, not CPU,
+   and only while the window is open.
+ - Widescreen proportions (16:9 or a little taller).
  - Header, left to right: the title in white military stencil capitals,
    AARDVARK centred over EASY STRIP (sized to exactly the same width);
    the preset window right beside it (wide, with arrow buttons; clicking

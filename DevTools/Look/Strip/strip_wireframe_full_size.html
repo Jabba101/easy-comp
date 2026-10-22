@@ -1,0 +1,214 @@
+<title>Easy Strip Wireframe</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one fixed-size hardware panel (1560 px, the strip at Medium-plus), scrolling sideways inside its own frame on narrow screens. Single dark look by design. */
+:root{
+  --page:#1d1e1b; --ink:#e9e6dc; --muted:#a9a69b;
+  --case:#2c2c2a; --olive:#27500a; --olive2:#3b6d11; --gun:#5f5e5a; --gun2:#444441; --sand:#b4b2a9;
+  --amber:#ef9f27; --amberLit:#fac775; --green:#97c459; --greenInk:#173404; --red:#e24b4a; --blue:#378add;
+  --crt:#0f2a12; --trace:#8fe36a; --face:#d3d1c7; --drum:#2c2c2a;
+  --display:'Black Ops One', 'Impact', sans-serif;
+  --label:'IBM Plex Sans Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --mono:'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme:dark;
+}
+body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.intro{max-width:1560px;margin:0 auto 14px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:14px}
+.intro b{color:var(--ink);font-weight:600}
+.frame{overflow-x:auto;max-width:100%}
+.panel{width:1560px;margin:0 auto;background:var(--case);border:3px solid #111;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;font-size:13px;letter-spacing:.4px;box-sizing:border-box}
+/* header */
+.hb{background:var(--gun2);border:2px solid #111;border-radius:8px;display:flex;align-items:center;gap:28px;padding:10px 18px 26px}
+.title{text-align:center;line-height:1;color:#f1efe8}
+.tt{font-family:var(--display);white-space:nowrap;display:inline-block}
+.ctl{position:relative;display:flex;align-items:center;gap:4px;height:34px}
+.cap{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:4px;white-space:nowrap;color:var(--muted);font-size:12px}
+.ob{height:34px;box-sizing:border-box;padding:0 12px;border:2px solid #111;border-radius:4px;background:var(--gun);color:var(--face);display:flex;align-items:center;justify-content:center;font-weight:600;gap:6px}
+.ob.on{background:#f1efe8;color:#2c2c2a}.ob.lt{background:var(--face);color:#2c2c2a}
+.preset{width:280px;height:34px;box-sizing:border-box;background:#1a1a18;border:2px solid #854f0b;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:17px;color:var(--amberLit);letter-spacing:1px}
+.grp{margin-left:auto;display:flex;align-items:center;gap:22px}
+.sep{width:1px;height:38px;background:var(--gun)}
+.knobS{width:26px;height:26px;border-radius:50%;background:#1a1a18;border:3px solid #888780}
+/* view row */
+.vr{display:flex;align-items:center;gap:6px}
+.vb{width:76px;height:46px;box-sizing:border-box;background:#f1efe8;color:#2c2c2a;border:2px solid #111;border-radius:4px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.vb.sel{background:var(--amberLit);color:#412402;border-color:#854f0b}
+.plate{background:var(--face);color:#2c2c2a;border:2px solid var(--gun);border-radius:3px;font-family:var(--mono);padding:6px 12px;display:flex;align-items:center;gap:8px}
+.plate i{width:6px;height:6px;border-radius:50%;background:var(--gun)}
+/* main grid */
+.main{display:grid;grid-template-columns:68px 258px 430px 404px 242px 68px;gap:10px;align-items:stretch}
+.col{display:flex;flex-direction:column;gap:10px}
+.col>.sl:last-child{flex:1}
+.sl{position:relative;border:2px solid #111;border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:7px}
+.c-olive{background:var(--olive)}.c-olive2{background:var(--olive2)}.c-gun{background:var(--gun)}.c-gun2{background:var(--gun2)}.c-sand{background:var(--sand);color:#2c2c2a}
+.tp{display:grid;grid-template-columns:1fr 1fr;align-items:center;min-height:52px;padding-right:30px}
+.tp.wide{grid-template-columns:1fr auto}
+.pb{justify-self:center;min-width:74px;height:40px;padding:0 8px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;background:var(--green);color:var(--greenInk);border:2px solid #27500a;border-radius:4px;font-weight:600}
+.pb.off{background:#1a1a18;color:#888780;border-color:var(--gun)}
+.pr{position:absolute;top:7px;right:7px;width:26px;height:26px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:var(--face);color:#2c2c2a;border:2px solid #111;border-radius:3px;font-weight:600;font-size:12px}
+.sec{position:relative;border-radius:6px;padding:26px 8px 8px;background:rgba(0,0,0,.24)}
+.c-sand .sec{background:rgba(255,255,255,.32)}
+.hd{position:absolute;top:6px;left:9px;font-weight:600;font-size:12px;display:flex;align-items:center;gap:6px;opacity:.9}
+.hd em{font-style:normal;width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:currentColor}
+.hd em span{color:var(--case);font-size:11px}
+.c-sand .hd em span{color:var(--sand)}
+.rw{display:flex;justify-content:space-around;align-items:flex-end;gap:6px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;justify-items:center}
+.k{display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.1;text-align:center}
+.k i{display:block;border-radius:50%;background:#1a1a18;border:4px solid #888780;box-shadow:0 0 0 2px rgba(0,0,0,.35)}
+.L i{width:52px;height:52px}.M i{width:38px;height:38px}.S i{width:30px;height:30px}
+.r i{border-color:var(--red)}.b i{border-color:var(--blue)}.o i{border-color:var(--amber)}
+.cn{display:inline-flex;gap:2px;background:#111;padding:2px;border-radius:3px}
+.cn b{background:var(--drum);color:#f1efe8;font-family:var(--mono);font-weight:500;width:13px;height:22px;font-size:17px;display:flex;align-items:center;justify-content:center;border-radius:2px;font-variant-numeric:tabular-nums}
+.L .cn b{width:15px;height:25px;font-size:20px}
+.u{font-size:11px;opacity:.75;margin-top:-2px}
+.pc{display:inline-flex;align-items:center;gap:3px}
+.pc em{font-style:normal;font-family:var(--mono);font-size:17px;font-weight:500}
+.bt{box-sizing:border-box;text-align:center;padding:4px 0;border-radius:3px;background:var(--face);color:#2c2c2a;border:2px solid #111;font-weight:600;width:98px}
+.bt.lit{background:var(--amber);border-color:#854f0b;color:#412402}
+.pair{display:flex;flex-direction:column;align-items:center;gap:4px}
+.pair .lb{font-size:12px;opacity:.85}
+.sq{width:54px;height:54px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;border-radius:4px;background:#f1efe8;color:#2c2c2a;border:2px solid #111;font-weight:600}
+.stretch{align-self:stretch;margin-top:-18px;display:flex;align-items:center}
+.lamp{display:flex;align-items:center;gap:8px;justify-self:center;font-weight:600}
+.lamp i{width:22px;height:22px;border-radius:50%;background:#1a1a18;border:2px solid var(--gun)}
+.act{width:12px;height:12px;border-radius:50%;background:var(--amber);border:1px solid #412402;justify-self:center}
+.meter{width:150px;height:52px;justify-self:center}
+.mt{width:16px;flex:1;min-height:200px;border:1px solid #111;background:repeating-linear-gradient(to top,var(--amber) 0 3px,#1a1a18 3px 8px);border-radius:2px}
+.io{align-items:center;gap:10px;align-self:stretch}
+.io b{font-weight:600}
+/* screen */
+.screen{height:300px;background:var(--crt);border:5px solid #854f0b;border-radius:16px;outline:3px solid #111;padding:6px;box-sizing:border-box}
+.screen svg{width:100%;height:100%;display:block}
+.band{flex:1;min-width:0;border-radius:5px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.eqrow{display:flex;gap:5px;flex:1;align-items:center}
+.io .cn b{width:11px;font-size:15px}
+.band .k{align-self:stretch}
+.ph{opacity:.6;font-size:12px;justify-self:center}
+.ticker{height:52px;border:2px solid #854f0b;background:#1a1a18;border-radius:6px;display:flex;align-items:center;padding:0 18px;font-family:var(--mono);font-size:18px;color:var(--amberLit);white-space:nowrap;overflow:hidden}
+:focus-visible{outline:2px solid var(--amberLit);outline-offset:2px}
+</style>
+
+<div class="intro"><span><b>Easy Strip wireframe</b> · real proportions, 1560 pixels wide. EQ and Clip are placeholders.</span><span>Scroll sideways if your window is narrower than the panel.</span></div>
+<div class="frame"><div class="panel">
+
+<div class="hb">
+  <div class="title"><div><span class="tt" id="t1" style="font-size:30px;letter-spacing:5px">AARDVARK</span></div><div><span class="tt" id="t2" style="font-size:22px;letter-spacing:5px">EASY STRIP</span></div></div>
+  <div class="ctl"><div class="ob lt" style="padding:0;width:30px">◀</div><div class="preset">SNARE: ROCK</div><div class="ob lt" style="padding:0;width:30px">▶</div></div>
+  <div class="grp">
+    <div class="ctl"><div class="ob on">OFF</div><div class="ob">4×</div><div class="ob">8×</div><span class="cap">OVERSAMPLING</span></div>
+    <div class="ctl"><div class="knobS"></div><span class="cap">DIM</span></div>
+    <div class="sep"></div>
+    <div class="ctl"><div class="ob">BYPASS</div></div>
+    <div class="sep"></div>
+    <div class="ctl"><div class="ob lt">⚙ SETUP</div></div>
+  </div>
+</div>
+
+<div class="vr">
+  <div class="plate"><i></i>MODEL ES-8<i></i></div>
+  <div style="flex:1"></div>
+  <div class="vb">GATE</div><div class="vb">AMP</div><div class="vb sel">EQ</div><div class="vb">DS</div><div class="vb">COMP</div><div class="vb">TRANS</div><div class="vb"><span>BITCH</span><span>SLAP</span></div><div class="vb">CLIP</div>
+  <div style="flex:1"></div>
+  <div class="plate"><i></i>SER. NO. 0417-66<i></i></div>
+</div>
+
+<div class="main">
+  <!-- INPUT -->
+  <div class="sl c-sand io"><b>INPUT</b><div class="mt"></div><div class="k M r"><i></i>TRIM<span class="cn">+0.0</span><span class="u">dB</span></div><div class="bt" style="width:44px">Ø</div></div>
+
+  <!-- GATE + AMP -->
+  <div class="col">
+    <div class="sl c-olive">
+      <div class="pr">Pr</div>
+      <div class="tp"><div class="pb">GATE</div><div class="lamp"><i></i>CLOSED</div></div>
+      <div class="sec"><div class="hd"><em><span>1</span></em>HOW MUCH</div><div class="rw"><div class="k L"><i></i>THRESHOLD<span class="cn">-40.0</span><span class="u">dB</span></div><div class="k M"><i></i>RANGE<span class="cn">40.0</span><span class="u">dB</span></div></div></div>
+      <div class="sec"><div class="hd"><em><span>2</span></em>HOW FAST</div><div class="rw"><div class="k S"><i></i>ATTACK<span class="cn">0.50</span><span class="u">ms</span></div><div class="k S"><i></i>HOLD<span class="cn">  50</span><span class="u">ms</span></div><div class="k S"><i></i>RELEASE<span class="cn"> 150</span><span class="u">ms</span></div></div></div>
+      <div class="sec"><div class="hd"><em><span>3</span></em>WHAT IT LISTENS TO</div>
+        <div class="rw"><div class="k S b"><i></i>IGNORE BELOW<span class="cn">  OFF</span><span class="u">Hz</span></div><div class="k S b"><i></i>IGNORE ABOVE<span class="cn">  OFF</span><span class="u">Hz</span></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;place-items:center;margin-top:8px"><div class="pair"><span class="lb">OPENED BY</span><div class="bt lit" style="width:110px">THIS TRACK</div><div class="bt" style="width:110px">SIDECHAIN</div></div><div class="bt" style="width:84px">LISTEN</div></div>
+      </div>
+    </div>
+    <div class="sl c-sand">
+      <div class="pr">Pr</div>
+      <div class="tp"><div class="pb">AMP</div><span></span></div>
+      <svg viewBox="0 0 220 120" width="220" height="120" style="align-self:center" role="img" aria-label="Amp knob marked clean, analog and overdrive"><g stroke="#2c2c2a" stroke-width="2.5"><line x1="110" y1="22" x2="110" y2="30"/><line x1="66" y1="100" x2="72" y2="94"/><line x1="154" y1="100" x2="148" y2="94"/></g><circle cx="110" cy="64" r="30" fill="#1a1a18" stroke="#ef9f27" stroke-width="5"/><line x1="110" y1="64" x2="110" y2="40" stroke="#f1efe8" stroke-width="3.5" stroke-linecap="round"/><g font-family="IBM Plex Sans Condensed, Arial Narrow, sans-serif" font-size="13" font-weight="600" fill="#2c2c2a" text-anchor="middle"><text x="110" y="15">ANALOG</text><text x="44" y="116">CLEAN</text><text x="178" y="116">OVERDRIVE</text></g></svg>
+      <div class="pc" style="align-self:center"><span class="cn"> 42</span><em>%</em></div>
+    </div>
+  </div>
+
+  <!-- CENTRE: SCREEN + EQ -->
+  <div class="col">
+    <div class="screen"><svg viewBox="0 0 440 280" preserveAspectRatio="none" role="img" aria-label="EQ curve on the big screen"><g stroke="#1f4a22" stroke-width="1"><line x1="44" y1="10" x2="44" y2="270"/><line x1="154" y1="10" x2="154" y2="270"/><line x1="286" y1="10" x2="286" y2="270"/><line x1="396" y1="10" x2="396" y2="270"/><line x1="10" y1="60" x2="430" y2="60"/><line x1="10" y1="220" x2="430" y2="220"/></g><line x1="10" y1="140" x2="430" y2="140" stroke="#2f6a33" stroke-dasharray="4 5"/><path d="M10 182 C70 182 100 140 140 140 S190 62 220 62 S262 140 300 140 S370 156 430 112" fill="none" stroke="#8fe36a" stroke-width="3"/><circle cx="220" cy="62" r="6" fill="#8fe36a"/><circle cx="372" cy="150" r="6" fill="#8fe36a"/><g font-family="IBM Plex Mono, monospace" font-size="12" fill="#5fae58"><text x="48" y="22">50</text><text x="158" y="22">200</text><text x="290" y="22">1k</text><text x="400" y="22">5k</text></g></svg></div>
+    <div class="sl c-gun2">
+      <div class="pr">Pr</div>
+      <div class="tp wide"><div class="pb">EQ</div><span class="ph">PLACEHOLDER</span></div>
+      <div class="eqrow">
+        <div style="display:flex;flex-direction:column;justify-content:center;width:56px"><div class="k S b"><i></i>HPF<span class="cn">  40</span><span class="u">Hz</span></div></div>
+        <div class="band" style="background:var(--gun)"><span>LOW</span><div class="k S b" style="align-items:flex-start"><i></i></div><div class="k M r" style="align-items:flex-end;margin-top:-10px"><i></i></div><span class="cn">+2.0</span><span class="u">dB</span></div>
+        <div class="band" style="background:#888780;color:#2c2c2a"><span>BELL 1</span><div class="k S b" style="align-items:flex-start"><i></i></div><div class="k M r" style="align-items:flex-end;margin-top:-10px"><i></i></div><span class="cn">+4.5</span><span class="u">dB</span></div>
+        <div class="band" style="background:var(--gun)"><span>BELL 2</span><div class="k S b" style="align-items:flex-start"><i></i></div><div class="k M r" style="align-items:flex-end;margin-top:-10px"><i></i></div><span class="cn">-1.5</span><span class="u">dB</span></div>
+        <div class="band" style="background:#888780;color:#2c2c2a"><span>HIGH</span><div class="k S b" style="align-items:flex-start"><i></i></div><div class="k M r" style="align-items:flex-end;margin-top:-10px"><i></i></div><span class="cn">+3.0</span><span class="u">dB</span></div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:space-around;width:70px"><div class="bt" style="width:68px">MASTER</div><div class="k S b"><i></i>LPF<span class="cn"> 18k</span><span class="u">Hz</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DS + COMP -->
+  <div class="col">
+    <div class="sl c-olive2">
+      <div class="pr">Pr</div>
+      <div class="tp"><div class="pb">DS</div><div class="act"></div></div>
+      <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:7px">
+        <div class="sec"><div class="hd"><em><span>1</span></em>WHERE</div><div class="rw" style="align-items:center"><div class="k S b"><i></i>FROM<span class="cn">5.0</span><span class="u">kHz</span></div><div class="k S b"><i></i>TO<span class="cn">OFF</span><span class="u">kHz</span></div><div class="pair"><span class="lb">NOT SURE?</span><div class="bt" style="width:70px">FIND</div><div class="bt" style="width:70px">LISTEN</div></div></div></div>
+        <div class="sec"><div class="hd"><em><span>2</span></em>HOW MUCH</div><div class="rw"><div class="k L"><i></i>THRESHOLD<span class="cn">-08.0</span><span class="u">dB</span></div><div class="k M"><i></i>RANGE<span class="cn">06.0</span><span class="u">dB</span></div></div></div>
+      </div>
+      <div class="sec"><div class="hd"><em><span>3</span></em>TURNS DOWN</div><div class="rw" style="justify-content:center;gap:10px"><div class="bt lit" style="width:130px">HARSH BAND</div><div class="bt" style="width:130px">WHOLE SOUND</div></div></div>
+    </div>
+    <div class="sl c-gun">
+      <div class="pr">Pr</div>
+      <div class="tp wide"><div class="pb">COMP</div><svg class="meter" viewBox="0 0 150 52" role="img" aria-label="Gain reduction meter"><rect x="1" y="1" width="148" height="50" rx="3" fill="#f1efe8" stroke="#111" stroke-width="2"/><path d="M18 42 A60 60 0 0 1 132 42" fill="none" stroke="#2c2c2a"/><g fill="#2c2c2a" font-family="IBM Plex Mono, monospace" font-size="11" text-anchor="middle"><text x="20" y="32">0</text><text x="75" y="13">6</text><text x="130" y="32">24</text><text x="75" y="48">GAIN REDUCTION</text></g><line x1="75" y1="48" x2="52" y2="20" stroke="#a32d2d" stroke-width="2"/></svg></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+        <div class="sec"><div class="hd"><em><span>1</span></em>HOW MUCH</div><div class="rw"><div class="k L"><i></i>THRESHOLD<span class="cn">-20.0</span><span class="u">dB</span></div><div class="k M"><i></i>RATIO<span class="cn">04.0</span><span class="u">: 1</span></div></div></div>
+        <div class="sec"><div class="hd"><em><span>2</span></em>HOW FAST</div><div class="rw"><div class="k M"><i></i>ATTACK<span class="cn">  10</span><span class="u">ms</span></div><div class="k M"><i></i>RELEASE<span class="cn"> 100</span><span class="u">ms</span></div></div></div>
+        <div class="sec g3" style="grid-template-columns:1fr 1.3fr auto;column-gap:4px"><div class="hd"><em><span>3</span></em>OUTPUT</div><div class="k S r"><i></i>MAKE-UP<span class="cn">+0.0</span><span class="u">dB</span></div><div class="k S"><i></i>MIX<span class="pc"><span class="cn">100</span><em>%</em></span><span class="u">&nbsp;</span></div><div class="stretch"><div class="sq"><span>AUTO</span><span>GAIN</span></div></div></div>
+        <div class="sec"><div class="hd"><em><span>5</span></em>CHARACTER</div><div class="rw" style="align-items:flex-start"><div class="pair"><span class="lb">STYLE</span><div class="bt lit" style="width:80px">MODERN</div><div class="bt" style="width:80px">VINTAGE</div></div><div class="pair"><span class="lb">LOW END</span><div class="bt lit" style="width:80px">NORMAL</div><div class="bt" style="width:80px">THRUST</div></div></div></div>
+      </div>
+      <div class="sec"><div class="hd"><em><span>4</span></em>WHAT IT REACTS TO</div><div class="rw" style="align-items:center"><div class="k S b"><i></i>IGNORE BELOW<span class="cn">OFF</span><span class="u">Hz</span></div><div class="pair"><span class="lb">REACTS TO</span><div class="bt lit">PEAKS</div><div class="bt">AVERAGE</div></div><div class="pair"><span class="lb">LISTENS TO</span><div class="bt lit">THIS TRACK</div><div class="bt">SIDECHAIN</div></div></div></div>
+    </div>
+  </div>
+
+  <!-- TRANS + BITCH-SLAP + CLIP -->
+  <div class="col">
+    <div class="sl c-sand">
+      <div class="pr">Pr</div>
+      <div class="tp wide"><div class="pb">TRANS</div><svg class="meter" style="width:104px;height:44px" viewBox="0 0 126 52" role="img" aria-label="Gain change meter"><rect x="1" y="1" width="124" height="50" rx="3" fill="#f1efe8" stroke="#111" stroke-width="2"/><path d="M14 42 A52 52 0 0 1 112 42" fill="none" stroke="#2c2c2a"/><g fill="#2c2c2a" font-family="IBM Plex Mono, monospace" font-size="11" text-anchor="middle"><text x="18" y="32">-12</text><text x="63" y="13">0</text><text x="108" y="32">+12</text><text x="63" y="48">GAIN CHANGE</text></g><line x1="63" y1="48" x2="63" y2="18" stroke="#a32d2d" stroke-width="2"/></svg></div>
+      <div class="sec"><div class="hd"><em><span>1</span></em>SHAPE</div><div class="rw"><div class="k M"><i></i>PUNCH<span class="pc"><span class="cn">   0</span><em>%</em></span></div><div class="k M"><i></i>SUSTAIN<span class="pc"><span class="cn">   0</span><em>%</em></span></div></div></div>
+      <div class="sec g3" style="grid-template-columns:1fr 1.3fr auto;column-gap:4px"><div class="hd"><em><span>2</span></em>OUTPUT</div><div class="k S r"><i></i>OUTPUT<span class="cn">+0.0</span><span class="u">dB</span></div><div class="k S"><i></i>MIX<span class="pc"><span class="cn">100</span><em>%</em></span><span class="u">&nbsp;</span></div><div class="stretch"><div class="sq"><span>AUTO</span><span>GAIN</span></div></div></div>
+    </div>
+    <div class="sl c-olive">
+      <div class="pr">Pr</div>
+      <div class="tp"><div class="pb off"><span>BITCH</span><span>SLAP</span></div><span></span></div>
+      <div class="sec"><div class="hd"><em><span>1</span></em>HOW MUCH</div><div class="rw" style="align-items:center"><div class="k M"><i></i>MIX<span class="pc"><span class="cn"> 35</span><em>%</em></span></div><div style="font-size:12px;line-height:1.5;opacity:.85">0% DRY<br>50% BOTH<br>100% REVERB</div></div></div>
+      <div class="sec"><div class="hd"><em><span>2</span></em>HOW LONG</div><div class="rw" style="align-items:center"><div class="k M"><i></i>LENGTH<span class="cn">0300</span><span class="u">ms</span></div><div class="pair"><span class="lb">SYNC</span><div class="bt lit" style="width:80px">OFF</div><div class="bt" style="width:80px">TEMPO</div></div></div></div>
+    </div>
+    <div class="sl c-gun2">
+      <div class="pr">Pr</div>
+      <div class="tp"><div class="pb">CLIP</div><div class="act" style="background:#1a1a18"></div></div>
+      <div class="rw" style="justify-content:center;padding:6px 0"><div class="k M o"><i></i>CEILING<span class="cn">-1.0</span><span class="u">dB</span></div><span class="ph" style="align-self:center;margin-left:18px">PLACEHOLDER</span></div>
+    </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="sl c-sand io"><b>OUTPUT</b><div class="mt"></div><div class="k M r"><i></i>LEVEL<span class="cn">+0.0</span><span class="u">dB</span></div></div>
+</div>
+
+<div class="ticker">Threshold: how loud a sound has to get before the compressor starts turning it down.</div>
+</div></div>
+
+<script>
+document.querySelectorAll('.cn').forEach(function(e){var t=e.textContent;e.textContent='';for(var c of t){var b=document.createElement('b');b.textContent=(c===' ')?' ':c;e.appendChild(b)}});
+function fit(){var a=document.getElementById('t1'),b=document.getElementById('t2');if(!a||!b)return;b.style.fontSize='30px';b.style.letterSpacing='5px';var wa=a.getBoundingClientRect().width-5,wb=b.getBoundingClientRect().width-5;var f=30*wa/wb;b.style.fontSize=f.toFixed(2)+'px';b.style.letterSpacing=(5*f/30).toFixed(2)+'px';var d=a.getBoundingClientRect().width-b.getBoundingClientRect().width;if(Math.abs(d)>0.5){b.style.letterSpacing=(parseFloat(b.style.letterSpacing)+d/10).toFixed(2)+'px'}}
+(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(fit);setTimeout(fit,800);
+</script>
