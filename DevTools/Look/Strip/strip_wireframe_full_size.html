@@ -37,7 +37,7 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
 .plate{background:var(--face);color:#2c2c2a;border:2px solid var(--gun);border-radius:3px;font-family:var(--mono);padding:6px 12px;display:flex;align-items:center;gap:8px}
 .plate i{width:6px;height:6px;border-radius:50%;background:var(--gun)}
 /* main grid */
-.main{display:grid;grid-template-columns:68px 258px 652px 404px 242px 96px;gap:10px;align-items:stretch}
+.main{grid-template-rows:auto 1fr;display:grid;grid-template-columns:68px 258px 652px 404px 242px 96px;gap:10px;align-items:stretch}
 .col{display:flex;flex-direction:column;gap:10px}
 .col>.sl:last-child{flex:1}
 .sl{position:relative;border:2px solid #111;border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:7px}
@@ -143,10 +143,10 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
 
 <div class="main">
   <!-- INPUT -->
-  <div class="sl c-sand io"><b>INPUT</b><div class="mt"></div><div class="k M r"><i></i>TRIM<span class="cn">+0.0</span><span class="u">dB</span></div><div class="bt" style="width:44px">Ø</div></div>
+  <div class="sl c-sand io" style="grid-column:1;grid-row:1/3"><b>INPUT</b><div class="mt"></div><div class="k M r"><i></i>TRIM<span class="cn">+0.0</span><span class="u">dB</span></div><div class="bt" style="width:44px">Ø</div></div>
 
   <!-- GATE + AMP -->
-  <div class="col">
+  <div class="col" style="grid-column:2;grid-row:1">
     <div class="sl c-olive">
       <div class="pr">Pr</div>
       <div class="tp"><div class="pb">GATE</div><div class="lamp"><i></i>CLOSED</div></div>
@@ -163,11 +163,10 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
       <svg viewBox="0 0 220 120" width="220" height="120" style="align-self:center" role="img" aria-label="Amp knob marked clean, analog and overdrive"><g stroke="#2c2c2a" stroke-width="2.5"><line x1="110" y1="22" x2="110" y2="30"/><line x1="66" y1="100" x2="72" y2="94"/><line x1="154" y1="100" x2="148" y2="94"/></g><circle cx="110" cy="64" r="30" fill="#1a1a18" stroke="#ef9f27" stroke-width="5"/><line x1="110" y1="64" x2="110" y2="40" stroke="#f1efe8" stroke-width="3.5" stroke-linecap="round"/><g font-family="IBM Plex Sans Condensed, Arial Narrow, sans-serif" font-size="13" font-weight="600" fill="#2c2c2a" text-anchor="middle"><text x="110" y="15">ANALOG</text><text x="44" y="116">CLEAN</text><text x="178" y="116">OVERDRIVE</text></g></svg>
       <div class="pc" style="align-self:center"><span class="cn"> 42</span><em>%</em></div>
     </div>
-    <div class="grille" style="margin:0"></div>
   </div>
 
   <!-- CENTRE: SCREEN + EQ -->
-  <div class="col">
+  <div class="col" style="grid-column:3;grid-row:1">
     <div class="screen"><svg viewBox="0 0 440 280" preserveAspectRatio="none" role="img" aria-label="EQ curve on the big screen"><g stroke="#1f4a22" stroke-width="1"><line x1="44" y1="10" x2="44" y2="270"/><line x1="154" y1="10" x2="154" y2="270"/><line x1="286" y1="10" x2="286" y2="270"/><line x1="396" y1="10" x2="396" y2="270"/><line x1="10" y1="60" x2="430" y2="60"/><line x1="10" y1="220" x2="430" y2="220"/></g><line x1="10" y1="140" x2="430" y2="140" stroke="#2f6a33" stroke-dasharray="4 5"/><path d="M10 120 C60 120 80 124 110 128 S170 64 210 64 S250 140 290 146 S370 148 430 146" fill="none" stroke="#8fe36a" stroke-width="3"/><path d="M10 140 C200 140 300 140 340 136 S400 104 430 102" fill="none" stroke="#e8b04a" stroke-width="3" stroke-dasharray="1 0"/><circle cx="210" cy="64" r="6" fill="#8fe36a"/><circle cx="96" cy="124" r="6" fill="#8fe36a"/><circle cx="390" cy="108" r="6" fill="#e8b04a"/><g font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500"><text x="352" y="262" fill="#8fe36a">MID</text><text x="392" y="262" fill="#e8b04a">SIDE</text></g><g font-family="IBM Plex Mono, monospace" font-size="12" fill="#5fae58"><text x="48" y="22">50</text><text x="158" y="22">200</text><text x="290" y="22">1k</text><text x="400" y="22">5k</text></g></svg></div>
     <div class="sl c-gun2 eq">
       <div class="eqtop"><span></span><span></span><div class="pb" style="width:170px;letter-spacing:3px">EQUALIZER</div><div class="bt" style="width:88px;justify-self:center">MASTER</div><div class="pr">Pr</div></div>
@@ -194,12 +193,14 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
         <div class="es" style="background:transparent"></div>
       </div>
       <div class="refplate"><b>FREQUENCY REFERENCE</b><div class="r2"><span>WEIGHT 50–100</span><span>BODY 150–250</span><span>MUD 300–600</span><span>CRUNCH 1–3k</span><span>PRESENCE 2–5k</span><span>ATTACK 2–5k</span><span>SIBILANCE 5–9k</span><span>AIR 10k +</span></div></div>
-      <div class="grille"></div>
     </div>
   </div>
 
+  <!-- ONE GRILLE UNDER AMP AND THE EQ -->
+  <div class="grille" style="grid-column:2/4;grid-row:2;margin:0"></div>
+
   <!-- DS + COMP -->
-  <div class="col">
+  <div class="col" style="grid-column:4;grid-row:1/3">
     <div class="sl c-olive2">
       <div class="pr">Pr</div>
       <div class="tp"><div class="pb">DS</div><div class="act"></div></div>
@@ -224,7 +225,7 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
   </div>
 
   <!-- TRANS + BITCH-SLAP + CLIP -->
-  <div class="col">
+  <div class="col" style="grid-column:5;grid-row:1/3">
     <div class="sl c-sand">
       <div class="pr">Pr</div>
       <div class="tp wide"><div class="pb">TRANS</div><svg class="meter" style="width:104px;height:44px" viewBox="0 0 126 52" role="img" aria-label="Gain change meter"><rect x="1" y="1" width="124" height="50" rx="3" fill="#f1efe8" stroke="#111" stroke-width="2"/><path d="M14 42 A52 52 0 0 1 112 42" fill="none" stroke="#2c2c2a"/><g fill="#2c2c2a" font-family="IBM Plex Mono, monospace" font-size="11" text-anchor="middle"><text x="18" y="32">-12</text><text x="63" y="13">0</text><text x="108" y="32">+12</text><text x="63" y="48">GAIN CHANGE</text></g><line x1="63" y1="48" x2="63" y2="18" stroke="#a32d2d" stroke-width="2"/></svg></div>
@@ -251,7 +252,7 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
   </div>
 
   <!-- OUTPUT -->
-  <div class="sl c-sand io"><b>OUTPUT</b><div class="pair"><div class="bt mini" style="width:64px">PEAK</div><div class="bt mini lit" style="width:64px">LUFS</div></div><div class="mt"></div><div class="k"><span class="cn">-14.2</span><span class="u">LUFS</span></div><div class="k M r"><i></i>LEVEL<span class="cn">+0.0</span><span class="u">dB</span></div></div>
+  <div class="sl c-sand io" style="grid-column:6;grid-row:1/3"><b>OUTPUT</b><div class="pair"><div class="bt mini" style="width:64px">PEAK</div><div class="bt mini lit" style="width:64px">LUFS</div></div><div class="mt"></div><div class="k"><span class="cn">-14.2</span><span class="u">LUFS</span></div><div class="k M r"><i></i>LEVEL<span class="cn">+0.0</span><span class="u">dB</span></div></div>
 </div>
 
 <div class="ticker">Threshold: how loud a sound has to get before the compressor starts turning it down.</div>

@@ -184,9 +184,10 @@ The ticker is on by default and its hints matter as much as the sound.
          Each band's frequency and gain knobs stay CLOSE together, near
          the top, so working quickly needs little mouse movement; spare
          height below goes to the frequency reference plate (right under
-         the bands) and then a ventilation grille, which also runs under
-         Amp (Amp's slab sized to its controls) - never to spreading the
-         knobs out.
+         the bands); below Amp and the EQ runs ONE ventilation grille,
+         a single panel across both columns (Amp's slab sized to its
+         controls, its bottom level with the EQ's) - never to spreading
+         the knobs out.
          In the zone of API's 550 (not a clone): four overlapping bands
          LOW, LOW MID, HIGH MID, HIGH, plus HPF and LPF; BELL / SHELF
          switches on LOW and HIGH; proportional Q (narrower the harder
