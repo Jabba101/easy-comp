@@ -82,6 +82,9 @@ STYLE RULES
    bloom, no flicker or moving CRT effects, gentle glow on lit parts,
    no glare. The final art is rendered with even, shadowless light;
    any glass reflection is a separate faint layer added on top.
+ - Buttons look engineered: lettering centred on the button, and
+   buttons that sit together are all the same width (never sized to
+   their own word).
  - All panel labels in CAPITALS (knobs, buttons, sections, presets): they
    stay clear when the window is small. The ticker's hints stay in
    normal sentence case, as they're read rather than glanced at.
@@ -109,8 +112,9 @@ The ticker is on by default and its hints matter as much as the sound.
          pushbutton (blue) for linear phase. Its hint: keeps the timing of
          every sound intact, best on a drum bus or a finished mix; adds a
          short delay and uses more power, so leave it off on single tracks.
- DS      THRESHOLD (biggest), FROM, TO, RANGE, TURNS DOWN (harsh band /
-         whole sound), FIND, LISTEN
+ DS      top: a HARSH BAND panel - FROM and TO (blue) with FIND and
+         LISTEN between them; below: THRESHOLD (biggest), RANGE, and a
+         BAND / WHOLE toggle (what gets turned down); counter at the foot
  Comp    THRESHOLD (biggest), RATIO, ATTACK, RELEASE, MAKE-UP, MIX,
          IGNORE BELOW, REACTS TO (peaks / average), STYLE (modern /
          vintage), LOW END (normal / thrust), LISTENS TO (this track /
