@@ -181,6 +181,10 @@ The ticker is on by default and its hints matter as much as the sound.
          slightly different widths and knob positions, toggles and screws
          in different spots - "the circuit board decided" - while the
          logic stays the same in every band. No grid of identical knobs.
+         Each band's frequency and gain knobs stay CLOSE together, near
+         the top, so working quickly needs little mouse movement; spare
+         height below goes to atmosphere (a ventilation grille) and the
+         frequency reference plate, never to spreading the knobs out.
          In the zone of API's 550 (not a clone): four overlapping bands
          LOW, LOW MID, HIGH MID, HIGH, plus HPF and LPF; BELL / SHELF
          switches on LOW and HIGH; proportional Q (narrower the harder

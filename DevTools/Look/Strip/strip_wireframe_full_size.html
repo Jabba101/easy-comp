@@ -95,19 +95,20 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
 .eq{gap:6px}
 .eqtop{display:grid;grid-template-columns:26px 1fr auto 1fr 26px;align-items:center;min-height:46px}
 .eqtop .pr{position:static}
-.eqgrid{display:grid;grid-template-columns:70px 1.1fr 1fr .96fr 1.08fr 0px;gap:6px;flex:1}
-.eb{position:relative;border-radius:6px;padding:6px 2px 12px;display:flex;flex-direction:column;align-items:center;justify-content:space-between}
+.eqgrid{display:grid;grid-template-columns:70px 1.1fr 1fr .96fr 1.08fr 0px;gap:6px}
+.eb{position:relative;border-radius:6px;padding:6px 2px 10px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
 .eb.dk{background:var(--gun);--ink:#f1efe8}.eb.lt{background:#888780;color:#2c2c2a;--ink:#1f1f1d}
 .eb .nm{font-weight:600;font-size:13px}
 .kb{display:flex;flex-direction:column;align-items:center;gap:2px}
-.es{display:flex;flex-direction:column;align-items:center;justify-content:space-around;padding:5px 0;background:#3a3a37;border-radius:6px;--ink:#f1efe8;text-align:center;line-height:1.1}
+.es{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;padding:5px 0;background:#3a3a37;border-radius:6px;--ink:#f1efe8;text-align:center;line-height:1.1}
 .tgt{display:flex;gap:2px;margin-top:8px}.tgt span{width:32px;text-align:center;padding:2px 0;border-radius:2px;background:#2c2c2a;color:#888780;border:1.5px solid #111;font-weight:600;font-size:12px}
 .tgt span.on{background:var(--amber);color:#412402;border-color:#854f0b}
 .tgl{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;height:20px}.tgl i{width:13px;height:13px;border-radius:50%;background:var(--face);border:1px solid #111;position:relative;margin-top:7px}.tgl i::after{content:"";position:absolute;left:4px;top:-9px;width:4px;height:11px;background:var(--face);border:1px solid #111;border-radius:2px}
 .scr{position:absolute;width:8px;height:8px;border-radius:50%;background:#2c2c2a;box-shadow:inset 0 0 0 1.5px #888780}
 .scr::after{content:"";position:absolute;left:1px;right:1px;top:3.5px;height:1px;background:#888780}
 .eq .cn b{width:11px;height:19px;font-size:15px}
-.refplate{margin-top:4px;background:#2f2f2c;border:1px solid #111;border-radius:4px;padding:8px 12px;color:#a9a69b;font-family:var(--mono);font-size:12px;line-height:1.6;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);position:relative}
+.grille{flex:1;min-height:20px;margin:4px 10px;border-radius:4px;background:repeating-linear-gradient(90deg,#1c1c1a 0 10px,transparent 10px 16px);background-size:16px 100%;background-clip:content-box;padding:10px 0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.35)}
+.refplate{margin-top:4px;background:#2f2f2c;border:1px solid #111;border-radius:4px;padding:10px 14px;color:#b8b5aa;font-family:var(--mono);font-size:14px;line-height:1.7;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);position:relative}
 .refplate b{color:#cfccc1;font-weight:500;letter-spacing:2px;display:block;margin-bottom:2px}
 .refplate .r2{display:grid;grid-template-columns:repeat(4,1fr);column-gap:14px}
 /* clip + output */
@@ -176,23 +177,24 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
         <div class="eb dk"><span class="scr" style="top:6px;right:7px"></span><span class="scr" style="bottom:70px;left:6px"></span><span class="nm">LOW</span>
           <div class="tgl" style="margin:6px 0 2px"><span>BELL</span><i></i><span>SHELF</span></div>
           <div class="kb" style="align-self:flex-start"><svg class="knob" data-s="s" data-c="#378ADD" data-l="30,50,100,200,400" width="112" height="86"></svg><span class="cn">  60</span><span class="u">Hz</span></div>
-          <div class="kb" style="align-self:flex-end;margin-top:10px"><svg class="knob" data-s="b" data-c="#E24B4A" data-l="-12,-6,0,+6,+12" width="112" height="104"></svg><span class="cn">+3.0</span><span class="u">dB</span></div>
-          <div class="tgt"><span>ST</span><span class="on">MID</span><span>SIDE</span></div></div>
+          <div class="kb" style="align-self:flex-end;margin-top:-8px"><svg class="knob" data-s="b" data-c="#E24B4A" data-l="-12,-6,0,+6,+12" width="112" height="104"></svg><span class="cn">+3.0</span><span class="u">dB</span></div>
+          <div class="tgt" style="margin-top:10px"><span>ST</span><span class="on">MID</span><span>SIDE</span></div></div>
         <div class="eb lt"><span class="scr" style="top:6px;left:7px"></span><span class="nm">LOW MID</span>
-          <div class="kb" style="align-self:flex-start;margin:30px 0 0 2px"><svg class="knob" data-s="s" data-c="#378ADD" data-l="75,150,300,600,1.2k" width="112" height="86"></svg><span class="cn"> 210</span><span class="u">Hz</span></div>
-          <div class="kb" style="align-self:flex-end;margin-top:18px"><svg class="knob" data-s="b" data-c="#E24B4A" data-l="-12,-6,0,+6,+12" width="112" height="104"></svg><span class="cn">+4.5</span><span class="u">dB</span></div>
-          <div class="tgt" style="margin-top:12px"><span class="on">ST</span><span>MID</span><span>SIDE</span></div></div>
+          <div class="kb" style="align-self:flex-start;margin:10px 0 0 2px"><svg class="knob" data-s="s" data-c="#378ADD" data-l="75,150,300,600,1.2k" width="112" height="86"></svg><span class="cn"> 210</span><span class="u">Hz</span></div>
+          <div class="kb" style="align-self:flex-end;margin-top:-6px"><svg class="knob" data-s="b" data-c="#E24B4A" data-l="-12,-6,0,+6,+12" width="112" height="104"></svg><span class="cn">+4.5</span><span class="u">dB</span></div>
+          <div class="tgt" style="margin-top:10px"><span class="on">ST</span><span>MID</span><span>SIDE</span></div></div>
         <div class="eb dk"><span class="scr" style="bottom:7px;right:6px"></span><span class="scr" style="top:40px;right:5px"></span><span class="nm">HIGH MID</span>
-          <div class="kb" style="align-self:flex-start;margin-top:22px"><svg class="knob" data-s="s" data-c="#378ADD" data-l="800,1.5k,3k,5k,8k" width="108" height="86"></svg><span class="cn">3.0k</span><span class="u">Hz</span></div>
-          <div class="kb" style="align-self:center;margin:6px 0 0 14px"><svg class="knob" data-s="b" data-c="#E24B4A" data-l="-12,-6,0,+6,+12" width="108" height="104"></svg><span class="cn">-1.5</span><span class="u">dB</span></div>
-          <div class="tgt" style="margin-top:18px"><span class="on">ST</span><span>MID</span><span>SIDE</span></div></div>
+          <div class="kb" style="align-self:flex-start;margin-top:4px"><svg class="knob" data-s="s" data-c="#378ADD" data-l="800,1.5k,3k,5k,8k" width="108" height="86"></svg><span class="cn">3.0k</span><span class="u">Hz</span></div>
+          <div class="kb" style="align-self:center;margin:-10px 0 0 14px"><svg class="knob" data-s="b" data-c="#E24B4A" data-l="-12,-6,0,+6,+12" width="108" height="104"></svg><span class="cn">-1.5</span><span class="u">dB</span></div>
+          <div class="tgt" style="margin-top:10px"><span class="on">ST</span><span>MID</span><span>SIDE</span></div></div>
         <div class="eb lt"><span class="scr" style="top:6px;right:7px"></span><span class="scr" style="bottom:9px;left:7px"></span><span class="nm">HIGH</span>
           <div class="kb" style="align-self:flex-start;margin-top:4px"><svg class="knob" data-s="s" data-c="#378ADD" data-l="2.5k,5k,10k,15k,20k" width="112" height="86"></svg><span class="cn"> 12k</span><span class="u">Hz</span></div>
-          <div class="tgl" style="align-self:flex-start;margin:8px 0 0 8px"><span>BELL</span><i></i><span>SHELF</span></div>
-          <div class="kb" style="align-self:flex-end;margin-top:4px"><svg class="knob" data-s="b" data-c="#E24B4A" data-l="-12,-6,0,+6,+12" width="112" height="104"></svg><span class="cn">+3.0</span><span class="u">dB</span></div>
-          <div class="tgt"><span>ST</span><span>MID</span><span class="on">SIDE</span></div></div>
+          <div class="tgl" style="align-self:flex-start;margin:2px 0 0 8px"><span>BELL</span><i></i><span>SHELF</span></div>
+          <div class="kb" style="align-self:flex-end;margin-top:-2px"><svg class="knob" data-s="b" data-c="#E24B4A" data-l="-12,-6,0,+6,+12" width="112" height="104"></svg><span class="cn">+3.0</span><span class="u">dB</span></div>
+          <div class="tgt" style="margin-top:10px"><span>ST</span><span>MID</span><span class="on">SIDE</span></div></div>
         <div class="es" style="background:transparent"></div>
       </div>
+      <div class="grille"></div>
       <div class="refplate"><b>FREQUENCY REFERENCE</b><div class="r2"><span>WEIGHT 50–100</span><span>BODY 150–250</span><span>MUD 300–600</span><span>CRUNCH 1–3k</span><span>PRESENCE 2–5k</span><span>ATTACK 2–5k</span><span>SIBILANCE 5–9k</span><span>AIR 10k +</span></div></div>
     </div>
   </div>
