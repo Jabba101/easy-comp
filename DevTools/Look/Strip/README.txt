@@ -107,6 +107,12 @@ STYLE RULES
 ====================================================================
 THE CONTROLS
 ====================================================================
+The standalones' current windows are function tests: once the strip's
+look is final, the standalones get the same look too. Varied control
+sizes are encouraged (authentic military-grade hardware), and every
+element sits centred in its own space - nothing left-aligned like text
+in a document.
+
 THE RULE: each module on the strip IS its standalone plugin, restyled -
 the same controls, the same names, the same numbered sections in the
 same order (e.g. Easy DS: 1 WHERE, 2 HOW MUCH, 3 TURNS DOWN), the same
