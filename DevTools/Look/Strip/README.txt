@@ -244,8 +244,11 @@ The ticker is on by default and its hints matter as much as the sound.
          columns: CLIP button and lamp, SIMPLE / ADVANCED, then PUSH,
          CEILING, SOFTNESS, PROTECT LOWS in a row (label above, knob,
          counter with its unit beside it). In ADVANCED, the extra knobs
-         (TOP, BOTTOM, BIAS, BLEND) appear in the strip where the grille
-         is, under Amp and the EQ.
+         (TOP, LINK, BOTTOM, BIAS, BLEND) replace the grille under Amp
+         and the EQ, as one row labelled CLIP - ADVANCED (label, knob,
+         counter side by side, so it fits the grille's height). Switching
+         mode never changes the window size (checked in the wireframe:
+         its SIMPLE / ADVANCED buttons work).
          SIMPLE / ADVANCED (see PLAN.txt): the slab flips in place
          between the four everyday knobs (PUSH, CEILING, SOFTNESS,
          PROTECT LOWS) and the sound-design ones (TOP, BOTTOM, BIAS,

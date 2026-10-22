@@ -128,6 +128,15 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
 .kh .kk i{display:block;width:34px;height:34px;border-radius:50%;background:#1a1a18;border:4px solid #888780;box-shadow:0 0 0 2px rgba(0,0,0,.35);box-sizing:border-box}
 .kh.o .kk i{border-color:var(--amber)}.kh.b .kk i{border-color:var(--blue)}
 .cv{display:inline-flex;align-items:center;gap:4px}.cv em{font-style:normal;font-size:13px;opacity:.8}.cv em.pct{font-family:var(--mono);font-size:17px;font-weight:500;opacity:1}
+.bay{display:flex;min-height:0}.bay>*{flex:1}
+.bay .grille{margin:0}
+.advx{flex-direction:row;align-items:center;justify-content:space-around;padding:4px 14px;position:relative}
+.advx[hidden]{display:none}
+.advtag{font-weight:600;font-size:13px;letter-spacing:2px;color:#d3d1c7;white-space:nowrap}
+.ax{display:flex;align-items:center;gap:8px;white-space:nowrap;font-weight:600}
+.ax .kk i{display:block;width:34px;height:34px;border-radius:50%;background:#1a1a18;border:4px solid #888780;box-shadow:0 0 0 2px rgba(0,0,0,.35);box-sizing:border-box}
+button.bt{font:inherit;font-weight:600;cursor:pointer}
+.lampdot.on{background:var(--amber);box-shadow:0 0 6px var(--amber)}
 .ticker{height:52px;border:2px solid #854f0b;background:#1a1a18;border-radius:6px;display:flex;align-items:center;padding:0 18px;font-family:var(--mono);font-size:18px;color:var(--amberLit);white-space:nowrap;overflow:hidden}
 :focus-visible{outline:2px solid var(--amberLit);outline-offset:2px}
 </style>
@@ -212,7 +221,17 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
   </div>
 
   <!-- ONE GRILLE UNDER AMP AND THE EQ -->
-  <div class="grille" style="grid-column:2/4;grid-row:2;margin:0"></div>
+  <div class="bay" style="grid-column:2/4;grid-row:2">
+    <div class="grille"></div>
+    <div class="advx sl c-gun2" hidden>
+      <span class="advtag">CLIP · ADVANCED</span>
+      <div class="ax"><span>TOP</span><span class="kk"><i></i></span><span class="cv"><span class="cn">100</span><em class="pct">%</em></span></div>
+      <div class="bt lit" style="width:62px">LINK</div>
+      <div class="ax"><span>BOTTOM</span><span class="kk"><i></i></span><span class="cv"><span class="cn">100</span><em class="pct">%</em></span></div>
+      <div class="ax"><span>BIAS</span><span class="kk"><i></i></span><span class="cv"><span class="cn">  0</span></span></div>
+      <div class="ax"><span>BLEND</span><span class="kk"><i></i></span><span class="cv"><span class="cn">100</span><em class="pct">%</em></span></div>
+    </div>
+  </div>
 
   <!-- RIGHT BLOCK: DS + COMP | TRANS + BITCH-SLAP + WEAPON SELECT, then CLIP underneath -->
   <div class="rblock" style="grid-column:4/6;grid-row:1/3">
@@ -263,7 +282,7 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
     <div class="pr">Pr</div>
     <div class="ch">
       <div class="chtop"><div class="pb">CLIP</div><div class="act" style="background:#1a1a18"></div></div>
-      <div class="pair"><div class="bt lit" style="width:96px">SIMPLE</div><div class="bt" style="width:96px">ADVANCED<span class="lampdot"></span></div></div>
+      <div class="pair"><button type="button" id="mSimple" class="bt lit" style="width:96px">SIMPLE</button><button type="button" id="mAdv" class="bt" style="width:96px">ADVANCED<span class="lampdot"></span></button></div>
       <div class="kh"><span>PUSH</span><span class="kk"><i></i></span><span class="cv"><span class="cn">+3.0</span><em>dB</em></span></div>
       <div class="kh o"><span>CEILING</span><span class="kk"><i></i></span><span class="cv"><span class="cn">-1.0</span><em>dB</em></span></div>
       <div class="kh"><span>SOFTNESS</span><span class="kk"><i></i></span><span class="cv"><span class="cn">  0</span><em class="pct">%</em></span></div>
@@ -298,5 +317,10 @@ document.querySelectorAll('svg.knob').forEach(function(s){
  el('line',{x1:cx,y1:cy,x2:cx,y2:cy-r+4,stroke:'#f1efe8','stroke-width':2.5,'stroke-linecap':'round'});
 });
 function fit(){var a=document.getElementById('t1'),b=document.getElementById('t2');if(!a||!b)return;b.style.fontSize='24px';b.style.letterSpacing='4px';var wa=a.getBoundingClientRect().width-4,wb=b.getBoundingClientRect().width-4;var f=24*wa/wb;b.style.fontSize=f.toFixed(2)+'px';b.style.letterSpacing=(4*f/24).toFixed(2)+'px';var d=a.getBoundingClientRect().width-b.getBoundingClientRect().width;if(Math.abs(d)>0.5){b.style.letterSpacing=(parseFloat(b.style.letterSpacing)+d/10).toFixed(2)+'px'}}
+
+(function(){var s=document.getElementById('mSimple'),a=document.getElementById('mAdv'),x=document.querySelector('.advx'),g=document.querySelector('.bay .grille'),d=a.querySelector('.lampdot');
+function set(adv){s.classList.toggle('lit',!adv);a.classList.toggle('lit',adv);x.hidden=!adv;g.hidden=adv;d.classList.toggle('on',adv)}
+s.addEventListener('click',function(){set(false)});a.addEventListener('click',function(){set(true)});
+if(location.hash==='#advanced')set(true);})();
 function sq(){document.querySelectorAll('.wbtn').forEach(function(b){b.style.width=b.offsetHeight+'px'})}sq();window.addEventListener('resize',sq);(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(fit);setTimeout(fit,800);
 </script>
