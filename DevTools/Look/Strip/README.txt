@@ -79,6 +79,9 @@ STYLE RULES
    bloom, no flicker or moving CRT effects, gentle glow on lit parts,
    no glare. The final art is rendered with even, shadowless light;
    any glass reflection is a separate faint layer added on top.
+ - All panel labels in CAPITALS (knobs, buttons, sections, presets): they
+   stay clear when the window is small. The ticker's hints stay in
+   normal sentence case, as they're read rather than glanced at.
  - Labels are drawn by the plugin as crisp text, not painted into the
    artwork (sharp at every size, easy to fix).
  - Later: DAY / DUSK (warm reddish-brown) / NIGHT (deep blue) panel
