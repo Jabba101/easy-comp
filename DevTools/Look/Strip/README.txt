@@ -133,6 +133,13 @@ STYLE RULES
 ====================================================================
 THE CONTROLS
 ====================================================================
+Don't line everything up: slab edges that end at different heights in
+neighbouring columns are deliberate - they give the panel its organic,
+real-hardware feel. Only align edges where the design needs it (e.g. the
+one grille under Amp and the EQ). "Theoretically perfect" isn't the aim.
+Small text (units under counters, section captions) is at least 13 px
+at 100%, so it still reads at 75%; "off" lettering is dim but readable.
+
 The standalones' current windows are function tests: once the strip's
 look is final, the standalones get the same look too. Varied control
 sizes are encouraged (authentic military-grade hardware), and every
