@@ -104,6 +104,11 @@ STYLE RULES
    width. The ticker shows the
    full value with its unit while you turn. (This replaces the "one
    counter per section" idea below.)
+ - Every slab's top row is compact: the on/off button sits level with
+   the Pr button (same centre line), and the gap under the row equals
+   the small gap above it. Meters that share that row (Comp's GAIN
+   REDUCTION, Trans's GAIN CHANGE) are slim EDGEWISE meters of the same
+   height - wide and flat, as real hardware uses when space is tight.
  - Mechanical drum counters (white digits on black drums, each digit on
    its own drum) are BIG - the largest text on the panel after the
    title - so the exact values read even with the window small. They
