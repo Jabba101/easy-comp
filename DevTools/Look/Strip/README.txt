@@ -71,6 +71,13 @@ STYLE RULES
    screen, VINTAGE); BLUE = a mode that adds delay and CPU (the EQ's
    MASTER, oversampling at 4x and 8x); RED = a warning (BYPASS on, the
    clip and peak lamps).
+ - A drum counter under EVERY knob, sized to its knob (big under the
+   main knob, compact under small ones, never too small to read at
+   Medium). Numbers only on the drums (words like OFF too); the unit
+   (kHz, dB, ms, %) is printed small on the panel underneath, like the
+   HOURS / MINUTES under an old clock's counters. The ticker shows the
+   full value with its unit while you turn. (This replaces the "one
+   counter per section" idea below.)
  - Mechanical drum counters (white digits on black drums, each digit on
    its own drum) are BIG - the largest text on the panel after the
    title - so the exact values read even with the window small. They
