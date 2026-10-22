@@ -159,7 +159,10 @@ The ticker is on by default and its hints matter as much as the sound.
          IGNORE BELOW, REACTS TO (peaks / average), STYLE (modern /
          vintage), LOW END (normal / thrust), LISTENS TO (this track /
          sidechain); its gain reduction meter
- Trans   PUNCH, SUSTAIN, MIX (no OUTPUT knob on the strip)
+ Trans   a centre-zero GAIN CHANGE needle meter (-12 / 0 / +12) beside its
+         on/off button; 1 SHAPE: PUNCH, SUSTAIN (marked - 0 +, the middle
+         changes nothing); 2 OUTPUT: OUTPUT, MIX, AUTO GAIN (square,
+         centred) - as the standalone
  Bitch-Slap  (always BITCH-SLAP, never shortened: on square buttons it
          sits on two lines, BITCH over SLAP with no hyphen, both centred,
          same size as the others)
@@ -168,8 +171,8 @@ The ticker is on by default and its hints matter as much as the sound.
          2 HOW LONG: LENGTH, SYNC as OFF / TEMPO pushbuttons (LENGTH's
          counter shows the note, e.g. 1/8, when synced)
  Clip    CEILING
- Output  LEVEL, and one AUTO-GAIN for the whole strip (the modules don't
-         get their own AUTO-GAIN or output on the strip)
+ Output  LEVEL (the modules keep their own AUTO GAIN and output controls,
+         exactly as their standalones)
 
 ====================================================================
 STILL TO DECIDE
