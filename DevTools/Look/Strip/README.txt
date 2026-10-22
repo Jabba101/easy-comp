@@ -96,8 +96,9 @@ STYLE RULES
  - Buttons look engineered: lettering centred on the button, and
    buttons that sit together are all the same width (never sized to
    their own word).
- - Two-word buttons stack their words, one over the other, centred, with
-   no hyphen (BITCH over SLAP, AUTO over GAIN). AUTO GAIN is a big
+ - Two-word SQUARE buttons stack their words, one over the other,
+   centred, with no hyphen (wide rectangular choice buttons, like THIS
+   TRACK, keep one line) (BITCH over SLAP, AUTO over GAIN). AUTO GAIN is a big
    square pushbutton, lit green when on, centred in its section's full
    height (not just the row under the heading).
  - All panel labels in CAPITALS (knobs, buttons, sections, presets): they
@@ -138,8 +139,11 @@ not fewer controls: each module keeps all of its standalone's controls.
 The ticker is on by default and its hints matter as much as the sound.
 
  Input   TRIM, polarity flip
- Gate    THRESHOLD (biggest), RANGE, ATTACK, HOLD, RELEASE, IGNORE BELOW,
-         IGNORE ABOVE, OPENED BY (this track / sidechain)
+ Gate    the GATE lamp beside its on/off button, its state written next
+         to it (OPEN / CLOSING / CLOSED); 1 HOW MUCH: THRESHOLD, RANGE;
+         2 HOW FAST: ATTACK, HOLD, RELEASE; 3 WHAT IT LISTENS TO: IGNORE
+         BELOW, IGNORE ABOVE (blue), OPENED BY: THIS TRACK / SIDECHAIN,
+         and LISTEN (moved in from the standalone's header)
  Amp     one big knob, no name: its scale says what it does - CLEAN at
          the bottom left (fully off), ANALOG at the top (the middle),
          OVERDRIVE at the bottom right (fully up)
