@@ -172,7 +172,14 @@ The ticker is on by default and its hints matter as much as the sound.
  Amp     one big knob, no name: its scale says what it does - CLEAN at
          the bottom left (fully off), ANALOG at the top (the middle),
          OVERDRIVE at the bottom right (fully up)
- EQ      In the zone of API's 550 (not a clone): four overlapping bands
+ EQ      Its on/off button is a wide one reading EQUALIZER (the view
+         button stays EQ, square like the others). Layout: frequency knob
+         (blue, smaller) up-left, gain knob (red, bigger) offset down-right,
+         painted scales as large as possible (13-14 px at 100%); bands of
+         slightly different widths and knob positions, toggles and screws
+         in different spots - "the circuit board decided" - while the
+         logic stays the same in every band. No grid of identical knobs.
+         In the zone of API's 550 (not a clone): four overlapping bands
          LOW, LOW MID, HIGH MID, HIGH, plus HPF and LPF; BELL / SHELF
          switches on LOW and HIGH; proportional Q (narrower the harder
          you boost or cut, so no Q knob); gain and each band's
