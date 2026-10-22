@@ -66,7 +66,8 @@ STYLE RULES
    colour by function (blue = frequency, red = level), section sizes.
  - No grids of identical knobs: group them (each EQ band its own tinted
    panel, frequency knob above and offset from its gain knob).
- - Light colours mean the same everywhere: GREEN = a module is on;
+ - Light colours mean the same everywhere: GREEN = a module or feature is
+   on (module buttons, AUTO GAIN);
    AMBER = selected or a sound character choice (the view on the big
    screen, VINTAGE); BLUE = a mode that adds delay and CPU (the EQ's
    MASTER, oversampling at 4x and 8x); RED = a warning (BYPASS on, the
@@ -97,7 +98,8 @@ STYLE RULES
    their own word).
  - Two-word buttons stack their words, one over the other, centred, with
    no hyphen (BITCH over SLAP, AUTO over GAIN). AUTO GAIN is a big
-   square pushbutton.
+   square pushbutton, lit green when on, centred in its section's full
+   height (not just the row under the heading).
  - All panel labels in CAPITALS (knobs, buttons, sections, presets): they
    stay clear when the window is small. The ticker's hints stay in
    normal sentence case, as they're read rather than glanced at.
