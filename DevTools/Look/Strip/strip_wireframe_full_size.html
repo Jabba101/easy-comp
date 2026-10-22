@@ -87,10 +87,8 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
 .io .cn b{width:11px;font-size:15px}
 .band .k{align-self:stretch}
 .ph{opacity:.6;font-size:12px;justify-self:center}
-.weapon{height:58px;box-sizing:border-box;border:3px solid #111;border-radius:6px;background:repeating-linear-gradient(-45deg,#f2c230 0 10px,#151513 10px 20px);display:flex;align-items:center;justify-content:center;padding:6px}
-.weapon{color:#2c2c2a;font-family:var(--display);font-size:24px;letter-spacing:4px;position:relative}
-.weapon::before{content:"";position:absolute;inset:7px;background:#d3d1c7;border:2px solid #111;border-radius:3px}
-.weapon{z-index:0}.weapon::before{z-index:-1}
+.weapon{flex:1;min-height:150px;box-sizing:border-box;border:3px solid #111;border-radius:6px;background:repeating-linear-gradient(-45deg,#f2c230 0 12px,#151513 12px 24px);display:flex;align-items:center;justify-content:center;padding:12px}
+.wbtn{height:100%;max-height:176px;aspect-ratio:1;box-sizing:border-box;background:#d3d1c7;border:4px solid #111;border-radius:6px;box-shadow:0 0 0 4px #2c2c2a,inset 0 -6px 0 rgba(0,0,0,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--display);color:#2c2c2a;font-size:30px;letter-spacing:3px;line-height:1.15}
 /* EQ module */
 .eq{gap:6px}
 .eqtop{display:grid;grid-template-columns:26px 1fr auto 1fr 26px;align-items:center;min-height:46px}
@@ -108,7 +106,7 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
 .scr::after{content:"";position:absolute;left:1px;right:1px;top:3.5px;height:1px;background:#888780}
 .eq .cn b{width:11px;height:19px;font-size:15px}
 .grille{flex:1;min-height:20px;margin:4px 10px;border-radius:4px;background:repeating-linear-gradient(90deg,#1c1c1a 0 10px,transparent 10px 16px);background-size:16px 100%;background-clip:content-box;padding:10px 0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.35)}
-.refplate{margin-top:4px;background:#2f2f2c;border:1px solid #111;border-radius:4px;padding:10px 14px;color:#b8b5aa;font-family:var(--mono);font-size:14px;line-height:1.7;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);position:relative}
+.refplate{margin-top:6px;background:#2f2f2c;border:1px solid #111;border-radius:4px;padding:10px 14px;color:#b8b5aa;font-family:var(--mono);font-size:14px;line-height:1.7;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);position:relative}
 .refplate b{color:#cfccc1;font-weight:500;letter-spacing:2px;display:block;margin-bottom:2px}
 .refplate .r2{display:grid;grid-template-columns:repeat(4,1fr);column-gap:14px}
 /* clip + output */
@@ -165,6 +163,7 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
       <svg viewBox="0 0 220 120" width="220" height="120" style="align-self:center" role="img" aria-label="Amp knob marked clean, analog and overdrive"><g stroke="#2c2c2a" stroke-width="2.5"><line x1="110" y1="22" x2="110" y2="30"/><line x1="66" y1="100" x2="72" y2="94"/><line x1="154" y1="100" x2="148" y2="94"/></g><circle cx="110" cy="64" r="30" fill="#1a1a18" stroke="#ef9f27" stroke-width="5"/><line x1="110" y1="64" x2="110" y2="40" stroke="#f1efe8" stroke-width="3.5" stroke-linecap="round"/><g font-family="IBM Plex Sans Condensed, Arial Narrow, sans-serif" font-size="13" font-weight="600" fill="#2c2c2a" text-anchor="middle"><text x="110" y="15">ANALOG</text><text x="44" y="116">CLEAN</text><text x="178" y="116">OVERDRIVE</text></g></svg>
       <div class="pc" style="align-self:center"><span class="cn"> 42</span><em>%</em></div>
     </div>
+    <div class="grille" style="margin:0"></div>
   </div>
 
   <!-- CENTRE: SCREEN + EQ -->
@@ -194,8 +193,8 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
           <div class="tgt" style="margin-top:10px"><span>ST</span><span>MID</span><span class="on">SIDE</span></div></div>
         <div class="es" style="background:transparent"></div>
       </div>
-      <div class="grille"></div>
       <div class="refplate"><b>FREQUENCY REFERENCE</b><div class="r2"><span>WEIGHT 50–100</span><span>BODY 150–250</span><span>MUD 300–600</span><span>CRUNCH 1–3k</span><span>PRESENCE 2–5k</span><span>ATTACK 2–5k</span><span>SIBILANCE 5–9k</span><span>AIR 10k +</span></div></div>
+      <div class="grille"></div>
     </div>
   </div>
 
@@ -210,7 +209,7 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
       </div>
       <div class="sec"><div class="hd"><em><span>3</span></em>TURNS DOWN</div><div class="rw" style="justify-content:center;gap:10px"><div class="bt lit" style="width:130px">HARSH BAND</div><div class="bt" style="width:130px">WHOLE SOUND</div></div></div>
     </div>
-    <div class="sl c-gun" style="flex:1">
+    <div class="sl c-gun">
       <div class="pr">Pr</div>
       <div class="tp wide"><div class="pb">COMP</div><svg class="meter" viewBox="0 0 150 52" role="img" aria-label="Gain reduction meter"><rect x="1" y="1" width="148" height="50" rx="3" fill="#f1efe8" stroke="#111" stroke-width="2"/><path d="M18 42 A60 60 0 0 1 132 42" fill="none" stroke="#2c2c2a"/><g fill="#2c2c2a" font-family="IBM Plex Mono, monospace" font-size="11" text-anchor="middle"><text x="20" y="32">0</text><text x="75" y="13">6</text><text x="130" y="32">24</text><text x="75" y="48">GAIN REDUCTION</text></g><line x1="75" y1="48" x2="52" y2="20" stroke="#a32d2d" stroke-width="2"/></svg></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
@@ -221,7 +220,7 @@ body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;p
       </div>
       <div class="sec"><div class="hd"><em><span>4</span></em>WHAT IT REACTS TO</div><div class="rw" style="align-items:center"><div class="k S b"><i></i>IGNORE BELOW<span class="cn">OFF</span><span class="u">Hz</span></div><div class="pair"><span class="lb">REACTS TO</span><div class="bt lit">PEAKS</div><div class="bt">AVERAGE</div></div><div class="pair"><span class="lb">LISTENS TO</span><div class="bt lit">THIS TRACK</div><div class="bt">SIDECHAIN</div></div></div></div>
     </div>
-    <div class="weapon">WEAPON SELECT</div>
+    <div class="weapon"><div class="wbtn"><span>WEAPON</span><span>SELECT</span></div></div>
   </div>
 
   <!-- TRANS + BITCH-SLAP + CLIP -->

@@ -183,8 +183,10 @@ The ticker is on by default and its hints matter as much as the sound.
          logic stays the same in every band. No grid of identical knobs.
          Each band's frequency and gain knobs stay CLOSE together, near
          the top, so working quickly needs little mouse movement; spare
-         height below goes to atmosphere (a ventilation grille) and the
-         frequency reference plate, never to spreading the knobs out.
+         height below goes to the frequency reference plate (right under
+         the bands) and then a ventilation grille, which also runs under
+         Amp (Amp's slab sized to its controls) - never to spreading the
+         knobs out.
          In the zone of API's 550 (not a clone): four overlapping bands
          LOW, LOW MID, HIGH MID, HIGH, plus HPF and LPF; BELL / SHELF
          switches on LOW and HIGH; proportional Q (narrower the harder
@@ -254,8 +256,9 @@ LATER: EASY SFX
 A huge pushbutton at the bottom of the strip reading WEAPON SELECT opens
 the effects window, EASY SFX (the "effects window" in PLAN.txt: easy
 versions of effects used a lot, e.g. slapback delay on vocals). Not
-designed yet - the strip itself comes first. Its place: a long oblong
-button under Comp, above the ticker, in the stencil lettering, set in a
+designed yet - the strip itself comes first. Its place: under Comp,
+above the ticker - a HUGE SQUARE button, WEAPON over SELECT in the
+stencil lettering, centred in a housing that fills the space, set in a
 classic black-and-yellow hazard-striped
 surround (in strip_wireframe_full_size.html).
 
