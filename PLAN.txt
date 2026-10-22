@@ -27,7 +27,8 @@ THE CHANNEL STRIP, IN SIGNAL ORDER
 
    4. EQ            Easy EQ. High- and low-pass filters, low and high
                     shelves, and two bell bands, with the curve drawn so
-                    you can see and drag it. The bells get narrower the
+                    you can see and drag it. Mid-side: each band can work
+                    on STEREO, MID or SIDE, plus a MONO BASS knob. The bells get narrower the
                     harder you boost or cut, which is part of what makes
                     API's EQs sound musical (our own take, not a copy).
                     Two modes:
@@ -118,6 +119,11 @@ LATER
    - The optional Cold War look: choose a direction from the mockups
      (A, B, C or a mix). The current clean look stays too.
    - A resizable window.
+   - Easy Comp: mid-side - one WORKS ON: STEREO / MID / SIDE choice
+     (default STEREO, so old presets sound the same), e.g. squash the
+     middle of a drum bus while the cymbals and room breathe. In the
+     standalone first, then the strip. (The full two-compressor M/S
+     version is mastering territory: not planned.)
    - Once the essentials are perfected: an effects window you can open
      from the strip, with easy versions of the effects you use a lot -
      e.g. a slapback delay on vocals. Its name: EASY SFX, opened by a

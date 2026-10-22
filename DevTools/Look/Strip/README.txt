@@ -168,7 +168,12 @@ The ticker is on by default and its hints matter as much as the sound.
          the bottom left (fully off), ANALOG at the top (the middle),
          OVERDRIVE at the bottom right (fully up)
  EQ      HPF, LPF, low shelf, bell 1, bell 2, high shelf - a frequency and
-         a gain knob on every band, shelves included; a lit MASTER
+         a gain knob on every band, shelves included. MID-SIDE: each band
+         gets a small three-way target selector, STEREO / MID / SIDE (the
+         knobs never change meaning); the big screen draws MID and SIDE
+         in two colours; a MONO BASS knob keeps everything below its
+         frequency in the centre; the selectors go dim on mono tracks.
+         A lit MASTER
          pushbutton (blue) for linear phase. Its hint: keeps the timing of
          every sound intact, best on a drum bus or a finished mix; adds a
          short delay and uses more power, so leave it off on single tracks.
