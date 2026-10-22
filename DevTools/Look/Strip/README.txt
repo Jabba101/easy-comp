@@ -257,8 +257,11 @@ surround (in strip_wireframe_full_size.html).
 STILL TO DECIDE
 ====================================================================
  - Each module's control sizes and places.
- - What the big screen shows for each module (EQ: the curve; Clip: the
-   waveform with the ceiling and the cut peaks; and so on).
+ - What the big screen shows for each module (EQ: the curve, MID and
+   SIDE in two colours; and so on). CLIP is decided: the waveform
+   scrolling past with the ceiling as a line, every cut peak in amber,
+   the "peaks cut by up to" readout; in ADVANCED separate TOP and BOTTOM
+   lines; the low end PROTECT LOWS leaves alone drawn in another shade.
  - The final artwork: built to exact measurements (as with the Blender
    knob test in ../), using strip_reference_v1.png as the style guide.
 
