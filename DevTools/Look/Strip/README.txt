@@ -143,7 +143,8 @@ The ticker is on by default and its hints matter as much as the sound.
          sidechain); its gain reduction meter
  Trans   PUNCH, SUSTAIN, MIX (no OUTPUT knob on the strip)
  Bitch-Slap  (always BITCH-SLAP, never shortened: on square buttons it
-         sits on two lines, BITCH- / SLAP, same size as the others)
+         sits on two lines, BITCH over SLAP with no hyphen, both centred,
+         same size as the others)
          1 HOW MUCH: MIX, its scale printed with the standalone's guide -
          0% your sound only, 50% both at full level, 100% reverb only;
          2 HOW LONG: LENGTH, SYNC as OFF / TEMPO pushbuttons (LENGTH's
