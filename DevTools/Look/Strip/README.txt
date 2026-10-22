@@ -97,6 +97,21 @@ STYLE RULES
 ====================================================================
 THE CONTROLS
 ====================================================================
+THE RULE: each module on the strip IS its standalone plugin, restyled -
+the same controls, the same names, the same numbered sections in the
+same order (e.g. Easy DS: 1 WHERE, 2 HOW MUCH, 3 TURNS DOWN), the same
+choices (as lit pushbuttons), the same hints word for word. Someone who
+knows the standalone knows the strip's section instantly.
+The difference: the standalone has room for one plugin (a value under
+every knob, its own big display, GETTING STARTED) - best for learning
+it or detailed work on one track. The strip is for speed: all modules
+in one window, more compact (one counter per section, the big screen
+shared, hints on the ticker). Bonus: as the settings are identical,
+presets can be shared - load an Easy Comp preset into the strip's Comp
+section, or save the strip's DS settings as an Easy DS preset.
+(The list below predates this rule: where it differs from a
+standalone, the standalone wins.)
+
 "Easy" means every control explained in plain language (the ticker),
 not fewer controls: each module keeps all of its standalone's controls.
 The ticker is on by default and its hints matter as much as the sound.
