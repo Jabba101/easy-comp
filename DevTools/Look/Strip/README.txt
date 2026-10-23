@@ -300,6 +300,17 @@ surround (in strip_wireframe_full_size.html).
 ====================================================================
 STILL TO DECIDE
 ====================================================================
+ - SKINS (later, not yet): the layout is skin-independent (proved by
+   renders in several looks). FIELD (the military hardware, the main
+   design) plus a HOLOGRAM skin - Minority Report vibe: translucent
+   glowing panels, thin bright lines, floating layers. The hologram
+   skin is drawn entirely as VECTORS, so the window can be resized
+   freely by dragging its corner (proportions locked, size remembered),
+   sharp at any size and on 4K. Glow mostly from bright lines and soft
+   colour; heavy blur used sparingly (it's the expensive part).
+   Ideas from the skin tests worth keeping in any skin: a lit arc
+   around each knob showing its setting, a dB scale on the big screen,
+   SLOPE on the HPF and LPF.
  - The INPUT and OUTPUT meters need a proper calibrated scale: precise
    and easy to read (in the wireframe and render they're placeholders).
    The user's idea: -24 dB at the bottom, 0 two thirds of the way up,
