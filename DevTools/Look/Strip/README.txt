@@ -308,6 +308,14 @@ STILL TO DECIDE
    freely by dragging its corner (proportions locked, size remembered),
    sharp at any size and on 4K. Glow mostly from bright lines and soft
    colour; heavy blur used sparingly (it's the expensive part).
+   HOLOGRAM wireframe: strip_wireframe_hologram.html (+ .png). Dark navy
+   glass; cyan frame and lines; each module its own tint on its edges,
+   headings, lit buttons and on/off lettering (Gate green, Amp gold, EQ
+   teal, DS violet, Comp blue, Trans magenta, Clip orange, In/Out cyan);
+   BITCH-SLAP on a deep cherry background; WEAPON SELECT keeps its
+   black-and-yellow hazard surround (yellow glowing lettering); live
+   values in orange; EQ curves MID cyan, SIDE magenta; the grille drawn
+   as scan lines.
    Ideas from the skin tests worth keeping in any skin: a lit arc
    around each knob showing its setting, a dB scale on the big screen,
    SLOPE on the HPF and LPF.

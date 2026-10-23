@@ -1,0 +1,381 @@
+<meta charset="utf-8">
+<title>Easy Strip Hologram</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Orbitron:wght@600;700&family=Share+Tech+Mono&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one fixed-size hardware panel (1800 px, the strip at 100%), scrolling sideways inside its own frame on narrow screens. Single dark look by design. */
+:root{
+  --page:#1d1e1b; --ink:#e9e6dc; --muted:#a9a69b;
+  --case:#2c2c2a; --olive:#27500a; --olive2:#3b6d11; --gun:#5f5e5a; --gun2:#444441; --sand:#b4b2a9;
+  --amber:#ef9f27; --amberLit:#fac775; --green:#97c459; --greenInk:#173404; --red:#e24b4a; --blue:#378add;
+  --crt:#0f2a12; --trace:#8fe36a; --face:#d3d1c7; --drum:#2c2c2a;
+  --display:'Black Ops One', 'Impact', sans-serif;
+  --label:'IBM Plex Sans Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --mono:'IBM Plex Mono', ui-monospace, Consolas, monospace;
+  color-scheme:dark;
+}
+body{background:var(--page);color:var(--ink);font-family:var(--label);margin:0;padding-block:24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.intro{max-width:1800px;margin:0 auto 14px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;color:var(--muted);font-size:14px}
+.intro b{color:var(--ink);font-weight:600}
+.frame{overflow-x:auto;max-width:100%}
+.panel{width:1800px;margin:0 auto;background:var(--case);border:3px solid #111;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;font-size:13px;letter-spacing:.4px;box-sizing:border-box}
+/* header */
+.hb{background:var(--gun2);border:2px solid #111;border-radius:8px;display:flex;align-items:center;gap:24px;padding:5px 14px}
+.title{text-align:center;line-height:1;color:#f1efe8}
+.tt{font-family:var(--display);white-space:nowrap;display:inline-block}
+.ctl{position:relative;display:flex;align-items:center;gap:4px;height:34px}
+.cap{white-space:nowrap;color:var(--muted);font-size:12px;order:-1;margin-right:6px}
+.ob{height:34px;box-sizing:border-box;padding:0 12px;border:2px solid #111;border-radius:4px;background:var(--gun);color:var(--face);display:flex;align-items:center;justify-content:center;font-weight:600;gap:6px}
+.ob.on{background:#f1efe8;color:#2c2c2a}.ob.lt{background:var(--face);color:#2c2c2a}
+.preset{width:280px;height:34px;box-sizing:border-box;background:#1a1a18;border:2px solid #854f0b;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:17px;color:var(--amberLit);letter-spacing:1px}
+.grp{margin-left:auto;display:flex;align-items:center;gap:22px}
+.sep{width:1px;height:38px;background:var(--gun)}
+.knobS{width:26px;height:26px;border-radius:50%;background:#1a1a18;border:3px solid #888780}
+/* view row */
+.vr{display:flex;align-items:center;gap:6px}
+.vb{width:76px;height:46px;box-sizing:border-box;background:#f1efe8;color:#2c2c2a;border:2px solid #111;border-radius:4px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1}
+.vb.sel{background:var(--amberLit);color:#412402;border-color:#854f0b}
+.plate{background:var(--face);color:#2c2c2a;border:2px solid var(--gun);border-radius:3px;font-family:var(--mono);padding:6px 12px;display:flex;align-items:center;gap:8px}
+.plate i{width:6px;height:6px;border-radius:50%;background:var(--gun)}
+/* main grid */
+.main{grid-template-rows:auto 1fr;display:grid;grid-template-columns:68px 258px 652px 404px 242px 96px;gap:10px;align-items:stretch}
+.col{display:flex;flex-direction:column;gap:10px}
+.col>.sl:last-child{flex:1}
+.sl{position:relative;border:2px solid #111;border-radius:8px;padding:7px 8px 8px;display:flex;flex-direction:column;gap:7px}
+.c-olive{background:var(--olive)}.c-olive2{background:var(--olive2)}.c-gun{background:var(--gun)}.c-gun2{background:var(--gun2)}.c-sand{background:var(--sand);color:#2c2c2a}
+.tp{display:grid;grid-template-columns:1fr 1fr;align-items:center;height:32px;padding-right:30px}
+.tp.wide{grid-template-columns:1fr auto;column-gap:8px}
+.tp.mid{grid-template-columns:26px 1fr auto 1fr 26px;padding-right:0}
+.tp.mid .pb{grid-column:3}
+.tp.solo{grid-template-columns:1fr;padding-left:30px}
+.pb{justify-self:center;min-width:74px;height:32px;padding:0 8px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;background:#151513;color:#9fe870;text-shadow:0 0 6px rgba(159,232,112,.55);border:2px solid #0b0b0a;box-shadow:inset 0 0 0 1px #3a3a37;border-radius:4px;font-weight:600}
+.pb.off{color:#8c8a83;text-shadow:none}
+.pr{position:absolute;top:10px;right:8px;width:26px;height:26px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:var(--face);color:#2c2c2a;border:2px solid #111;border-radius:3px;font-weight:600;font-size:12px}
+.sec{position:relative;border-radius:6px;padding:26px 8px 8px;background:rgba(0,0,0,.24)}
+.c-sand .sec{background:rgba(255,255,255,.32)}
+.hd{position:absolute;top:5px;left:9px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px;opacity:.9}
+.hd em{font-style:normal;width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:currentColor}
+.hd em span{color:var(--case);font-size:11px}
+.c-sand .hd em span{color:var(--sand)}
+.rw{display:flex;justify-content:space-around;align-items:flex-end;gap:6px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;justify-items:center}
+.k{display:flex;flex-direction:column;align-items:center;gap:4px;line-height:1.1;text-align:center}
+.k i{display:block;border-radius:50%;background:#1a1a18;border:4px solid #888780;box-shadow:0 0 0 2px rgba(0,0,0,.35)}
+.L i{width:52px;height:52px}.M i{width:38px;height:38px}.S i{width:30px;height:30px}
+.r i{border-color:var(--red)}.b i{border-color:var(--blue)}.o i{border-color:var(--amber)}
+.cn{display:inline-flex;gap:2px;background:#111;padding:2px;border-radius:3px}
+.cn b{background:var(--drum);color:#f1efe8;font-family:var(--mono);font-weight:500;width:13px;height:22px;font-size:17px;display:flex;align-items:center;justify-content:center;border-radius:2px;font-variant-numeric:tabular-nums}
+.L .cn b{width:15px;height:25px;font-size:20px}
+.u{font-size:13px;opacity:.8;margin-top:-2px}
+.pc{display:inline-flex;align-items:center;gap:3px}
+.pc em{font-style:normal;font-family:var(--mono);font-size:17px;font-weight:500}
+.bt{box-sizing:border-box;text-align:center;padding:4px 0;border-radius:3px;background:var(--face);color:#2c2c2a;border:2px solid #111;font-weight:600;width:98px}
+.bt.lit{background:var(--amber);border-color:#854f0b;color:#412402}
+.pair{display:flex;flex-direction:column;align-items:center;gap:4px}
+.pair .lb{font-size:13px;opacity:.9}
+.sq{width:54px;height:54px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;border-radius:4px;background:#f1efe8;color:#2c2c2a;border:2px solid #111;font-weight:600}
+.stretch{align-self:stretch;margin-top:-18px;display:flex;align-items:center}
+.lamp{display:flex;align-items:center;gap:8px;justify-self:center;font-weight:600}
+.lamp i{width:22px;height:22px;border-radius:50%;background:#1a1a18;border:2px solid var(--gun)}
+.act{width:12px;height:12px;border-radius:50%;background:var(--amber);border:1px solid #412402;justify-self:center}
+.meter{height:32px;justify-self:center}
+.mt{width:16px;flex:1;min-height:200px;border:1px solid #111;background:repeating-linear-gradient(to top,var(--amber) 0 3px,#1a1a18 3px 8px);border-radius:2px}
+.io{align-items:center;gap:10px;align-self:stretch}
+.io b{font-weight:600}
+/* screen */
+.screen{height:300px;background:var(--crt);border:5px solid #854f0b;border-radius:16px;outline:3px solid #111;padding:6px;box-sizing:border-box}
+.screen svg{width:100%;height:100%;display:block}
+.band{flex:1;min-width:0;border-radius:5px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.eqrow{display:flex;gap:5px;flex:1;align-items:center}
+.io .cn b{width:11px;font-size:15px}
+.band .k{align-self:stretch}
+.ph{opacity:.6;font-size:12px;justify-self:center}
+.rblock{display:flex;flex-direction:column;gap:10px}
+.rcols{display:grid;grid-template-columns:404px 242px;gap:10px;align-items:stretch}
+.col.nat>.sl:last-child{flex:none}
+.col>.weapon:last-child{flex:1 1 0;min-height:0;position:relative}
+.weapon{min-height:0;box-sizing:border-box;border:3px solid #111;border-radius:6px;background:repeating-linear-gradient(-45deg,#f2c230 0 12px,#151513 12px 24px);display:flex;align-items:center;justify-content:center;padding:12px}
+.wbtn{position:absolute;top:8px;bottom:8px;left:50%;transform:translateX(-50%);box-sizing:border-box;background:#d3d1c7;border:4px solid #111;border-radius:6px;box-shadow:0 0 0 4px #2c2c2a,inset 0 -6px 0 rgba(0,0,0,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--display);color:#2c2c2a;font-size:17px;letter-spacing:1px;line-height:1.2}
+/* EQ module */
+.eq{gap:6px}
+.eqtop{display:grid;grid-template-columns:26px 1fr auto 1fr 26px;align-items:center;height:32px}
+.eqtop .pr{position:static}
+.eqgrid{display:grid;grid-template-columns:70px 1.1fr 1fr .96fr 1.08fr 0px;gap:6px}
+.eb{position:relative;border-radius:6px;padding:6px 2px 10px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
+.eb.dk{background:var(--gun);--ink:#f1efe8}.eb.lt{background:#888780;color:#2c2c2a;--ink:#1f1f1d}
+.eb .nm{font-weight:600;font-size:14px}
+.kb{display:flex;flex-direction:column;align-items:center;gap:2px}
+.es{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:10px;padding:5px 0;background:#3a3a37;border-radius:6px;--ink:#f1efe8;text-align:center;line-height:1.1}
+.tgt{display:flex;gap:2px;margin-top:8px}.tgt span{width:32px;text-align:center;padding:2px 0;border-radius:2px;background:#2c2c2a;color:#888780;border:1.5px solid #111;font-weight:600;font-size:12px}
+.tgt span.on{background:var(--amber);color:#412402;border-color:#854f0b}
+.tgl{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;height:20px}.tgl i{width:13px;height:13px;border-radius:50%;background:var(--face);border:1px solid #111;position:relative;margin-top:7px}.tgl i::after{content:"";position:absolute;left:4px;top:-9px;width:4px;height:11px;background:var(--face);border:1px solid #111;border-radius:2px}
+.scr{position:absolute;width:8px;height:8px;border-radius:50%;background:#2c2c2a;box-shadow:inset 0 0 0 1.5px #888780}
+.scr::after{content:"";position:absolute;left:1px;right:1px;top:3.5px;height:1px;background:#888780}
+.eq .cn b{width:11px;height:19px;font-size:15px}
+.grille{flex:1;min-height:20px;margin:4px 10px;border-radius:4px;background:repeating-linear-gradient(90deg,#1c1c1a 0 10px,transparent 10px 16px);background-size:16px 100%;background-clip:content-box;padding:10px 0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.35)}
+.refplate{margin-top:6px;background:#2f2f2c;border:1px solid #111;border-radius:4px;padding:10px 14px;color:#b8b5aa;font-family:var(--mono);font-size:14px;line-height:1.7;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);position:relative}
+.refplate b{color:#cfccc1;font-weight:500;letter-spacing:2px;display:block;margin-bottom:2px}
+.refplate .r2{display:grid;grid-template-columns:repeat(4,1fr);column-gap:14px}
+/* clip + output */
+.mini{width:auto;padding:3px 6px;font-size:12px}
+.lampdot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#1a1a18;border:1px solid #111;margin-left:5px;vertical-align:1px}
+.blue{background:#85b7eb;border-color:#185fa5;color:#042c53}
+.clipslot{flex:1;min-height:120px;border:2px dashed #6e6c66;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#8c8a83;font-weight:600;letter-spacing:3px}
+.cliph{flex:none}
+.ch{display:grid;grid-template-columns:96px 104px repeat(4,1fr);align-items:center;column-gap:6px;padding-right:36px}
+.chtop{display:flex;flex-direction:column;align-items:center;gap:8px}
+.kh{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;line-height:1.1;white-space:nowrap}
+.kh .kk i{display:block;width:34px;height:34px;border-radius:50%;background:#1a1a18;border:4px solid #888780;box-shadow:0 0 0 2px rgba(0,0,0,.35);box-sizing:border-box}
+.kh.o .kk i{border-color:var(--amber)}.kh.b .kk i{border-color:var(--blue)}
+.cv{display:inline-flex;align-items:center;gap:4px}.cv em{font-style:normal;font-size:13px;opacity:.8}.cv em.pct{font-family:var(--mono);font-size:17px;font-weight:500;opacity:1}
+.bay{display:flex;min-height:0}.bay>*{flex:1}
+.bay .grille{margin:0}
+.advx{flex-direction:row;align-items:center;justify-content:space-around;padding:4px 14px;position:relative}
+.advx[hidden]{display:none}
+.advtag{font-weight:600;font-size:13px;letter-spacing:2px;color:#d3d1c7;white-space:nowrap}
+.ax{display:flex;align-items:center;gap:8px;white-space:nowrap;font-weight:600}
+.ax .kk i{display:block;width:34px;height:34px;border-radius:50%;background:#1a1a18;border:4px solid #888780;box-shadow:0 0 0 2px rgba(0,0,0,.35);box-sizing:border-box}
+button.bt{font:inherit;font-weight:600;cursor:pointer}
+.lampdot.on{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.ticker{height:52px;border:2px solid #854f0b;background:#1a1a18;border-radius:6px;display:flex;align-items:center;padding:0 18px;font-family:var(--mono);font-size:18px;color:var(--amberLit);white-space:nowrap;overflow:hidden}
+:focus-visible{outline:2px solid var(--amberLit);outline-offset:2px}
+
+/* ===== HOLOGRAM SKIN ===== */
+html{background:#02050a}
+.pair .lb{white-space:nowrap}
+:root{--page:#03070d;--case:#06101b}
+body{background:radial-gradient(ellipse at 50% 15%,#0c2236 0%,#050b14 55%,#02050a 100%) ;color:#cfeaf5;min-height:100%}
+.intro b{color:#e6fbff}
+.panel{background:linear-gradient(180deg,rgba(10,26,42,.92),rgba(5,13,23,.95));border:1px solid rgba(63,216,255,.55);box-shadow:0 0 34px rgba(63,216,255,.18),inset 0 0 60px rgba(63,216,255,.05);color:#cfeaf5}
+.hb{background:rgba(8,24,40,.7);border:1px solid rgba(63,216,255,.5);box-shadow:0 0 14px rgba(63,216,255,.18);color:#cfeaf5}
+.title{color:#e6fbff;text-shadow:0 0 10px rgba(63,216,255,.65)}
+.tt{font-family:'Orbitron',var(--display)}
+.cap{color:#7fb8cc}
+.panel .ob,.panel .ob.lt{background:rgba(4,12,22,.6);color:#cfeaf5;border:1px solid rgba(63,216,255,.45)}
+.panel .ob.on{background:rgba(63,216,255,.25);color:#fff;border-color:#3fd8ff;box-shadow:0 0 10px rgba(63,216,255,.45)}
+.preset{background:#04101c;border:1px solid #ffb35c;color:#ffb35c;text-shadow:0 0 8px rgba(255,179,92,.6);font-family:'Share Tech Mono',var(--mono)}
+.knobS{background:#07131f;border:2px solid #3fd8ff;box-shadow:0 0 8px rgba(63,216,255,.4)}
+.sep{background:rgba(63,216,255,.3)}
+.vb{background:rgba(4,12,22,.6);color:#cfeaf5;border:1px solid rgba(63,216,255,.45)}
+.vb.sel{background:rgba(255,179,92,.22);color:#ffd9a8;border-color:#ffb35c;box-shadow:0 0 12px rgba(255,179,92,.5)}
+.plate{background:transparent;color:#7fb8cc;border:1px solid rgba(63,216,255,.3)}.plate i{background:#3fd8ff;box-shadow:0 0 5px #3fd8ff}
+.panel .sl{--t:#3fd8ff;background:color-mix(in srgb,var(--t) 8%,#06101b);border:1px solid color-mix(in srgb,var(--t) 55%,transparent);box-shadow:0 0 14px color-mix(in srgb,var(--t) 22%,transparent),inset 0 0 22px color-mix(in srgb,var(--t) 7%,transparent);color:#cfeaf5}
+.panel .sl.m-io{--t:#3fd8ff}.panel .sl.m-gate{--t:#4ff08a}.panel .sl.m-amp{--t:#ffc24a}.panel .sl.m-eq{--t:#36e2d0}.panel .sl.m-ds{--t:#b08cff}.panel .sl.m-comp{--t:#5a9bff}.panel .sl.m-trans{--t:#ff5fd2}.panel .sl.m-clip{--t:#ff8a3d}
+.panel .sl.m-slap{--t:#ff4d6d;background:linear-gradient(180deg,#5c0f24,#3a0815);border-color:#ff4d6d;box-shadow:0 0 18px rgba(255,77,109,.35),inset 0 0 22px rgba(255,77,109,.12)}
+.panel .sec{background:color-mix(in srgb,var(--t) 6%,rgba(0,0,0,.25));border:1px solid color-mix(in srgb,var(--t) 22%,transparent)}
+.panel .hd{color:var(--t);opacity:1;text-shadow:0 0 6px color-mix(in srgb,var(--t) 50%,transparent)}
+.panel .hd em span{color:#06101b}
+.panel .pb{background:rgba(4,12,22,.85);color:var(--t);text-shadow:0 0 8px color-mix(in srgb,var(--t) 75%,transparent);border:1px solid color-mix(in srgb,var(--t) 60%,transparent);box-shadow:0 0 10px color-mix(in srgb,var(--t) 25%,transparent),inset 0 0 8px color-mix(in srgb,var(--t) 12%,transparent)}
+.panel .pb.off{color:#7d8a96;text-shadow:none;border-color:rgba(255,255,255,.18);box-shadow:none}
+.panel .pr{background:rgba(4,12,22,.6);color:var(--t);border:1px solid color-mix(in srgb,var(--t) 55%,transparent)}
+.panel .bt{background:rgba(4,12,22,.6);color:#cfeaf5;border:1px solid color-mix(in srgb,var(--t,#3fd8ff) 40%,transparent)}
+.panel .bt.lit{background:color-mix(in srgb,var(--t,#3fd8ff) 32%,#06101b);color:#fff;border-color:var(--t,#3fd8ff);box-shadow:0 0 10px color-mix(in srgb,var(--t,#3fd8ff) 45%,transparent)}
+.panel .sq{background:rgba(4,12,22,.7);color:#cfeaf5;border:1px solid color-mix(in srgb,var(--t) 55%,transparent)}
+.panel .k i,.panel .kh .kk i,.panel .ax .kk i{background:radial-gradient(circle at 50% 38%,#16304a,#050b13 70%);border-color:color-mix(in srgb,var(--t) 70%,#9ab);box-shadow:0 0 9px color-mix(in srgb,var(--t) 35%,transparent)}
+.panel .r i,.panel .kh.r .kk i{border-color:#ff5a6a}.panel .b i,.panel .kh.b .kk i{border-color:#4fb4ff}.panel .o i,.panel .kh.o .kk i{border-color:#ffb547}
+.panel .cn{background:transparent;border:1px solid rgba(255,169,77,.28)}
+.panel .cn b{background:rgba(255,150,60,.07);color:#ffb35c;text-shadow:0 0 6px rgba(255,160,70,.6);font-family:'Share Tech Mono',var(--mono)}
+.panel .pc em,.panel .cv em.pct{color:#ffb35c}
+.panel .u,.panel .cv em{color:#8fb9c9;opacity:1}
+.mt{border:1px solid rgba(63,216,255,.35);background:repeating-linear-gradient(to top,transparent 0 3px,#04101b 3px 7px),linear-gradient(to top,#2fe0ff 0%,#2fe0ff 62%,#ffcf4a 70%,#ff4a5a 100%);box-shadow:0 0 8px rgba(63,216,255,.3)}
+.screen{background:#04121f;border:1px solid #3fd8ff;outline:none;box-shadow:0 0 20px rgba(63,216,255,.35),inset 0 0 40px rgba(63,216,255,.12);border-radius:10px}
+.screen svg path{filter:drop-shadow(0 0 4px currentColor)}
+.panel .eb.dk{background:color-mix(in srgb,var(--t) 7%,transparent);color:#cfeaf5;--ink:#cfeaf5;border:1px solid color-mix(in srgb,var(--t) 20%,transparent)}
+.panel .eb.lt{background:color-mix(in srgb,var(--t) 15%,transparent);color:#cfeaf5;--ink:#cfeaf5;border:1px solid color-mix(in srgb,var(--t) 30%,transparent)}
+.panel .es{background:color-mix(in srgb,var(--t) 10%,rgba(0,0,0,.3))}
+.panel .tgt span{background:rgba(4,12,22,.6);color:#7f98a8;border:1px solid rgba(63,216,255,.22)}
+.panel .tgt span.on{background:color-mix(in srgb,var(--t) 35%,#06101b);color:#fff;border-color:var(--t);box-shadow:0 0 8px color-mix(in srgb,var(--t) 45%,transparent)}
+.panel .tgl i,.panel .tgl i::after{background:#9fe9ff;border-color:#0a1a28}
+.panel .scr{background:transparent;box-shadow:0 0 0 1px color-mix(in srgb,var(--t) 50%,transparent)}.panel .scr::after{display:none}
+.panel .lamp i{border-color:var(--t)}
+.refplate{background:rgba(4,12,22,.55);border:1px solid color-mix(in srgb,var(--t,#3fd8ff) 30%,transparent);color:#8fc8da;box-shadow:none}
+.grille{background:repeating-linear-gradient(0deg,rgba(63,216,255,.22) 0 1px,transparent 1px 6px)!important;background-size:auto!important;background-clip:border-box!important;padding:0!important;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(63,216,255,.28),0 0 10px rgba(63,216,255,.12)}
+.advtag{color:var(--t)}
+.weapon{box-shadow:0 0 16px rgba(242,194,48,.35)}
+.wbtn{background:#0a0c10!important;color:#f2c230!important;border:2px solid #f2c230!important;box-shadow:0 0 0 3px #111,0 0 14px rgba(242,194,48,.55)!important;text-shadow:0 0 8px rgba(242,194,48,.75);font-family:'Orbitron',var(--display)!important;font-size:14px!important;letter-spacing:1px!important}
+.ticker{background:rgba(4,12,22,.75);border:1px solid rgba(63,216,255,.45);color:#9fe9ff;text-shadow:0 0 6px rgba(63,216,255,.5);box-shadow:0 0 12px rgba(63,216,255,.15)}
+</style>
+
+<div class="intro"><span><b>Easy Strip · HOLOGRAM skin wireframe</b> · same layout as FIELD, drawn as light. </span><span>Scroll sideways if your window is narrower than the panel.</span></div>
+<div class="frame"><div class="panel">
+
+<div class="hb">
+  <div class="title"><div><span class="tt" id="t1" style="font-size:20px;letter-spacing:4px">AARDVARK</span></div><div><span class="tt" id="t2" style="font-size:18px;letter-spacing:4px">EASY STRIP</span></div></div>
+  <div class="ctl"><div class="ob lt" style="padding:0;width:30px">◀</div><div class="preset">SNARE: ROCK</div><div class="ob lt" style="padding:0;width:30px">▶</div></div>
+  <div class="grp">
+    <div class="ctl"><div class="ob on">OFF</div><div class="ob">4×</div><div class="ob">8×</div><span class="cap">OVERSAMPLING</span></div>
+    <div class="ctl"><div class="knobS"></div><span class="cap">DIM</span></div>
+    <div class="sep"></div>
+    <div class="ctl"><div class="ob">BYPASS</div></div>
+    <div class="sep"></div>
+    <div class="ctl"><div class="ob lt">⚙ SETUP</div></div>
+  </div>
+</div>
+
+<div class="vr">
+  <div class="plate"><i></i>MODEL ES-8<i></i></div>
+  <div style="flex:1"></div>
+  <div class="vb">GATE</div><div class="vb">AMP</div><div class="vb sel">EQ</div><div class="vb">DS</div><div class="vb">COMP</div><div class="vb">TRANS</div><div class="vb"><span>BITCH</span><span>SLAP</span></div><div class="vb">CLIP</div>
+  <div style="flex:1"></div>
+  <div class="plate"><i></i>SER. NO. 0417-66<i></i></div>
+</div>
+
+<div class="main">
+  <!-- INPUT -->
+  <div class="sl c-sand io m-io" style="grid-column:1;grid-row:1/3"><b>INPUT</b><div class="mt"></div><div class="k M r"><i></i>TRIM<span class="cn">+0.0</span><span class="u">dB</span></div><div class="bt" style="width:44px">Ø</div></div>
+
+  <!-- GATE + AMP -->
+  <div class="col" style="grid-column:2;grid-row:1">
+    <div class="sl c-olive m-gate">
+      <div class="pr">Pr</div>
+      <div class="tp"><div class="pb">GATE</div><div class="lamp"><i></i>CLOSED</div></div>
+      <div class="sec"><div class="hd"><em><span>1</span></em>HOW MUCH</div><div class="rw"><div class="k L"><i></i>THRESHOLD<span class="cn">-40.0</span><span class="u">dB</span></div><div class="k M"><i></i>RANGE<span class="cn">40.0</span><span class="u">dB</span></div></div></div>
+      <div class="sec"><div class="hd"><em><span>2</span></em>HOW FAST</div><div class="rw"><div class="k S"><i></i>ATTACK<span class="cn">0.50</span><span class="u">ms</span></div><div class="k S"><i></i>HOLD<span class="cn">  50</span><span class="u">ms</span></div><div class="k S"><i></i>RELEASE<span class="cn"> 150</span><span class="u">ms</span></div></div></div>
+      <div class="sec"><div class="hd"><em><span>3</span></em>WHAT IT LISTENS TO</div>
+        <div class="rw"><div class="k S b"><i></i>IGNORE BELOW<span class="cn">  OFF</span><span class="u">Hz</span></div><div class="k S b"><i></i>IGNORE ABOVE<span class="cn">  OFF</span><span class="u">Hz</span></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;place-items:center;margin-top:8px"><div class="pair"><span class="lb">OPENED BY</span><div class="bt lit" style="width:110px">THIS TRACK</div><div class="bt" style="width:110px">SIDECHAIN</div></div><div class="bt" style="width:84px">LISTEN</div></div>
+      </div>
+    </div>
+    <div class="sl c-sand m-amp">
+      <div class="pr">Pr</div>
+      <div class="tp solo"><div class="pb">AMP</div></div>
+      <svg viewBox="0 0 220 120" width="220" height="120" style="align-self:center" role="img" aria-label="Amp knob marked clean, analog and overdrive"><g stroke="#cfeaf5" stroke-width="2.5"><line x1="110" y1="22" x2="110" y2="30"/><line x1="66" y1="100" x2="72" y2="94"/><line x1="154" y1="100" x2="148" y2="94"/></g><circle cx="110" cy="64" r="30" fill="#07131f" stroke="#ef9f27" stroke-width="5"/><line x1="110" y1="64" x2="110" y2="40" stroke="#f1efe8" stroke-width="3.5" stroke-linecap="round"/><g font-family="IBM Plex Sans Condensed, Arial Narrow, sans-serif" font-size="13" font-weight="600" fill="#cfeaf5" text-anchor="middle"><text x="110" y="15">ANALOG</text><text x="44" y="116">CLEAN</text><text x="178" y="116">OVERDRIVE</text></g></svg>
+      <div class="pc" style="align-self:center"><span class="cn"> 42</span><em>%</em></div>
+    </div>
+  </div>
+
+  <!-- CENTRE: SCREEN + EQ -->
+  <div class="col" style="grid-column:3;grid-row:1">
+    <div class="screen"><svg viewBox="0 0 440 280" preserveAspectRatio="none" role="img" aria-label="EQ curve on the big screen"><g stroke="#14405a" stroke-width="1"><line x1="44" y1="10" x2="44" y2="270"/><line x1="154" y1="10" x2="154" y2="270"/><line x1="286" y1="10" x2="286" y2="270"/><line x1="396" y1="10" x2="396" y2="270"/><line x1="10" y1="60" x2="430" y2="60"/><line x1="10" y1="220" x2="430" y2="220"/></g><line x1="10" y1="140" x2="430" y2="140" stroke="#2a6a8a" stroke-dasharray="4 5"/><path d="M10 120 C60 120 80 124 110 128 S170 64 210 64 S250 140 290 146 S370 148 430 146" fill="none" stroke="#4fe3ff" stroke-width="3"/><path d="M10 140 C200 140 300 140 340 136 S400 104 430 102" fill="none" stroke="#ff5fd2" stroke-width="3" stroke-dasharray="1 0"/><circle cx="210" cy="64" r="6" fill="#4fe3ff"/><circle cx="96" cy="124" r="6" fill="#4fe3ff"/><circle cx="390" cy="108" r="6" fill="#ff5fd2"/><g font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500"><text x="352" y="262" fill="#4fe3ff">MID</text><text x="392" y="262" fill="#ff5fd2">SIDE</text></g><g font-family="IBM Plex Mono, monospace" font-size="12" fill="#5fb8d8"><text x="48" y="22">50</text><text x="158" y="22">200</text><text x="290" y="22">1k</text><text x="400" y="22">5k</text></g></svg></div>
+    <div class="sl c-gun2 eq m-eq">
+      <div class="eqtop"><span></span><span></span><div class="pb" style="width:170px;height:32px;letter-spacing:3px">EQUALIZER</div><div class="bt" style="width:88px;justify-self:center">MASTER</div><div class="pr">Pr</div></div>
+      <div class="eqgrid">
+        <div class="es"><div class="kb"><svg class="knob" data-s="s" data-c="#378ADD" data-l="20,80,320" width="64" height="62"></svg>HPF<span class="cn">  40</span><span class="u">Hz</span></div><div class="kb"><svg class="knob" data-s="s" data-c="#378ADD" data-l="OFF,120,250" width="64" height="62"></svg>MONO<br>BASS<span class="cn"> OFF</span><span class="u">Hz</span></div><div class="kb"><svg class="knob" data-s="s" data-c="#378ADD" data-l="3k,8k,20k" width="64" height="62"></svg>LPF<span class="cn"> OFF</span><span class="u">Hz</span></div></div>
+        <div class="eb dk"><span class="scr" style="top:6px;right:7px"></span><span class="scr" style="bottom:70px;left:6px"></span><span class="nm">LOW</span>
+          <div class="tgl" style="margin:6px 0 2px"><span>BELL</span><i></i><span>SHELF</span></div>
+          <div class="kb" style="align-self:flex-start"><svg class="knob" data-s="s" data-c="#378ADD" data-l="30,50,100,200,400" width="112" height="86"></svg><span class="cn">  60</span><span class="u">Hz</span></div>
+          <div class="kb" style="align-self:flex-end;margin-top:-8px"><svg class="knob" data-s="b" data-c="#E24B4A" data-l="-12,-6,0,+6,+12" width="112" height="104"></svg><span class="cn">+3.0</span><span class="u">dB</span></div>
+          <div class="tgt" style="margin-top:10px"><span>ST</span><span class="on">MID</span><span>SIDE</span></div></div>
+        <div class="eb lt"><span class="scr" style="top:6px;left:7px"></span><span class="nm">LOW MID</span>
+          <div class="kb" style="align-self:flex-start;margin:10px 0 0 2px"><svg class="knob" data-s="s" data-c="#378ADD" data-l="75,150,300,600,1.2k" width="112" height="86"></svg><span class="cn"> 210</span><span class="u">Hz</span></div>
+          <div class="kb" style="align-self:flex-end;margin-top:-6px"><svg class="knob" data-s="b" data-c="#E24B4A" data-l="-12,-6,0,+6,+12" width="112" height="104"></svg><span class="cn">+4.5</span><span class="u">dB</span></div>
+          <div class="tgt" style="margin-top:10px"><span class="on">ST</span><span>MID</span><span>SIDE</span></div></div>
+        <div class="eb dk"><span class="scr" style="bottom:7px;right:6px"></span><span class="scr" style="top:40px;right:5px"></span><span class="nm">HIGH MID</span>
+          <div class="kb" style="align-self:flex-start;margin-top:4px"><svg class="knob" data-s="s" data-c="#378ADD" data-l="800,1.5k,3k,5k,8k" width="108" height="86"></svg><span class="cn">3.0k</span><span class="u">Hz</span></div>
+          <div class="kb" style="align-self:center;margin:-10px 0 0 14px"><svg class="knob" data-s="b" data-c="#E24B4A" data-l="-12,-6,0,+6,+12" width="108" height="104"></svg><span class="cn">-1.5</span><span class="u">dB</span></div>
+          <div class="tgt" style="margin-top:10px"><span class="on">ST</span><span>MID</span><span>SIDE</span></div></div>
+        <div class="eb lt"><span class="scr" style="top:6px;right:7px"></span><span class="scr" style="bottom:9px;left:7px"></span><span class="nm">HIGH</span>
+          <div class="kb" style="align-self:flex-start;margin-top:4px"><svg class="knob" data-s="s" data-c="#378ADD" data-l="2.5k,5k,10k,15k,20k" width="112" height="86"></svg><span class="cn"> 12k</span><span class="u">Hz</span></div>
+          <div class="tgl" style="align-self:flex-start;margin:2px 0 0 8px"><span>BELL</span><i></i><span>SHELF</span></div>
+          <div class="kb" style="align-self:flex-end;margin-top:-2px"><svg class="knob" data-s="b" data-c="#E24B4A" data-l="-12,-6,0,+6,+12" width="112" height="104"></svg><span class="cn">+3.0</span><span class="u">dB</span></div>
+          <div class="tgt" style="margin-top:10px"><span>ST</span><span>MID</span><span class="on">SIDE</span></div></div>
+        <div class="es" style="background:transparent"></div>
+      </div>
+      <div class="refplate"><div class="r2"><span>WEIGHT 50–100</span><span>BODY 150–250</span><span>MUD 300–600</span><span>CRUNCH 1–3k</span><span>PRESENCE 2–5k</span><span>ATTACK 2–5k</span><span>SIBILANCE 5–9k</span><span>AIR 10k +</span></div></div>
+    </div>
+  </div>
+
+  <!-- ONE GRILLE UNDER AMP AND THE EQ -->
+  <div class="bay" style="grid-column:2/4;grid-row:2">
+    <div class="grille"></div>
+    <div class="advx sl c-gun2 m-clip" hidden>
+      <span class="advtag">CLIP · ADVANCED</span>
+      <div class="ax"><span>TOP</span><span class="kk"><i></i></span><span class="cv"><span class="cn">100</span><em class="pct">%</em></span></div>
+      <div class="bt lit" style="width:62px">LINK</div>
+      <div class="ax"><span>BOTTOM</span><span class="kk"><i></i></span><span class="cv"><span class="cn">100</span><em class="pct">%</em></span></div>
+      <div class="ax"><span>BIAS</span><span class="kk"><i></i></span><span class="cv"><span class="cn">  0</span></span></div>
+      <div class="ax"><span>BLEND</span><span class="kk"><i></i></span><span class="cv"><span class="cn">100</span><em class="pct">%</em></span></div>
+    </div>
+  </div>
+
+  <!-- RIGHT BLOCK: DS + COMP | TRANS + BITCH-SLAP + WEAPON SELECT, then CLIP underneath -->
+  <div class="rblock" style="grid-column:4/6;grid-row:1/3">
+  <div class="rcols">
+  <!-- DS + COMP -->
+  <div class="col nat">
+    <div class="sl c-olive2 m-ds">
+      <div class="pr">Pr</div>
+      <div class="tp mid"><span></span><div class="pb">DS</div><div class="act"></div><span></span></div>
+      <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:7px">
+        <div class="sec"><div class="hd"><em><span>1</span></em>WHERE</div><div class="rw" style="align-items:center"><div class="k S b"><i></i>FROM<span class="cn">5.0</span><span class="u">kHz</span></div><div class="k S b"><i></i>TO<span class="cn">OFF</span><span class="u">kHz</span></div><div class="pair"><span class="lb">NOT SURE?</span><div class="bt" style="width:70px">FIND</div><div class="bt" style="width:70px">LISTEN</div></div></div></div>
+        <div class="sec"><div class="hd"><em><span>2</span></em>HOW MUCH</div><div class="rw"><div class="k L"><i></i>THRESHOLD<span class="cn">-08.0</span><span class="u">dB</span></div><div class="k M"><i></i>RANGE<span class="cn">06.0</span><span class="u">dB</span></div></div></div>
+      </div>
+      <div class="sec"><div class="hd"><em><span>3</span></em>TURNS DOWN</div><div class="rw" style="justify-content:center;gap:10px"><div class="bt lit" style="width:130px">HARSH BAND</div><div class="bt" style="width:130px">WHOLE SOUND</div></div></div>
+    </div>
+    <div class="sl c-gun m-comp">
+      <div class="pr">Pr</div>
+      <div class="tp solo"><div class="pb">COMP</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+        <div class="sec"><div class="hd"><em><span>1</span></em>HOW MUCH</div><div class="rw"><div class="k L"><i></i>THRESHOLD<span class="cn">-20.0</span><span class="u">dB</span></div><div class="k M"><i></i>RATIO<span class="cn">04.0</span><span class="u">: 1</span></div></div></div>
+        <div class="sec"><div class="hd"><em><span>2</span></em>HOW FAST</div><div class="rw"><div class="k M"><i></i>ATTACK<span class="cn">  10</span><span class="u">ms</span></div><div class="k M"><i></i>RELEASE<span class="cn"> 100</span><span class="u">ms</span></div></div></div>
+        <div class="sec g3" style="grid-template-columns:1fr 1.3fr auto;column-gap:4px"><div class="hd"><em><span>3</span></em>OUTPUT</div><div class="k S r" style="white-space:nowrap"><i></i>MAKE-UP<span class="cn">+0.0</span><span class="u">dB</span></div><div class="k S"><i></i>MIX<span class="pc"><span class="cn">100</span><em>%</em></span><span class="u">&nbsp;</span></div><div class="stretch"><div class="sq"><span>AUTO</span><span>GAIN</span></div></div></div>
+        <div class="sec"><div class="hd"><em><span>5</span></em>CHARACTER</div><div class="rw" style="align-items:flex-start"><div class="pair"><span class="lb">STYLE</span><div class="bt lit" style="width:80px">MODERN</div><div class="bt" style="width:80px">VINTAGE</div></div><div class="pair"><span class="lb">LOW END</span><div class="bt lit" style="width:80px">NORMAL</div><div class="bt" style="width:80px">THRUST</div></div></div></div>
+      </div>
+      <div class="sec"><div class="hd"><em><span>4</span></em>WHAT IT REACTS TO</div><div class="rw" style="align-items:center"><div class="k S b"><i></i>IGNORE BELOW<span class="cn">OFF</span><span class="u">Hz</span></div><div class="pair"><span class="lb">REACTS TO</span><div class="bt lit">PEAKS</div><div class="bt">AVERAGE</div></div><div class="pair"><span class="lb">LISTENS TO</span><div class="bt lit">THIS TRACK</div><div class="bt">SIDECHAIN</div></div></div></div>
+    </div>
+  </div>
+
+  <!-- TRANS + BITCH-SLAP + WEAPON SELECT -->
+  <div class="col">
+    <div class="sl c-sand m-trans">
+      <div class="pr">Pr</div>
+      <div class="tp solo"><div class="pb">TRANS</div></div>
+      <div class="sec"><div class="hd"><em><span>1</span></em>SHAPE</div><div class="rw"><div class="k M"><i></i>PUNCH<span class="pc"><span class="cn">   0</span><em>%</em></span></div><div class="k M"><i></i>SUSTAIN<span class="pc"><span class="cn">   0</span><em>%</em></span></div></div></div>
+      <div class="sec g3" style="grid-template-columns:1fr 1.3fr auto;column-gap:4px"><div class="hd"><em><span>2</span></em>OUTPUT</div><div class="k S r"><i></i>OUTPUT<span class="cn">+0.0</span><span class="u">dB</span></div><div class="k S"><i></i>MIX<span class="pc"><span class="cn">100</span><em>%</em></span><span class="u">&nbsp;</span></div><div class="stretch"><div class="sq"><span>AUTO</span><span>GAIN</span></div></div></div>
+    </div>
+    <div class="sl c-olive m-slap">
+      <div class="pr">Pr</div>
+      <div class="tp solo"><div class="pb off"><span>BITCH</span><span>SLAP</span></div></div>
+      <div class="sec"><div class="hd"><em><span>1</span></em>HOW MUCH</div><div class="rw" style="align-items:center"><div class="k M"><i></i>MIX<span class="pc"><span class="cn"> 35</span><em>%</em></span></div><div style="font-size:12px;line-height:1.5;opacity:.85">0% DRY<br>50% BOTH<br>100% REVERB</div></div></div>
+      <div class="sec"><div class="hd"><em><span>2</span></em>HOW LONG</div><div class="rw" style="align-items:center"><div class="k M"><i></i>LENGTH<span class="cn">0300</span><span class="u">ms</span></div><div class="pair"><span class="lb">SYNC</span><div class="bt lit" style="width:80px">OFF</div><div class="bt" style="width:80px">TEMPO</div></div></div></div>
+    </div>
+    <div class="weapon"><div class="wbtn"><span>WEAPON</span><span>SELECT</span></div></div>
+  </div>
+  </div>
+  <!-- CLIP: horizontal, under Comp and WEAPON SELECT -->
+  <div class="sl c-gun2 cliph m-clip">
+    <div class="pr">Pr</div>
+    <div class="ch">
+      <div class="chtop"><div class="pb">CLIP</div><div class="act" style="background:#1a1a18"></div></div>
+      <div class="pair"><button type="button" id="mSimple" class="bt lit" style="width:96px">SIMPLE</button><button type="button" id="mAdv" class="bt" style="width:96px">ADVANCED<span class="lampdot"></span></button></div>
+      <div class="kh"><span>PUSH</span><span class="kk"><i></i></span><span class="cv"><span class="cn">+3.0</span><em>dB</em></span></div>
+      <div class="kh o"><span>CEILING</span><span class="kk"><i></i></span><span class="cv"><span class="cn">-1.0</span><em>dB</em></span></div>
+      <div class="kh"><span>SOFTNESS</span><span class="kk"><i></i></span><span class="cv"><span class="cn">  0</span><em class="pct">%</em></span></div>
+      <div class="kh b"><span>PROTECT LOWS</span><span class="kk"><i></i></span><span class="cv"><span class="cn"> 80</span><em>Hz</em></span></div>
+    </div>
+  </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="sl c-sand io m-io" style="grid-column:6;grid-row:1/3"><b>OUTPUT</b><div class="pair"><div class="bt mini" style="width:64px">PEAK</div><div class="bt mini lit" style="width:64px">LUFS</div></div><div class="mt"></div><div class="k"><span class="cn">-14.2</span><span class="u">LUFS</span></div><div class="k M r"><i></i>LEVEL<span class="cn">+0.0</span><span class="u">dB</span></div></div>
+</div>
+
+<div class="ticker">Threshold: how loud a sound has to get before the compressor starts turning it down.</div>
+</div></div>
+
+<script>
+document.querySelectorAll('.cn').forEach(function(e){var t=e.textContent;e.textContent='';for(var c of t){var b=document.createElement('b');b.textContent=(c===' ')?' ':c;e.appendChild(b)}});
+
+var NS='http://www.w3.org/2000/svg';
+document.querySelectorAll('svg.knob').forEach(function(s){
+ var w=+s.getAttribute('width'),h=+s.getAttribute('height'),big=s.dataset.s==='b';
+ var labels=s.dataset.l.split(','),n=labels.length,narrow=w<70;
+ var r=big?22:(narrow?12:15),fs=big?15:(narrow?12:14),lr=r+(big?20:(narrow?14:18));
+ var cx=w/2,cy=big?h/2+4:h/2+5,col=s.dataset.c;
+ var ink=getComputedStyle(s.parentNode).getPropertyValue('--ink').trim()||'#f1efe8';
+ s.setAttribute('viewBox','0 0 '+w+' '+h);s.setAttribute('aria-hidden','true');
+ function el(t,a){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);s.appendChild(e);return e}
+ labels.forEach(function(L,i){var a=(-135+270*i/(n-1))*Math.PI/180,sx=Math.sin(a),cy2=-Math.cos(a);
+  el('line',{x1:cx+sx*(r+5),y1:cy+cy2*(r+5),x2:cx+sx*(r+9),y2:cy+cy2*(r+9),stroke:ink,'stroke-width':1.5});
+  var t=el('text',{x:cx+sx*lr,y:cy+cy2*lr+fs*0.35,'text-anchor':'middle','font-size':fs,'font-weight':600,'font-family':"'IBM Plex Sans Condensed','Arial Narrow',sans-serif",fill:ink});t.textContent=L;});
+ el('circle',{cx:cx,cy:cy,r:r,fill:'#1a1a18',stroke:col,'stroke-width':3.5});
+ el('line',{x1:cx,y1:cy,x2:cx,y2:cy-r+4,stroke:'#f1efe8','stroke-width':2.5,'stroke-linecap':'round'});
+});
+function fit(){var a=document.getElementById('t1'),b=document.getElementById('t2');if(!a||!b)return;b.style.fontSize='24px';b.style.letterSpacing='4px';var wa=a.getBoundingClientRect().width-4,wb=b.getBoundingClientRect().width-4;var f=24*wa/wb;b.style.fontSize=f.toFixed(2)+'px';b.style.letterSpacing=(4*f/24).toFixed(2)+'px';var d=a.getBoundingClientRect().width-b.getBoundingClientRect().width;if(Math.abs(d)>0.5){b.style.letterSpacing=(parseFloat(b.style.letterSpacing)+d/10).toFixed(2)+'px'}}
+
+(function(){var s=document.getElementById('mSimple'),a=document.getElementById('mAdv'),x=document.querySelector('.advx'),g=document.querySelector('.bay .grille'),d=a.querySelector('.lampdot');
+function set(adv){s.classList.toggle('lit',!adv);a.classList.toggle('lit',adv);x.hidden=!adv;g.hidden=adv;d.classList.toggle('on',adv)}
+s.addEventListener('click',function(){set(false)});a.addEventListener('click',function(){set(true)});
+if(location.hash==='#advanced')set(true);})();
+function sq(){document.querySelectorAll('.wbtn').forEach(function(b){b.style.width=b.offsetHeight+'px'})}sq();window.addEventListener('resize',sq);(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(fit);setTimeout(fit,800);
+</script>
