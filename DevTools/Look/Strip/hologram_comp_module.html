@@ -22,7 +22,10 @@ html{background:#02050a}
   border:1px solid color-mix(in srgb,var(--t) 60%,transparent);
   box-shadow:0 0 22px color-mix(in srgb,var(--t) 28%,transparent),inset 0 0 30px color-mix(in srgb,var(--t) 8%,transparent);
   display:flex;flex-direction:column;gap:10px;font-size:14px;letter-spacing:.6px;text-transform:uppercase;user-select:none}
-.top{display:grid;grid-template-columns:30px 1fr 30px;align-items:center}
+.top{display:grid;grid-template-columns:76px 1fr 76px;align-items:center}
+.tools{grid-column:3;display:flex;gap:6px;justify-content:flex-end}
+.init{height:28px;padding:0 7px;box-sizing:border-box;border:1px solid color-mix(in srgb,var(--t) 55%,transparent);border-radius:4px;color:var(--t);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;cursor:pointer}
+.init:active,.init.flash{background:var(--t);color:#04101e}
 .onoff{grid-column:2;justify-self:center;height:32px;min-width:96px;padding:0 14px;box-sizing:border-box;border-radius:4px;border:1px solid var(--t);
   background:var(--t);color:#04101e;font-weight:700;font-size:17px;letter-spacing:2px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 14px color-mix(in srgb,var(--t) 55%,transparent)}
 .onoff.off{background:transparent;color:var(--dim);border-color:#2a4256;box-shadow:none}
@@ -66,11 +69,11 @@ html{background:#02050a}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
-<p class="cap"><b>Easy Comp in the HOLOGRAM skin</b> · real size at 100%. Drag any bar or ring up and down to change it, double-click to reset. Click the stacks, AUTO GAIN and COMP to switch them. The meters move with a pretend signal.</p>
+<p class="cap"><b>Easy Comp in the HOLOGRAM skin</b> · real size at 100%. Drag any bar or ring up and down to change it, double-click to reset. Click the stacks, AUTO GAIN and COMP to switch them, and INIT to reset the whole module. The meters move with a pretend signal.</p>
 
 <div class="frame">
 <div class="mod" id="mod">
-  <div class="top"><div class="onoff" id="power">COMP</div><div class="pr" style="grid-column:3">Pr</div></div>
+  <div class="top"><div class="onoff" id="power">COMP</div><div class="tools"><div class="init" id="init" title="Reset this module to its default settings">INIT</div><div class="pr">Pr</div></div></div>
 
   <div class="row">
     <div class="sec" style="flex:none">
@@ -173,6 +176,9 @@ document.querySelectorAll('[data-c]').forEach(function(el){
 });
 document.querySelectorAll('.stack').forEach(function(st){st.querySelectorAll('span').forEach(function(sp){sp.addEventListener('click',function(){st.querySelectorAll('span').forEach(function(o){o.classList.toggle('on',o===sp)})})})});
 document.getElementById('auto').addEventListener('click',function(){this.classList.toggle('on')});
+var ini=document.getElementById('init');
+ini.addEventListener('mouseenter',function(){tick.textContent='Init: puts every setting in this module back to its default. Nothing else on the strip changes.'});
+ini.addEventListener('click',function(){for(var k in C){N[k]=toN(k,C[k].def);draw(k)}document.querySelectorAll('.stack').forEach(function(st){st.querySelectorAll('span').forEach(function(o,i){o.classList.toggle('on',i===0)})});document.getElementById('auto').classList.remove('on');ini.classList.add('flash');setTimeout(function(){ini.classList.remove('flash')},180)});
 var pw=document.getElementById('power');pw.addEventListener('click',function(){pw.classList.toggle('off')});
 // pretend signal: a drum-like level, gain reduction from threshold and ratio
 var still=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;

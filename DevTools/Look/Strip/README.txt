@@ -342,9 +342,11 @@ STILL TO DECIDE
  - LUFS readouts on the output: both SHORT-TERM LUFS (the last few
    seconds, for watching sections as they play) and INTEGRATED LUFS
    (the whole song so far, click to reset).
- - An INIT button: resets everything back to its default state in one
-   press, instead of turning every knob back by hand. (Added to the
-   list only - not designed yet.)
+ - INIT buttons: every module gets one, right next to its Pr button
+   (same place on every module, in every skin) - it resets just that
+   module to its defaults; nothing else on the strip changes. (Shown
+   working in hologram_comp_module.html.) Still to decide: a whole-
+   strip INIT in the header as well.
  - Each module's control sizes and places.
  - What the big screen shows for each module (EQ: the curve, MID and
    SIDE in two colours; and so on). CLIP is decided: the waveform
