@@ -308,6 +308,9 @@ STILL TO DECIDE
    around 0. What "0" means is a choice in SETUP: 0 dBFS (the digital
    ceiling - best on the master) or a calibrated level such as -18 dBFS
    (VU style - often more useful on single tracks).
+ - LUFS readouts on the output: both SHORT-TERM LUFS (the last few
+   seconds, for watching sections as they play) and INTEGRATED LUFS
+   (the whole song so far, click to reset).
  - An INIT button: resets everything back to its default state in one
    press, instead of turning every knob back by hand. (Added to the
    list only - not designed yet.)
