@@ -5,7 +5,16 @@ guitars, keys, synths, vocals, buses, and the master if it's good
 enough. (It started with drums; it isn't a drum strip.) So presets,
 hints and reference plates cover the whole mix, not just drums.
 
-strip_reference_v1.png   the chosen render: the look is settled on this.
+strip_reference_v2.jpg   THE CURRENT REFERENCE (23 October 2026): the final
+                         layout (strip_wireframe_full_size.html) rendered with
+                         GPT Image 2 Edit, then one edit pass: "keep everything
+                         exactly the same, but make the lit buttons, the screen
+                         trace and the amber displays a little brighter, and
+                         increase the overall contrast slightly". Known slips
+                         (the real plugin draws these itself): Gate's HOLD and
+                         RELEASE counters, the INPUT polarity icon, "OIE" for
+                         OFF under MONO BASS.
+strip_reference_v1.png   the earlier render (superseded by v2).
                          Made with GPT Image 2 Edit from strip_wireframe.html
                          (screenshot attached) and the prompt below.
 strip_wireframe.html     the layout wireframe it was made from (open in a
