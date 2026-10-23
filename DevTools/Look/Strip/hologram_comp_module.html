@@ -1,0 +1,192 @@
+<title>Hologram Comp Module</title>
+<meta charset="utf-8">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: one module (Easy Comp) at real 100% size on dark hologram glass, centred; scrolls sideways inside its frame on phones. Single dark look by design. */
+:root{
+  --bg:#03070d; --glass:#071423; --ink:#d6f1fb; --dim:#6f8ea0;
+  --t:#5a9bff;            /* Comp's module tint */
+  --val:#ffffff;          /* values inside controls */
+  --gr:#ff8a3d;           /* gain reduction */
+  --font:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+  color-scheme:dark;
+}
+body{margin:0;background:radial-gradient(ellipse at 50% 10%,#0d2338 0%,#050b14 55%,#02050a 100%);color:var(--ink);font-family:var(--font);padding-block:28px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));min-height:100%}
+html{background:#02050a}
+.cap{max-width:570px;margin:0 auto 16px;color:var(--dim);font-size:16px;line-height:1.4;letter-spacing:.3px}
+.cap b{color:var(--ink);font-weight:600}
+.frame{overflow-x:auto;max-width:100%}
+.mod{width:570px;margin:0 auto;box-sizing:border-box;padding:10px 12px 12px;border-radius:10px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--t) 10%,#071423),color-mix(in srgb,var(--t) 5%,#050d18));
+  border:1px solid color-mix(in srgb,var(--t) 60%,transparent);
+  box-shadow:0 0 22px color-mix(in srgb,var(--t) 28%,transparent),inset 0 0 30px color-mix(in srgb,var(--t) 8%,transparent);
+  display:flex;flex-direction:column;gap:10px;font-size:14px;letter-spacing:.6px;text-transform:uppercase;user-select:none}
+.top{display:grid;grid-template-columns:30px 1fr 30px;align-items:center}
+.onoff{grid-column:2;justify-self:center;height:32px;min-width:96px;padding:0 14px;box-sizing:border-box;border-radius:4px;border:1px solid var(--t);
+  background:var(--t);color:#04101e;font-weight:700;font-size:17px;letter-spacing:2px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 14px color-mix(in srgb,var(--t) 55%,transparent)}
+.onoff.off{background:transparent;color:var(--dim);border-color:#2a4256;box-shadow:none}
+.pr{width:28px;height:28px;box-sizing:border-box;border:1px solid color-mix(in srgb,var(--t) 55%,transparent);border-radius:4px;color:var(--t);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;text-transform:none}
+.row{display:flex;gap:10px}
+.sec{min-width:0;box-sizing:border-box;position:relative;border-radius:7px;border:1px solid color-mix(in srgb,var(--t) 24%,transparent);background:rgba(2,8,16,.45);padding:28px 10px 10px}
+.hd{position:absolute;top:6px;left:10px;color:var(--t);font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px;text-shadow:0 0 8px color-mix(in srgb,var(--t) 55%,transparent)}
+.hd i{font-style:normal;width:17px;height:17px;border-radius:50%;background:var(--t);color:#04101e;display:inline-flex;align-items:center;justify-content:center;font-size:12px;text-shadow:none}
+.lbl{font-weight:600;font-size:14px;color:var(--ink);text-align:center;white-space:nowrap}
+.unit{font-size:12px;color:var(--dim);text-transform:none}
+/* fill bars */
+.bars{display:flex;gap:8px;align-items:stretch;height:216px}
+.bcol{display:flex;flex-direction:column;align-items:center;gap:6px}
+.bar{position:relative;flex:1;width:58px;border:1px solid color-mix(in srgb,var(--t) 55%,transparent);border-radius:3px;background:rgba(4,14,26,.7);cursor:ns-resize;overflow:hidden;touch-action:none}
+.bar .fill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,color-mix(in srgb,var(--t) 70%,transparent),color-mix(in srgb,var(--t) 35%,transparent));border-top:2px solid #cfe4ff;box-shadow:0 -2px 10px color-mix(in srgb,var(--t) 70%,transparent)}
+.bar .v{position:absolute;left:0;right:0;text-align:center;font-weight:600;font-size:18px;color:var(--val);text-transform:none;transform:translateY(-120%);text-shadow:0 0 6px rgba(0,0,0,.9)}
+.meter{position:relative;width:50px;display:flex;gap:3px;justify-content:flex-end}
+.meter .ch{width:8px;height:100%;background:rgba(4,14,26,.7);border:1px solid #1c3448;border-radius:2px;position:relative;overflow:hidden}
+.meter .ch b{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,#2fe0ff 0%,#2fe0ff 70%,#ffcf4a 88%,#ff4a5a 100%);height:60%}
+.scale{position:absolute;left:0;top:0;bottom:0;width:24px;font-size:11px;color:var(--dim);text-transform:none}
+.scale span{position:absolute;right:0;transform:translateY(-50%)}
+.tline{position:absolute;left:28px;right:-8px;height:0;border-top:1px dashed #e8f3ff;pointer-events:none;filter:drop-shadow(0 0 3px var(--t))}
+.grbar{position:relative;width:16px;flex:1;border:1px solid color-mix(in srgb,var(--gr) 55%,transparent);border-radius:2px;background:rgba(4,14,26,.7);overflow:hidden}
+.grbar b{position:absolute;left:0;right:0;top:0;background:linear-gradient(to bottom,var(--gr),color-mix(in srgb,var(--gr) 55%,transparent));box-shadow:0 0 8px var(--gr)}
+/* value rings */
+.ring{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:ns-resize;touch-action:none}
+.ring svg{display:block;overflow:visible;text-transform:none}
+.ring .track{fill:none;stroke:#1a3044;stroke-width:4;stroke-linecap:round}
+.ring .arc{fill:none;stroke:var(--t);stroke-width:4;stroke-linecap:round;filter:drop-shadow(0 0 4px var(--t))}
+.ring .dot{fill:#eaf4ff}
+.ring .num{fill:var(--val);font-family:var(--font);font-weight:600;font-size:19px;text-anchor:middle}
+.ring .un{fill:var(--dim);font-family:var(--font);font-size:11px;text-anchor:middle}
+.ring.red{--t:#ff5a6a}.ring.blue{--t:#4fb4ff}
+/* segmented stacks */
+.stack{display:flex;flex-direction:column;gap:3px;align-items:stretch}
+.stack span{height:26px;display:flex;align-items:center;justify-content:center;padding:0 6px;border:1px solid color-mix(in srgb,var(--t) 50%,transparent);border-radius:3px;color:color-mix(in srgb,var(--t) 80%,#fff);font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap}
+.stack span.on{background:var(--t);color:#04101e;border-color:var(--t);box-shadow:0 0 10px color-mix(in srgb,var(--t) 50%,transparent)}
+.sq{width:56px;height:56px;box-sizing:border-box;border:1px solid var(--t);border-radius:4px;color:color-mix(in srgb,var(--t) 80%,#fff);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.1;font-weight:700;font-size:14px;cursor:pointer}
+.sq.on{background:var(--t);color:#04101e;box-shadow:0 0 12px color-mix(in srgb,var(--t) 55%,transparent)}
+.ticker{max-width:570px;margin:12px auto 0;box-sizing:border-box;border:1px solid rgba(63,216,255,.4);border-radius:6px;background:rgba(4,12,22,.75);color:#9fe9ff;padding:10px 14px;font-family:var(--font);font-size:17px;letter-spacing:.3px;min-height:44px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<p class="cap"><b>Easy Comp in the HOLOGRAM skin</b> · real size at 100%. Drag any bar or ring up and down to change it, double-click to reset. Click the stacks, AUTO GAIN and COMP to switch them. The meters move with a pretend signal.</p>
+
+<div class="frame">
+<div class="mod" id="mod">
+  <div class="top"><div class="onoff" id="power">COMP</div><div class="pr" style="grid-column:3">Pr</div></div>
+
+  <div class="row">
+    <div class="sec" style="flex:none">
+      <div class="hd"><i>1</i>HOW MUCH</div>
+      <div class="bars">
+        <div class="bcol">
+          <div class="lbl">IN</div>
+          <div class="meter" style="flex:1">
+            <div class="scale"><span style="top:0%">0</span><span style="top:20%">-12</span><span style="top:40%">-24</span><span style="top:60%">-36</span><span style="top:80%">-48</span><span style="top:100%">-60</span></div>
+            <div class="ch"><b id="mL"></b></div><div class="ch"><b id="mR"></b></div>
+            <div class="tline" id="tline"></div>
+          </div>
+        </div>
+        <div class="bcol"><div class="lbl">THRESHOLD</div><div class="bar" data-c="thr"><div class="fill"></div><div class="v"></div></div><div class="unit">dB</div></div>
+        <div class="bcol"><div class="lbl">RATIO</div><div class="bar" data-c="ratio"><div class="fill"></div><div class="v"></div></div><div class="unit">: 1</div></div>
+        <div class="bcol"><div class="lbl" style="color:var(--gr)">GR</div><div class="grbar"><b id="gr"></b></div><div class="unit" id="grv">0.0</div></div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;flex:1">
+      <div class="sec">
+        <div class="hd"><i>2</i>HOW FAST</div>
+        <div style="display:flex;justify-content:space-around">
+          <div class="ring" data-c="att"><div class="lbl">ATTACK</div></div>
+          <div class="ring" data-c="rel"><div class="lbl">RELEASE</div></div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="hd"><i>3</i>OUTPUT</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;align-items:center;justify-items:center;gap:4px">
+          <div class="ring red" data-c="mk"><div class="lbl">MAKE-UP</div></div>
+          <div class="ring" data-c="mix"><div class="lbl">MIX</div></div>
+          <div class="sq" id="auto"><span>AUTO</span><span>GAIN</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="sec" style="flex:1.8">
+      <div class="hd"><i>4</i>WHAT IT REACTS TO</div>
+      <div style="display:flex;justify-content:space-around;align-items:flex-end;gap:8px">
+        <div class="ring blue" data-c="ign"><div class="lbl">IGNORE BELOW</div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="lbl">REACTS TO</div><div class="stack"><span class="on">PEAKS</span><span>AVERAGE</span></div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="lbl">LISTENS TO</div><div class="stack"><span class="on">THIS TRACK</span><span>SIDECHAIN</span></div></div>
+      </div>
+    </div>
+    <div class="sec" style="flex:1">
+      <div class="hd"><i>5</i>CHARACTER</div>
+      <div style="display:flex;justify-content:space-around;align-items:flex-end;gap:8px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="lbl">STYLE</div><div class="stack"><span class="on">MODERN</span><span>VINTAGE</span></div></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px"><div class="lbl">LOW END</div><div class="stack"><span class="on">NORMAL</span><span>THRUST</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="ticker" id="tick">Threshold: how loud a sound has to get before the compressor starts turning it down.</div>
+
+<script>
+var C={
+ thr:{min:-60,max:0,def:-20,fmt:function(v){return v.toFixed(1)},tip:'Threshold: how loud a sound has to get before the compressor starts turning it down.'},
+ ratio:{min:1,max:20,def:4,log:true,fmt:function(v){return v.toFixed(1)},tip:'Ratio: how hard it turns down sounds above the threshold. 2 is gentle, 4 is firm, 10 and up is squashed.'},
+ att:{min:0.1,max:100,def:10,log:true,unit:'ms',fmt:function(v){return v<1?v.toFixed(2):v<10?v.toFixed(1):v.toFixed(0)},tip:'Attack: how quickly it grabs a loud sound. Slower lets the stick hit through for more punch.'},
+ rel:{min:10,max:2000,def:100,log:true,unit:'ms',fmt:function(v){return v.toFixed(0)},tip:'Release: how quickly it lets go after the sound drops.'},
+ mk:{min:-12,max:24,def:0,unit:'dB',fmt:function(v){return (v>=0?'+':'')+v.toFixed(1)},tip:'Make-up: turns the result back up to make up for what the compressor took off.'},
+ mix:{min:0,max:100,def:100,unit:'%',fmt:function(v){return v.toFixed(0)},tip:'Mix: 100% is all compressed. Lower blends in the untouched sound (parallel compression).'},
+ ign:{min:20,max:500,def:20,log:true,unit:'Hz',fmt:function(v){return v<=20.5?'OFF':v.toFixed(0)},tip:'Ignore below: stops deep bass from making the compressor work, so the kick doesn’t pump the whole track.'}
+};
+var N={};for(var k in C){N[k]=toN(k,C[k].def)}
+function toN(k,v){var c=C[k];return c.log?Math.log(v/c.min)/Math.log(c.max/c.min):(v-c.min)/(c.max-c.min)}
+function toV(k,n){var c=C[k];return c.log?c.min*Math.pow(c.max/c.min,n):c.min+n*(c.max-c.min)}
+var NS='http://www.w3.org/2000/svg';
+function pt(cx,cy,r,a){a=a*Math.PI/180;return [cx+r*Math.sin(a),cy-r*Math.cos(a)]}
+function arc(cx,cy,r,a0,a1){var p=pt(cx,cy,r,a0),q=pt(cx,cy,r,a1);return 'M'+p[0].toFixed(2)+' '+p[1].toFixed(2)+' A'+r+' '+r+' 0 '+(a1-a0>180?1:0)+' 1 '+q[0].toFixed(2)+' '+q[1].toFixed(2)}
+document.querySelectorAll('.ring').forEach(function(el){
+ var s=document.createElementNS(NS,'svg');s.setAttribute('width',76);s.setAttribute('height',70);s.setAttribute('viewBox','0 0 76 70');
+ s.innerHTML='<path class="track" d="'+arc(38,38,30,-135,135)+'"/><path class="arc"/><circle class="dot" r="3.5"/><text class="num" x="38" y="42"></text><text class="un" x="38" y="56"></text>';
+ el.appendChild(s);
+});
+function draw(k){
+ var n=N[k],v=toV(k,n),c=C[k];
+ var ring=document.querySelector('.ring[data-c="'+k+'"]');
+ if(ring){var a=-135+270*n;ring.querySelector('.arc').setAttribute('d',n>0.004?arc(38,38,30,-135,a):'');var p=pt(38,38,30,a);var d=ring.querySelector('.dot');d.setAttribute('cx',p[0]);d.setAttribute('cy',p[1]);
+  ring.querySelector('.num').textContent=c.fmt(v);ring.querySelector('.un').textContent=(c.fmt(v)==='OFF'?'':c.unit||'')}
+ var bar=document.querySelector('.bar[data-c="'+k+'"]');
+ if(bar){bar.querySelector('.fill').style.height=(n*100)+'%';var vv=bar.querySelector('.v');vv.textContent=c.fmt(v);vv.style.bottom=(Math.min(Math.max(n,.12),.97)*100)+'%';vv.style.transform='translateY('+(n<.12?'50%':'-12%')+')'}
+ if(k==='thr'){document.getElementById('tline').style.top=((v/-60)*100)+'%'}
+}
+for(var k2 in C)draw(k2);
+var tick=document.getElementById('tick');
+document.querySelectorAll('[data-c]').forEach(function(el){
+ var k=el.getAttribute('data-c'),y0=0,n0=0,drag=false;
+ el.addEventListener('pointerdown',function(e){drag=true;y0=e.clientY;n0=N[k];el.setPointerCapture(e.pointerId);tick.textContent=C[k].tip});
+ el.addEventListener('pointermove',function(e){if(!drag)return;N[k]=Math.min(1,Math.max(0,n0+(y0-e.clientY)/(e.shiftKey?800:200)));draw(k)});
+ el.addEventListener('pointerup',function(){drag=false});
+ el.addEventListener('dblclick',function(){N[k]=toN(k,C[k].def);draw(k)});
+ el.addEventListener('mouseenter',function(){tick.textContent=C[k].tip});
+ el.addEventListener('wheel',function(e){e.preventDefault();N[k]=Math.min(1,Math.max(0,N[k]-Math.sign(e.deltaY)*0.02));draw(k)},{passive:false});
+});
+document.querySelectorAll('.stack').forEach(function(st){st.querySelectorAll('span').forEach(function(sp){sp.addEventListener('click',function(){st.querySelectorAll('span').forEach(function(o){o.classList.toggle('on',o===sp)})})})});
+document.getElementById('auto').addEventListener('click',function(){this.classList.toggle('on')});
+var pw=document.getElementById('power');pw.addEventListener('click',function(){pw.classList.toggle('off')});
+// pretend signal: a drum-like level, gain reduction from threshold and ratio
+var still=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var t0=performance.now(),grS=0;
+function frame(now){
+ var t=(now-t0)/1000,beat=t%0.5,lvl=-30+24*Math.exp(-beat*9)+Math.sin(t*13)*1.5;
+ var lv2=lvl-1+Math.sin(t*7)*1.2;
+ document.getElementById('mL').style.height=Math.max(0,(60+lvl)/60*100)+'%';
+ document.getElementById('mR').style.height=Math.max(0,(60+lv2)/60*100)+'%';
+ var th=toV('thr',N.thr),r=toV('ratio',N.ratio),over=Math.max(0,lvl-th),g=pw.classList.contains('off')?0:over*(1-1/r);
+ grS=g>grS?grS+(g-grS)*0.5:grS+(g-grS)*0.08;
+ document.getElementById('gr').style.height=Math.min(100,grS/24*100)+'%';
+ document.getElementById('grv').textContent=grS.toFixed(1);
+ if(!still)requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>

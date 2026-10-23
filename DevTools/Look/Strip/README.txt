@@ -316,6 +316,18 @@ STILL TO DECIDE
    black-and-yellow hazard surround (yellow glowing lettering); live
    values in orange; EQ curves MID cyan, SIDE magenta; the grille drawn
    as scan lines.
+   That first HOLOGRAM wireframe only recoloured FIELD (rejected: still
+   hardware - drum counters, knob bodies, screws). The real HOLOGRAM skin
+   uses DIGITAL controls (after BLEASS Compressor): values inside the
+   controls (thin value rings with the number in the centre, no
+   counters); main levels as tall FILL BARS dragged up/down with the
+   value at the fill line (THRESHOLD beside the input meter, with a line
+   across the meter showing where it sits; RATIO; a GR bar filling
+   down); choices as SEGMENTED STACKS (one filled); on = solid fill,
+   off = outline; tall condensed lettering; no case, screws, grille or
+   drum counters. Module positions stay; controls inside are laid out
+   natively for this skin. First module: hologram_comp_module.html
+   (working: drag, double-click to reset).
    Ideas from the skin tests worth keeping in any skin: a lit arc
    around each knob showing its setting, a dB scale on the big screen,
    SLOPE on the HPF and LPF.
