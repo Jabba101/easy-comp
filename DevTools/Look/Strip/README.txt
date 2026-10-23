@@ -347,7 +347,8 @@ STILL TO DECIDE
    module to its defaults; nothing else on the strip changes. (Shown
    working in hologram_comp_module.html.) Plus a whole-strip INIT in
    the header that resets every module at once (a plain button - no
-   safeguard step; the user finds that overkill).
+   safeguard step; the user finds that overkill). All INIT buttons are
+   RED (red = danger: they wipe settings).
  - Each module's control sizes and places.
  - What the big screen shows for each module (EQ: the curve, MID and
    SIDE in two colours; and so on). CLIP is decided: the waveform
