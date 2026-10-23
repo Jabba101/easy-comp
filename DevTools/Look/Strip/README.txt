@@ -302,6 +302,10 @@ STILL TO DECIDE
 ====================================================================
  - The INPUT and OUTPUT meters need a proper calibrated scale: precise
    and easy to read (in the wireframe and render they're placeholders).
+   The user's idea: -24 dB at the bottom, 0 two thirds of the way up,
+   +12 dB at the top - most of the time you're aiming to get as close
+   to 0 as possible without going over, so the scale must be finest
+   around 0.
  - An INIT button: resets everything back to its default state in one
    press, instead of turning every knob back by hand. (Added to the
    list only - not designed yet.)
