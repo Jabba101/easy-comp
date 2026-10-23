@@ -300,6 +300,8 @@ surround (in strip_wireframe_full_size.html).
 ====================================================================
 STILL TO DECIDE
 ====================================================================
+ - The INPUT and OUTPUT meters need a proper calibrated scale: precise
+   and easy to read (in the wireframe and render they're placeholders).
  - An INIT button: resets everything back to its default state in one
    press, instead of turning every knob back by hand. (Added to the
    list only - not designed yet.)
