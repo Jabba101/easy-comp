@@ -331,6 +331,12 @@ STILL TO DECIDE
    Ideas from the skin tests worth keeping in any skin: a lit arc
    around each knob showing its setting, a dB scale on the big screen,
    SLOPE on the HPF and LPF.
+   Full HOLOGRAM wireframe: strip_wireframe_hologram_digital.html (+ .png)
+   - the look to work from (AI "more sci-fi" renders only added glow).
+   Tweaks to add next (agreed): chamfered (cut-off) panel corners instead
+   of rounded ones; a slightly brighter outline on each module, controls
+   and text unchanged; a very faint grid or scan lines behind the whole
+   panel so it reads as a projection. No extra glow.
  - The INPUT and OUTPUT meters need a proper calibrated scale: precise
    and easy to read (in the wireframe and render they're placeholders).
    The user's idea: -24 dB at the bottom, 0 two thirds of the way up,
