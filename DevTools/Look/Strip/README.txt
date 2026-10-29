@@ -357,7 +357,9 @@ STILL TO DECIDE
    The AARDVARK / EASY STRIP name has moved out of the header to the
    space under AMP (left of the Clip panel); the preset window stays
    where it was, twice as wide. In SIMPLE the space under the EQ is an empty
-   panel the same size as the ADVANCED one.
+   panel the same size as the ADVANCED one: a standby screen (faint dot
+   matrix, corner brackets, a small centre crosshair and a slow faint
+   sweep) - no grille lines.
    LINK on TOP/BOTTOM keeps the gap between them: set each, press LINK,
    and both move by the same amount (stopping together at either end).
    The ADVANCED row has its own INIT (advanced settings only); Clip's

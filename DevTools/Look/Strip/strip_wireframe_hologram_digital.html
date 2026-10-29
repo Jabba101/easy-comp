@@ -134,7 +134,22 @@ body{margin:0;background:radial-gradient(ellipse at 50% 8%,#0d2338 0%,#050b14 55
 .ref .vx,.ref .vx~span{margin-top:4px;padding-top:4px;border-top:1px solid color-mix(in srgb,var(--t) 22%,transparent)}
 .ref{border:1px solid color-mix(in srgb,var(--t) 28%,transparent);border-radius:6px;padding:8px 12px;display:grid;grid-template-columns:repeat(4,1fr);gap:2px 8px;color:#8fc8da;font-size:14px;font-weight:500;letter-spacing:.8px;background:rgba(4,12,22,.45)}
 /* bottom fillers */
-.scan{border-radius:9px;border:1px solid rgba(63,216,255,.22);background:repeating-linear-gradient(0deg,rgba(63,216,255,.14) 0 1px,transparent 1px 6px);box-shadow:inset 0 0 20px rgba(63,216,255,.06)}
+/* standby panel: dot matrix, HUD corner brackets, centre crosshair, slow sweep */
+.scan{position:relative;overflow:hidden;border-radius:9px;border:1px solid rgba(63,216,255,.2);box-shadow:inset 0 0 26px rgba(63,216,255,.07);
+  background:
+    linear-gradient(var(--cyan),var(--cyan)) left 8px top 8px/16px 2px no-repeat,linear-gradient(var(--cyan),var(--cyan)) left 8px top 8px/2px 16px no-repeat,
+    linear-gradient(var(--cyan),var(--cyan)) right 8px top 8px/16px 2px no-repeat,linear-gradient(var(--cyan),var(--cyan)) right 8px top 8px/2px 16px no-repeat,
+    linear-gradient(var(--cyan),var(--cyan)) left 8px bottom 8px/16px 2px no-repeat,linear-gradient(var(--cyan),var(--cyan)) left 8px bottom 8px/2px 16px no-repeat,
+    linear-gradient(var(--cyan),var(--cyan)) right 8px bottom 8px/16px 2px no-repeat,linear-gradient(var(--cyan),var(--cyan)) right 8px bottom 8px/2px 16px no-repeat,
+    radial-gradient(circle,rgba(63,216,255,.28) 1px,transparent 1.6px) center/12px 12px,
+    radial-gradient(ellipse at 50% 50%,rgba(63,216,255,.08),transparent 70%),
+    rgba(3,10,18,.55)}
+.scan::before{content:"";position:absolute;left:50%;top:50%;width:26px;height:26px;transform:translate(-50%,-50%);border:1px solid rgba(63,216,255,.45);border-radius:50%;
+  background:linear-gradient(rgba(63,216,255,.45),rgba(63,216,255,.45)) center/1px 40px no-repeat,linear-gradient(rgba(63,216,255,.45),rgba(63,216,255,.45)) center/40px 1px no-repeat;opacity:.8}
+.scan::after{content:"";position:absolute;top:0;bottom:0;left:-30%;width:30%;background:linear-gradient(90deg,transparent,rgba(63,216,255,.12),transparent);animation:sweep 6s linear infinite}
+@keyframes sweep{to{left:100%}}
+@media (prefers-reduced-motion:reduce){.scan::after{animation:none;display:none}}
+.scan{opacity:.85}
 .wcell{display:flex;align-items:center;justify-content:center;flex:1}
 .wframe{padding:6px;border-radius:9px;background:repeating-linear-gradient(-45deg,var(--haz) 0 9px,#121212 9px 18px);box-shadow:0 0 14px rgba(242,194,48,.35)}
 .wbtn{width:212px;height:46px;flex-direction:row!important;gap:9px;box-sizing:border-box;border-radius:5px;background:#0a0c10;border:1px solid var(--haz);color:var(--haz);font-family:var(--disp);font-weight:700;font-size:14px;letter-spacing:1px;line-height:1.35;display:flex;flex-direction:column;align-items:center;justify-content:center;text-shadow:0 0 8px rgba(242,194,48,.7);cursor:pointer}
