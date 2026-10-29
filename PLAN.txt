@@ -134,7 +134,26 @@ BUILD ORDER
    3. Easy Comp update     done (1.6.0)
    4. Bitch-Slap           done (1.0.0): the gated reverb, its own plugin
                            (on the track or as a send); joins the strip later
-   5. Easy EQ              the biggest design job (the curve display)
+   5. Easy EQ              next - the biggest job; decided (2026-10-29):
+                           LOW 30-400 Hz, LOW MID 75 Hz-1.2 kHz, HIGH MID
+                           800 Hz-8 kHz, HIGH 2.5-20 kHz (LOW / HIGH: BELL or
+                           SHELF); gain +-12 dB; proportional Q (about 1.5
+                           octaves wide at +-2 dB, a third of an octave at
+                           +-12 dB, like a 550); separate frequency and gain
+                           knobs, drag a point on the screen for both;
+                           HPF 20-500 Hz and LPF 2-20 kHz, OFF at their
+                           ends, 12 or 24 dB/oct; filters accurate right up
+                           to 20 kHz (no cramping, no oversampling);
+                           ST / MID / SIDE per band, MONO BASS 20-300 Hz
+                           (OFF at the bottom, dims on mono); MASTER = linear
+                           phase, the delay changes only when it's pressed;
+                           a faint spectrum analyser behind the curve, with
+                           an off switch; band LISTEN (hear only what a band
+                           covers); AUTO-GAIN off by default (how the level
+                           moves with the EQ is part of the art); no STEPPED
+                           knobs; the frequency guide with the VOCALS row.
+                           Build in stages: bands + filters + curve, then
+                           mid-side, then MASTER.
    6. Easy Clip            done (1.0.1): SIMPLE / ADVANCED, PROTECT LOWS,
                            oversampling AUTO (4x mixing, 8x export) / OFF /
                            4x / 8x, a look-ahead safety net at the CEILING

@@ -67,7 +67,7 @@ namespace
 
     constexpr const char* qualityHint =
         "Clipping creates new high harmonics; at the normal sample rate the highest ones fold back down as harsh, out-of-tune "
-        "tones. AUTO works at 4x while you mix and 8x when your DAW exports the song - the best of both. OFF uses the least "
+        "tones. 4x / 8x works at 4x while you mix and switches itself to 8x when your DAW exports the song - the best of both. OFF uses the least "
         "computer power but sounds harsher. The delay your DAW lines up for stays the same whichever you choose.";
 
     constexpr const char* displayHint =
@@ -319,7 +319,7 @@ EasyClipAudioProcessorEditor::EasyClipAudioProcessorEditor (EasyClipAudioProcess
     : EasyWindow (p, "EASY CLIP", "Shave the peaks so it can be louder - hover over anything for help", gettingStartedHint),
       clipProcessor (p),
       viewSwitch (*p.parameters.getParameter (ClipIDs::view), { "SIMPLE", "ADVANCED" }, Palette::accent),
-      qualitySwitch (*p.parameters.getParameter (ClipIDs::quality), { "AUTO", "OFF", "4x", "8x" }, Palette::accent),
+      qualitySwitch (*p.parameters.getParameter (ClipIDs::quality), { "4x / 8x", "OFF", "4x", "8x" }, Palette::accent),
       incoming ((size_t) ClipDisplay::numMoments)
 {
     for (size_t i = 0; i < knobs.size(); ++i)

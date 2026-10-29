@@ -52,7 +52,7 @@
       a slow listener then trims it to your actual track. With AUTO-GAIN
       off, only the fixed correction is used, so it still never blasts.
 
-    OVERSAMPLING as Easy Clip: AUTO (4x while mixing, 8x when exporting),
+    OVERSAMPLING as Easy Clip: "4x / 8x" (4x while mixing, 8x when exporting),
     OFF, 4x, 8x, and always the 8x delay, so switching never shifts the
     timing.
 */

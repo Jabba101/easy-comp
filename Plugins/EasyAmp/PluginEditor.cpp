@@ -38,7 +38,7 @@ namespace
 
     constexpr const char* qualityHint =
         "Distortion creates new high harmonics; at the normal sample rate the highest ones fold back down as harsh, "
-        "out-of-tune tones. AUTO works at 4x while you mix and 8x when your DAW exports the song. OFF uses the least "
+        "out-of-tune tones. 4x / 8x works at 4x while you mix and switches itself to 8x when your DAW exports the song. OFF uses the least "
         "computer power but sounds harsher. The delay your DAW lines up for stays the same whichever you choose.";
 
     constexpr const char* displayHint =
@@ -193,7 +193,7 @@ void AmpCurveDisplay::paint (juce::Graphics& g)
 EasyAmpAudioProcessorEditor::EasyAmpAudioProcessorEditor (EasyAmpAudioProcessor& p)
     : EasyWindow (p, "EASY AMP", "Valve warmth to overdriven growl - hover over anything for help", gettingStartedHint),
       ampProcessor (p),
-      qualitySwitch (*p.parameters.getParameter (AmpIDs::quality), { "AUTO", "OFF", "4x", "8x" }, Palette::accent)
+      qualitySwitch (*p.parameters.getParameter (AmpIDs::quality), { "4x / 8x", "OFF", "4x", "8x" }, Palette::accent)
 {
     for (size_t i = 0; i < knobs.size(); ++i)
     {

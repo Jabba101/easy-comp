@@ -334,7 +334,7 @@ YOUR FIRST FIVE MINUTES WITH EASY CLIP
    SOUND DESIGN puts just these back to neutral. LINK moves TOP and
    BOTTOM together, keeping the gap you set between them.
 
-   OVERSAMPLING (top right): leave it on AUTO - 4x while you mix, 8x
+   OVERSAMPLING (top right): leave it on "4x / 8x" - 4x while you mix, 8x
    (the cleanest) when your DAW exports the song. OFF uses the least
    computer power but sounds harsher when you push hard. Easy Clip
    delays the sound by about 2 ms, the same whichever you choose, and
@@ -373,7 +373,7 @@ YOUR FIRST FIVE MINUTES WITH EASY AMP
    warmth. The two dots show where your track is playing right now.
 
    At DRIVE 0 it's switched off and costs nothing. OVERSAMPLING works
-   like Easy Clip's (leave it on AUTO). The small red INIT beside the
+   like Easy Clip's (leave it on "4x / 8x"). The small red INIT beside the
    preset box puts every knob back to clean. Double-click a knob to
    reset it, or its number to type a value.
 

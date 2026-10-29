@@ -41,7 +41,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyClipAudioProcessor::crea
 
     // AUTO: 4x while you mix, 8x when your DAW exports (renders) the song.
     layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { ClipIDs::quality, 1 }, "Oversampling",
-                                                              juce::StringArray { "Auto", "Off", "4x", "8x" }, 0));
+                                                              juce::StringArray { "4x Mixing / 8x Export", "Off", "4x", "8x" }, 0));
     layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { ClipIDs::view, 1 }, "View",
                                                               juce::StringArray { "Simple", "Advanced" }, 0));
 

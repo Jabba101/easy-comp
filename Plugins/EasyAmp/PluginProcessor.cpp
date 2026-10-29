@@ -27,7 +27,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyAmpAudioProcessor::creat
 
     // AUTO: 4x while you mix, 8x when your DAW exports (renders) the song.
     layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { AmpIDs::quality, 1 }, "Oversampling",
-                                                              juce::StringArray { "Auto", "Off", "4x", "8x" }, 0));
+                                                              juce::StringArray { "4x Mixing / 8x Export", "Off", "4x", "8x" }, 0));
 
     // AUTO-GAIN, starting ON (the shared one starts off), then BYPASS
     layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { CommonIDs::autoGain, 3 }, "Auto-Gain", true));
