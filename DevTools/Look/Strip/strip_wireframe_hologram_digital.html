@@ -20,7 +20,8 @@ body{margin:0;background:radial-gradient(ellipse at 50% 8%,#0d2338 0%,#050b14 55
 /* header */
 .top{display:flex;align-items:center;gap:22px;padding:6px 14px;border:1px solid rgba(63,216,255,.4);border-radius:8px;background:rgba(6,18,32,.7)}
 .title{font-family:var(--disp);line-height:1.05;text-align:center;color:#e6fbff;text-shadow:0 0 10px rgba(63,216,255,.6)}
-.title div:first-child{font-size:19px;letter-spacing:4px}.title div:last-child{font-size:14px;letter-spacing:4.6px}
+.bay .title{grid-column:1;grid-row:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.title div:first-child{font-size:34px;letter-spacing:6px;padding-left:6px}.title div:last-child{font-size:20px;letter-spacing:10.5px;padding-left:10px;color:#9fe9ff}
 .preset{display:flex;gap:4px;align-items:center}
 .preset .win{width:280px;height:32px;box-sizing:border-box;border:1px solid var(--sel);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--sel);font-weight:600;font-size:18px;letter-spacing:1.5px;text-shadow:0 0 8px rgba(255,179,92,.55);background:rgba(4,12,22,.7)}
 .grow{flex:1}
@@ -138,7 +139,7 @@ body{margin:0;background:radial-gradient(ellipse at 50% 8%,#0d2338 0%,#050b14 55
 .clip{flex-direction:row;align-items:stretch;gap:12px;padding:8px 12px}
 .clip .side{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
 .clip .sec{flex:1;padding-top:24px}
-.bay{display:grid;grid-template-columns:260px 560px;gap:10px;min-height:0}.bay .scan{grid-column:1/3}.bay.adv .scan{grid-column:1}.bay .cadv{grid-column:2;grid-row:1;justify-content:space-between}
+.bay{display:grid;grid-template-columns:260px 560px;gap:10px;min-height:0}.bay .scan{grid-column:2;grid-row:1}.bay .cadv{grid-column:2;grid-row:1;justify-content:space-between}
 [hidden]{display:none!important}
 .cadv{flex-direction:row!important;align-items:center;gap:16px;padding:6px 14px}
 .cadv .ahd{display:flex;flex-direction:column;gap:6px;align-self:flex-start;padding-top:4px}
@@ -158,7 +159,6 @@ body{margin:0;background:radial-gradient(ellipse at 50% 8%,#0d2338 0%,#050b14 55
 <div class="frame"><div class="panel" id="panel">
 
 <div class="top">
-  <div class="title"><div>AARDVARK</div><div>EASY STRIP</div></div>
   <div class="preset"><div class="btn" style="width:30px;padding:0">◀</div><div class="win">SNARE: ROCK</div><div class="btn" style="width:30px;padding:0">▶</div></div>
   <div class="grow"></div>
   <span class="lab">OVERSAMPLING</span><div class="seg tgl"><span class="on">OFF</span><span>4×</span><span>8×</span></div>
@@ -263,6 +263,7 @@ body{margin:0;background:radial-gradient(ellipse at 50% 8%,#0d2338 0%,#050b14 55
 
   <!-- free space under Amp + EQ: where Clip's ADVANCED row appears -->
   <div class="bay" style="grid-column:2/4;grid-row:2">
+    <div class="title"><div>AARDVARK</div><div>EASY STRIP</div></div>
     <div class="scan" id="bayScan"></div>
     <div class="mod m-clip cadv" id="cAdv" hidden>
       <div class="ahd"><div class="adtag">CLIP · ADVANCED</div><div class="sh"><i>3</i>SOUND DESIGN</div></div>
