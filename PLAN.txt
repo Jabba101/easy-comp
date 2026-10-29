@@ -134,7 +134,7 @@ BUILD ORDER
    3. Easy Comp update     done (1.6.0)
    4. Bitch-Slap           done (1.0.0): the gated reverb, its own plugin
                            (on the track or as a send); joins the strip later
-   5. Easy EQ              next - the biggest job; decided (2026-10-29):
+   5. Easy EQ              done (1.0.0, all three stages at once); as decided (2026-10-29):
                            LOW 30-400 Hz, LOW MID 75 Hz-1.2 kHz, HIGH MID
                            800 Hz-8 kHz, HIGH 2.5-20 kHz (LOW / HIGH: BELL or
                            SHELF); gain +-12 dB; proportional Q (about 1.5

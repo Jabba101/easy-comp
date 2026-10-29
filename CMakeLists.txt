@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.12.0)
+project(EasyPlugins VERSION 1.13.0)
 
 # Build the Visual C++ runtime into the plugins themselves, so they also work
 # on a PC that doesn't have Visual Studio installed. (No effect on macOS / Linux.)
@@ -194,3 +194,18 @@ add_easy_plugin(EasyAmp
                 Plugins/EasyAmp/PluginEditor.h
                 Plugins/EasyAmp/PluginEditor.cpp)
 target_link_libraries(EasyAmp PRIVATE juce::juce_dsp)   # (oversampling)
+
+add_easy_plugin(EasyEQ
+    NAME        "Easy EQ"
+    CODE        Ezeq
+    VERSION     1.0.0
+    BUNDLE_ID   com.homestudio.easyeq
+    CATEGORIES  Fx EQ
+    SOURCES     Effects/Equalizer.h
+                Effects/LinearPhaseEQ.h
+                Plugins/EasyEQ/Presets.h
+                Plugins/EasyEQ/PluginProcessor.h
+                Plugins/EasyEQ/PluginProcessor.cpp
+                Plugins/EasyEQ/PluginEditor.h
+                Plugins/EasyEQ/PluginEditor.cpp)
+target_link_libraries(EasyEQ PRIVATE juce::juce_dsp)   # (MASTER's convolution, the analyser's FFT)

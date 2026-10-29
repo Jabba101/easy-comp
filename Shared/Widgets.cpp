@@ -58,6 +58,29 @@ void LightButton::paintButton (juce::Graphics& g, bool isMouseOver, bool isMouse
     g.setColour (on ? lightColour : (isMouseOver ? Palette::textDim : Palette::panelEdge));
     g.drawRoundedRectangle (bounds, 7.0f, 1.0f);
 
+    // Very small buttons (like 12 / 24 or ST / MID / SIDE side by side): no LED,
+    // just the name, centred, with the whole button lit when it's on
+    if (getWidth() < 64)
+    {
+        if (on)
+        {
+            g.setColour (lightColour.withAlpha (0.35f));
+            g.fillRoundedRectangle (bounds, 7.0f);
+        }
+
+        g.setColour (on || isMouseOver ? Palette::textBright : Palette::textDim);
+        g.setFont (juce::Font (juce::FontOptions (12.5f, juce::Font::bold)));
+        g.drawFittedText (getButtonText(), getLocalBounds().reduced (3, 0), juce::Justification::centred, 1, 0.8f);
+
+        if (isMouseDown)
+        {
+            g.setColour (juce::Colours::black.withAlpha (0.15f));
+            g.fillRoundedRectangle (bounds, 7.0f);
+        }
+
+        return;
+    }
+
     // The LED, with a soft glow when lit (a little tighter on narrow buttons)
     const bool narrow = getWidth() < 110;
     auto content = bounds.reduced (narrow ? 9.0f : 12.0f, 0.0f);
