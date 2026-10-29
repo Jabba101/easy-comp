@@ -126,7 +126,10 @@ body{margin:0;background:radial-gradient(ellipse at 50% 8%,#0d2338 0%,#050b14 55
 .band .vb{height:176px;flex:none;width:50px}
 .band .seg{gap:2px}.band .seg span{padding:0 4px;height:24px;font-size:13px}
 .sec .stk span{padding:0 7px}
-.ref{border:1px solid color-mix(in srgb,var(--t) 28%,transparent);border-radius:6px;padding:8px 12px;display:grid;grid-template-columns:repeat(4,1fr);gap:2px 12px;color:#8fc8da;font-size:14px;font-weight:500;letter-spacing:.8px;background:rgba(4,12,22,.45)}
+.ref .vx{color:var(--t);font-weight:700}
+.ref span{white-space:nowrap}.ref .vx~span{letter-spacing:.2px}
+.ref .vx,.ref .vx~span{margin-top:4px;padding-top:4px;border-top:1px solid color-mix(in srgb,var(--t) 22%,transparent)}
+.ref{border:1px solid color-mix(in srgb,var(--t) 28%,transparent);border-radius:6px;padding:8px 12px;display:grid;grid-template-columns:repeat(4,1fr);gap:2px 8px;color:#8fc8da;font-size:14px;font-weight:500;letter-spacing:.8px;background:rgba(4,12,22,.45)}
 /* bottom fillers */
 .scan{border-radius:9px;border:1px solid rgba(63,216,255,.22);background:repeating-linear-gradient(0deg,rgba(63,216,255,.14) 0 1px,transparent 1px 6px);box-shadow:inset 0 0 20px rgba(63,216,255,.06)}
 .wcell{flex:1;display:flex;align-items:center;justify-content:center;min-height:120px}
@@ -240,7 +243,7 @@ body{margin:0;background:radial-gradient(ellipse at 50% 8%,#0d2338 0%,#050b14 55
           <div class="vb ctr red" data-min="-12" data-max="12" data-def="3" data-f="db" data-tip="High gain: boost for air, cut to tame cymbals."></div><div class="u">dB</div>
           <div class="seg tgl"><span>ST</span><span>MID</span><span class="on">SIDE</span></div></div>
       </div>
-      <div class="ref"><span>WEIGHT 50–100</span><span>BODY 150–250</span><span>MUD 300–600</span><span>CRUNCH 1–3k</span><span>PRESENCE 2–5k</span><span>ATTACK 2–5k</span><span>SIBILANCE 5–9k</span><span>AIR 10k +</span></div>
+      <div class="ref"><span>WEIGHT 50–100</span><span>BODY 150–250</span><span>MUD 300–600</span><span>CRUNCH 1–3k</span><span>PRESENCE 2–5k</span><span>ATTACK 2–5k</span><span>SIBILANCE 5–9k</span><span>AIR 10k +</span><span class="vx">VOCALS:</span><span>BOXY VOX 300–600</span><span>NASAL VOX 800–1.5k</span><span>SIBILANT VOX 5–8k</span></div>
     </div>
   </div>
 
