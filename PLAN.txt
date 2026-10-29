@@ -170,15 +170,26 @@ LATER
    - The optional Cold War look: choose a direction from the mockups
      (A, B, C or a mix). The current clean look stays too.
    - A resizable window.
+   - Easy EQ: MASTER precision setting (lower = shorter delay, less
+     smear before hits) - with the strip.
+   - A / B: in Easy EQ (done); add to Easy Comp; the strip gets it too.
    - Easy Comp: mid-side - one WORKS ON: STEREO / MID / SIDE choice
      (default STEREO, so old presets sound the same), e.g. squash the
      middle of a drum bus while the cymbals and room breathe. In the
      standalone first, then the strip. (The full two-compressor M/S
      version is mastering territory: not planned.)
-   - Once the essentials are perfected: an effects window you can open
-     from the strip, with easy versions of the effects you use a lot -
-     e.g. a slapback delay on vocals. Its name: EASY SFX, opened by a
-     huge WEAPON SELECT button at the bottom of the strip.
+   - Once the essentials are perfected: EASY SFX, an effects rack.
+     WEAPON SELECT swaps the whole strip layout for the rack; closing the
+     rack brings the strip back. Effects decided so far (more to come):
+       - a side-to-side tremolo (auto-pan)
+       - a delay (slapback on vocals and more)
+       - a limiter - ONLY if it matches the transparency of IK
+         Multimedia's Stealth Limiter, which the user always uses. The
+         bar: compared blind and level-matched on the user's own mixes,
+         it must be indistinguishable or better; if not, it isn't
+         shipped and Stealth Limiter stays. (Likely ingredients: look-
+         ahead, true-peak oversampling, programme-dependent release,
+         gain changes spread so they don't distort the lows.)
 
 
 ====================================================================
