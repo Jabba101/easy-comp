@@ -85,6 +85,8 @@ body{margin:0;background:radial-gradient(ellipse at 50% 8%,#0d2338 0%,#050b14 55
 .vb .f{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,color-mix(in srgb,var(--k,var(--t)) 70%,transparent),color-mix(in srgb,var(--k,var(--t)) 32%,transparent));border-top:2px solid #e2efff;box-shadow:0 -2px 10px color-mix(in srgb,var(--k,var(--t)) 70%,transparent)}
 .vb.ctr .f{border-top:none;border-bottom:none}
 .vb.ctr::after{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px dashed rgba(255,255,255,.35)}
+.entry{position:fixed;z-index:50;height:30px;box-sizing:border-box;border:1px solid var(--sel);border-radius:4px;background:#04101e;color:#fff;font-family:var(--font);font-weight:600;font-size:17px;text-align:center;outline:none;box-shadow:0 0 14px rgba(255,179,92,.5)}
+.ring .nm{cursor:text}
 .vb .vv{position:absolute;left:0;right:0;text-align:center;font-weight:600;font-size:17px;color:var(--val);text-transform:none;text-shadow:0 0 6px rgba(0,0,0,.95);pointer-events:none}
 .vb.red{--k:#ff5a6a}
 /* module meters */
@@ -155,7 +157,7 @@ body{margin:0;background:radial-gradient(ellipse at 50% 8%,#0d2338 0%,#050b14 55
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
-<div class="intro"><span><b>Easy Strip · HOLOGRAM skin</b> · real size at 100% (1800 px wide). Every control works: drag bars and rings up or down (Shift for fine), double-click to reset, click buttons and stacks. INIT resets its module; the red INIT in the header resets the whole strip.</span><span>Scroll sideways if your window is narrower than the panel.</span></div>
+<div class="intro"><span><b>Easy Strip · HOLOGRAM skin</b> · real size at 100% (1800 px wide). Every control works: drag bars and rings up or down (Shift for fine), double-click a dial or bar to reset it, double-click its number to type a value, click buttons and stacks. INIT resets its module; the red INIT in the header resets the whole strip.</span><span>Scroll sideways if your window is narrower than the panel.</span></div>
 <div class="frame"><div class="panel" id="panel">
 
 <div class="top">
@@ -432,12 +434,27 @@ function bigM(id){var m=document.getElementById(id),pos=function(db){return db>=
  var ticks=[12,6,0,-6,-12,-18,-24].map(function(d){return '<span class="'+(d===0?'z':'')+'" style="top:'+(pos(d)*100)+'%">'+(d>0?'+':'')+d+'</span>'}).join('');
  m.innerHTML='<div class="sc">'+ticks+'</div><div class="zl" style="top:33.33%"></div><div class="chs"><div class="ch"><b></b></div><div class="ch"><b></b></div></div>';return pos}
 var pos=bigM('inM');bigM('outM');
+// double-click rule: on the NUMBER = type a value; anywhere else on the dial or slider = back to its INIT value
+function isNum(c,x,y){var r;
+ if(c.kind==='ring'){r=c.svg.getBoundingClientRect();var g=c.g,sc=r.width/g.sz,dx=x-(r.left+g.cx*sc),dy=y-(r.top+g.cy*sc);return Math.sqrt(dx*dx+dy*dy)<g.r*sc*0.72}
+ r=c.el.querySelector('.vv').getBoundingClientRect();return x>=r.left-4&&x<=r.right+4&&y>=r.top-6&&y<=r.bottom+6}
+function typeIn(c){var el=c.el,box=c.kind==='ring'?c.svg.querySelector('.nm').getBoundingClientRect():el.querySelector('.vv').getBoundingClientRect();
+ var inp=document.createElement('input');inp.className='entry';inp.value=fmt(el,c.R.toV(c.n),c.n);
+ var w=Math.max(64,box.width+20);inp.style.left=(box.left+box.width/2-w/2)+'px';inp.style.top=(box.top+box.height/2-15)+'px';inp.style.width=w+'px';
+ document.body.appendChild(inp);inp.focus();inp.select();tick.textContent='Type a value and press Enter (Esc cancels). Units are optional; k means thousand, e.g. 4.5k.';
+ var done=false;function close(ok){if(done)return;done=true;if(ok){var n=parse(c,inp.value);if(n!==null)setN(c,n)}inp.remove()}
+ inp.addEventListener('keydown',function(e){if(e.key==='Enter')close(true);else if(e.key==='Escape')close(false);e.stopPropagation()});
+ inp.addEventListener('blur',function(){close(true)})}
+function parse(c,t){var el=c.el;t=t.trim().toLowerCase().replace(/hz|db|ms|%|:\s*1|\s/g,'');
+ if(t==='off'){if(el.hasAttribute('data-off'))return 0;if(el.hasAttribute('data-offhi'))return 1;return null}
+ var m=1;if(/k$/.test(t)){m=1000;t=t.slice(0,-1)}var v=parseFloat(t)*m;if(isNaN(v))return null;
+ var mn=+el.dataset.min,mx=+el.dataset.max;v=Math.min(mx,Math.max(mn,v));return c.R.toN(v)}
 // drag
 ctl.forEach(function(c){var el=c.el,y0,n0,dr=false;
- el.addEventListener('pointerdown',function(e){dr=true;y0=e.clientY;n0=c.n;el.setPointerCapture(e.pointerId);hint(el)});
+ el.addEventListener('pointerdown',function(e){if(e.button)return;c.onNum=isNum(c,e.clientX,e.clientY);dr=true;y0=e.clientY;n0=c.n;el.setPointerCapture(e.pointerId);hint(el)});
  el.addEventListener('pointermove',function(e){if(!dr)return;setN(c,n0+(y0-e.clientY)/(e.shiftKey?800:180))});
  el.addEventListener('pointerup',function(){dr=false});
- el.addEventListener('dblclick',function(){c.n=c.def;draw(c)});
+ el.addEventListener('dblclick',function(){if(c.onNum)typeIn(c);else{c.n=c.def;draw(c)}});
  el.addEventListener('wheel',function(e){e.preventDefault();setN(c,c.n-Math.sign(e.deltaY)*(e.shiftKey?.005:.02))},{passive:false});});
 document.querySelectorAll('[data-tip]').forEach(function(el){el.addEventListener('mouseenter',function(){hint(el)})});
 // stacks / segs: one choice

@@ -76,6 +76,11 @@ LAYOUT
 ====================================================================
 STYLE RULES
 ====================================================================
+ - DOUBLE-CLICK RULE (every skin, every knob, dial, ring or slider):
+   double-click the control itself = back to its INIT (default) value;
+   double-click its NUMBER = a box opens to type an exact value (Enter
+   to set, Esc to cancel; units optional, "k" = thousand, OFF where the
+   control has an OFF position). Values outside the range are clamped.
  - Tough, chunky, retro-futuristic: heavy late-70s/80s sci-fi hardware.
    Armoured case, chamfered edges, rubber corners, big handles. (Not a
    "Cold War" museum piece: prompts using that come out dull.)
