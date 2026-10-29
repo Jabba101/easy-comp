@@ -339,7 +339,7 @@ YOUR FIRST FIVE MINUTES WITH EASY CLIP
    tells your DAW so it lines everything up.
 
    Double-click a knob to reset it; double-click its number to type an
-   exact value. The red INIT at the top puts every knob back to its
+   exact value. The small red INIT beside the preset box puts every knob back to its
    default (the same as the "Default settings" preset).
 
 

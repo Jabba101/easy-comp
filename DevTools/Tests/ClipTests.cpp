@@ -476,7 +476,8 @@ namespace
         check (! p.isAdvancedInUse() && getParam (p, ClipIDs::push) > 0.0f, "the INIT button in SOUND DESIGN resets just the ADVANCED settings");
 
         set (p, ClipIDs::bias, 40.0f); set (p, ClipIDs::quality, 3.0f);
-        check (window->getInitAllButton().isVisible() && window->getInitAllButton().getY() < 80, "an INIT for the whole plugin, in the header");
+        check (window->getInitAllButton().isVisible() && window->getInitAllButton().getY() < 80 && window->getInitAllButton().getWidth() <= 60
+               && window->getInitAllButton().getX() - window->bypassButton.getRight() >= 40, "a small INIT for the whole plugin in the header, well clear of BYPASS");
         window->getInitAllButton().onClick();
         bool allDefault = true;
         for (auto& id : clipPresetIDs())

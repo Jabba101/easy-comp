@@ -380,7 +380,6 @@ EasyClipAudioProcessorEditor::EasyClipAudioProcessorEditor (EasyClipAudioProcess
         presetBrowser.onPresetChosen (easyProcessor.getBuiltInPresets().front());   // "Default settings"
     };
     addAndMakeVisible (initAllButton);
-    putInHeader (initAllButton);
     addHint (initAllButton, "INIT", initAllHint);
 
     viewSwitch.setHorizontal (true);
@@ -487,6 +486,13 @@ void EasyClipAudioProcessorEditor::paintBody (juce::Graphics& g)
 void EasyClipAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
 {
     constexpr int gap = 14;
+
+    // The header: INIT small, right beside the preset box (where the strip
+    // has it, next to Pr), and BYPASS moved well clear of it so a quick
+    // compare can't hit INIT by accident.
+    const auto preset = presetBrowser.getBounds();
+    initAllButton.setBounds (preset.getX() - 10 - 52, preset.getCentreY() - 13, 52, 26);
+    bypassButton.setBounds (bypassButton.getBounds().withX (initAllButton.getX() - 40 - bypassButton.getWidth()));
 
     // The top row: SIMPLE / ADVANCED and its lamp on the left, OVERSAMPLING on the right
     auto row = area.removeFromTop (32);
