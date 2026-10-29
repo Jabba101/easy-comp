@@ -23,7 +23,7 @@ body{margin:0;background:radial-gradient(ellipse at 50% 8%,#0d2338 0%,#050b14 55
 .bay .title{grid-column:1;grid-row:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
 .title div:first-child{font-size:34px;letter-spacing:6px;padding-left:6px}.title div:last-child{font-size:20px;letter-spacing:10.5px;padding-left:10px;color:#9fe9ff}
 .preset{display:flex;gap:4px;align-items:center}
-.preset .win{width:280px;height:32px;box-sizing:border-box;border:1px solid var(--sel);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--sel);font-weight:600;font-size:18px;letter-spacing:1.5px;text-shadow:0 0 8px rgba(255,179,92,.55);background:rgba(4,12,22,.7)}
+.preset .win{width:560px;height:32px;box-sizing:border-box;border:1px solid var(--sel);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--sel);font-weight:600;font-size:18px;letter-spacing:1.5px;text-shadow:0 0 8px rgba(255,179,92,.55);background:rgba(4,12,22,.7)}
 .grow{flex:1}
 .lab{color:var(--dim);font-size:13px;font-weight:600}
 .btn{height:32px;padding:0 12px;box-sizing:border-box;border:1px solid color-mix(in srgb,var(--t,var(--cyan)) 55%,transparent);border-radius:4px;color:color-mix(in srgb,var(--t,var(--cyan)) 85%,#fff);display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap;background:rgba(4,12,22,.5)}
@@ -159,6 +159,7 @@ body{margin:0;background:radial-gradient(ellipse at 50% 8%,#0d2338 0%,#050b14 55
 <div class="frame"><div class="panel" id="panel">
 
 <div class="top">
+  <div style="width:135px;flex:none" aria-hidden="true"></div>
   <div class="preset"><div class="btn" style="width:30px;padding:0">◀</div><div class="win">SNARE: ROCK</div><div class="btn" style="width:30px;padding:0">▶</div></div>
   <div class="grow"></div>
   <span class="lab">OVERSAMPLING</span><div class="seg tgl"><span class="on">OFF</span><span>4×</span><span>8×</span></div>

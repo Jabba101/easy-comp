@@ -347,8 +347,8 @@ STILL TO DECIDE
    short bar again. AMP button sits top left so the ring's top can rise
    into the header row.
    The AARDVARK / EASY STRIP name has moved out of the header to the
-   space under AMP (left of the Clip panel); the preset window now
-   starts the header. In SIMPLE the space under the EQ is an empty
+   space under AMP (left of the Clip panel); the preset window stays
+   where it was, twice as wide. In SIMPLE the space under the EQ is an empty
    panel the same size as the ADVANCED one.
  - The INPUT and OUTPUT meters need a proper calibrated scale: precise
    and easy to read (in the wireframe and render they're placeholders).
