@@ -90,6 +90,61 @@ void EasyProcessor::loadPreset (const Preset& preset)
     presetLoaded();
 }
 
+int EasyProcessor::getActiveSlot() const
+{
+    return (int) parameters.state.getProperty ("abSlot", 0);
+}
+
+void EasyProcessor::switchToSlot (int slot)
+{
+    if (slot == getActiveSlot())
+        return;
+
+    const auto current = getCurrentPresetValues();
+    auto other = parameters.state.getChildWithName ("ABOther");
+
+    // The other set (or, the first time, a copy of this one)
+    if (other.isValid())
+    {
+        for (auto& id : presetParameterIDs)
+        {
+            auto* parameter = parameters.getParameter (id);
+
+            if (parameter == nullptr || ! other.hasProperty (id))
+                continue;
+
+            parameter->beginChangeGesture();
+            parameter->setValueNotifyingHost (parameter->convertTo0to1 ((float) other.getProperty (id)));
+            parameter->endChangeGesture();
+        }
+    }
+    else
+    {
+        other = juce::ValueTree ("ABOther");
+        parameters.state.appendChild (other, nullptr);
+    }
+
+    for (auto& [id, value] : current)
+        other.setProperty (id, value, nullptr);
+
+    parameters.state.setProperty ("abSlot", slot, nullptr);
+    markPresetEdited();
+}
+
+void EasyProcessor::copyToOtherSlot()
+{
+    auto other = parameters.state.getChildWithName ("ABOther");
+
+    if (! other.isValid())
+    {
+        other = juce::ValueTree ("ABOther");
+        parameters.state.appendChild (other, nullptr);
+    }
+
+    for (auto& [id, value] : getCurrentPresetValues())
+        other.setProperty (id, value, nullptr);
+}
+
 std::vector<std::pair<juce::String, float>> EasyProcessor::getCurrentPresetValues() const
 {
     std::vector<std::pair<juce::String, float>> values;

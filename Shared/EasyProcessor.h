@@ -58,6 +58,15 @@ public:
     bool isPresetEdited() const;
     void markPresetEdited();   // called when a knob moves after a preset was loaded
 
+    //==== A / B ===============================================================
+    // Two sets of knob settings to compare: A and B. The one you're not on
+    // is kept with your project. B starts as a copy of A the first time you
+    // switch to it. (BYPASS, AUTO-GAIN and the plugin's own switches that
+    // presets leave alone aren't part of A / B either.) Message thread only.
+    int  getActiveSlot() const;                 // 0 = A, 1 = B
+    void switchToSlot (int slot);
+    void copyToOtherSlot();                     // A -> B (on A) or B -> A (on B)
+
     //==== Bypass ==============================================================
     // Hands the BYPASS button to the DAW too, so the DAW's own bypass button
     // and the one in the plugin window are the same switch.

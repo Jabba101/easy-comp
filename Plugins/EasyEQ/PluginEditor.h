@@ -93,6 +93,8 @@ public:
     juce::Button& getInitAllButton()           { return initAllButton; }
     HoldButton& getListenButton (int band)     { return listenButtons[(size_t) band]; }
     EQDisplay& getDisplay()                    { return display; }
+    juce::Button& getSlotButton (int slot)     { return slot == 0 ? (juce::Button&) slotA : (juce::Button&) slotB; }
+    juce::Button& getCopyButton()              { return copyButton; }
 
     /** (Tests only: what the 30-times-a-second update does, right now.) */
     void updateDisplaysNow()                   { refreshLiveDisplays(); }
@@ -118,6 +120,8 @@ private:
     LightButton masterButton { "MASTER", juce::Colour (0xff4f8cff) }, analyserButton { "ANALYSER", Palette::accent };
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> masterAttachment, analyserAttachment;
     juce::TextButton initAllButton { "INIT" };
+    LightButton slotA { "A", Palette::accent }, slotB { "B", Palette::accent };
+    juce::TextButton copyButton { "COPY A > B" };
     EQDisplay display;
 
     bool monoTrack = false;

@@ -198,7 +198,7 @@ target_link_libraries(EasyAmp PRIVATE juce::juce_dsp)   # (oversampling)
 add_easy_plugin(EasyEQ
     NAME        "Easy EQ"
     CODE        Ezeq
-    VERSION     1.0.0
+    VERSION     1.1.0
     BUNDLE_ID   com.homestudio.easyeq
     CATEGORIES  Fx EQ
     SOURCES     Effects/Equalizer.h

@@ -304,6 +304,30 @@ namespace
         }
         check (allFine, "every preset loads exactly (every value inside its knob's range) and plays");
 
+        // A / B
+        {
+            P ab; prepare (ab, sr, 512);
+            set (ab, EQIDs::gain[1], -4.0f);
+            ab.switchToSlot (1);
+            const bool startsAsCopy = getParam (ab, EQIDs::gain[1]) == -4.0f && ab.getActiveSlot() == 1;
+            set (ab, EQIDs::gain[1], 3.0f); set (ab, EQIDs::hpf, 120.0f);
+            ab.switchToSlot (0);
+            const bool backToA = getParam (ab, EQIDs::gain[1]) == -4.0f && getParam (ab, EQIDs::hpf) == Equalizer::hpfOffHz;
+            ab.switchToSlot (1);
+            const bool backToB = getParam (ab, EQIDs::gain[1]) == 3.0f && getParam (ab, EQIDs::hpf) == 120.0f;
+            check (startsAsCopy && backToA && backToB, "A / B: B starts as a copy of A; switching swaps every band and filter back and forth");
+
+            juce::MemoryBlock saved;
+            ab.getStateInformation (saved);
+            P loaded; loaded.setStateInformation (saved.getData(), (int) saved.getSize());
+            loaded.switchToSlot (0);
+            check (loaded.getActiveSlot() == 0 && getParam (loaded, EQIDs::gain[1]) == -4.0f, "...and both are kept with the project");
+
+            ab.copyToOtherSlot();   // B -> A
+            ab.switchToSlot (0);
+            check (getParam (ab, EQIDs::gain[1]) == 3.0f && getParam (ab, EQIDs::hpf) == 120.0f, "COPY B > A: A becomes the same as B");
+        }
+
         juce::MemoryBlock state;
         set (p, EQIDs::gain[2], 4.5f); set (p, EQIDs::target[3], 2.0f); set (p, EQIDs::master, 1.0f);
         p.getStateInformation (state);

@@ -413,6 +413,10 @@ YOUR FIRST FIVE MINUTES WITH EASY EQ
    computer power, so don't use it while recording. Switching it on or
    off changes the delay, so Samplitude may take a moment to re-align.
 
+   A / B (top middle): two sets of settings to compare - switch between
+   them while the track plays. B starts as a copy of A; COPY copies the
+   one you're on to the other. Both are kept with your project.
+
    ANALYSER (top left) switches the picture of your sound on and off.
    The small red INIT beside the preset box puts everything back flat.
    Double-click a knob to reset it, or its number to type a value.

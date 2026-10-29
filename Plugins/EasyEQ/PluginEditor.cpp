@@ -56,6 +56,12 @@ namespace
     constexpr const char* initAllHint =
         "Puts every setting back to its default (the same as the 'Default settings' preset): flat, nothing changed. "
         "BYPASS, AUTO-GAIN, MASTER and the analyser stay as they are.";
+    constexpr const char* slotHint =
+        "A and B: two sets of settings to compare. Switch between them while the track plays to hear which you prefer. B "
+        "starts as a copy of A the first time you switch to it; the one you're not on is kept with your project.";
+    constexpr const char* copyHint =
+        "Copies the settings you're on to the other one (A to B, or B to A) - then change one of them and compare.";
+
     constexpr const char* gettingStartedHint =
         "Pick a preset, or drag a band's dot on the screen. Hold a band's LISTEN to hear what it covers. Cut before you "
         "boost. Double-click a knob to reset it, or its number to type a value.";
@@ -449,6 +455,25 @@ EasyEQAudioProcessorEditor::EasyEQAudioProcessorEditor (EasyEQAudioProcessor& p)
     addAndMakeVisible (initAllButton);
     addHint (initAllButton, "INIT", initAllHint);
 
+    for (int slot = 0; slot < 2; ++slot)
+    {
+        auto& button = slot == 0 ? slotA : slotB;
+        button.onClick = [this, slot]
+        {
+            easyProcessor.switchToSlot (slot);
+            knobMoved();
+            refreshLiveDisplays();
+        };
+        addAndMakeVisible (button);
+        addHint (button, "A / B", slotHint);
+    }
+
+    copyButton.setColour (juce::TextButton::buttonColourId, Palette::panel);
+    copyButton.setColour (juce::TextButton::textColourOffId, Palette::textBright);
+    copyButton.onClick = [this] { easyProcessor.copyToOtherSlot(); };
+    addAndMakeVisible (copyButton);
+    addHint (copyButton, "COPY", copyHint);
+
     display.onUserChange = [this] { knobMoved(); };
     addAndMakeVisible (display);
     addHint (display, "THE CURVE", displayHint);
@@ -547,7 +572,15 @@ void EasyEQAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
     auto row = area.removeFromTop (32);
     analyserButton.setBounds (row.removeFromLeft (140));
     masterButton.setBounds (row.removeFromRight (180));
-    autoGainReadout = row;
+
+    // A / B and COPY in the middle; AUTO-GAIN's readout to their left
+    auto abArea = row.withSizeKeepingCentre (48 + 6 + 48 + 12 + 120, row.getHeight());
+    slotA.setBounds (abArea.removeFromLeft (48));
+    abArea.removeFromLeft (6);
+    slotB.setBounds (abArea.removeFromLeft (48));
+    abArea.removeFromLeft (12);
+    copyButton.setBounds (abArea.removeFromLeft (120).reduced (0, 2));
+    autoGainReadout = row.withRight (slotA.getX() - 10).withTrimmedLeft (10);
     area.removeFromTop (gap);
 
     // The frequency guide along the bottom
@@ -617,6 +650,11 @@ void EasyEQAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
 //==============================================================================
 void EasyEQAudioProcessorEditor::refreshLiveDisplays()
 {
+    const int slot = easyProcessor.getActiveSlot();
+    slotA.setToggleState (slot == 0, juce::dontSendNotification);
+    slotB.setToggleState (slot == 1, juce::dontSendNotification);
+    copyButton.setButtonText (slot == 0 ? "COPY A > B" : "COPY B > A");
+
     display.refresh (easyProcessor.parameters.getRawParameterValue (EQIDs::analyser)->load() > 0.5f);
 
     const bool mono = eqProcessor.getTotalNumOutputChannels() < 2;
