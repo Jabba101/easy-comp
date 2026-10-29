@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.10.1)
+project(EasyPlugins VERSION 1.11.0)
 
 # Build the Visual C++ runtime into the plugins themselves, so they also work
 # on a PC that doesn't have Visual Studio installed. (No effect on macOS / Linux.)
@@ -166,3 +166,17 @@ add_easy_plugin(BitchSlap
                 Plugins/BitchSlap/PluginEditor.h
                 Plugins/BitchSlap/PluginEditor.cpp)
 target_link_libraries(BitchSlap PRIVATE pffft)
+
+add_easy_plugin(EasyClip
+    NAME        "Easy Clip"
+    CODE        Ezcl
+    VERSION     1.0.0
+    BUNDLE_ID   com.homestudio.easyclip
+    CATEGORIES  Fx Dynamics
+    SOURCES     Effects/Clipper.h
+                Plugins/EasyClip/Presets.h
+                Plugins/EasyClip/PluginProcessor.h
+                Plugins/EasyClip/PluginProcessor.cpp
+                Plugins/EasyClip/PluginEditor.h
+                Plugins/EasyClip/PluginEditor.cpp)
+target_link_libraries(EasyClip PRIVATE juce::juce_dsp)   # (oversampling)

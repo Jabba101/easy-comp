@@ -22,7 +22,10 @@ WHAT'S HERE
 ====================================================================
 Tests/                 -> /home/claude/verify2
     One program per plugin: CompTests, TransientTests, GateTests, DSTests,
-    SlapTests (Bitch-Slap: its reverb against a plain, slow convolution).
+    SlapTests (Bitch-Slap: its reverb against a plain, slow convolution),
+    ClipTests (Easy Clip: the ceiling under every setting and while knobs
+    move, the delay, aliasing per OVERSAMPLING setting, PROTECT LOWS,
+    LINK, the ADVANCED INIT, speed).
     The sound (against theory and real material), the DAW plumbing
     (settings, saving, presets, buses), the window (and PNG renders of
     it), skipping silence (must match working through it), and speed

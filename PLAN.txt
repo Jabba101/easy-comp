@@ -114,6 +114,10 @@ RULES FOR EVERYTHING
    - Oversampling only for Easy Amp and Easy Clip: Off while mixing, 4x
      or 8x when exporting (it switches by itself in DAWs that say
      they're exporting), plus a manual switch for fine-tuning.
+     (Easy Clip on its own: AUTO is 4x while mixing, 8x when exporting -
+     a lone clipper is cheap at 4x and OFF sounds noticeably harsher.
+     On the strip, with one on every track, AUTO may need to be OFF
+     while mixing to save power: decide when the strip is built.)
    - The strip keeps the same small delay at every oversampling setting,
      so drum mics never shift against each other.
    - No oversampling for the compressor (CHARACTER included) unless real
@@ -131,7 +135,10 @@ BUILD ORDER
    4. Bitch-Slap           done (1.0.0): the gated reverb, its own plugin
                            (on the track or as a send); joins the strip later
    5. Easy EQ              the biggest design job (the curve display)
-   6. Easy Amp, Easy Clip  separate plugins, both need the oversampling
+   6. Easy Clip            done (1.0.0): SIMPLE / ADVANCED, PROTECT LOWS,
+                           oversampling AUTO (4x mixing, 8x export) / OFF /
+                           4x / 8x, a look-ahead safety net at the CEILING
+      Easy Amp             next: reuses Easy Clip's oversampling
    7. The channel strip    the Aardvark Easy Strip
 
 

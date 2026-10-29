@@ -122,9 +122,23 @@ ChoiceSwitch::ChoiceSwitch (juce::RangedAudioParameter& parameter, const juce::S
 
 void ChoiceSwitch::resized()
 {
-    // The options stacked one above the other, with a small gap
+    // The options stacked one above the other (or side by side), with a small gap
     constexpr int gap = 8;
     auto area = getLocalBounds();
+
+    if (horizontal)
+    {
+        const int optionWidth = (area.getWidth() - gap * (options.size() - 1)) / juce::jmax (1, options.size());
+
+        for (auto* option : options)
+        {
+            option->setBounds (area.removeFromLeft (optionWidth));
+            area.removeFromLeft (gap);
+        }
+
+        return;
+    }
+
     const int optionHeight = (area.getHeight() - gap * (options.size() - 1)) / juce::jmax (1, options.size());
 
     for (auto* option : options)

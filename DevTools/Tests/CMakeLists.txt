@@ -39,3 +39,9 @@ target_sources(SlapTests PRIVATE SlapTests.cpp ${P}/Plugins/BitchSlap/PluginProc
 target_include_directories(SlapTests PRIVATE ${P}/Plugins/BitchSlap ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(SlapTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Bitch-Slap")
 target_link_libraries(SlapTests PRIVATE pffft juce::juce_audio_utils PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
+juce_add_console_app(ClipTests PRODUCT_NAME "ClipTests")
+target_sources(ClipTests PRIVATE ClipTests.cpp ${P}/Plugins/EasyClip/PluginProcessor.cpp ${P}/Plugins/EasyClip/PluginEditor.cpp ${SHARED})
+target_include_directories(ClipTests PRIVATE ${P}/Plugins/EasyClip ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(ClipTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Clip")
+target_link_libraries(ClipTests PRIVATE juce::juce_audio_utils juce::juce_dsp PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)

@@ -45,12 +45,15 @@ public:
     /** Called when you click a different option (not when a preset or the DAW changes it). */
     std::function<void()> onUserChange;
 
+    /** Side by side instead of one above the other. */
+    void setHorizontal (bool sideBySide)              { horizontal = sideBySide; resized(); }
+
     int getNumOptions() const noexcept                { return options.size(); }
     LightButton& getOption (int index) noexcept       { return *options[index]; }
 
 private:
     juce::OwnedArray<LightButton> options;
-    bool ignoreClicks = false;
+    bool ignoreClicks = false, horizontal = false;
     juce::ParameterAttachment attachment;
 };
 

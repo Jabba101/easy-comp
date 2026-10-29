@@ -9,6 +9,8 @@ Right now this project makes:
                  sounds you want)
     Easy DS      a de-esser (tames harsh S sounds, and harsh cymbals)
     Bitch-Slap   a gated reverb (the big 80s burst that stops dead)
+    Easy Clip    a clipper (shaves the peaks so a track or a whole mix
+                 can be louder)
 
 Every time the project changes on GitHub, GitHub builds the plugins for you
 on its own Windows computers. You just download and install them.
@@ -298,6 +300,49 @@ YOUR FIRST FIVE MINUTES WITH BITCH-SLAP
 
 
 ====================================================================
+YOUR FIRST FIVE MINUTES WITH EASY CLIP
+====================================================================
+   A clipper shaves the tops off the loudest peaks - a snare's crack, a
+   kick's attack - so the whole track (or mix) can be turned up without
+   them poking out. Done gently you can't hear it; pushed hard it's a
+   loud, aggressive crunch.
+
+   1. Put it on a drum track, the drum bus or the master and pick a
+      preset - or play the LOUDEST part of the song and turn PUSH up.
+   2. Watch SHAVED OFF on the right: 1-3 dB on the loudest hits is
+      usually unnoticeable (green). If it's regularly more, turn PUSH
+      down - or the track down earlier in the chain - unless you want to
+      hear the clipping.
+   3. CEILING is the brick wall: nothing ever comes out louder. -1 dB
+      is the safe choice on a finished song.
+   4. SOFTNESS: 0% cuts the peaks flat (cleanest and loudest); turn it
+      up for rounder, warmer peaks. PROTECT LOWS keeps the low boom of a
+      kick or bass out of the clipper - set it just above the lowest
+      note (80-120 Hz on a kick or a mix).
+   5. Click BYPASS on and off to compare. The clipped version is
+      louder, so compare at the same loudness (turn the track's fader
+      down a little while Easy Clip is on) - louder always sounds
+      "better" at first.
+
+   ADVANCED (top left) shows SOUND DESIGN: TOP and BOTTOM clip each half
+   of the wave at a different level, BIAS makes the rounding lopsided
+   (both add grit and warmth), and BLEND mixes the original back in
+   (parallel clipping). The lamp beside ADVANCED stays lit while any of
+   these isn't neutral, so nothing hidden can surprise you; INIT in
+   SOUND DESIGN puts just these back to neutral. LINK moves TOP and
+   BOTTOM together, keeping the gap you set between them.
+
+   OVERSAMPLING (top right): leave it on AUTO - 4x while you mix, 8x
+   (the cleanest) when your DAW exports the song. OFF uses the least
+   computer power but sounds harsher when you push hard. Easy Clip
+   delays the sound by about 2 ms, the same whichever you choose, and
+   tells your DAW so it lines everything up.
+
+   Double-click a knob to reset it; double-click its number to type an
+   exact value.
+
+
+====================================================================
 CHANGING THINGS
 ====================================================================
    - Built-in presets: Presets.h in each plugin's folder (e.g.
@@ -327,6 +372,7 @@ WHAT'S IN THIS FOLDER
      DeEsser.h              the de-esser
      HarshnessFinder.h      Easy DS's FIND button
      GatedReverb.h          Bitch-Slap's reverb
+     Clipper.h              Easy Clip's clipper (and its oversampling)
      LoudnessMatcher.h      AUTO-GAIN (shared by every plugin)
      FastMath.h             quick decibel maths and helpers for working on
                             several samples at once (shared by every plugin)
@@ -341,6 +387,7 @@ WHAT'S IN THIS FOLDER
    Plugins\EasyGate\      Easy Gate's knobs, window and presets.
    Plugins\EasyDS\        Easy DS's knobs, window and presets.
    Plugins\BitchSlap\     Bitch-Slap's knobs, window and presets.
+   Plugins\EasyClip\      Easy Clip's knobs, window and presets.
 
    ThirdParty\pffft\      PFFFT, the fast FFT behind Bitch-Slap's reverb
                           (someone else's free code - see its README.txt).
