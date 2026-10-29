@@ -319,8 +319,8 @@ body{margin:0;background:radial-gradient(ellipse at 50% 8%,#0d2338 0%,#050b14 55
             </div>
             <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:0">
               <div class="sec"><div class="sh"><i>2</i>HOW FAST</div><div class="r">
-                <div class="ring" data-l="ATTACK" data-min="0.1" data-max="100" data-def="10" data-log data-f="ms" data-u="ms" data-tip="Attack: how quickly it grabs a loud sound. Slower lets the stick hit through for more punch."></div>
-                <div class="ring" data-l="RELEASE" data-min="10" data-max="2000" data-def="100" data-log data-f="ms" data-u="ms" data-tip="Release: how quickly it lets go after the sound drops."></div></div></div>
+                <div class="ring" data-l="ATTACK" data-min="0.1" data-max="100" data-def="10" data-log data-f="msp" data-u="ms" data-tip="Attack: how quickly it grabs a loud sound. Slower lets the stick hit through for more punch."></div>
+                <div class="ring" data-l="RELEASE" data-min="10" data-max="2000" data-def="100" data-log data-f="msp" data-u="ms" data-tip="Release: how quickly it lets go after the sound drops."></div></div></div>
               <div class="sec"><div class="sh"><i>3</i>OUTPUT</div><div class="r" style="align-items:center">
                 <div class="ring red" data-l="MAKE-UP" data-min="-12" data-max="24" data-def="0" data-f="db" data-u="dB" data-tip="Make-up: turns the result back up to make up for what the compressor took off."></div>
                 <div class="ring" data-l="MIX" data-min="0" data-max="100" data-def="100" data-f="pct" data-u="%" data-tip="Mix: 100% is all compressed. Lower blends in the untouched sound."></div>
@@ -403,6 +403,7 @@ function fmt(el,v,n){var f=el.dataset.f;
  if(el.hasAttribute('data-off')&&n<0.004)return 'OFF';
  if(el.hasAttribute('data-offhi')&&n>0.996)return 'OFF';
  switch(f){case'db':return (v>=0?'+':'')+v.toFixed(1);case'db1':return v.toFixed(1);case'ratio':return v.toFixed(1);
+ case'msp':return v<10?v.toFixed(2):v<1000?v.toFixed(1):v.toFixed(0);
  case'ms':return v<1?v.toFixed(2):v<10?v.toFixed(1):v.toFixed(0);case'pct':return v.toFixed(0);case'int':return v.toFixed(0);
  case'spct':var r=Math.round(v);return (r>0?'+':'')+r;case'hz':return v>=1000?(v/1000).toFixed(v>=10000?0:1)+'k':v.toFixed(0)}return v.toFixed(1)}
 var ctl=[];
