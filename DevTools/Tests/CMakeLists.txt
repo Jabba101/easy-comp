@@ -57,3 +57,13 @@ target_sources(EQTests PRIVATE EQTests.cpp ${P}/Plugins/EasyEQ/PluginProcessor.c
 target_include_directories(EQTests PRIVATE ${P}/Plugins/EasyEQ ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(EQTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy EQ")
 target_link_libraries(EQTests PRIVATE juce::juce_audio_utils juce::juce_dsp PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
+set(STRIP_SOURCES)
+foreach(module EasyGate EasyAmp EasyEQ EasyDS EasyComp EasyTransient BitchSlap EasyClip)
+    list(APPEND STRIP_SOURCES ${P}/Plugins/${module}/PluginProcessor.cpp ${P}/Plugins/${module}/PluginEditor.cpp)
+endforeach()
+juce_add_console_app(StripTests PRODUCT_NAME "StripTests")
+target_sources(StripTests PRIVATE StripTests.cpp ${P}/Plugins/EasyStrip/PluginProcessor.cpp ${P}/Plugins/EasyStrip/PluginEditor.cpp ${STRIP_SOURCES} ${SHARED})
+target_include_directories(StripTests PRIVATE ${P}/Plugins/EasyStrip ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(StripTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Strip" EASY_STRIP_MODULE=1 JUCE_MODAL_LOOPS_PERMITTED=1)
+target_link_libraries(StripTests PRIVATE pffft juce::juce_audio_utils juce::juce_dsp PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)

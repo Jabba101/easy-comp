@@ -161,7 +161,22 @@ BUILD ORDER
                            overdriven growl, AC/DC-guitar and Motorhead-bass
                            ballpark), TONE, TIGHT, MIX; AUTO-GAIN on by
                            default; same oversampling as Easy Clip
-   7. The channel strip    the Aardvark Easy Strip
+   7. The channel strip    the Aardvark Easy Strip. Stage 1 done (0.1.0):
+                           the sound and plumbing in a plain test layout -
+                           each module identical to its plugin (tested
+                           sample for sample, alone and all eight in a
+                           row), switched-off modules skipped, settings
+                           both ways (DAW <-> module windows), shared
+                           sidechain and OVERSAMPLING, INPUT TRIM / polarity,
+                           OUTPUT LEVEL, meters, LUFS S / I, whole-strip
+                           INIT and BYPASS, saving.
+                           Next: SETUP (window size, skin, ticker, meter
+                           reference 0 dBFS / -18), the HOLOGRAM skin with
+                           the big screen and page buttons, the ticker,
+                           strip presets, A / B for Comp and the strip,
+                           EQ MASTER precision, GATE + DS sharing one
+                           2 ms look-ahead. Later: module order, Comp
+                           mid-side, WEAPON SELECT (Easy SFX).
 
 
 ====================================================================

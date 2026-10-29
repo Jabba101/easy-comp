@@ -13,6 +13,8 @@ Right now this project makes:
                  can be louder)
     Easy Amp     a valve amp: from warmth to an overdriven rock growl
     Easy EQ      a four-band EQ with filters, mid-side and linear phase
+    Easy Strip   all of the above in one channel strip (early test
+                 version: plain layout, the HOLOGRAM look comes later)
 
 Every time the project changes on GitHub, GitHub builds the plugins for you
 on its own Windows computers. You just download and install them.
@@ -423,6 +425,37 @@ YOUR FIRST FIVE MINUTES WITH EASY EQ
 
 
 ====================================================================
+YOUR FIRST FIVE MINUTES WITH EASY STRIP (early test version)
+====================================================================
+   Every Easy plugin in one channel strip, in this order:
+      INPUT > GATE > AMP > EQ > DS > COMP > TRANS > BITCH-SLAP > CLIP > OUTPUT
+
+   Each module IS its plugin: the same sound (tested sample for sample),
+   the same window, presets, INIT and help. Your own saved presets are
+   shared with the standalone plugins.
+
+   1. Every module starts switched off. Click a module's ON lamp (under
+      its tab) to switch it on; click the tab to open its window in the
+      middle. Switched-off modules aren't run at all, so they cost
+      nothing - and the strip's timing never changes when you switch.
+      (A module's own BYPASS button is the same switch.)
+   2. INPUT (left): TRIM, and the polarity flip for multi-mic drums.
+      Aim for the meter peaking around -6 dB.
+   3. OUTPUT (right): LEVEL, the meter, and loudness in LUFS - S for the
+      last 3 seconds, I for the whole song so far. Click I to start it
+      again (e.g. at the top of the song).
+   4. OVERSAMPLING (above the module window) is one setting for AMP and
+      CLIP together.
+   5. The sidechain input goes to both GATE and COMP (each one's
+      LISTENS TO / OPENED BY decides whether it uses it).
+   6. INIT (top right, small and red) resets the whole strip. Each
+      module's own INIT resets just that module.
+
+   In Samplitude every module's settings show up as "Comp Threshold",
+   "Gate Range" and so on, so automation works on all of them.
+
+
+====================================================================
 CHANGING THINGS
 ====================================================================
    - Built-in presets: Presets.h in each plugin's folder (e.g.
@@ -457,6 +490,7 @@ WHAT'S IN THIS FOLDER
      Equalizer.h            Easy EQ's EQ
      LinearPhaseEQ.h        Easy EQ's MASTER (linear phase)
      LoudnessMatcher.h      AUTO-GAIN (shared by every plugin)
+     LoudnessMeter.h        Easy Strip's LUFS meter
      FastMath.h             quick decibel maths and helpers for working on
                             several samples at once (shared by every plugin)
 
@@ -473,6 +507,8 @@ WHAT'S IN THIS FOLDER
    Plugins\EasyClip\      Easy Clip's knobs, window and presets.
    Plugins\EasyAmp\       Easy Amp's knobs, window and presets.
    Plugins\EasyEQ\        Easy EQ's knobs, screen and presets.
+   Plugins\EasyStrip\     Easy Strip: the plumbing that runs the plugins
+                          above as its modules, and its window.
 
    ThirdParty\pffft\      PFFFT, the fast FFT behind Bitch-Slap's reverb
                           (someone else's free code - see its README.txt).

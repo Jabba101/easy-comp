@@ -170,8 +170,10 @@ juce::AudioProcessorEditor* EasyDSAudioProcessor::createEditor()
     return new EasyDSAudioProcessorEditor (*this);
 }
 
+#if ! EASY_STRIP_MODULE   // (inside the Easy Strip, this plugin is one of its modules, not a plugin of its own)
 // JUCE calls this to create the plugin.
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new EasyDSAudioProcessor();
 }
+#endif

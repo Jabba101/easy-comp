@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.13.0)
+project(EasyPlugins VERSION 1.14.0)
 
 # Build the Visual C++ runtime into the plugins themselves, so they also work
 # on a PC that doesn't have Visual Studio installed. (No effect on macOS / Linux.)
@@ -209,3 +209,28 @@ add_easy_plugin(EasyEQ
                 Plugins/EasyEQ/PluginEditor.h
                 Plugins/EasyEQ/PluginEditor.cpp)
 target_link_libraries(EasyEQ PRIVATE juce::juce_dsp)   # (MASTER's convolution, the analyser's FFT)
+
+# ---- The Easy Strip: every plugin above, in one channel strip ---------------
+# (It builds each plugin's own code in as a module, so they sound identical.)
+set(STRIP_MODULES EasyGate EasyAmp EasyEQ EasyDS EasyComp EasyTransient BitchSlap EasyClip)
+set(STRIP_MODULE_SOURCES)
+foreach(module ${STRIP_MODULES})
+    list(APPEND STRIP_MODULE_SOURCES
+        Plugins/${module}/PluginProcessor.cpp
+        Plugins/${module}/PluginEditor.cpp)
+endforeach()
+
+add_easy_plugin(EasyStrip
+    NAME        "Easy Strip"
+    CODE        Ezst
+    VERSION     0.1.0
+    BUNDLE_ID   com.homestudio.easystrip
+    CATEGORIES  Fx
+    SOURCES     Effects/LoudnessMeter.h
+                Plugins/EasyStrip/PluginProcessor.h
+                Plugins/EasyStrip/PluginProcessor.cpp
+                Plugins/EasyStrip/PluginEditor.h
+                Plugins/EasyStrip/PluginEditor.cpp
+                ${STRIP_MODULE_SOURCES})
+target_compile_definitions(EasyStrip PRIVATE EASY_STRIP_MODULE=1)
+target_link_libraries(EasyStrip PRIVATE juce::juce_dsp pffft)
