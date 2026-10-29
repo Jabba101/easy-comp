@@ -49,6 +49,25 @@ inline std::unique_ptr<juce::AudioParameterFloat> makeKnob (const char* id, int 
     if (textToValue == nullptr)
         textToValue = [] (const juce::String& text) { return text.getFloatValue(); };
 
+    // Frequency knobs: a number typed without "k" or "Hz" that's too small
+    // for this knob, but fits it as kHz, is taken as kHz - so typing 10 into
+    // a knob that runs from 2.5 kHz to 20 kHz gives 10 kHz, not its lowest.
+    // ("10 Hz" typed in full still means 10 Hz.)
+    if (valueToText (range.convertFrom0to1 (0.5f)).endsWith ("Hz"))
+    {
+        textToValue = [textToValue, range] (const juce::String& text)
+        {
+            const float value = textToValue (text);
+            const auto cleaned = text.trim().toLowerCase();
+            const bool saidUnits = cleaned.containsChar ('k') || cleaned.contains ("hz") || cleaned == "off";
+
+            if (! saidUnits && value < range.start && value * 1000.0f >= range.start * 0.999f && value * 1000.0f <= range.end * 1.001f)
+                return value * 1000.0f;
+
+            return value;
+        };
+    }
+
     auto attributes = juce::AudioParameterFloatAttributes()
         .withStringFromValueFunction ([valueToText] (float value, int maximumLength)
                                       {

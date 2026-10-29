@@ -129,7 +129,7 @@ add_easy_plugin(EasyTransient          # (called Easy Transient up to 1.2.0)
 add_easy_plugin(EasyGate
     NAME        "Easy Gate"
     CODE        Ezgt
-    VERSION     1.0.0
+    VERSION     1.0.1
     BUNDLE_ID   com.homestudio.easygate
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/Gate.h
@@ -142,7 +142,7 @@ add_easy_plugin(EasyGate
 add_easy_plugin(EasyDS
     NAME        "Easy DS"
     CODE        Ezds
-    VERSION     1.0.0
+    VERSION     1.0.1
     BUNDLE_ID   com.homestudio.easyds
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/DeEsser.h
@@ -170,7 +170,7 @@ target_link_libraries(BitchSlap PRIVATE pffft)
 add_easy_plugin(EasyClip
     NAME        "Easy Clip"
     CODE        Ezcl
-    VERSION     1.0.2
+    VERSION     1.0.3
     BUNDLE_ID   com.homestudio.easyclip
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/Clipper.h
@@ -184,7 +184,7 @@ target_link_libraries(EasyClip PRIVATE juce::juce_dsp)   # (oversampling)
 add_easy_plugin(EasyAmp
     NAME        "Easy Amp"
     CODE        Ezam
-    VERSION     1.0.1
+    VERSION     1.0.2
     BUNDLE_ID   com.homestudio.easyamp
     CATEGORIES  Fx Distortion
     SOURCES     Effects/ValveAmp.h
@@ -198,7 +198,7 @@ target_link_libraries(EasyAmp PRIVATE juce::juce_dsp)   # (oversampling)
 add_easy_plugin(EasyEQ
     NAME        "Easy EQ"
     CODE        Ezeq
-    VERSION     1.1.0
+    VERSION     1.1.1
     BUNDLE_ID   com.homestudio.easyeq
     CATEGORIES  Fx EQ
     SOURCES     Effects/Equalizer.h

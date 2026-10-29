@@ -328,6 +328,21 @@ namespace
             check (getParam (ab, EQIDs::gain[1]) == 3.0f && getParam (ab, EQIDs::hpf) == 120.0f, "COPY B > A: A becomes the same as B");
         }
 
+        // Typing frequencies: "10" on a knob that starts at 2.5 kHz means 10 kHz
+        {
+            const auto typed = [&] (const char* id, const char* text)
+            {
+                auto* prm = p.parameters.getParameter (id);
+                return prm->convertFrom0to1 (prm->getValueForText (text));
+            };
+            check (th::near (typed (EQIDs::freq[3], "10"), 10000.0f, 1.0f) && th::near (typed (EQIDs::freq[3], "2.5"), 2500.0f, 1.0f)
+                   && th::near (typed (EQIDs::freq[2], "3"), 3000.0f, 1.0f) && th::near (typed (EQIDs::freq[2], "900"), 900.0f, 1.0f)
+                   && th::near (typed (EQIDs::freq[1], "1.2"), 1200.0f, 1.0f) && th::near (typed (EQIDs::freq[1], "250"), 250.0f, 1.0f)
+                   && th::near (typed (EQIDs::lpf, "8"), 8000.0f, 1.0f) && th::near (typed (EQIDs::freq[3], "12k"), 12000.0f, 1.0f)
+                   && th::near (typed (EQIDs::freq[3], "10 Hz"), 2500.0f, 1.0f) && th::near (typed (EQIDs::hpf, "off"), Equalizer::hpfOffHz, 0.1f),
+                   "typing a frequency: 10 on HIGH = 10 kHz, 3 on HIGH MID = 3 kHz, 1.2 on LOW MID = 1.2 kHz, 8 on LPF = 8 kHz; 900, 250, 12k and 'off' as typed");
+        }
+
         juce::MemoryBlock state;
         set (p, EQIDs::gain[2], 4.5f); set (p, EQIDs::target[3], 2.0f); set (p, EQIDs::master, 1.0f);
         p.getStateInformation (state);
