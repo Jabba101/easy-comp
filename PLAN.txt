@@ -138,7 +138,10 @@ BUILD ORDER
    6. Easy Clip            done (1.0.1): SIMPLE / ADVANCED, PROTECT LOWS,
                            oversampling AUTO (4x mixing, 8x export) / OFF /
                            4x / 8x, a look-ahead safety net at the CEILING
-      Easy Amp             next: reuses Easy Clip's oversampling
+      Easy Amp             done (1.0.0): DRIVE (clean -> valve warmth ->
+                           overdriven growl, AC/DC-guitar and Motorhead-bass
+                           ballpark), TONE, TIGHT, MIX; AUTO-GAIN on by
+                           default; same oversampling as Easy Clip
    7. The channel strip    the Aardvark Easy Strip
 
 

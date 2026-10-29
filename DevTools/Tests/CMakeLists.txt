@@ -45,3 +45,9 @@ target_sources(ClipTests PRIVATE ClipTests.cpp ${P}/Plugins/EasyClip/PluginProce
 target_include_directories(ClipTests PRIVATE ${P}/Plugins/EasyClip ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(ClipTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Clip")
 target_link_libraries(ClipTests PRIVATE juce::juce_audio_utils juce::juce_dsp PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
+juce_add_console_app(AmpTests PRODUCT_NAME "AmpTests")
+target_sources(AmpTests PRIVATE AmpTests.cpp ${P}/Plugins/EasyAmp/PluginProcessor.cpp ${P}/Plugins/EasyAmp/PluginEditor.cpp ${SHARED})
+target_include_directories(AmpTests PRIVATE ${P}/Plugins/EasyAmp ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(AmpTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Amp")
+target_link_libraries(AmpTests PRIVATE juce::juce_audio_utils juce::juce_dsp PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)

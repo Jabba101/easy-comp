@@ -11,6 +11,7 @@ Right now this project makes:
     Bitch-Slap   a gated reverb (the big 80s burst that stops dead)
     Easy Clip    a clipper (shaves the peaks so a track or a whole mix
                  can be louder)
+    Easy Amp     a valve amp: from warmth to an overdriven rock growl
 
 Every time the project changes on GitHub, GitHub builds the plugins for you
 on its own Windows computers. You just download and install them.
@@ -47,7 +48,8 @@ GETTING THE LATEST PLUGINS FROM GITHUB
 
  7. Open your DAW and rescan your plugins. They're listed under
     "Aardvark Easy Suite" (it used to be "Home Studio"), in effects /
-    dynamics - and Bitch-Slap in effects / reverb.
+    dynamics - Bitch-Slap in effects / reverb, Easy Amp in effects /
+    distortion.
 
  Your projects keep working: newer versions open older projects with
  any new features switched off, so they sound exactly as they did. That
@@ -344,6 +346,39 @@ YOUR FIRST FIVE MINUTES WITH EASY CLIP
 
 
 ====================================================================
+YOUR FIRST FIVE MINUTES WITH EASY AMP
+====================================================================
+   An overdriven valve amp: the warm, rounded distortion of old valve
+   (tube) gear rather than the harsh buzz of transistors. One knob takes
+   it from clean to a growling rock sound - roughly from a warm DI bass
+   to a cranked 70s/80s hard-rock amp (not high-gain metal).
+
+   1. Put it on a bass, guitar, synth or drum track and pick a preset -
+      or play the track and turn DRIVE up: a little for warmth, about
+      halfway for a rough edge, all the way for a growl. The word under
+      the curve tells you where you are (WARM, BREAKING UP, CRUNCH,
+      GROWL).
+   2. AUTO-GAIN starts ON here: as you turn DRIVE up, the volume stays
+      the same, so you judge the tone, not the loudness. The number under
+      the curve shows what it's doing.
+   3. TONE: turn it down if the distortion sounds fizzy, up if it sounds
+      dull. TIGHT keeps the low end out of the amp, clean - 80-120 Hz on
+      bass and guitars stops distorted lows turning to mud.
+   4. MIX below 100% blends your clean sound back in (parallel
+      distortion) - great on drums and vocals.
+   5. Click BYPASS on and off to compare.
+
+   The curve in the middle shows what the amp does: straight = clean,
+   bent = distorting, and flatter on one side = the valve's lopsided
+   warmth. The two dots show where your track is playing right now.
+
+   At DRIVE 0 it's switched off and costs nothing. OVERSAMPLING works
+   like Easy Clip's (leave it on AUTO). The small red INIT beside the
+   preset box puts every knob back to clean. Double-click a knob to
+   reset it, or its number to type a value.
+
+
+====================================================================
 CHANGING THINGS
 ====================================================================
    - Built-in presets: Presets.h in each plugin's folder (e.g.
@@ -374,6 +409,7 @@ WHAT'S IN THIS FOLDER
      HarshnessFinder.h      Easy DS's FIND button
      GatedReverb.h          Bitch-Slap's reverb
      Clipper.h              Easy Clip's clipper (and its oversampling)
+     ValveAmp.h             Easy Amp's valve amp
      LoudnessMatcher.h      AUTO-GAIN (shared by every plugin)
      FastMath.h             quick decibel maths and helpers for working on
                             several samples at once (shared by every plugin)
@@ -389,6 +425,7 @@ WHAT'S IN THIS FOLDER
    Plugins\EasyDS\        Easy DS's knobs, window and presets.
    Plugins\BitchSlap\     Bitch-Slap's knobs, window and presets.
    Plugins\EasyClip\      Easy Clip's knobs, window and presets.
+   Plugins\EasyAmp\       Easy Amp's knobs, window and presets.
 
    ThirdParty\pffft\      PFFFT, the fast FFT behind Bitch-Slap's reverb
                           (someone else's free code - see its README.txt).

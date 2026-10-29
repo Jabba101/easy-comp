@@ -25,7 +25,9 @@ Tests/                 -> /home/claude/verify2
     SlapTests (Bitch-Slap: its reverb against a plain, slow convolution),
     ClipTests (Easy Clip: the ceiling under every setting and while knobs
     move, the delay, aliasing per OVERSAMPLING setting, PROTECT LOWS,
-    LINK, the ADVANCED INIT, speed).
+    LINK, the ADVANCED INIT, speed), AmpTests (Easy Amp: clean at DRIVE 0,
+    harmonics rising with DRIVE (even and odd reported), level matching on
+    drums and bass, TIGHT, aliasing, the breathing, speed).
     The sound (against theory and real material), the DAW plumbing
     (settings, saving, presets, buses), the window (and PNG renders of
     it), skipping silence (must match working through it), and speed

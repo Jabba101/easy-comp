@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.11.0)
+project(EasyPlugins VERSION 1.12.0)
 
 # Build the Visual C++ runtime into the plugins themselves, so they also work
 # on a PC that doesn't have Visual Studio installed. (No effect on macOS / Linux.)
@@ -180,3 +180,17 @@ add_easy_plugin(EasyClip
                 Plugins/EasyClip/PluginEditor.h
                 Plugins/EasyClip/PluginEditor.cpp)
 target_link_libraries(EasyClip PRIVATE juce::juce_dsp)   # (oversampling)
+
+add_easy_plugin(EasyAmp
+    NAME        "Easy Amp"
+    CODE        Ezam
+    VERSION     1.0.0
+    BUNDLE_ID   com.homestudio.easyamp
+    CATEGORIES  Fx Distortion
+    SOURCES     Effects/ValveAmp.h
+                Plugins/EasyAmp/Presets.h
+                Plugins/EasyAmp/PluginProcessor.h
+                Plugins/EasyAmp/PluginProcessor.cpp
+                Plugins/EasyAmp/PluginEditor.h
+                Plugins/EasyAmp/PluginEditor.cpp)
+target_link_libraries(EasyAmp PRIVATE juce::juce_dsp)   # (oversampling)
