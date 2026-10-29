@@ -475,6 +475,18 @@ namespace
         window->updateDisplaysNow();
         check (! p.isAdvancedInUse() && getParam (p, ClipIDs::push) > 0.0f, "the INIT button in SOUND DESIGN resets just the ADVANCED settings");
 
+        set (p, ClipIDs::bias, 40.0f); set (p, ClipIDs::quality, 3.0f);
+        check (window->getInitAllButton().isVisible() && window->getInitAllButton().getY() < 80, "an INIT for the whole plugin, in the header");
+        window->getInitAllButton().onClick();
+        bool allDefault = true;
+        for (auto& id : clipPresetIDs())
+        {
+            auto* prm = p.parameters.getParameter (id);
+            if (std::abs (prm->getValue() - prm->getDefaultValue()) > 1e-6f) allDefault = false;
+        }
+        check (allDefault && p.getPresetName() == "Default settings" && getParam (p, ClipIDs::quality) == 3.0f && getParam (p, ClipIDs::view) == 1.0f,
+               "...which puts every knob back to its default ('Default settings'), leaving OVERSAMPLING and the view alone");
+
         // Help bar
         bool hintsOk = true;
         for (int k = 0; k < EasyClipAudioProcessorEditor::numKnobs; ++k)

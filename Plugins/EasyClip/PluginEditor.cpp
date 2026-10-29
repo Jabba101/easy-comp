@@ -57,6 +57,10 @@ namespace
         "Puts the ADVANCED settings (TOP, BOTTOM, LINK, BIAS and BLEND) back to neutral. PUSH, CEILING, SOFTNESS and "
         "PROTECT LOWS stay as they are.";
 
+    constexpr const char* initAllHint =
+        "Puts every knob back to its default (the same as the 'Default settings' preset): nothing is clipped until you turn "
+        "PUSH up. BYPASS, OVERSAMPLING and SIMPLE / ADVANCED stay as they are.";
+
     constexpr const char* viewHint =
         "SIMPLE shows the four main knobs. ADVANCED adds SOUND DESIGN: TOP, BOTTOM, BIAS and BLEND. Hidden settings keep "
         "working; the lamp stays lit while any ADVANCED setting isn't neutral, so nothing hidden can surprise you.";
@@ -155,7 +159,6 @@ void ClipDisplay::addMoments (const EasyClipAudioProcessor::Moment* newMoments, 
         next = (next + 1) % numMoments;
     }
 
-    fitScale();
     repaint();
 }
 
@@ -164,25 +167,8 @@ void ClipDisplay::setCeiling (float newCeilingDb)
     if (std::abs (newCeilingDb - ceilingDb) > 0.01f)
     {
         ceilingDb = newCeilingDb;
-        fitScale();
         repaint();
     }
-}
-
-void ClipDisplay::fitScale()
-{
-    // Keep both the ceiling and the loudest pushed moment in view, with a
-    // little room above, in 6 dB steps.
-    float loudest = ceilingDb;
-    for (auto& moment : history)
-        loudest = std::max (loudest, moment.pushedDb);
-
-    const float needed = juce::jlimit (-12.0f, 30.0f, loudest + 3.0f);
-    if (! hasFitted || needed > targetTopDb || needed < targetTopDb - 9.0f)
-        targetTopDb = std::ceil (needed / 6.0f) * 6.0f;
-
-    topDb = hasFitted ? topDb + juce::jlimit (-1.0f, 3.0f, targetTopDb - topDb) : targetTopDb;
-    hasFitted = true;
 }
 
 void ClipDisplay::setBypassed (bool isBypassed)
@@ -214,13 +200,14 @@ void ClipDisplay::paint (juce::Graphics& g)
     g.setColour (Palette::background);
     g.fillRoundedRectangle (plot.expanded (1.0f), 6.0f);
 
-    // Grid and scale, every 12 dB
+    // Grid and scale, every 6 dB from +12 to -12 (0 dB, the loudest a recording
+    // can be before it clips, a little brighter)
     g.setFont (juce::Font (juce::FontOptions (11.0f)));
 
-    for (int db = 12 * (int) std::floor (topDb / 12.0f); (float) db > bottomDb; db -= 12)
+    for (int db = 12; db >= -12; db -= 6)
     {
         const float y = yFor ((float) db);
-        g.setColour (Palette::panelEdge);
+        g.setColour (db == 0 ? Palette::textDim.withAlpha (0.55f) : Palette::panelEdge);
         g.drawHorizontalLine (juce::roundToInt (y), plot.getX(), plot.getRight());
         g.setColour (Palette::textDim);
         g.drawText ((db > 0 ? "+" : "") + juce::String (db), juce::Rectangle<float> (0.0f, y - 7.0f, plot.getX() - 6.0f, 14.0f),
@@ -382,6 +369,19 @@ EasyClipAudioProcessorEditor::EasyClipAudioProcessorEditor (EasyClipAudioProcess
     initButton.onClick = [this] { clipProcessor.resetAdvanced(); };
     addAndMakeVisible (initButton);
     addHint (initButton, "INIT (ADVANCED)", initHint);
+
+    // INIT for the whole plugin, in the header: every knob back to its
+    // default (the same as the "Default settings" preset)
+    initAllButton.setColour (juce::TextButton::buttonColourId, Palette::panel);
+    initAllButton.setColour (juce::TextButton::textColourOffId, Palette::meterHigh);
+    initAllButton.setColour (juce::ComboBox::outlineColourId, Palette::meterHigh);
+    initAllButton.onClick = [this]
+    {
+        presetBrowser.onPresetChosen (easyProcessor.getBuiltInPresets().front());   // "Default settings"
+    };
+    addAndMakeVisible (initAllButton);
+    putInHeader (initAllButton);
+    addHint (initAllButton, "INIT", initAllHint);
 
     viewSwitch.setHorizontal (true);
     qualitySwitch.setHorizontal (true);

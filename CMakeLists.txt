@@ -170,7 +170,7 @@ target_link_libraries(BitchSlap PRIVATE pffft)
 add_easy_plugin(EasyClip
     NAME        "Easy Clip"
     CODE        Ezcl
-    VERSION     1.0.0
+    VERSION     1.0.1
     BUNDLE_ID   com.homestudio.easyclip
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/Clipper.h

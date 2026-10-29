@@ -34,25 +34,19 @@ public:
     void setCeiling (float ceilingDb);
     void setBypassed (bool isBypassed);
 
-    /** The level (dB) at the top edge right now. */
-    float getTopDb() const noexcept   { return topDb; }
-
     void paint (juce::Graphics&) override;
 
     static constexpr int   numMoments = 480;     // 2.4 seconds of 5 ms moments
-    static constexpr float rangeDb    = 48.0f;   // from the top edge to the bottom
+    static constexpr float topDb      = 12.0f;   // a fixed scale: +12 dB at the top,
+    static constexpr float rangeDb    = 24.0f;   // 0 in the middle, -12 at the bottom
 
 private:
     juce::Rectangle<float> getPlotArea() const;
-    void fitScale();
 
     std::vector<EasyClipAudioProcessor::Moment> history;   // a ring: "next" is the oldest
     int next = 0;
     bool bypassed = false;
     float ceilingDb = 0.0f;
-
-    float topDb = 6.0f, targetTopDb = 6.0f;   // the scale glides from one to the other
-    bool hasFitted = false;
 };
 
 //==============================================================================
@@ -72,6 +66,7 @@ public:
     juce::Slider& getKnob (int index)          { return knobs[(size_t) index].slider; }
     juce::Button& getLinkButton()              { return linkButton; }
     juce::Button& getAdvancedInitButton()      { return initButton; }
+    juce::Button& getInitAllButton()           { return initAllButton; }
 
     /** (Tests only: treat changes to TOP and BOTTOM as made by hand, so LINK applies.) */
     bool linkEverything = false;
@@ -98,7 +93,7 @@ private:
     std::array<Knob, numKnobs> knobs;
     LightButton linkButton { "LINK", Palette::accent };
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> linkAttachment;
-    juce::TextButton initButton { "INIT" };
+    juce::TextButton initButton { "INIT" }, initAllButton { "INIT" };
 
     ChoiceSwitch viewSwitch, qualitySwitch;
     juce::Label qualityLabel;
