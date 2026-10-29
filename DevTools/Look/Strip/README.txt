@@ -340,8 +340,8 @@ STILL TO DECIDE
    Done in the wireframe: EQ sections 1 CLEAN UP (HPF, slope, MONO
    BASS, LPF) and 2 SHAPE (the bands); Clip sections 1 HOW HARD (PUSH,
    CEILING), 2 HOW IT SOUNDS (SOFTNESS, PROTECT LOWS) and, in the space
-   under Amp + EQ when ADVANCED is chosen (right-hand end, natural
-   width; the empty panel takes whatever is left), 3 SOUND DESIGN (TOP, LINK,
+   under Amp + EQ when ADVANCED is chosen (under the EQ, edges lined up with it;
+   the empty panel sits under Amp), 3 SOUND DESIGN (TOP, LINK,
    BOTTOM, BIAS, BLEND) - lamp beside ADVANCED lit while any of these
    isn't neutral; Clip INIT resets them too. WEAPON SELECT is a wide
    short bar again. AMP button sits top left so the ring's top can rise

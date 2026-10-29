@@ -138,12 +138,12 @@ body{margin:0;background:radial-gradient(ellipse at 50% 8%,#0d2338 0%,#050b14 55
 .clip{flex-direction:row;align-items:stretch;gap:12px;padding:8px 12px}
 .clip .side{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
 .clip .sec{flex:1;padding-top:24px}
-.bay{display:flex;gap:10px;min-height:0}.bay .scan{flex:1}.bay .cadv{flex:none}
+.bay{display:grid;grid-template-columns:260px 560px;gap:10px;min-height:0}.bay .scan{grid-column:1/3}.bay.adv .scan{grid-column:1}.bay .cadv{grid-column:2;grid-row:1;justify-content:space-between}
 [hidden]{display:none!important}
-.cadv{flex-direction:row!important;align-items:center;gap:30px;padding:6px 18px 6px 14px}
+.cadv{flex-direction:row!important;align-items:center;gap:16px;padding:6px 14px}
 .cadv .ahd{display:flex;flex-direction:column;gap:6px;align-self:flex-start;padding-top:4px}
 .cadv .ahd .sh{position:static}
-.cadv .acts{display:flex;align-items:center;gap:26px}
+.cadv .acts{display:flex;align-items:center;gap:18px}
 .cadv .unit{display:flex;align-items:center;gap:6px;padding:2px 10px;border:1px solid color-mix(in srgb,var(--t) 30%,transparent);border-radius:7px;background:rgba(2,8,16,.35)}
 .adtag{color:var(--dim);font-weight:600;font-size:13px;padding-left:2px}
 .eqh{display:grid;grid-template-columns:68px repeat(4,minmax(0,1fr));gap:5px;height:18px}
@@ -446,7 +446,7 @@ function linked(c){var p=c.el.dataset.link;if(p&&document.getElementById('kLink'
 function reset(scope){ctl.forEach(function(c){if(scope.contains(c.el)){c.n=c.def;draw(c)}});
  scope.querySelectorAll('.tgl').forEach(function(g){g.querySelectorAll('span').forEach(function(k,i){k.classList.toggle('on',g._def[i])})});
  scope.querySelectorAll('.tg').forEach(function(b){b.classList.toggle('on',b._def)});if(scope.classList.contains('clip'))reset(document.getElementById('cAdv'));view()}
-function view(){var adv=document.querySelectorAll('#kView span')[1].classList.contains('on');document.getElementById('cAdv').hidden=!adv}
+function view(){var adv=document.querySelectorAll('#kView span')[1].classList.contains('on');document.getElementById('cAdv').hidden=!adv;document.querySelector('.bay').classList.toggle('adv',adv)}
 document.querySelectorAll('#kView span').forEach(function(k){k.addEventListener('click',view)});
 function flash(b){b.classList.add('flash');setTimeout(function(){b.classList.remove('flash')},180)}
 document.querySelectorAll('.mod .init').forEach(function(b){b.setAttribute('data-tip','Init: puts every setting in this module back to its default. Nothing else on the strip changes.');b.addEventListener('mouseenter',function(){hint(b)});b.addEventListener('click',function(){reset(b.closest('.mod'));flash(b)})});
