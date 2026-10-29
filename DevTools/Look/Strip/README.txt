@@ -350,6 +350,10 @@ STILL TO DECIDE
    space under AMP (left of the Clip panel); the preset window stays
    where it was, twice as wide. In SIMPLE the space under the EQ is an empty
    panel the same size as the ADVANCED one.
+   LINK on TOP/BOTTOM keeps the gap between them: set each, press LINK,
+   and both move by the same amount (stopping together at either end).
+   The ADVANCED row has its own INIT (advanced settings only); Clip's
+   main INIT still resets everything in Clip.
  - The INPUT and OUTPUT meters need a proper calibrated scale: precise
    and easy to read (in the wireframe and render they're placeholders).
    The user's idea: -24 dB at the bottom, 0 two thirds of the way up,

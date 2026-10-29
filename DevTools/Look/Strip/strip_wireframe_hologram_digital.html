@@ -21,7 +21,7 @@ body{margin:0;background:radial-gradient(ellipse at 50% 8%,#0d2338 0%,#050b14 55
 .top{display:flex;align-items:center;gap:22px;padding:6px 14px;border:1px solid rgba(63,216,255,.4);border-radius:8px;background:rgba(6,18,32,.7)}
 .title{font-family:var(--disp);line-height:1.05;text-align:center;color:#e6fbff;text-shadow:0 0 10px rgba(63,216,255,.6)}
 .bay .title{grid-column:1;grid-row:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
-.title div:first-child{font-size:34px;letter-spacing:6px;padding-left:6px}.title div:last-child{font-size:20px;letter-spacing:10.5px;padding-left:10px;color:#9fe9ff}
+.title div{white-space:nowrap}.title div:first-child{font-size:32px;letter-spacing:2px;padding-left:2px}.title div:last-child{font-size:22px;letter-spacing:3px;padding-left:3px;color:#9fe9ff}
 .preset{display:flex;gap:4px;align-items:center}
 .preset .win{width:560px;height:32px;box-sizing:border-box;border:1px solid var(--sel);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--sel);font-weight:600;font-size:18px;letter-spacing:1.5px;text-shadow:0 0 8px rgba(255,179,92,.55);background:rgba(4,12,22,.7)}
 .grow{flex:1}
@@ -267,7 +267,7 @@ body{margin:0;background:radial-gradient(ellipse at 50% 8%,#0d2338 0%,#050b14 55
     <div class="title"><div>AARDVARK</div><div>EASY STRIP</div></div>
     <div class="scan" id="bayScan"></div>
     <div class="mod m-clip cadv" id="cAdv" hidden>
-      <div class="ahd"><div class="adtag">CLIP · ADVANCED</div><div class="sh"><i>3</i>SOUND DESIGN</div></div>
+      <div class="ahd"><div class="adtag">CLIP · ADVANCED</div><div class="sh"><i>3</i>SOUND DESIGN</div><div class="init" style="align-self:flex-start">INIT</div></div>
       <div class="acts">
         <div class="unit">
           <div class="ring sm" id="kTop" data-l="TOP" data-min="-12" data-max="0" data-def="0" data-f="db1" data-u="dB" data-link="kBot" data-tip="Top: where the upper half of the wave is clipped. Clipping the two halves differently adds grit and colour."></div>
@@ -435,16 +435,18 @@ var pos=bigM('inM');bigM('outM');
 // drag
 ctl.forEach(function(c){var el=c.el,y0,n0,dr=false;
  el.addEventListener('pointerdown',function(e){dr=true;y0=e.clientY;n0=c.n;el.setPointerCapture(e.pointerId);hint(el)});
- el.addEventListener('pointermove',function(e){if(!dr)return;c.n=Math.min(1,Math.max(0,n0+(y0-e.clientY)/(e.shiftKey?800:180)));draw(c);linked(c)});
+ el.addEventListener('pointermove',function(e){if(!dr)return;setN(c,n0+(y0-e.clientY)/(e.shiftKey?800:180))});
  el.addEventListener('pointerup',function(){dr=false});
- el.addEventListener('dblclick',function(){c.n=c.def;draw(c);linked(c)});
- el.addEventListener('wheel',function(e){e.preventDefault();c.n=Math.min(1,Math.max(0,c.n-Math.sign(e.deltaY)*(e.shiftKey?.005:.02)));draw(c);linked(c)},{passive:false});});
+ el.addEventListener('dblclick',function(){c.n=c.def;draw(c)});
+ el.addEventListener('wheel',function(e){e.preventDefault();setN(c,c.n-Math.sign(e.deltaY)*(e.shiftKey?.005:.02))},{passive:false});});
 document.querySelectorAll('[data-tip]').forEach(function(el){el.addEventListener('mouseenter',function(){hint(el)})});
 // stacks / segs: one choice
 document.querySelectorAll('.tgl').forEach(function(g){var kids=g.querySelectorAll('span');kids.forEach(function(k){k.addEventListener('click',function(){kids.forEach(function(o){o.classList.toggle('on',o===k)})})});g._def=[].map.call(kids,function(k){return k.classList.contains('on')})});
 document.querySelectorAll('.tg').forEach(function(b){b._def=b.classList.contains('on');b.addEventListener('click',function(){b.classList.toggle('on')})});
 document.querySelectorAll('.onoff').forEach(function(b){b._def=b.classList.contains('off');b.addEventListener('click',function(){b.classList.toggle('off')})});
-function linked(c){var p=c.el.dataset.link;if(p&&document.getElementById('kLink').classList.contains('on')){var o=document.getElementById(p)._c;o.n=c.n;draw(o)}}
+// LINK keeps the gap between TOP and BOTTOM: both move by the same amount, and stop together when either reaches its end
+function setN(c,n){n=Math.min(1,Math.max(0,n));var p=c.el.dataset.link;
+ if(p&&document.getElementById('kLink').classList.contains('on')){var o=document.getElementById(p)._c,d=n-c.n;d=Math.max(-o.n,Math.min(1-o.n,d));c.n+=d;o.n+=d;draw(o)}else c.n=n;draw(c)}
 function reset(scope){ctl.forEach(function(c){if(scope.contains(c.el)){c.n=c.def;draw(c)}});
  scope.querySelectorAll('.tgl').forEach(function(g){g.querySelectorAll('span').forEach(function(k,i){k.classList.toggle('on',g._def[i])})});
  scope.querySelectorAll('.tg').forEach(function(b){b.classList.toggle('on',b._def)});if(scope.classList.contains('clip'))reset(document.getElementById('cAdv'));view()}
@@ -452,6 +454,7 @@ function view(){var adv=document.querySelectorAll('#kView span')[1].classList.co
 document.querySelectorAll('#kView span').forEach(function(k){k.addEventListener('click',view)});
 function flash(b){b.classList.add('flash');setTimeout(function(){b.classList.remove('flash')},180)}
 document.querySelectorAll('.mod .init').forEach(function(b){b.setAttribute('data-tip','Init: puts every setting in this module back to its default. Nothing else on the strip changes.');b.addEventListener('mouseenter',function(){hint(b)});b.addEventListener('click',function(){reset(b.closest('.mod'));flash(b)})});
+document.querySelector('#cAdv .init').setAttribute('data-tip','Init: puts the advanced clip settings back to neutral. PUSH, CEILING and the other simple settings stay as they are.');
 var ia=document.getElementById('initAll');ia.addEventListener('click',function(){document.querySelectorAll('.main .mod').forEach(reset);flash(ia)});
 document.querySelectorAll('.pr').forEach(function(p){p.setAttribute('data-tip','Presets: load or save settings for this module only - the same list as its standalone plugin.');p.addEventListener('mouseenter',function(){hint(p)})});
 // screen
@@ -493,5 +496,8 @@ function frame(now){var t=(now-t0)/1000,beat=t%0.5,env=Math.exp(-beat*9),lvl=-34
  if(!still)requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 document.getElementById('lufsI').addEventListener('click',function(){this.firstChild.textContent='-inf';var me=this;setTimeout(function(){me.firstChild.textContent='-14.6'},900)});
+// logo: EASY STRIP sized to the same width as AARDVARK
+function fitLogo(){var t=document.querySelector('.bay .title'),a=t.children[0],b=t.children[1];for(var i=0;i<3;i++){var fs=parseFloat(getComputedStyle(b).fontSize);b.style.fontSize=(fs*a.getBoundingClientRect().width/b.getBoundingClientRect().width)+'px'}}
+fitLogo();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitLogo);
 })();
 </script>
