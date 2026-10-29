@@ -227,10 +227,10 @@ The ticker is on by default and its hints matter as much as the sound.
          steps either side of 0) as well as the counters. SEPARATE
          frequency and gain knobs (faster than stacked/concentric ones,
          which feel fiddly with a mouse); dragging a point on the big
-         screen's curve sets both at once. Knobs are SMOOTH by default;
-         SETUP has STEPPED (click between fixed musical points) - it only
-         changes how knobs move from then on: an in-between value from a
-         preset or project stays until that knob is touched. MID-SIDE: each band
+         screen's curve sets both at once. Knobs are SMOOTH. (STEPPED knobs
+         were dropped with the digital layout: they were there for the
+         hardware feel of a 550; typing an exact value by double-clicking
+         the number does the job better.) MID-SIDE: each band
          gets a small three-way target selector, STEREO / MID / SIDE (the
          knobs never change meaning); the big screen draws MID and SIDE
          in two colours; a MONO BASS knob keeps everything below its
