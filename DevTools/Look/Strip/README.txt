@@ -337,6 +337,14 @@ STILL TO DECIDE
    of rounded ones; a slightly brighter outline on each module, controls
    and text unchanged; a very faint grid or scan lines behind the whole
    panel so it reads as a projection. No extra glow.
+   Done in the wireframe: EQ sections 1 CLEAN UP (HPF, slope, MONO
+   BASS, LPF) and 2 SHAPE (the bands); Clip sections 1 HOW HARD (PUSH,
+   CEILING), 2 HOW IT SOUNDS (SOFTNESS, PROTECT LOWS) and, in the space
+   under Amp + EQ when ADVANCED is chosen, 3 SOUND DESIGN (TOP, LINK,
+   BOTTOM, BIAS, BLEND) - lamp beside ADVANCED lit while any of these
+   isn't neutral; Clip INIT resets them too. WEAPON SELECT is a wide
+   short bar again. AMP button sits top left so the ring's top can rise
+   into the header row.
  - The INPUT and OUTPUT meters need a proper calibrated scale: precise
    and easy to read (in the wireframe and render they're placeholders).
    The user's idea: -24 dB at the bottom, 0 two thirds of the way up,
