@@ -212,10 +212,17 @@ LATER
      version is mastering territory: not planned.)
    - Once the essentials are perfected: EASY SFX, an effects rack.
      WEAPON SELECT swaps the whole strip layout for the rack; closing the
-     rack brings the strip back. Effects decided so far (more to come):
-       - a side-to-side tremolo (auto-pan)
-       - a delay (slapback on vocals and more)
-       - a limiter - ONLY if it matches the transparency of IK
+     rack brings the strip back. The brainstorm (30 October 2026):
+       - FLANGER / CHORUS with a vibrato mode, to make things feel
+         wider; rates lockable to the song's tempo
+       - MOD FILTER: tempo-locked pulses, wide stereo filtering (left
+         and right moving apart)
+       - STEREO DELAY: tempo-lockable (slapback on vocals and more)
+       - AUTO-WAH: an automatic wah pedal (follows how hard you play)
+       - side-to-side TREMOLO (auto-pan) - from the earlier list; not in
+         the 30 October list, so still to confirm (the MOD FILTER's
+         stereo movement could cover it)
+       - a TRANSPARENT LIMITER - ONLY if it matches the transparency of IK
          Multimedia's Stealth Limiter, which the user always uses. The
          bar: compared blind and level-matched on the user's own mixes,
          it must be indistinguishable or better; if not, it isn't
