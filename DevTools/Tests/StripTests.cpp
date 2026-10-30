@@ -837,6 +837,22 @@ namespace
         check (near (getParam (s.getModule (7), ClipIDs::top), -4.0f, 0.06f) && near (getParam (s.getModule (7), ClipIDs::bottom), -7.0f, 0.06f),
                "LINK keeps the gap between TOP and BOTTOM");
 
+        // The EQ page draws dB where the scale says (+12 on the +12 line)
+        {
+            auto& eqp = s.getModule (2);
+            setParam (eqp, EQIDs::gain[2], 0.0f);
+            const float zeroY = view->getScreen().eqDotPosition (2).y;
+            setParam (eqp, EQIDs::gain[2], 12.0f);
+            const float plusY = view->getScreen().eqDotPosition (2).y;
+            setParam (eqp, EQIDs::gain[2], -12.0f);
+            const float minusY = view->getScreen().eqDotPosition (2).y;
+            const float plotHalf = (view->getScreen().getHeight() - 12.0f - 40.0f) * 0.5f;   // (the plot's half height = 15 dB)
+            check (near (zeroY - plusY, plotHalf * 12.0f / 15.0f, 2.0f) && near (minusY - zeroY, plotHalf * 12.0f / 15.0f, 2.0f),
+                   "the EQ page: a +12 / -12 dB band sits on the +12 / -12 lines (" + juce::String (zeroY - plusY, 1) + " / "
+                       + juce::String (minusY - zeroY, 1) + " px, wanted " + juce::String (plotHalf * 0.8f, 1) + ")");
+            setParam (eqp, EQIDs::gain[2], 0.0f);
+        }
+
         // The page buttons sit over the big screen; DISPLAY BRIGHTNESS lives in SETUP
         {
             const auto screenArea = view->getScreen().getBounds();

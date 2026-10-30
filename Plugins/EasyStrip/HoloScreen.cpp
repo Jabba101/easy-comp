@@ -187,7 +187,8 @@ namespace Holo
         const auto s = eq.getCurrentSettings();
         const auto& b = s.bands[(size_t) band];
         const bool mid = b.target != Equalizer::Target::side;
-        const float atDot = (float) Equalizer::responseAt (s, b.freqHz, eq.getCurrentSampleRate() > 0.0 ? eq.getCurrentSampleRate() : 48000.0, mid);
+        const float atDot = (float) juce::Decibels::gainToDecibels (   // (responseAt gives a gain, not dB)
+            Equalizer::responseAt (s, b.freqHz, eq.getCurrentSampleRate() > 0.0 ? eq.getCurrentSampleRate() : 48000.0, mid), -60.0);
         return { xForHz (b.freqHz), yForDb (juce::jlimit (-eqRangeDb, eqRangeDb, atDot)) };
     }
 
@@ -278,7 +279,7 @@ namespace Holo
             bool first = true;
             for (float x = plot.getX(); x <= plot.getRight() + 0.5f; x += 2.0f)
             {
-                const float db = (float) Equalizer::responseAt (s, hzForX (x), rate, mid);
+                const float db = (float) juce::Decibels::gainToDecibels (Equalizer::responseAt (s, hzForX (x), rate, mid), -60.0);
                 const float y = yForDb (juce::jlimit (-eqRangeDb - 2.0f, eqRangeDb + 2.0f, db));
                 if (first) p.startNewSubPath (x, y); else p.lineTo (x, y);
                 first = false;

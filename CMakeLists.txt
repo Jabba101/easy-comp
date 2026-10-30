@@ -223,7 +223,7 @@ endforeach()
 add_easy_plugin(EasyStrip
     NAME        "Easy Strip"
     CODE        Ezst
-    VERSION     0.5.0
+    VERSION     0.5.1
     BUNDLE_ID   com.homestudio.easystrip
     CATEGORIES  Fx
     SOURCES     Effects/LoudnessMeter.h
