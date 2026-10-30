@@ -115,7 +115,7 @@ private:
 
     std::array<Knob, numKnobs> knobs;
     std::array<std::unique_ptr<ChoiceSwitch>, 4> targetSwitches;
-    std::unique_ptr<ChoiceSwitch> lowShape, highShape, hpfSlope, lpfSlope;
+    std::unique_ptr<ChoiceSwitch> lowShape, highShape, hpfSlope, lpfSlope, precisionSwitch;
     std::array<HoldButton, 4> listenButtons;
     LightButton masterButton { "MASTER", juce::Colour (0xff4f8cff) }, analyserButton { "ANALYSER", Palette::accent };
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> masterAttachment, analyserAttachment;

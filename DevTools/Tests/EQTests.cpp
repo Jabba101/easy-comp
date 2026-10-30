@@ -285,7 +285,7 @@ namespace
     {
         std::cout << "\n[settings, presets]\n";
         P p; prepare (p, sr, 512);
-        check (p.getParameters().size() == 23, "23 settings: 4 bands x 3, 2 shapes, the filters, MONO BASS, MASTER, the analyser, AUTO-GAIN, BYPASS");
+        check (p.getParameters().size() == 24, "24 settings: 4 bands x 3, 2 shapes, the filters, MONO BASS, MASTER and its PRECISION, the analyser, AUTO-GAIN, BYPASS");
         const auto [ok, report] = presetTextsReport (p.getBuiltInPresets());
         check (ok, report);
 

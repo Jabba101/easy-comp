@@ -64,6 +64,7 @@ private:
     std::atomic<float>* lpfSlopeValue  = nullptr;
     std::atomic<float>* monoBassValue  = nullptr;
     std::atomic<float>* masterValue    = nullptr;
+    std::atomic<float>* precisionValue = nullptr;
     std::atomic<float>* analyserValue  = nullptr;
     std::atomic<float>* autoGainValue  = nullptr;
     std::atomic<float>* bypassValue    = nullptr;

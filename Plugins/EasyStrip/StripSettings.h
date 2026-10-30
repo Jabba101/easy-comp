@@ -16,7 +16,7 @@ struct StripSettings
     int   skin       = hologram;
     bool  ticker     = true;    // the hint strip along the bottom
     int   meterZero  = 0;       // what 0 on the INPUT / OUTPUT meters means: 0 = 0 dBFS, 1 = -18 dBFS
-    int   dim        = 2;       // DIM: 0 = LOW, 1 = MID, 2 = HIGH (full brightness)
+    int   dim        = 2;       // DISPLAY BRIGHTNESS: 0 = LOW, 1 = MEDIUM, 2 = HIGH (full)
     bool  lufsMeter  = false;   // the OUTPUT meter shows LUFS instead of PEAK
 
     float getMeterZeroDb() const noexcept   { return meterZero == 1 ? -18.0f : 0.0f; }

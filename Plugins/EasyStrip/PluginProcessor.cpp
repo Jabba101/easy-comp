@@ -1,6 +1,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "Parameters.h"
+#include "StripPresets.h"
 
 namespace
 {
@@ -63,33 +64,69 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyStripAudioProcessor::cre
     return layout;
 }
 
-std::vector<Preset> EasyStripAudioProcessor::makeStripPresets()
+std::vector<Preset> EasyStripAudioProcessor::makeStripPresets (StripModules& modules)
 {
-    Preset init { "", "Default settings",
-                  "Every module switched off. Switch on the ones you need - each one's own window has its presets, INIT and help.", {} };
+    std::vector<Preset> presets;
 
+    Preset init { "", "Default settings",
+                  "Every module switched off and back to its defaults. Switch on the ones you need, or pick a preset.", {} };
     for (int m = 0; m < StripModules::numModules; ++m)
         init.values.push_back ({ StripIDs::moduleID (m, CommonIDs::bypass), 1.0f });
+    presets.push_back (init);
 
-    return { init };
+    // Each recipe: the modules it switches on, each with one of its own presets
+    for (auto& recipe : StripPresetRecipes::all())
+    {
+        Preset preset { recipe.category, recipe.name, recipe.tip, {} };
+        std::array<bool, StripModules::numModules> on {};
+
+        for (auto& use : recipe.uses)
+        {
+            const int m = (int) use.module;
+            const Preset* found = nullptr;
+            for (auto& p : modules.all[(size_t) m]->getBuiltInPresets())
+                if (p.name == use.preset)
+                    found = &p;
+
+            jassert (found != nullptr);   // (a module preset was renamed: update StripPresets.h)
+            if (found == nullptr)
+                continue;
+
+            on[(size_t) m] = true;
+            for (auto& [id, value] : found->values)
+                preset.values.push_back ({ StripIDs::moduleID (m, id), value });
+        }
+
+        for (int m = 0; m < StripModules::numModules; ++m)
+            preset.values.push_back ({ StripIDs::moduleID (m, CommonIDs::bypass), on[(size_t) m] ? 0.0f : 1.0f });
+
+        presets.push_back (std::move (preset));
+    }
+
+    return presets;
 }
 
 juce::StringArray EasyStripAudioProcessor::stripPresetIDs (StripModules& modules)
 {
+    // What strip presets (and A / B) cover: INPUT and OUTPUT, which modules are on,
+    // and each module's own preset settings. (Not each module's AUTO-GAIN,
+    // the EQ's MASTER and PRECISION, or OVERSAMPLING - as in the standalones.)
     juce::StringArray ids { StripIDs::trim, StripIDs::polarity, StripIDs::level };
 
     for (int m = 0; m < StripModules::numModules; ++m)
-        for (auto* p : modules.all[(size_t) m]->getParameters())
-            if (auto* setting = dynamic_cast<juce::RangedAudioParameter*> (p))
-                if (! isSharedSetting (m, setting->paramID))
-                    ids.add (StripIDs::moduleID (m, setting->paramID));
+    {
+        ids.add (StripIDs::moduleID (m, CommonIDs::bypass));
+        for (auto& id : modules.all[(size_t) m]->getPresetParameterIDs())
+            if (! isSharedSetting (m, id))
+                ids.add (StripIDs::moduleID (m, id));
+    }
 
     return ids;
 }
 
 //==============================================================================
 EasyStripAudioProcessor::EasyStripAudioProcessor()
-    : EasyProcessor ("EasyStripSettings", createParameterLayout (*this), makeStripPresets(), stripPresetIDs (*this), true)
+    : EasyProcessor ("EasyStripSettings", createParameterLayout (*this), makeStripPresets (*this), stripPresetIDs (*this), true)
 {
     trimValue     = parameters.getRawParameterValue (StripIDs::trim);
     polarityValue = parameters.getRawParameterValue (StripIDs::polarity);

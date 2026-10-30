@@ -46,6 +46,12 @@ namespace
     // The five panels, numbered in the order you'd usually set them.
     const std::array<const char*, 5> panelNames { "HOW MUCH", "HOW FAST", "OUTPUT", "WHAT IT REACTS TO", "CHARACTER" };
 
+    constexpr const char* slotHint =
+        "A and B: two sets of settings to compare. Switch between them while the track plays to hear which you prefer. B "
+        "starts as a copy of A the first time you switch to it; the one you're not on is kept with your project.";
+    constexpr const char* copyHint =
+        "Copies the settings you're on to the other one (A to B, or B to A) - then change one of them and compare.";
+
     constexpr const char* reactsToHint =
         "PEAKS reacts to every sharp peak - tight control, best for drums, percussion and anything punchy. "
         "AVERAGE follows the overall level instead - smoother and more natural on vocals, bass, guitars and whole mixes.";
@@ -383,6 +389,25 @@ EasyCompAudioProcessorEditor::EasyCompAudioProcessorEditor (EasyCompAudioProcess
     addAndMakeVisible (meter);
     addHint (meter, "GAIN REDUCTION", meterHint);
 
+    // A / B and COPY, in the header
+    for (int slot = 0; slot < 2; ++slot)
+    {
+        auto& button = slot == 0 ? slotA : slotB;
+        button.onClick = [this, slot]
+        {
+            easyProcessor.switchToSlot (slot);
+            knobMoved();
+            refreshLiveDisplays();
+        };
+        addAndMakeVisible (button);
+        addHint (button, "A / B", slotHint);
+    }
+    copyButton.setColour (juce::TextButton::buttonColourId, Palette::panel);
+    copyButton.setColour (juce::TextButton::textColourOffId, Palette::textBright);
+    copyButton.onClick = [this] { easyProcessor.copyToOtherSlot(); };
+    addAndMakeVisible (copyButton);
+    addHint (copyButton, "COPY", copyHint);
+
     finishSetup (1340, 600);
 }
 
@@ -413,6 +438,17 @@ void EasyCompAudioProcessorEditor::paintBody (juce::Graphics& g)
 void EasyCompAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
 {
     constexpr int gap = 14;
+
+    // The header: A / B and COPY to the left of BYPASS
+    {
+        const auto bypass = bypassButton.getBounds();
+        auto ab = juce::Rectangle<int> (bypass.getX() - 24 - (48 + 6 + 48 + 10 + 110), bypass.getY(), 48 + 6 + 48 + 10 + 110, bypass.getHeight());
+        slotA.setBounds (ab.removeFromLeft (48));
+        ab.removeFromLeft (6);
+        slotB.setBounds (ab.removeFromLeft (48));
+        ab.removeFromLeft (10);
+        copyButton.setBounds (ab.reduced (0, 2));
+    }
 
     // Right-hand side: the meter, and the curve graph (square) beside it
     meterPanel = area.removeFromRight (140);
@@ -506,6 +542,11 @@ void EasyCompAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
 //==============================================================================
 void EasyCompAudioProcessorEditor::refreshLiveDisplays()
 {
+    const int slot = easyProcessor.getActiveSlot();
+    slotA.setToggleState (slot == 0, juce::dontSendNotification);
+    slotB.setToggleState (slot == 1, juce::dontSendNotification);
+    copyButton.setButtonText (slot == 0 ? "COPY A > B" : "COPY B > A");
+
     const auto settings = compProcessor.getCurrentSettings();
     const float autoGainDb = compProcessor.getAutoGainDb();
 

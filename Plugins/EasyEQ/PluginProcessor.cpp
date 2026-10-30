@@ -69,6 +69,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyEQAudioProcessor::create
     layout.add (makeKnob (EQIDs::monoBass, 1, "Mono Bass", monoRange, defaultOf (EQIDs::monoBass), monoText.first, monoText.second));
 
     layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { EQIDs::master, 1 }, "Master (Linear Phase)", false));
+    layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { EQIDs::precision, 2 }, "Master Precision",
+                                                              juce::StringArray { "Low", "Medium", "High" }, 2));
     layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { EQIDs::analyser, 1 }, "Analyser", true));
 
     addCommonParameters (layout);   // BYPASS and AUTO-GAIN (off to start with)
@@ -94,6 +96,7 @@ EasyEQAudioProcessor::EasyEQAudioProcessor()
     lpfSlopeValue  = parameters.getRawParameterValue (EQIDs::lpfSlope);
     monoBassValue  = parameters.getRawParameterValue (EQIDs::monoBass);
     masterValue    = parameters.getRawParameterValue (EQIDs::master);
+    precisionValue = parameters.getRawParameterValue (EQIDs::precision);
     analyserValue  = parameters.getRawParameterValue (EQIDs::analyser);
     autoGainValue  = parameters.getRawParameterValue (CommonIDs::autoGain);
     bypassValue    = parameters.getRawParameterValue (CommonIDs::bypass);
@@ -112,15 +115,16 @@ void EasyEQAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock
     const int block = juce::jmax (samplesPerBlock, 512);
 
     eq.prepare (sampleRate, settings);
-    linear.prepare (sampleRate, block, settings);
+    linear.prepare (sampleRate, block, settings, juce::roundToInt (precisionValue->load()));
 
     original.setSize (2, block, false, true, true);
     linearCopy.setSize (2, block, false, true, true);
 
-    // The original, delayed by MASTER's delay (for BYPASS and LISTEN while it's on)
+    // The original, delayed by MASTER's delay (for BYPASS and LISTEN while it's on;
+    // room for the longest, HIGH)
     delayLength = linear.getLatencySamples();
     int ringSize = 1;
-    while (ringSize < delayLength + block + 1)
+    while (ringSize < LinearPhaseEQ::maximumLength (sampleRate) / 2 + block + 1)
         ringSize <<= 1;
     delayRing.assign ((size_t) (2 * ringSize), 0.0f);
     delayMask = ringSize - 1;
@@ -166,6 +170,7 @@ void EasyEQAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
     const auto settings = getCurrentSettings();
     eq.setSettings (settings);
     linear.setSettings (settings);
+    linear.setPrecision (juce::roundToInt (precisionValue->load()));
 
     // (In pieces no longer than the buffers prepared for them)
     for (int start = 0; start < total;)
@@ -185,6 +190,17 @@ void EasyEQAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
             for (int ch = 0; ch < channels; ++ch)
                 lin.copyFrom (ch, 0, piece, ch, 0, n);
             linear.process (lin);
+        }
+        else
+        {
+            linear.takeNewFilter();   // (so the delay follows PRECISION even while MASTER is off)
+        }
+
+        // PRECISION changed and the new filter's in use: a new delay
+        if (linear.getLatencySamples() != delayLength)
+        {
+            delayLength = linear.getLatencySamples();
+            triggerAsyncUpdate();
         }
 
         eq.process (piece);

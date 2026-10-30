@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.15.0)
+project(EasyPlugins VERSION 1.16.0)
 
 # Build the Visual C++ runtime into the plugins themselves, so they also work
 # on a PC that doesn't have Visual Studio installed. (No effect on macOS / Linux.)
@@ -103,7 +103,7 @@ endfunction()
 add_easy_plugin(EasyComp
     NAME        "Easy Comp"
     CODE        Ezcp
-    VERSION     1.6.0
+    VERSION     1.7.0
     BUNDLE_ID   com.homestudio.easycomp
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/Compressor.h
@@ -198,7 +198,7 @@ target_link_libraries(EasyAmp PRIVATE juce::juce_dsp)   # (oversampling)
 add_easy_plugin(EasyEQ
     NAME        "Easy EQ"
     CODE        Ezeq
-    VERSION     1.1.1
+    VERSION     1.2.0
     BUNDLE_ID   com.homestudio.easyeq
     CATEGORIES  Fx EQ
     SOURCES     Effects/Equalizer.h
@@ -223,7 +223,7 @@ endforeach()
 add_easy_plugin(EasyStrip
     NAME        "Easy Strip"
     CODE        Ezst
-    VERSION     0.2.0
+    VERSION     0.3.0
     BUNDLE_ID   com.homestudio.easystrip
     CATEGORIES  Fx
     SOURCES     Effects/LoudnessMeter.h
@@ -231,6 +231,7 @@ add_easy_plugin(EasyStrip
                 Plugins/EasyStrip/PluginProcessor.cpp
                 Plugins/EasyStrip/PluginEditor.h
                 Plugins/EasyStrip/PluginEditor.cpp
+                Plugins/EasyStrip/StripPresets.h
                 Plugins/EasyStrip/StripSettings.h
                 Plugins/EasyStrip/StripSettings.cpp
                 Plugins/EasyStrip/HoloLook.h

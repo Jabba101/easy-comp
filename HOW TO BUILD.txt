@@ -110,6 +110,9 @@ YOUR FIRST FIVE MINUTES WITH EASY COMP
    6. On vocals, bass or a whole mix, try REACTS TO: AVERAGE for a
       smoother, more natural squeeze. On a mix or drum bus, if the kick
       makes everything "pump", turn up IGNORE BELOW (try 80-150 Hz).
+   7. A / B (top, beside BYPASS): two sets of settings to compare while
+      the track plays. B starts as a copy of A; COPY copies the one
+      you're on to the other. Both are kept with your project.
    7. CHARACTER, for flavour:
         STYLE: MODERN     clean and precise - the knobs do exactly what
                           they say.
@@ -414,6 +417,11 @@ YOUR FIRST FIVE MINUTES WITH EASY EQ
    computer power, so don't use it while recording. Switching it on or
    off changes the delay, so Samplitude may take a moment to re-align.
 
+   PRECISION (LOW / MED / HIGH, beside MASTER): HIGH is the most exact
+   low end (about 43 ms of delay). MEDIUM halves the delay; LOW quarters
+   it and leaves less faint smear just before each hit (good on drums),
+   but bands below about 60 Hz come out a little broader.
+
    A / B (top middle): two sets of settings to compare - switch between
    them while the track plays. B starts as a copy of A; COPY copies the
    one you're on to the other. Both are kept with your project.
@@ -440,8 +448,9 @@ YOUR FIRST FIVE MINUTES WITH EASY STRIP
       changes when you switch.
    2. Each module has its own INIT (red: just that module back to its
       defaults) and Pr (that module's presets - load or save).
-   3. The big screen shows ONE module: press its page button (the row
-      under the header). On the EQ page, drag the numbered dots.
+   3. The big screen shows ONE module: press its DISPLAY FOCUS button
+      (the row just above the screen). On the EQ page, drag the
+      numbered dots.
    4. Every control: drag up or down (Shift for fine), or use the mouse
       wheel. Double-click the control to reset it; double-click its
       NUMBER to type a value (10 on a frequency means 10 kHz where that
@@ -451,18 +460,22 @@ YOUR FIRST FIVE MINUTES WITH EASY STRIP
    6. INPUT (left): TRIM, the polarity flip, the meter. OUTPUT (right):
       PEAK / LUFS meter, LUFS S (last 3 seconds) and I (whole song -
       click it to start again), LEVEL.
-   7. Header: the strip's presets (arrows step through them), one
-      OVERSAMPLING for AMP and CLIP, DIM (panel brightness), INIT (the
-      whole strip), BYPASS (the whole strip), SETUP.
+   7. Header: the strip's presets (arrows step through them - about 80
+      of them, by instrument: each switches on the modules it needs, each
+      with one of that module's own presets; the ticker shows its tip),
+      A / B / COPY (two versions of the whole strip to compare), one
+      OVERSAMPLING for AMP and CLIP, INIT (the whole strip), BYPASS (the
+      whole strip), SETUP. Comp and the EQ also have their own A / B.
    8. Clip's ADVANCED shows its SOUND DESIGN row under the EQ.
    9. The sidechain input goes to both GATE and COMP (each one's
       OPENED BY / LISTENS TO decides whether it uses it).
 
    SETUP (top right): window size (60% to 150%, or drag the window's
    corner), the skin (HOLOGRAM, or CLASSIC - which shows each module's
-   own standalone window), the ticker on or off, and what 0 means on the
-   INPUT / OUTPUT meters (0 dBFS, or -18 dBFS like a VU meter). These are
-   remembered for every Easy Strip.
+   own standalone window), the ticker on or off, what 0 means on the
+   INPUT / OUTPUT meters (0 dBFS, or -18 dBFS like a VU meter) and
+   DISPLAY BRIGHTNESS. These are remembered for every Easy Strip.
+   Also in SETUP, for this strip only: EQ MASTER PRECISION (see Easy EQ).
 
    In Samplitude every module's settings show up as "Comp Threshold",
    "Gate Range" and so on, so automation works on all of them.

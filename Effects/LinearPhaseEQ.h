@@ -22,9 +22,13 @@
     Convolution then runs it, and crossfades from the old filter to the new
     one, so turning a knob never clicks.
 
-    Length: 4096 samples at 44.1/48 kHz (a 43-46 ms delay - half of it),
-    8192 at 88.2/96 kHz, 16384 above, so the lows are just as precise at any
-    sample rate.
+    Length (PRECISION): HIGH = 4096 samples at 44.1/48 kHz (a 43-46 ms
+    delay - half of it), 8192 at 88.2/96 kHz, 16384 above, so the lows are
+    just as precise at any sample rate. MEDIUM is half that, LOW a quarter:
+    less delay, and less "pre-ring" (the faint smear a linear-phase EQ puts
+    just BEFORE each hit), but the very lowest frequencies are shaped less
+    exactly (a band at 30 Hz comes out broader). Changing it changes the
+    delay: the new filter takes over (crossfaded) once it's built.
 */
 class LinearPhaseEQ : private juce::Thread
 {
@@ -32,13 +36,19 @@ public:
     LinearPhaseEQ() : juce::Thread ("Easy EQ MASTER filter designer") {}
     ~LinearPhaseEQ() override   { stopThread (2000); }
 
-    void prepare (double newSampleRate, int maximumBlockSize, const Equalizer::Settings& initial)
+    enum Precision { low = 0, medium = 1, high = 2 };
+
+    /** The longest filter at a sample rate (HIGH). */
+    static int maximumLength (double rate) noexcept   { return rate <= 50000.0 ? 4096 : (rate <= 100000.0 ? 8192 : 16384); }
+    static int lengthFor (double rate, int precision) noexcept   { return maximumLength (rate) >> (2 - juce::jlimit (0, 2, precision)); }
+
+    void prepare (double newSampleRate, int maximumBlockSize, const Equalizer::Settings& initial, int precision = high)
     {
         stopThread (2000);
 
         sampleRate = newSampleRate;
-        length = sampleRate <= 50000.0 ? 4096 : (sampleRate <= 100000.0 ? 8192 : 16384);
-        order = juce::roundToInt (std::log2 ((double) length));
+        length = lengthFor (sampleRate, precision);
+        wantedLength.store (length);
         blockSize = juce::jmax (32, maximumBlockSize);
 
         midSide.setSize (2, blockSize);
@@ -50,7 +60,7 @@ public:
             wanted = initial;
         }
         juce::AudioBuffer<float> first;
-        design (initial, first);
+        design (initial, first, length);
         convolution.loadImpulseResponse (std::move (first), sampleRate, juce::dsp::Convolution::Stereo::yes,
                                          juce::dsp::Convolution::Trim::no, juce::dsp::Convolution::Normalise::no);
         convolution.prepare ({ sampleRate, (juce::uint32) blockSize, 2 });
@@ -61,8 +71,20 @@ public:
         startThread (juce::Thread::Priority::low);
     }
 
-    /** The delay MASTER adds (half the filter's length). */
+    /** The delay MASTER adds right now (half the length of the filter in use). */
     int getLatencySamples() const noexcept   { return length / 2; }
+
+    /** PRECISION (from the audio thread: never waits). The delay changes once the new filter is in use. */
+    void setPrecision (int precision) noexcept
+    {
+        const int newLength = lengthFor (sampleRate, precision);
+        if (newLength != wantedLength.load())
+        {
+            wantedLength.store (newLength);
+            version.fetch_add (1);
+            notify();
+        }
+    }
 
     /** Hands over the latest settings (from the audio thread: never waits). */
     void setSettings (const Equalizer::Settings& s) noexcept
@@ -78,15 +100,22 @@ public:
     }
 
     /** The linear-phase EQ on the buffer, in place (1 or 2 channels). Delayed by getLatencySamples(). */
-    void process (juce::AudioBuffer<float>& buffer) noexcept
+    /** Hands a newly designed filter (if one's waiting) to the convolution, which crossfades to it.
+        Called by process(); call it yourself while MASTER is off, so the delay still follows PRECISION. */
+    void takeNewFilter() noexcept
     {
-        // A newly designed filter waiting? Hand it to the convolution (it crossfades).
         if (pendingReady.load (std::memory_order_acquire))
         {
             convolution.loadImpulseResponse (std::move (pending), sampleRate, juce::dsp::Convolution::Stereo::yes,
                                              juce::dsp::Convolution::Trim::no, juce::dsp::Convolution::Normalise::no);
+            length = pendingLength;
             pendingReady.store (false, std::memory_order_release);
         }
+    }
+
+    void process (juce::AudioBuffer<float>& buffer) noexcept
+    {
+        takeNewFilter();
 
         const int channels = juce::jmin (2, buffer.getNumChannels());
         const bool stereo = channels == 2;
@@ -123,20 +152,20 @@ public:
     bool isUpToDate() const noexcept   { return designed.load() == version.load() && ! pendingReady.load(); }
 
     /** Builds the filter for some settings: channel 0 = the middle, 1 = the sides. */
-    void design (const Equalizer::Settings& s, juce::AudioBuffer<float>& out) const
+    void design (const Equalizer::Settings& s, juce::AudioBuffer<float>& out, int filterLength) const
     {
-        juce::dsp::FFT fft (order);
-        std::vector<float> spectrum ((size_t) length * 2, 0.0f);
-        out.setSize (2, length, false, false, true);
+        juce::dsp::FFT fft (juce::roundToInt (std::log2 ((double) filterLength)));
+        std::vector<float> spectrum ((size_t) filterLength * 2, 0.0f);
+        out.setSize (2, filterLength, false, false, true);
 
         for (int ch = 0; ch < 2; ++ch)
         {
             std::fill (spectrum.begin(), spectrum.end(), 0.0f);
 
             // The wanted gain at every frequency step, with no phase (zero-phase)
-            for (int k = 0; k <= length / 2; ++k)
+            for (int k = 0; k <= filterLength / 2; ++k)
             {
-                const double hz = juce::jmax (1.0, (double) k * sampleRate / length);
+                const double hz = juce::jmax (1.0, (double) k * sampleRate / filterLength);
                 spectrum[(size_t) (2 * k)] = (float) Equalizer::responseAt (s, hz, sampleRate, ch == 0);
             }
 
@@ -144,10 +173,10 @@ public:
 
             // Centre it (so it's symmetric: linear phase), smooth the ends
             float* h = out.getWritePointer (ch);
-            for (int n = 0; n < length; ++n)
+            for (int n = 0; n < filterLength; ++n)
             {
-                const int from = (n + length / 2) % length;
-                const double window = 0.5 - 0.5 * std::cos (juce::MathConstants<double>::twoPi * n / length);
+                const int from = (n + filterLength / 2) % filterLength;
+                const double window = 0.5 - 0.5 * std::cos (juce::MathConstants<double>::twoPi * n / filterLength);
                 h[n] = (float) (spectrum[(size_t) from] * window);
             }
         }
@@ -186,17 +215,20 @@ private:
                 s = wanted;
             }
 
+            const int newLength = wantedLength.load();
             juce::AudioBuffer<float> next;
-            design (s, next);
+            design (s, next, newLength);
 
             pending = std::move (next);
+            pendingLength = newLength;
             pendingReady.store (true, std::memory_order_release);
             designed.store (latest);
         }
     }
 
     double sampleRate = 48000.0;
-    int length = 4096, order = 12, blockSize = 512;
+    int length = 4096, pendingLength = 4096, blockSize = 512;
+    std::atomic<int> wantedLength { 4096 };
 
     juce::dsp::Convolution convolution;
     juce::AudioBuffer<float> midSide, pending;

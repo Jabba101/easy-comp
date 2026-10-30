@@ -46,7 +46,11 @@ namespace
         "by ear. Move the frequency while you hold it.";
     constexpr const char* masterHint =
         "Linear phase, for a drum bus or a finished mix: keeps the timing of every frequency perfectly intact, so hits keep "
-        "their attack. Adds a delay of about 43 ms (your DAW lines it up) and uses more computer power. Not for live recording.";
+        "their attack. Adds a delay of about 43 ms (less with PRECISION; your DAW lines it up) and uses more computer power. Not for live recording.";
+    constexpr const char* precisionHint =
+        "MASTER's precision. HIGH (the usual): the most exact low end, a delay of about 43 ms. MEDIUM: about 21 ms. "
+        "LOW: about 11 ms, and less faint smear just before each hit (good on drums), but bands below about 60 Hz "
+        "come out a little broader. Changing it changes the delay (your DAW re-aligns).";
     constexpr const char* analyserHint =
         "Shows the sound coming out, faintly behind the curve, so you can see where the energy is. Switch it off to save a "
         "little computer power.";
@@ -446,6 +450,11 @@ EasyEQAudioProcessorEditor::EasyEQAudioProcessorEditor (EasyEQAudioProcessor& p)
     addAndMakeVisible (masterButton);
     addAndMakeVisible (analyserButton);
     addHint (masterButton, "MASTER (LINEAR PHASE)", masterHint);
+    precisionSwitch = std::make_unique<ChoiceSwitch> (*parameters.getParameter (EQIDs::precision), juce::StringArray { "LOW", "MED", "HIGH" },
+                                                      juce::Colour (0xff4f8cff));
+    precisionSwitch->setHorizontal (true);
+    addAndMakeVisible (*precisionSwitch);
+    addHint (*precisionSwitch, "MASTER - PRECISION", precisionHint);
     addHint (analyserButton, "ANALYSER", analyserHint);
 
     initAllButton.setColour (juce::TextButton::buttonColourId, Palette::panel);
@@ -571,7 +580,9 @@ void EasyEQAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
     // Top row: ANALYSER on the left, MASTER on the right, AUTO-GAIN's readout between
     auto row = area.removeFromTop (32);
     analyserButton.setBounds (row.removeFromLeft (140));
-    masterButton.setBounds (row.removeFromRight (180));
+    masterButton.setBounds (row.removeFromRight (120));
+    row.removeFromRight (6);
+    precisionSwitch->setBounds (row.removeFromRight (186));
 
     // A / B and COPY in the middle; AUTO-GAIN's readout to their left
     auto abArea = row.withSizeKeepingCentre (48 + 6 + 48 + 12 + 120, row.getHeight());

@@ -25,6 +25,7 @@ namespace EQIDs
     inline constexpr const char* monoBass  = "monobass";
 
     inline constexpr const char* master    = "master";      // linear phase
+    inline constexpr const char* precision = "precision";   // MASTER's PRECISION: LOW / MEDIUM / HIGH
     inline constexpr const char* analyser  = "analyser";    // the spectrum behind the curve
 }
 

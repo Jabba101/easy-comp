@@ -177,8 +177,12 @@ BUILD ORDER
                            DIM), SETUP (size 60-150% or drag, skin
                            HOLOGRAM / CLASSIC, ticker, meter 0 = 0 dBFS or
                            -18 dBFS), resizable window.
-                           Next: strip presets, A / B for Comp and the strip,
-                           EQ MASTER precision, GATE + DS sharing one
+                           Stage 3 done (0.3.0): ~80 strip presets built from
+                           the modules' own presets, A / B for the strip and
+                           for Comp (Easy Comp 1.7.0 too), EQ MASTER
+                           PRECISION (Easy EQ 1.2.0 too), DISPLAY FOCUS row,
+                           DISPLAY BRIGHTNESS in SETUP.
+                           Next: GATE + DS sharing one
                            2 ms look-ahead. Later: module order, Comp
                            mid-side, WEAPON SELECT (Easy SFX).
 
@@ -189,9 +193,7 @@ LATER
    - The optional Cold War look: choose a direction from the mockups
      (A, B, C or a mix). The current clean look stays too.
    - A resizable window.
-   - Easy EQ: MASTER precision setting (lower = shorter delay, less
-     smear before hits) - with the strip.
-   - A / B: in Easy EQ (done); add to Easy Comp; the strip gets it too.
+   - A / B: in Easy EQ, Easy Comp and the strip (done).
    - Easy Comp: mid-side - one WORKS ON: STEREO / MID / SIDE choice
      (default STEREO, so old presets sound the same), e.g. squash the
      middle of a drum bus while the cymbals and room breathe. In the

@@ -42,6 +42,10 @@ class EasyCompAudioProcessorEditor : public EasyWindow
 public:
     explicit EasyCompAudioProcessorEditor (EasyCompAudioProcessor&);
 
+    // A / B: two sets of settings to compare (public so they can be tested)
+    LightButton slotA { "A", Palette::accent }, slotB { "B", Palette::accent };
+    juce::TextButton copyButton { "COPY A > B" };
+
 private:
     void layoutBody (juce::Rectangle<int> area) override;
     void paintBody (juce::Graphics&) override;

@@ -79,9 +79,10 @@ namespace Holo
         Button bypassButton { "BYPASS", Colours::warn };
         Button setupButton { "SETUP", Colours::cyan };
         Button presetPrevious { "<", Colours::selected }, presetNext { ">", Colours::selected };
+        Button slotA { "A", Colours::selected }, slotB { "B", Colours::selected }, copySlot { "A > B", Colours::selected };   // the strip's A / B
         Button weaponSelect { "WEAPON SELECT", Colours::hazard };
         Button polarityButton { juce::String::fromUTF8 ("\xc3\x98"), Colours::cyan };
-        std::unique_ptr<Choice> oversampling, dim, meterMode;
+        std::unique_ptr<Choice> oversampling, meterMode;
         BigMeter inputMeter, outputMeter;
         std::vector<std::unique_ptr<Slab>> slabs;   // in signal order
         std::unique_ptr<ClipAdvanced> clipAdvanced;

@@ -747,6 +747,18 @@ namespace Holo
             reactsTo = &choice (CompIDs::reactsTo, { "PEAKS", "AVERAGE" }, "REACTS TO");
             listensLabel = &caption ("LISTENS TO");
             listensTo = &choice (CompIDs::listensTo, { "THIS TRACK", "SIDECHAIN" }, "LISTENS TO");
+            for (int sl = 0; sl < 2; ++sl)
+            {
+                slot[sl].fontSize = 13.5f;
+                slot[sl].onClick = [this, sl] { strip.getComp().switchToSlot (sl); };
+                addAndMakeVisible (slot[sl]);
+                view.addHint (slot[sl], "A / B", view.moduleHint (4, "A / B"));
+            }
+            copy.fontSize = 13.0f;
+            copy.onClick = [this] { strip.getComp().copyToOtherSlot(); };
+            addAndMakeVisible (copy);
+            view.addHint (copy, "COPY", view.moduleHint (4, "COPY"));
+
             styleLabel = &caption ("STYLE");
             style = &choice (CompIDs::character, { "MODERN", "VINTAGE" }, "STYLE");
             lowEndLabel = &caption ("LOW END");
@@ -756,7 +768,16 @@ namespace Holo
         void resized() override
         {
             clearSections();
-            auto body = placeHeader (getLocalBounds().reduced (9, 6));
+            auto area = getLocalBounds().reduced (9, 6);
+            auto body = placeHeader (area);
+            {
+                auto row = area.removeFromTop (34);
+                slot[0].setBounds (row.removeFromLeft (28).withSizeKeepingCentre (28, 26));
+                row.removeFromLeft (3);
+                slot[1].setBounds (row.removeFromLeft (28).withSizeKeepingCentre (28, 26));
+                row.removeFromLeft (6);
+                copy.setBounds (row.removeFromLeft (48).withSizeKeepingCentre (48, 26));
+            }
 
             auto upper = body.removeFromTop (238);
             body.removeFromTop (8);
@@ -806,6 +827,11 @@ namespace Holo
         void refresh() override
         {
             auto& comp = strip.getComp();
+            const int active = comp.getActiveSlot();
+            for (int sl = 0; sl < 2; ++sl)
+                slot[sl].setToggleState (sl == active, juce::dontSendNotification);
+            copy.setButtonText (active == 0 ? "A > B" : "B > A");
+
             const float level = comp.takeInputLevelForGraph();
             const float gr = comp.takeGainReductionForMeter();
             meter.setLevels (level, level);
@@ -825,6 +851,8 @@ namespace Holo
         }
 
         juce::Label *inLabel = nullptr, *grLabel = nullptr, *grValue = nullptr;
+        Button slot[2] { { "A", Colours::comp }, { "B", Colours::comp } };
+        Button copy { "A > B", Colours::comp };
         Meter meter;
         GainBar reduction;
         Bar *threshold = nullptr, *ratio = nullptr;

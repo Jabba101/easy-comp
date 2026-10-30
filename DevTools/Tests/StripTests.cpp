@@ -3,6 +3,8 @@
 #include "../EasyPlugins/Plugins/EasyStrip/PluginProcessor.h"
 #include "../EasyPlugins/Plugins/EasyStrip/PluginEditor.h"
 #include "../EasyPlugins/Plugins/EasyStrip/HoloSlabs.h"
+#include "../EasyPlugins/Plugins/EasyStrip/StripPresets.h"
+#include "../EasyPlugins/Plugins/EasyComp/PluginEditor.h"
 
 using namespace th;
 using S = EasyStripAudioProcessor;
@@ -340,6 +342,154 @@ namespace
         check (differenceDelayed (out, in, s2.getLatencySamples()) < 1.0e-6f, "...and everything stays on time");
     }
 
+    void testPrecision()
+    {
+        std::cout << "\n[EQ MASTER PRECISION]\n";
+        int delays[3] {};
+        for (int precision = 0; precision < 3; ++precision)
+        {
+            S s;
+            setStrip (s, StripIDs::moduleID (2, EQIDs::master), 1.0f);
+            setStrip (s, StripIDs::moduleID (2, EQIDs::precision), (float) precision);
+            switchOn (s, 2, true);
+            s.getModule (2).loadPreset (s.getModule (2).getBuiltInPresets()[5]);
+            prepareStereo (s, true);
+            delays[precision] = s.getModule (2).getLatencySamples();
+        }
+        check (delays[0] == 512 && delays[1] == 1024 && delays[2] == 2048,
+               "LOW / MEDIUM / HIGH: " + juce::String (delays[0]) + " / " + juce::String (delays[1]) + " / " + juce::String (delays[2]) + " samples of delay at 48 kHz");
+
+        // Changing it while playing: the new delay is reported once the new filter's in use, and the sound lines up again
+        S s;
+        setStrip (s, StripIDs::moduleID (2, EQIDs::master), 1.0f);
+        switchOn (s, 2, true);
+        prepareStereo (s, true);
+        setStrip (s, StripIDs::moduleID (2, EQIDs::precision), 0.0f);
+        for (int i = 0; i < 20 && s.getModule (2).getLatencySamples() != 512; ++i)
+        {
+            process (s, music (0.05));
+            juce::MessageManager::getInstance()->runDispatchLoopUntil (30);
+        }
+        process (s, music (0.05));   // (the strip notices at its next block)
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (100);
+        check (s.getModule (2).getLatencySamples() == 512 && s.getLatencySamples() == moduleLatencySum (s),
+               "switched to LOW while playing: the strip reports the shorter delay (" + juce::String (s.getLatencySamples()) + ")");
+        const auto in = music (1.0);
+        const auto out = process (s, in);
+        juce::AudioBuffer<float> tail (2, 24000), inTail (2, 24000);
+        for (int ch = 0; ch < 2; ++ch) { tail.copyFrom (ch, 0, out, ch, 24000, 24000); inTail.copyFrom (ch, 0, in, ch, 24000 - s.getLatencySamples(), 24000); }
+        check (maxDifference (tail, inTail) < 1.0e-4f, "...and with the EQ flat everything is on time again");
+
+        // Easy EQ on its own too
+        EasyEQAudioProcessor alone;
+        setParam (alone, EQIDs::master, 1.0f);
+        setParam (alone, EQIDs::precision, 1.0f);
+        prepareStereo (alone, false);
+        check (alone.getLatencySamples() == 1024, "Easy EQ itself: MEDIUM = 1024 samples (21 ms)");
+    }
+
+    //==========================================================================
+    void testPresetsAndAB()
+    {
+        std::cout << "\n[strip presets, A / B]\n";
+        S s;
+        const auto& presets = s.getBuiltInPresets();
+        check (presets.size() >= 60, "a comprehensive set of strip presets (" + juce::String ((int) presets.size()) + ")");
+
+        // Every recipe found all its module presets, and loads exactly what it says
+        bool allGood = true;
+        juce::StringArray problems;
+        juce::StringArray names;
+        for (auto& preset : presets)
+        {
+            if (names.contains (preset.name)) { allGood = false; problems.add ("duplicate " + preset.name); }
+            names.add (preset.name);
+            if (preset.tip.isEmpty()) { allGood = false; problems.add ("no tip: " + preset.name); }
+        }
+        for (auto& recipe : StripPresetRecipes::all())
+        {
+            S t;
+            const Preset* p = nullptr;
+            for (auto& q : t.getBuiltInPresets()) if (q.name == recipe.name) p = &q;
+            if (p == nullptr) { allGood = false; problems.add ("missing " + juce::String (recipe.name)); continue; }
+            t.loadPreset (*p);
+            prepareStereo (t, true);
+            process (t, music (0.02));
+
+            std::array<bool, 8> wanted {};
+            for (auto& use : recipe.uses)
+            {
+                wanted[(size_t) use.module] = true;
+                const Preset* modulePreset = nullptr;
+                for (auto& q : t.getModule (use.module).getBuiltInPresets()) if (q.name == use.preset) modulePreset = &q;
+                if (modulePreset == nullptr) { allGood = false; problems.add (juce::String (recipe.name) + ": no module preset " + use.preset); continue; }
+                for (auto& [id, value] : modulePreset->values)
+                    if (! near (getParam (t.getModule (use.module), id.toRawUTF8()), value, 0.02f + std::abs (value) * 0.002f))
+                    { allGood = false; problems.add (juce::String (recipe.name) + ": " + id); }
+            }
+            for (int m = 0; m < 8; ++m)
+                if (t.isModuleOn (m) != wanted[(size_t) m]) { allGood = false; problems.add (juce::String (recipe.name) + ": module " + juce::String (m) + " on/off"); }
+
+            const auto out = process (t, music (1.0));
+            if (! allFinite (out) || peak (out, 0, 0, out.getNumSamples()) > 4.0f) { allGood = false; problems.add (juce::String (recipe.name) + ": level"); }
+        }
+        check (allGood, "every strip preset switches on its modules with their own presets, and sounds sane"
+                          + (allGood ? juce::String() : " (" + problems.joinIntoString ("; ").substring (0, 500) + ")"));
+
+        // A / B for the whole strip
+        S ab; prepareStereo (ab, true);
+        const Preset* snare = nullptr;
+        for (auto& q : ab.getBuiltInPresets()) if (q.name == "Snare - Rock") snare = &q;
+        ab.loadPreset (*snare);
+        process (ab, music (0.05));
+        ab.switchToSlot (1);
+        process (ab, music (0.05));
+        const bool bCopied = ab.isModuleOn (0) && ab.isModuleOn (4);
+        switchOn (ab, 0, false);
+        setStrip (ab, StripIDs::moduleID (4, CompIDs::threshold), -35.0f);
+        process (ab, music (0.05));
+        ab.switchToSlot (0);
+        process (ab, music (0.05));
+        const bool aBack = ab.isModuleOn (0) && ! near (getParam (ab.getModule (4), CompIDs::threshold), -35.0f, 0.1f);
+        ab.switchToSlot (1);
+        process (ab, music (0.05));
+        const bool bBack = ! ab.isModuleOn (0) && near (getParam (ab.getModule (4), CompIDs::threshold), -35.0f, 0.1f);
+        check (bCopied && aBack && bBack, "strip A / B: two whole strips (modules on / off and every setting), switched back and forth");
+
+        juce::MemoryBlock saved;
+        ab.getStateInformation (saved);
+        S restored;
+        restored.setStateInformation (saved.getData(), (int) saved.getSize());
+        prepareStereo (restored, true);
+        process (restored, music (0.05));
+        restored.switchToSlot (0);
+        process (restored, music (0.05));
+        check (restored.isModuleOn (0), "...both kept with the project");
+
+        // A / B for Comp (inside the strip, and Easy Comp itself)
+        S c; prepareStereo (c, true);
+        auto& comp = c.getModule (4);
+        setParam (comp, CompIDs::threshold, -12.0f);
+        comp.switchToSlot (1);
+        setParam (comp, CompIDs::threshold, -30.0f);
+        comp.switchToSlot (0);
+        process (c, music (0.05));
+        check (near (getParam (comp, CompIDs::threshold), -12.0f, 0.05f)
+               && near (c.parameters.getParameter (StripIDs::moduleID (4, CompIDs::threshold))->convertFrom0to1 (
+                            c.parameters.getParameter (StripIDs::moduleID (4, CompIDs::threshold))->getValue()), -12.0f, 0.05f),
+               "Comp A / B: switching back gives A's settings, in the module and the strip");
+
+        EasyCompAudioProcessor alone;
+        std::unique_ptr<juce::AudioProcessorEditor> editor (alone.createEditorAndMakeActive());
+        auto* window = dynamic_cast<EasyCompAudioProcessorEditor*> (editor.get());
+        setParam (alone, CompIDs::ratio, 2.0f);
+        window->slotB.onClick();
+        setParam (alone, CompIDs::ratio, 8.0f);
+        window->slotA.onClick();
+        check (near (getParam (alone, CompIDs::ratio), 2.0f, 0.05f) && window->slotA.getToggleState(), "Easy Comp's own window: A / B buttons work");
+        alone.editorBeingDeleted (editor.get());
+    }
+
     //==========================================================================
     void testLufs()
     {
@@ -490,7 +640,7 @@ namespace
         // Every setting of every module has its control (the standalone's controls, all of them)
         juce::StringArray missing;
         const juce::StringArray notKnobs { CommonIDs::bypass, CommonIDs::autoGain, "quality", "view", "analyser", "link", "master",
-                                           "openedby", "turnsdown", "reactsto", "character", "thrust", "listensto", "sync",
+                                           "openedby", "turnsdown", "precision", "reactsto", "character", "thrust", "listensto", "sync",
                                            "lowshelf", "highshelf", "hpfslope", "lpfslope", "lowtarget", "lowmidtarget", "highmidtarget", "hightarget" };
         for (int m = 0; m < S::numModules; ++m)
             for (auto* p : s.getModule (m).getParameters())
@@ -574,6 +724,15 @@ namespace
         check (near (getParam (s.getModule (7), ClipIDs::top), -4.0f, 0.06f) && near (getParam (s.getModule (7), ClipIDs::bottom), -7.0f, 0.06f),
                "LINK keeps the gap between TOP and BOTTOM");
 
+        // The page buttons sit over the big screen; DISPLAY BRIGHTNESS lives in SETUP
+        {
+            const auto screenArea = view->getScreen().getBounds();
+            bool over = true;
+            for (auto& b : view->pageButtons)
+                over = over && b->getX() >= screenArea.getX() && b->getRight() <= screenArea.getRight();
+            check (over, "the DISPLAY FOCUS buttons all sit above the big screen");
+        }
+
         // Pages and live displays
         for (int i = 0; i < 25; ++i) { process (s, music (0.05)); view->updateNow(); }
         for (int m = 0; m < S::numModules; ++m)
@@ -656,6 +815,17 @@ namespace
 int main (int argc, char** argv)
 {
     juce::ScopedJuceInitialiser_GUI gui;
+    if (argc > 2 && juce::String (argv[2]) == "presets")
+    {
+        S s;
+        for (int m = 0; m < S::numModules; ++m)
+        {
+            std::cout << "=== " << StripModules::names[m] << "\n";
+            for (auto& p : s.getModule (m).getBuiltInPresets())
+                std::cout << p.category << " | " << p.name << "\n";
+        }
+        return 0;
+    }
     if (argc > 2 && juce::String (argv[2]) == "hints")
     {
         S s;
@@ -679,6 +849,8 @@ int main (int argc, char** argv)
     testSwitching();
     testInputOutput();
     testLatencyChange();
+    testPrecision();
+    testPresetsAndAB();
     testLufs();
     testSaving();
     testClassicWindow (outDir);

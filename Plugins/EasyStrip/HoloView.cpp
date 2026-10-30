@@ -32,7 +32,6 @@ namespace Holo
         const juce::String oversamplingHint =
             "How carefully AMP and CLIP work (one setting for both). 4x / 8x: 4x while you mix, 8x when you export - "
             "the best of both. OFF: lightest on your computer, a little harsher. 4x and 8x add a little delay.";
-        const juce::String dimHint = "Dim: how bright the panel is. LOW for a dark room; HIGH is full brightness.";
         const juce::String initAllHint =
             "Init: puts every module on the strip back to its default settings and switches them all off. "
             "(Each module's own INIT resets just that module.)";
@@ -42,7 +41,12 @@ namespace Holo
         const juce::String presetHint =
             "The strip's presets: every module's settings at once. Click the name for the list (and to save your own); "
             "the arrows step through them. A * means something's been changed since.";
-        const juce::String pageHint = "Shows this module on the big screen. (The screen only changes when you press one.)";
+        const juce::String pageHint = "Shows this module on the big screen. (The screen only changes when you press one of these.)";
+        const juce::String stripSlotHint =
+            "A and B: two versions of the WHOLE strip (every module, on or off, and its settings) to compare. Switch while "
+            "the track plays to hear which you prefer. B starts as a copy of A; the one you're not on is kept with your project.";
+        const juce::String stripCopyHint =
+            "Copies the strip you're on to the other one (A to B, or B to A) - then change one of them and compare.";
         const juce::String weaponHint = "Weapon select: opens Easy SFX, the effects rack (coming later).";
         const juce::String serialHint = "Click for the version.";
         const juce::String gettingStarted =
@@ -98,10 +102,21 @@ namespace Holo
                 add (skinChoice, { "HOLOGRAM", "CLASSIC" }, s.skin, [this] (int i) { view.getSettings().skin = i; changed(); });
                 add (tickerChoice, { "ON", "OFF" }, s.ticker ? 0 : 1, [this] (int i) { view.getSettings().ticker = i == 0; changed(); });
                 add (meterChoice, { "0 dBFS", "-18 dBFS" }, s.meterZero, [this] (int i) { view.getSettings().meterZero = i; changed(); });
+                add (brightnessChoice, { "LOW", "MEDIUM", "HIGH" }, s.dim, [this] (int i)
+                {
+                    view.getSettings().dim = i;
+                    view.getSettings().save();
+                    view.repaint();
+                });
+
+                // This strip only (saved with the project)
+                precisionChoice = std::make_unique<Choice> (*view.getStrip().parameters.getParameter (StripIDs::moduleID (2, EQIDs::precision)),
+                                                            juce::StringArray { "LOW", "MEDIUM", "HIGH" }, Colours::delayMode, true);
+                addAndMakeVisible (*precisionChoice);
 
                 close.onClick = [this] { view.showSetup (false); };
                 addAndMakeVisible (close);
-                setSize (620, 330);
+                setSize (640, 470);
             }
 
             void add (std::unique_ptr<Choice>& c, const juce::StringArray& names, int chosen, std::function<void (int)> onChoice)
@@ -119,17 +134,19 @@ namespace Holo
                     view.onSettingsChanged();
             }
 
+            static constexpr int rowTop = 60, rowHeight = 46, labelWidth = 200;
+
             void resized() override
             {
-                auto r = getLocalBounds().reduced (24, 20);
-                r.removeFromTop (40);
-                for (auto* c : { sizeChoice.get(), skinChoice.get(), tickerChoice.get(), meterChoice.get() })
+                int y = rowTop;
+                for (auto* c : { sizeChoice.get(), skinChoice.get(), tickerChoice.get(), meterChoice.get(), brightnessChoice.get() })
                 {
-                    auto row = r.removeFromTop (46);
-                    const int width = c == sizeChoice.get() ? 400 : c->getWidth() > 0 ? 260 : 260;
-                    c->setBounds (row.withTrimmedLeft (170).withWidth (width).withSizeKeepingCentre (width, 30).withX (row.getX() + 170));
+                    const int w = c == sizeChoice.get() ? 400 : 290;
+                    c->setBounds (24 + labelWidth, y + 8, w, 30);
+                    y += rowHeight;
                 }
-                close.setBounds (getLocalBounds().reduced (24, 20).removeFromBottom (32).removeFromRight (100));
+                precisionChoice->setBounds (24 + labelWidth, rowTop + rowHeight * 5 + 44, 290, 30);
+                close.setBounds (getWidth() - 24 - 100, getHeight() - 20 - 32, 100, 32);
             }
 
             void paint (juce::Graphics& g) override
@@ -145,22 +162,37 @@ namespace Holo
                 g.drawText ("For every Easy Strip, not just this one.", juce::Rectangle<float> (300.0f, 18.0f, r.getWidth() - 324.0f, 24.0f),
                             juce::Justification::centredRight, false);
 
-                static const char* names[] { "WINDOW SIZE", "SKIN", "TICKER", "METERS: 0 MEANS" };
+                static const char* names[] { "WINDOW SIZE", "SKIN", "TICKER", "METERS: 0 MEANS", "DISPLAY BRIGHTNESS" };
                 g.setFont (text (15.0f, 1));
                 g.setColour (Colours::ink);
-                for (int i = 0; i < 4; ++i)
-                    g.drawText (names[i], juce::Rectangle<float> (24.0f, 60.0f + 46.0f * (float) i, 160.0f, 46.0f), juce::Justification::centredLeft, false);
+                for (int i = 0; i < 5; ++i)
+                    g.drawText (names[i], juce::Rectangle<float> (24.0f, (float) (rowTop + rowHeight * i), (float) labelWidth, (float) rowHeight),
+                                juce::Justification::centredLeft, false);
+
+                // This strip only
+                const float line = (float) (rowTop + rowHeight * 5 + 10);
+                g.setColour (Colours::cyan.withAlpha (0.3f));
+                g.fillRect (24.0f, line, r.getWidth() - 48.0f, 1.0f);
+                g.setColour (Colours::dim);
+                g.setFont (text (13.0f, 0));
+                g.drawText ("This strip only (saved with your project):", juce::Rectangle<float> (24.0f, line + 6.0f, 400.0f, 20.0f),
+                            juce::Justification::centredLeft, false);
+                g.setFont (text (15.0f, 1));
+                g.setColour (Colours::ink);
+                g.drawText ("EQ MASTER PRECISION", juce::Rectangle<float> (24.0f, line + 30.0f, (float) labelWidth, 46.0f), juce::Justification::centredLeft, false);
 
                 g.setColour (Colours::dim);
                 g.setFont (text (13.0f, 0));
-                g.drawText ("You can also drag the window's corner. 0 dBFS suits the master; -18 dBFS (like a VU meter) suits single tracks.",
-                            juce::Rectangle<float> (24.0f, 244.0f, r.getWidth() - 48.0f, 34.0f), juce::Justification::topLeft, false);
+                g.drawFittedText ("PRECISION (with the EQ's MASTER on): HIGH = the most exact low end, about 43 ms of delay. MEDIUM = about 21 ms. "
+                                  "LOW = about 11 ms and less smear before each hit (good on drums), but bands below about 60 Hz come out broader.\n"
+                                  "You can also drag the window's corner. Meters: 0 dBFS suits the master; -18 dBFS (like a VU meter) suits single tracks.",
+                                  juce::Rectangle<int> (24, (int) line + 82, (int) r.getWidth() - 48, 56), juce::Justification::topLeft, 4);
                 g.drawText ("Easy Strip " JucePlugin_VersionString "  -  built " __DATE__,
                             juce::Rectangle<float> (24.0f, r.getHeight() - 52.0f, 380.0f, 32.0f), juce::Justification::centredLeft, false);
             }
 
             View& view;
-            std::unique_ptr<Choice> sizeChoice, skinChoice, tickerChoice, meterChoice;
+            std::unique_ptr<Choice> sizeChoice, skinChoice, tickerChoice, meterChoice, brightnessChoice, precisionChoice;
             Button close { "CLOSE", Colours::cyan };
         };
     }
@@ -230,6 +262,24 @@ namespace Holo
         presetPrevious.onClick = [this] { stepPreset (-1); };
         presetNext.onClick = [this] { stepPreset (1); };
 
+        for (int slot = 0; slot < 2; ++slot)
+        {
+            auto& b = slot == 0 ? slotA : slotB;
+            b.fontSize = 15.0f;
+            b.onClick = [this, slot]
+            {
+                strip.switchToSlot (slot);
+                strip.pushSettingsIfIdle (lastAudioCount, quietFrames = 100);
+                timerCallback();
+            };
+            addAndMakeVisible (b);
+            addHint (b, "A / B (THE WHOLE STRIP)", stripSlotHint);
+        }
+        copySlot.fontSize = 13.5f;
+        copySlot.onClick = [this] { strip.copyToOtherSlot(); announce ("COPIED", strip.getActiveSlot() == 0 ? "A to B" : "B to A", 3); };
+        addAndMakeVisible (copySlot);
+        addHint (copySlot, "COPY", stripCopyHint);
+
         stripPresets.setPresets ("Easy Strip", strip.getBuiltInPresets());
         stripPresets.getCurrentValues = [this] { return strip.getCurrentPresetValues(); };
         stripPresets.onPresetChosen = [this] (const Preset& preset) { loadStripPreset (preset); };
@@ -239,11 +289,6 @@ namespace Holo
         addAndMakeVisible (*oversampling);
         addHint (*oversampling, "OVERSAMPLING", oversamplingHint);
 
-        dim = std::make_unique<Choice> (juce::StringArray { "LOW", "MID", "HIGH" }, Colours::cyan, true);
-        dim->setChosen (settings.dim);
-        dim->onUserChoice = [this] (int i) { settings.dim = i; settings.save(); repaint(); };
-        addAndMakeVisible (*dim);
-        addHint (*dim, "DIM", dimHint);
 
         initAllButton.onClick = [this]
         {
@@ -273,10 +318,10 @@ namespace Holo
             pageButtons[(size_t) m] = std::make_unique<Button> (m == 6 ? juce::String ("BITCH|SLAP") : juce::String (StripModules::tabs[m]),
                                                                 Colours::selected, Button::Style::view);
             auto& b = *pageButtons[(size_t) m];
-            b.fontSize = m == 6 ? 13.5f : 15.0f;
+            b.fontSize = m == 6 ? 13.0f : 14.5f;
             b.onClick = [this, m] { showPage (m); };
             addAndMakeVisible (b);
-            addHint (b, juce::String (StripModules::tabs[m]) + " PAGE", pageHint);
+            addHint (b, "DISPLAY FOCUS: " + juce::String (m == 6 ? "BITCH-SLAP" : StripModules::tabs[m]), pageHint);
         }
 
         addAndMakeVisible (screen);
@@ -436,6 +481,12 @@ namespace Holo
             presetWindowComponent->setBounds (presetWindow);
             h.removeFromLeft (4);
             presetNext.setBounds (h.removeFromLeft (30));
+            h.removeFromLeft (16);
+            slotA.setBounds (h.removeFromLeft (32));
+            h.removeFromLeft (4);
+            slotB.setBounds (h.removeFromLeft (32));
+            h.removeFromLeft (8);
+            copySlot.setBounds (h.removeFromLeft (52));
 
             setupButton.setBounds (h.removeFromRight (96));
             h.removeFromRight (12);
@@ -443,19 +494,18 @@ namespace Holo
             h.removeFromRight (12);
             initAllButton.setBounds (h.removeFromRight (54));
             h.removeFromRight (24);
-            dim->setBounds (h.removeFromRight (156).withSizeKeepingCentre (156, 28));
-            h.removeFromRight (44);
             oversampling->setBounds (h.removeFromRight (230).withSizeKeepingCentre (230, 28));
         }
 
         viewRow = { left, viewRowY, width - 2 * left, viewRowHeight };
         {
-            const int w = 8 * 78 + 7 * 6;
-            int x = width / 2 - w / 2;
+            // Narrow buttons, all over the big screen
+            constexpr int buttonWidth = 64, gap = (wScreen - 8 * buttonWidth) / 7;
+            int x = colScreen;
             for (auto& b : pageButtons)
             {
-                b->setBounds (x, viewRowY, 78, viewRowHeight);
-                x += 84;
+                b->setBounds (x, viewRowY, buttonWidth, viewRowHeight);
+                x += buttonWidth + gap;
             }
         }
 
@@ -557,21 +607,13 @@ namespace Holo
             g.setFont (text (13.5f, 1));
             g.setColour (Colours::dim);
             g.drawText ("OVERSAMPLING", juce::Rectangle<int> (oversampling->getX() - 100, oversampling->getY(), 94, 28), juce::Justification::centredRight, false);
-            g.drawText ("DIM", juce::Rectangle<int> (dim->getX() - 40, dim->getY(), 34, 28), juce::Justification::centredRight, false);
         }
 
-        // The plates either side of the page buttons
+        // DISPLAY FOCUS: (beside the page buttons)
         {
-            const auto plate = [&] (juce::Rectangle<float> r, const juce::String& t)
-            {
-                g.setColour (Colours::cyan.withAlpha (0.28f));
-                g.drawRoundedRectangle (r.reduced (0.5f), 4.0f, 1.0f);
-                g.setColour (juce::Colour (0xff7fb8cc));
-                g.setFont (text (13.5f, 1));
-                g.drawText (t, r, juce::Justification::centred, false);
-            };
-            plate ({ (float) left + 10.0f, (float) viewRowY + 4.0f, 104.0f, 28.0f }, "MODEL  ES-8");
-            plate ({ (float) (width - left) - 10.0f - 140.0f, (float) viewRowY + 4.0f, 140.0f, 28.0f }, "SER. NO.  0417-66");
+            const auto first = pageButtons[0]->getBounds();
+            drawGlowText (g, "DISPLAY FOCUS:", juce::Rectangle<float> ((float) first.getX() - 180.0f, (float) first.getY(), 170.0f, (float) first.getHeight()),
+                          juce::Justification::centredRight, text (16.0f, 2), Colours::cyan, 0.5f);
         }
 
         // INPUT and OUTPUT columns
@@ -685,7 +727,7 @@ namespace Holo
 
     void View::paintOverChildren (juce::Graphics& g)
     {
-        if (settings.dim < 2)
+        if (settings.dim < 2)   // DISPLAY BRIGHTNESS (SETUP)
         {
             g.setColour (juce::Colours::black.withAlpha (settings.dim == 0 ? 0.45f : 0.25f));
             g.fillAll();
@@ -819,6 +861,13 @@ namespace Holo
             pageButtons[(size_t) m]->setToggleState (m == screen.getPage(), juce::dontSendNotification);
 
         {
+            const int slot = strip.getActiveSlot();
+            slotA.setToggleState (slot == 0, juce::dontSendNotification);
+            slotB.setToggleState (slot == 1, juce::dontSendNotification);
+            copySlot.setButtonText (slot == 0 ? "A > B" : "B > A");
+        }
+
+        {
             const auto shown = strip.getPresetName() + (strip.isPresetEdited() ? "*" : "");
             if (shown != shownPresetText) { shownPresetText = shown; presetWindowComponent->repaint(); }
         }
@@ -906,6 +955,7 @@ namespace Holo
     void View::loadStripPreset (const Preset& preset)
     {
         strip.loadPreset (preset);
+        announce (preset.name.toUpperCase(), preset.tip, 10);
         strip.pushSettingsIfIdle (lastAudioCount, quietFrames = 100);   // (so the panel follows at once)
         presetWindowComponent->repaint();
     }

@@ -135,7 +135,7 @@ public:
 
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout (StripModules&);
-    static std::vector<Preset> makeStripPresets();
+    static std::vector<Preset> makeStripPresets (StripModules&);
     static juce::StringArray stripPresetIDs (StripModules&);
     void handleAsyncUpdate() override;
     void connectModules();
