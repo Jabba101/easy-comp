@@ -220,7 +220,23 @@ LATER
      disappear while the rack is open, and if the effects need more
      room the rack can extend up to the header line (the presets row).
      At 100% that's about 1340 x 740 px, or about 1340 x 790 with the
-     focus row's space (the six effects as a 3 x 2 grid). The brainstorm (30 October 2026):
+     focus row's space: the six effects as SIX VERTICAL STRIPS side by
+     side (~215 px each; widths can differ a little if one is busier),
+     each with power, INIT and Pr at the top like the other modules.
+     WHERE THEY SIT (proposed 30 October 2026): not one block - each
+     effect has its own fixed place in the strip's chain:
+       INPUT > GATE > [AUTO-WAH] > AMP > EQ > DS > COMP > TRANS >
+       [CHORUS / FLANGER] > [MOD FILTER] > [TREMOLO] > [DELAY] >
+       BITCH-SLAP > CLIP > [LIMITER] > OUTPUT
+     - AUTO-WAH before any levelling (it follows how hard you play, so
+       COMP mustn't flatten that first) and before AMP, like a wah pedal
+       into an amp.
+     - The modulation (and TREMOLO above all) AFTER COMP, or COMP would
+       even out the movement they make.
+     - DELAY before BITCH-SLAP, so the gated reverb catches the repeats.
+     - LIMITER last, after CLIP.
+     The rack shows them left to right in that order. Switched-off
+     effects are skipped like any module (no cost, no change in timing). The brainstorm (30 October 2026):
        - FLANGER / CHORUS with a vibrato mode, to make things feel
          wider; rates lockable to the song's tempo
        - MOD FILTER: tempo-locked pulses, wide stereo filtering (left
