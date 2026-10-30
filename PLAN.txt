@@ -202,8 +202,13 @@ BUILD ORDER
                            two lo-fi vocal presets (de-ess before / after
                            the drive), strip presets can set single knobs,
                            the EQ's ST / MID / SIDE dim on mono tracks.
-                           Later: Comp mid-side, the standalones in the
-                           HOLOGRAM look, WEAPON SELECT (Easy SFX).
+                           0.6.1: the fake "tape" roll-off taken out of
+                           Synthwave, Retrowave, Cyberpunk, Midnight Jazz
+                           (real tape is close to flat on top); four lo-fi
+                           bus presets (Mix Bus: Lo-Fi) - where heavy
+                           roll-off belongs.
+                           Next: EASY TAPE. Later: Comp mid-side, the
+                           standalones in the HOLOGRAM look, WEAPON SELECT.
 
 
 ====================================================================
@@ -218,6 +223,24 @@ LATER
      middle of a drum bus while the cymbals and room breathe. In the
      standalone first, then the strip. (The full two-compressor M/S
      version is mastering territory: not planned.)
+   - NEXT (before Easy SFX): EASY TAPE - real tape, done properly (30
+     October 2026; the user used tape in studios for years). Real tape
+     is SUBTLE - not the lo-fi caricature of a muffled top. What it does:
+       - saturation that follows the level: soft, gently rounds the
+         transients ("glue"), more the harder you hit it, next to
+         nothing when you don't
+       - the head bump: a small low lift (its frequency set by the
+         speed) with a slight dip below it
+       - the top end essentially flat; the highs only COMPRESS when the
+         tape is driven hard (no fixed roll-off)
+       - wow, flutter, hiss: tiny on a good machine - off by default
+     SPEED: 15 ips = the multitrack setting (deep tones; the 24-track
+     sound) and the default; 30 ips = the near-perfect, subtle mastering
+     touch; anything slower is cassette territory - for lo-fi, not for
+     a 24-track. The user is the judge of whether it sounds right.
+     Then: the tape-flavoured strip presets (Synthwave, Retrowave,
+     Cyberpunk...) use it, and decide whether it's a strip module or a
+     WEAPON SELECT effect.
    - Once the essentials are perfected: EASY SFX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the
