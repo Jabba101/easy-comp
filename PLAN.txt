@@ -223,7 +223,7 @@ LATER
      focus row's space: the six effects as SIX VERTICAL STRIPS side by
      side (~215 px each; widths can differ a little if one is busier),
      each with power, INIT and Pr at the top like the other modules.
-     WHERE THEY SIT (proposed 30 October 2026): not one block - each
+     WHERE THEY SIT (decided 30 October 2026): not one block - each
      effect has its own fixed place in the strip's chain:
        INPUT > GATE > [AUTO-WAH] > AMP > EQ > DS > COMP > TRANS >
        [CHORUS / FLANGER] > [MOD FILTER] > [TREMOLO] > [DELAY] >
