@@ -119,6 +119,9 @@ public:
     float getIntegratedLufs() const noexcept           { return loudness.getIntegratedLufs(); }
     void resetIntegratedLufs() noexcept                { loudness.resetIntegrated(); }
 
+    /** How many dB the strip's AUTO-GAIN would add (or take away) right now. */
+    float getAutoGainDb() const noexcept               { return autoGainDb.load(); }
+
     /** Hands changed settings to the modules from the window, for when the
         DAW isn't running audio (normally the audio does it, each block). */
     void pushSettingsIfIdle (int& lastSeenCount, int& quietFrames) noexcept
@@ -141,6 +144,7 @@ private:
     void connectModules();
     void pushSettings() noexcept;
     int totalLatency() const noexcept;
+    void updateAutoGain (double heardIn, double heardOut, int numSamples) noexcept;
 
     // One module setting and its twin in the strip's list
     struct Link : public juce::AudioProcessorParameter::Listener
@@ -173,6 +177,14 @@ private:
     std::atomic<float>* polarityValue = nullptr;
     std::atomic<float>* levelValue = nullptr;
     std::atomic<float>* bypassValue = nullptr;
+    std::atomic<float>* autoGainValue = nullptr;
+
+    // AUTO-GAIN for the whole strip
+    LoudnessMatcher autoIn, autoOut;   // (only their ear filters are used)
+    double autoListenIn = 0.0, autoListenOut = 0.0;
+    float autoTrim = 1.0f;
+    juce::SmoothedValue<float, juce::ValueSmoothingTypes::Multiplicative> autoGainSmoothed;
+    std::atomic<float> autoGainDb { 0.0f };
 
     juce::SmoothedValue<float> inputGain, outputGain, bypassFade;
     juce::AudioBuffer<float> sidechain, work4, dryRing;

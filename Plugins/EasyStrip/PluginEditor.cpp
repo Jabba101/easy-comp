@@ -231,7 +231,8 @@ void ClassicStripWindow::layoutBody (juce::Rectangle<int> area)
     // The header: INIT where AUTO-GAIN would be, small, just left of the presets
     const auto preset = presetBrowser.getBounds();
     initAllButton.setBounds (preset.getX() - 10 - 52, preset.getCentreY() - 13, 52, 26);
-    bypassButton.setBounds (bypassButton.getBounds().withX (initAllButton.getX() - 40 - bypassButton.getWidth()));
+    autoGainButton.setBounds (autoGainButton.getBounds().withX (initAllButton.getX() - 24 - autoGainButton.getWidth()));
+    bypassButton.setBounds (bypassButton.getBounds().withX (autoGainButton.getX() - 10 - bypassButton.getWidth()));
 
     inputPanel = area.removeFromLeft (150);
     area.removeFromLeft (14);

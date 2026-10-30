@@ -182,9 +182,20 @@ BUILD ORDER
                            for Comp (Easy Comp 1.7.0 too), EQ MASTER
                            PRECISION (Easy EQ 1.2.0 too), DISPLAY FOCUS row,
                            DISPLAY BRIGHTNESS in SETUP.
-                           Next: GATE + DS sharing one
-                           2 ms look-ahead. Later: module order, Comp
-                           mid-side, WEAPON SELECT (Easy SFX).
+                           0.4.0: AUTO GAIN for the whole strip (above the
+                           OUTPUT meter; only turns down while CLIP is on).
+                           GATE + DS sharing one 2 ms look-ahead: looked
+                           into and parked. Its purpose (the strip's delay
+                           never changing, whatever the module order) is
+                           already met: every module's delay always counts,
+                           on or off. Truly sharing it would save 2 ms
+                           (of ~7.7 ms, which Samplitude lines up anyway)
+                           but means either the DS hearing something
+                           different from Easy DS, or running AMP and the
+                           EQ twice. Revisit only if a low-latency mode for
+                           recording through the strip is ever wanted.
+                           Later: module order, Comp mid-side, WEAPON
+                           SELECT (Easy SFX).
 
 
 ====================================================================

@@ -82,6 +82,8 @@ namespace Holo
         Button slotA { "A", Colours::selected }, slotB { "B", Colours::selected }, copySlot { "A > B", Colours::selected };   // the strip's A / B
         Button weaponSelect { "WEAPON SELECT", Colours::hazard };
         Button polarityButton { juce::String::fromUTF8 ("\xc3\x98"), Colours::cyan };
+        Button autoGainButton { "AUTO|GAIN", Colours::gate, Button::Style::square };   // the whole strip's
+        juce::Label autoGainReadout;
         std::unique_ptr<Choice> oversampling, meterMode;
         BigMeter inputMeter, outputMeter;
         std::vector<std::unique_ptr<Slab>> slabs;   // in signal order
@@ -129,7 +131,7 @@ namespace Holo
 
         // INPUT / OUTPUT
         std::unique_ptr<Ring> trim, level;
-        std::unique_ptr<ButtonLink> polarityLink, bypassLink;
+        std::unique_ptr<ButtonLink> polarityLink, bypassLink, autoGainLink;
         std::unique_ptr<juce::Component> lufsShortTerm, lufsIntegrated;
         juce::Rectangle<int> inputColumn, outputColumn, logoArea, standbyArea, weaponArea, headerArea, viewRow;
         float sweep = 0.0f;

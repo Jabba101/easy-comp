@@ -490,6 +490,34 @@ namespace
         alone.editorBeingDeleted (editor.get());
     }
 
+    void testStripAutoGain()
+    {
+        std::cout << "\n[AUTO-GAIN for the whole strip]\n";
+        const auto runWith = [] (float transOutputDb, bool clipOn, bool autoOn)
+        {
+            S s;
+            switchOn (s, 5, true);
+            setParam (s.getModule (5), TransientIDs::output, transOutputDb);
+            if (clipOn) switchOn (s, 7, true);
+            setStrip (s, CommonIDs::autoGain, autoOn ? 1.0f : 0.0f);
+            prepareStereo (s, true);
+            const auto in = music (8.0);
+            const auto out = process (s, in);
+            const int from = 6 * 48000, to = 8 * 48000;
+            return (float) (loudnessDb (out, from, to) - loudnessDb (in, from - s.getLatencySamples(), to - s.getLatencySamples()));
+        };
+
+        const float louderOff = runWith (8.0f, false, false), louderOn = runWith (8.0f, false, true);
+        check (louderOff > 6.0f && std::abs (louderOn) < 1.0f, "a module making it 8 dB louder: AUTO-GAIN brings it back (" + juce::String (louderOff, 1) + " -> " + juce::String (louderOn, 1) + " dB)");
+        const float quieterOn = runWith (-8.0f, false, true);
+        check (std::abs (quieterOn) < 1.0f, "...and 8 dB quieter: turned back up (" + juce::String (quieterOn, 1) + " dB)");
+        const float withClip = runWith (-8.0f, true, true);
+        check (withClip < -6.0f, "with CLIP on it never turns up (so CLIP's CEILING holds): " + juce::String (withClip, 1) + " dB");
+        S s;
+        check (s.parameters.getParameter (CommonIDs::autoGain) != nullptr && getParam (s, CommonIDs::autoGain) < 0.5f
+               && ! s.getPresetParameterIDs().contains (CommonIDs::autoGain), "starts off, and presets / A / B leave it alone");
+    }
+
     //==========================================================================
     void testLufs()
     {
@@ -851,6 +879,7 @@ int main (int argc, char** argv)
     testLatencyChange();
     testPrecision();
     testPresetsAndAB();
+    testStripAutoGain();
     testLufs();
     testSaving();
     testClassicWindow (outDir);

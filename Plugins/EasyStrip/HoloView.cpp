@@ -23,6 +23,10 @@ namespace Holo
             "Polarity: flips the waveform upside down. Try it on a second mic of the same drum (snare top and bottom) "
             "if they sound thin together - whichever sounds fuller is right.";
         const juce::String levelHint = "Level: the final output of the strip, after everything else.";
+        const juce::String stripAutoGainHint =
+            "Auto gain (the whole strip): keeps the strip's output as loud as what comes in, so BYPASS compares the sound, "
+            "not the loudness. It listens over a couple of seconds, up to 12 dB either way; with CLIP on it only turns "
+            "down, so CLIP's CEILING still holds. The number shows what it's doing. Switch it off before setting your final level.";
         const juce::String meterModeHint =
             "PEAK: the output meter shows peak level. LUFS: it shows loudness the way streaming services measure it "
             "(the last 3 seconds).";
@@ -356,6 +360,17 @@ namespace Holo
         addHint (weaponSelect, "WEAPON SELECT", weaponHint);
 
         // OUTPUT
+        autoGainLink = std::make_unique<ButtonLink> (*strip.parameters.getParameter (CommonIDs::autoGain), autoGainButton);
+        autoGainButton.fontSize = 14.0f;
+        addAndMakeVisible (autoGainButton);
+        addHint (autoGainButton, "AUTO GAIN (THE WHOLE STRIP)", stripAutoGainHint);
+        autoGainReadout.setFont (text (13.5f, 1));
+        autoGainReadout.setJustificationType (juce::Justification::centred);
+        autoGainReadout.setColour (juce::Label::textColourId, Colours::dim);
+        autoGainReadout.setBorderSize ({});
+        addAndMakeVisible (autoGainReadout);
+        addHint (autoGainReadout, "AUTO GAIN (THE WHOLE STRIP)", stripAutoGainHint);
+
         meterMode = std::make_unique<Choice> (juce::StringArray { "PEAK", "LUFS" }, Colours::cyan, false);
         meterMode->setChosen (settings.lufsMeter ? 1 : 0);
         meterMode->segmentHeight = 26;
@@ -528,6 +543,10 @@ namespace Holo
         {
             auto c = outputColumn.reduced (6, 10);
             c.removeFromTop (22);
+            autoGainButton.setBounds (c.removeFromTop (46).withSizeKeepingCentre (64, 46));
+            c.removeFromTop (3);
+            autoGainReadout.setBounds (c.removeFromTop (16));
+            c.removeFromTop (10);
             meterMode->setBounds (c.removeFromTop (meterMode->getIdealHeight()).withSizeKeepingCentre (64, meterMode->getIdealHeight()));
             c.removeFromTop (10);
             level->setBounds (c.removeFromBottom (level->getIdealHeight()).withSizeKeepingCentre (level->getIdealWidth(), level->getIdealHeight()));
@@ -853,6 +872,14 @@ namespace Holo
         const float outPeak = juce::Decibels::gainToDecibels (strip.takeOutputPeak(), -200.0f) - zero;
         const float out = settings.lufsMeter ? strip.getShortTermLufs() : outPeak;
         outputMeter.setLevels (out, out);
+
+        {
+            const bool on = autoGainButton.getToggleState();
+            const auto text = (on ? "" : "(") + Holo::formatValue (Format::signedDb, strip.getAutoGainDb()) + " dB" + (on ? "" : ")");
+            if (autoGainReadout.getText() != text)
+                autoGainReadout.setText (text, juce::dontSendNotification);
+            autoGainReadout.setColour (juce::Label::textColourId, on ? Colours::gate : Colours::dim);
+        }
 
         static_cast<Readout*> (lufsShortTerm.get())->set (strip.getShortTermLufs());
         static_cast<Readout*> (lufsIntegrated.get())->set (strip.getIntegratedLufs());

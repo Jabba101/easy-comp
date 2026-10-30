@@ -60,7 +60,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyStripAudioProcessor::cre
         }
     }
 
-    addCommonParameters (layout, false);   // the whole strip's BYPASS
+    addCommonParameters (layout, true);    // the whole strip's BYPASS and AUTO-GAIN
     return layout;
 }
 
@@ -132,6 +132,7 @@ EasyStripAudioProcessor::EasyStripAudioProcessor()
     polarityValue = parameters.getRawParameterValue (StripIDs::polarity);
     levelValue    = parameters.getRawParameterValue (StripIDs::level);
     bypassValue   = parameters.getRawParameterValue (CommonIDs::bypass);
+    autoGainValue = parameters.getRawParameterValue (CommonIDs::autoGain);
     oversamplingParameter = parameters.getParameter (StripIDs::oversampling);
 
     connectModules();
@@ -297,6 +298,13 @@ void EasyStripAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     outputGain.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (levelValue->load()));
     bypassFade.setCurrentAndTargetValue (bypassValue->load() > 0.5f ? 1.0f : 0.0f);
 
+    autoIn.prepare (sampleRate, 100.0f);
+    autoOut.prepare (sampleRate, 100.0f);
+    autoListenIn = autoListenOut = 0.0;
+    autoTrim = 1.0f;
+    autoGainSmoothed.reset (sampleRate, 0.05);
+    autoGainSmoothed.setCurrentAndTargetValue (1.0f);
+
     loudness.prepare (sampleRate);
     inputPeak.store (0.0f);
     outputPeak.store (0.0f);
@@ -430,22 +438,28 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
             }
         }
 
-        // OUTPUT: LEVEL, then the strip's BYPASS (the original, delayed by the whole strip)
+        // AUTO-GAIN (the whole strip), then OUTPUT: LEVEL, then the strip's BYPASS
+        // (the original, delayed by the whole strip)
         const int latencyNow = juce::jmin (totalLatency(), ringSize - maxChunk - 1);
+        autoGainSmoothed.setTargetValue (autoGainValue->load() > 0.5f ? autoTrim : 1.0f);
+        double heardIn = 0.0, heardOut = 0.0;
         float loudestOut = 0.0f;
         for (int i = 0; i < n; ++i)
         {
-            const float g = outputGain.getNextValue();
+            const float g = outputGain.getNextValue() * autoGainSmoothed.getNextValue();
             const float bypass = bypassFade.getNextValue();
 
             for (int ch = 0; ch < channels; ++ch)
             {
                 const float original = dryRing.getSample (ch, (writePos + i - latencyNow) & ringMask);
+                heardIn  += autoIn.measure (ch, original);      // (what came in, lined up with what comes out)
+                heardOut += autoOut.measure (ch, main[ch][i]);  // (what the modules made of it)
                 main[ch][i] = main[ch][i] * g * (1.0f - bypass) + original * bypass;
                 loudestOut = juce::jmax (loudestOut, std::abs (main[ch][i]));
             }
         }
         storeIfBigger (outputPeak, loudestOut);
+        updateAutoGain (heardIn, heardOut, n);
 
         juce::AudioBuffer<float> out (main, channels, n);
         loudness.process (out);
@@ -461,6 +475,31 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         reportedLatency = latency;
         triggerAsyncUpdate();
     }
+}
+
+//==============================================================================
+void EasyStripAudioProcessor::updateAutoGain (double heardIn, double heardOut, int n) noexcept
+{
+    // Compares how loud it sounds going in (after TRIM) and coming out of the
+    // modules - the last couple of seconds, as ears weigh loudness - and trims
+    // to match: quick to turn down, gentle to turn up, at most 12 dB either way.
+    // It keeps listening while it's off, so it's ready the moment it's on.
+    const float trim = juce::Decibels::decibelsToGain (trimValue->load());
+    heardIn *= (double) (trim * trim);
+    if (heardIn / n < 1.0e-9)
+        return;   // (silence: hold)
+
+    const double rate = 1.0 - std::exp (-(double) n / (getSampleRate() * 1.5));
+    autoListenIn  += rate * (heardIn / n - autoListenIn);
+    autoListenOut += rate * (heardOut / n - autoListenOut);
+
+    double wanted = juce::jlimit (0.25, 4.0, std::sqrt (autoListenIn / juce::jmax (autoListenOut, 1.0e-20)));
+    if (isModuleOn (7))
+        wanted = juce::jmin (wanted, 1.0);   // (with CLIP on it only turns down, so CLIP's CEILING still holds)
+
+    const double speed = wanted < autoTrim ? rate * 3.0 : rate;
+    autoTrim = (float) (autoTrim + speed * (wanted - autoTrim));
+    autoGainDb.store (juce::Decibels::gainToDecibels (autoTrim));
 }
 
 //==============================================================================

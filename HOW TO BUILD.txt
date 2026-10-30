@@ -458,6 +458,9 @@ YOUR FIRST FIVE MINUTES WITH EASY STRIP
    5. The ticker along the bottom explains whatever the mouse is over,
       and shows the exact value while you turn something.
    6. INPUT (left): TRIM, the polarity flip, the meter. OUTPUT (right):
+      AUTO GAIN for the whole strip (keeps the output as loud as what
+      comes in, so BYPASS compares the sound, not the volume; the number
+      under it shows what it's doing; with CLIP on it only turns down),
       PEAK / LUFS meter, LUFS S (last 3 seconds) and I (whole song -
       click it to start again), LEVEL.
    7. Header: the strip's presets (arrows step through them - about 80
