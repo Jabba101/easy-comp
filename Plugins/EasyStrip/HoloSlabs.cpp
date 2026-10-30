@@ -32,7 +32,8 @@ namespace Holo
             p.loadPreset (p.getBuiltInPresets().front());   // ("Default settings")
             init.flash = true;
             init.repaint();
-            juce::Timer::callAfterDelay (180, [safe = juce::Component::SafePointer<Slab> (this)]
+            juce::Component::SafePointer<Slab> safe (this);
+            juce::Timer::callAfterDelay (180, [safe]
             {
                 if (safe != nullptr) { safe->init.flash = false; safe->init.repaint(); }
             });

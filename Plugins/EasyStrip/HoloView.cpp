@@ -250,7 +250,8 @@ namespace Holo
             loadStripPreset (strip.getBuiltInPresets().front());
             initAllButton.flash = true;
             initAllButton.repaint();
-            juce::Timer::callAfterDelay (180, [safe = juce::Component::SafePointer<View> (this)]
+            juce::Component::SafePointer<View> safe (this);
+            juce::Timer::callAfterDelay (180, [safe]
             {
                 if (safe != nullptr) { safe->initAllButton.flash = false; safe->initAllButton.repaint(); }
             });

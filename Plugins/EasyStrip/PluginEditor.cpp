@@ -363,7 +363,8 @@ void EasyStripAudioProcessorEditor::applySettings()
             {
                 settings.skin = StripSettings::hologram;
                 settings.save();
-                juce::MessageManager::callAsync ([safe = juce::Component::SafePointer<EasyStripAudioProcessorEditor> (this)]
+                juce::Component::SafePointer<EasyStripAudioProcessorEditor> safe (this);
+                juce::MessageManager::callAsync ([safe]
                 {
                     if (safe != nullptr) safe->applySettings();
                 });
@@ -377,7 +378,8 @@ void EasyStripAudioProcessorEditor::applySettings()
             hologram->onSettingsChanged = [this]
             {
                 // (after the click that changed it has finished)
-                juce::MessageManager::callAsync ([safe = juce::Component::SafePointer<EasyStripAudioProcessorEditor> (this)]
+                juce::Component::SafePointer<EasyStripAudioProcessorEditor> safe (this);
+                juce::MessageManager::callAsync ([safe]
                 {
                     if (safe != nullptr) safe->applySettings();
                 });
