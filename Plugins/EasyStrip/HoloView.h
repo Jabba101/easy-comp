@@ -1,0 +1,148 @@
+#pragma once
+
+#include "HoloScreen.h"
+#include "StripSettings.h"
+#include "PresetBrowser.h"
+
+namespace Holo
+{
+    class Slab;
+    class ClipAdvanced;
+
+    //==========================================================================
+    /**
+        The whole Easy Strip in the HOLOGRAM skin, laid out at 100% (1800 wide);
+        the window scales it to the size chosen in SETUP (or dragged).
+
+        Header: the strip's presets, OVERSAMPLING, DIM, INIT (the whole strip),
+        BYPASS, SETUP. Under it, the page buttons for the big screen. Then
+        INPUT, every module in signal order around the screen, OUTPUT, and the
+        ticker (hints and values) along the bottom.
+
+        Every module's controls are its standalone plugin's controls (same
+        names, same numbered sections, the same hints word for word), and each
+        module has its own power button, INIT and Pr (presets) in the same place.
+    */
+    class View : public juce::Component,
+                 public Host,
+                 private juce::Timer
+    {
+    public:
+        View (EasyStripAudioProcessor&, StripSettings&);
+        ~View() override;
+
+        static constexpr int width = 1800;
+        static int heightFor (bool withTicker)   { return withTicker ? 1030 : 974; }
+
+        /** The window calls this when SETUP changes something that needs it (size, skin...). */
+        std::function<void()> onSettingsChanged;
+
+        void paint (juce::Graphics&) override;
+        void paintOverChildren (juce::Graphics&) override;
+        void resized() override;
+        void mouseEnter (const juce::MouseEvent&) override;
+        void mouseExit (const juce::MouseEvent&) override;
+
+        //==== Host ===============================================================
+        void showValue (const juce::String& title, const juce::String& valueWithUnits) override;
+        void valueShown() override;
+        void typeValue (juce::Component& owner, juce::Rectangle<int> area, const juce::String& current,
+                        std::function<void (const juce::String&)> onEntered) override;
+        void settingMoved (juce::RangedAudioParameter&) override;
+
+        //==== Hints ==============================================================
+        /** The hint shown on the ticker while the mouse is over `c` (or anything in it). */
+        void addHint (juce::Component& c, const juce::String& title, const juce::String& text);
+
+        /** The standalone module's own hint, word for word (by its title there, e.g. "THRESHOLD"). */
+        juce::String moduleHint (int module, const juce::String& title) const;
+
+        //==== For the parts, and tests ===========================================
+        EasyStripAudioProcessor& getStrip() noexcept               { return strip; }
+        StripSettings& getSettings() noexcept                      { return settings; }
+        Screen& getScreen() noexcept                               { return screen; }
+        ParamControl* findControl (int module, const juce::String& parameterID) const;   // module -1 = the strip's own
+        void registerControl (int module, const juce::String& parameterID, ParamControl&);
+        const juce::String& getTickerText() const noexcept         { return tickerText; }
+        void showPage (int module);
+        void showPresetMenu (int module, juce::Component& under);   // a module's Pr button
+        void showSetup (bool show);
+        bool isSetupShowing() const;
+        void updateNow()                                            { timerCallback(); }   // (tests)
+        void setClipAdvancedShown (bool);
+
+        /** A message on the ticker for a while (FIND's progress, WEAPON SELECT...). */
+        void announce (const juce::String& title, const juce::String& text, int seconds);
+
+        std::array<std::unique_ptr<Button>, 8> pageButtons;
+        Button initAllButton { "INIT", Colours::warn, Button::Style::init };
+        Button bypassButton { "BYPASS", Colours::warn };
+        Button setupButton { "SETUP", Colours::cyan };
+        Button presetPrevious { "<", Colours::selected }, presetNext { ">", Colours::selected };
+        Button weaponSelect { "WEAPON SELECT", Colours::hazard };
+        Button polarityButton { juce::String::fromUTF8 ("\xc3\x98"), Colours::cyan };
+        std::unique_ptr<Choice> oversampling, dim, meterMode;
+        BigMeter inputMeter, outputMeter;
+        std::vector<std::unique_ptr<Slab>> slabs;   // in signal order
+        std::unique_ptr<ClipAdvanced> clipAdvanced;
+
+    private:
+        void timerCallback() override;
+        void paintBackdrop (juce::Graphics&);
+        void paintStandby (juce::Graphics&);
+        void paintTicker (juce::Graphics&);
+        void showHintFor (juce::Component*);
+        void setTicker (const juce::String& title, const juce::String& text, juce::Colour);
+        void loadStripPreset (const Preset&);
+        void stepPreset (int direction);
+        juce::Colour tintFor (juce::Component*) const;
+        void collectHints();
+
+        EasyStripAudioProcessor& strip;
+        StripSettings& settings;
+        std::unique_ptr<juce::Component> backdrop, standby, ticker;   // (created first: behind everything)
+        Screen screen;
+        juce::String shownPresetText;
+
+        struct Hint { juce::Component* component; juce::String title, text; };
+        std::vector<Hint> hints;
+        std::array<std::map<juce::String, juce::String>, 8> standaloneHints;
+        std::map<juce::String, ParamControl*> controls;
+        juce::Component::SafePointer<juce::Component> hovered;
+
+        // The ticker
+        juce::String tickerTitle, tickerText;
+        juce::Colour tickerColour { Colours::cyan };
+        float tickerScroll = 0.0f;
+        int tickerPause = 0;
+        bool showingValue = false;
+        double announceUntil = 0.0;
+        int lastAudioCount = -1, quietFrames = 0;
+        juce::Rectangle<int> tickerArea;
+
+        // The header's preset window (the strip's presets)
+        PresetBrowser stripPresets;
+        juce::Rectangle<int> presetWindow;
+        struct PresetWindow;
+        std::unique_ptr<juce::Component> presetWindowComponent;
+
+        // INPUT / OUTPUT
+        std::unique_ptr<Ring> trim, level;
+        std::unique_ptr<ButtonLink> polarityLink, bypassLink;
+        std::unique_ptr<juce::Component> lufsShortTerm, lufsIntegrated;
+        juce::Rectangle<int> inputColumn, outputColumn, logoArea, standbyArea, weaponArea, headerArea, viewRow;
+        float sweep = 0.0f;
+
+        // Typing a value
+        juce::TextEditor entry;
+        std::function<void (const juce::String&)> onEntry;
+
+        // SETUP
+        std::unique_ptr<juce::Component> setupPanel;
+
+        // Per-module preset menus (each module's own list, as in its standalone)
+        std::array<std::unique_ptr<PresetBrowser>, 8> modulePresets;
+
+        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (View)
+    };
+}

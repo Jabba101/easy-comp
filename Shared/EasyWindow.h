@@ -26,6 +26,16 @@ public:
     void mouseEnter (const juce::MouseEvent&) override;
     void mouseExit (const juce::MouseEvent&) override;
 
+    /** Every hint in the window (title and text), in the order they were added -
+        so another window (the Easy Strip) can show exactly the same words. */
+    std::vector<std::pair<juce::String, juce::String>> getAllHints() const
+    {
+        std::vector<std::pair<juce::String, juce::String>> all;
+        for (auto& hint : hints)
+            all.push_back (hint.titleAndText());
+        return all;
+    }
+
     /** The line under the title. */
     const juce::String& getSubtitle() const noexcept   { return subtitle; }
 

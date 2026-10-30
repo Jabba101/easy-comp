@@ -78,7 +78,7 @@ void LevelMeter::paint (juce::Graphics& g)
 }
 
 //==============================================================================
-EasyStripAudioProcessorEditor::EasyStripAudioProcessorEditor (EasyStripAudioProcessor& p)
+ClassicStripWindow::ClassicStripWindow (EasyStripAudioProcessor& p)
     : EasyWindow (p, "AARDVARK EASY STRIP", "Every Easy plugin in one channel strip", stripGettingStarted),
       oversamplingSwitch (*p.parameters.getParameter (StripIDs::oversampling), { "4x / 8x", "OFF", "4x", "8x" }, Palette::accent),
       strip (p)
@@ -174,6 +174,12 @@ EasyStripAudioProcessorEditor::EasyStripAudioProcessorEditor (EasyStripAudioProc
 
     addAndMakeVisible (moduleHolder);
 
+    hologramButton.setColour (juce::TextButton::buttonColourId, Palette::panel);
+    hologramButton.setColour (juce::TextButton::textColourOffId, Palette::accent);
+    hologramButton.onClick = [this] { if (onSwitchToHologram) onSwitchToHologram(); };
+    addAndMakeVisible (hologramButton);
+    addHint (hologramButton, "HOLOGRAM LOOK", "Switches to the HOLOGRAM skin: every module on one panel around the big screen.");
+
     finishSetup (windowWidth, windowHeight);
 
     for (auto* knob : { &trimKnob, &levelKnob })
@@ -184,12 +190,12 @@ EasyStripAudioProcessorEditor::EasyStripAudioProcessorEditor (EasyStripAudioProc
     showModule (0);
 }
 
-EasyStripAudioProcessorEditor::~EasyStripAudioProcessorEditor()
+ClassicStripWindow::~ClassicStripWindow()
 {
     closeModuleWindow();
 }
 
-void EasyStripAudioProcessorEditor::closeModuleWindow()
+void ClassicStripWindow::closeModuleWindow()
 {
     if (moduleWindow != nullptr)
     {
@@ -199,7 +205,7 @@ void EasyStripAudioProcessorEditor::closeModuleWindow()
     }
 }
 
-void EasyStripAudioProcessorEditor::showModule (int m)
+void ClassicStripWindow::showModule (int m)
 {
     if (m == shownModule)
         return;
@@ -220,7 +226,7 @@ void EasyStripAudioProcessorEditor::showModule (int m)
 }
 
 //==============================================================================
-void EasyStripAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
+void ClassicStripWindow::layoutBody (juce::Rectangle<int> area)
 {
     // The header: INIT where AUTO-GAIN would be, small, just left of the presets
     const auto preset = presetBrowser.getBounds();
@@ -267,6 +273,7 @@ void EasyStripAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
 
     middle.removeFromTop (8);
     auto switchRow = middle.removeFromTop (30);
+    hologramButton.setBounds (switchRow.removeFromLeft (150));
     oversamplingSwitch.setBounds (switchRow.removeFromRight (300));
     switchRow.removeFromRight (10);
     oversamplingLabel.setBounds (switchRow.removeFromRight (220));
@@ -286,14 +293,14 @@ void EasyStripAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
     }
 }
 
-void EasyStripAudioProcessorEditor::paintBody (juce::Graphics& g)
+void ClassicStripWindow::paintBody (juce::Graphics& g)
 {
     drawPanel (g, inputPanel, {}, "INPUT");
     drawPanel (g, outputPanel, {}, "OUTPUT");
     drawPanel (g, modulePanel, {}, {});
 }
 
-void EasyStripAudioProcessorEditor::refreshLiveDisplays()
+void ClassicStripWindow::refreshLiveDisplays()
 {
     inputMeter.setLevel (strip.takeInputPeak());
     outputMeter.setLevel (strip.takeOutputPeak());
@@ -304,8 +311,115 @@ void EasyStripAudioProcessorEditor::refreshLiveDisplays()
         onLamps[(size_t) m]->setToggleState (strip.isModuleOn (m), juce::dontSendNotification);
 }
 
-void EasyStripAudioProcessorEditor::mouseDown (const juce::MouseEvent& event)
+void ClassicStripWindow::mouseDown (const juce::MouseEvent& event)
 {
     if (event.eventComponent == &integratedReadout)
         strip.resetIntegratedLufs();
+}
+
+//==============================================================================
+EasyStripAudioProcessorEditor::EasyStripAudioProcessorEditor (EasyStripAudioProcessor& p)
+    : AudioProcessorEditor (&p), strip (p), settings (StripSettings::load())
+{
+    setOpaque (true);
+    setResizable (true, true);
+    applySettings();
+}
+
+EasyStripAudioProcessorEditor::~EasyStripAudioProcessorEditor()
+{
+    settings.save();
+    hologram.reset();
+    classic.reset();
+}
+
+juce::Component* EasyStripAudioProcessorEditor::currentView() const
+{
+    if (hologram != nullptr) return hologram.get();
+    return classic != nullptr ? const_cast<juce::Component*> (static_cast<const juce::Component*> (&classicHolder)) : nullptr;
+}
+
+juce::Point<int> EasyStripAudioProcessorEditor::nativeSize() const
+{
+    if (settings.skin == StripSettings::classic)
+        return { 1500, 960 };
+    return { Holo::View::width, Holo::View::heightFor (settings.ticker) };
+}
+
+void EasyStripAudioProcessorEditor::applySettings()
+{
+    const juce::ScopedValueSetter<bool> busy (applying, true);
+
+    if (builtSkin != settings.skin || (hologram != nullptr && builtTicker != settings.ticker))
+    {
+        hologram.reset();
+        classic.reset();
+        removeChildComponent (&classicHolder);
+
+        if (settings.skin == StripSettings::classic)
+        {
+            classic = std::make_unique<ClassicStripWindow> (strip);
+            classic->onSwitchToHologram = [this]
+            {
+                settings.skin = StripSettings::hologram;
+                settings.save();
+                juce::MessageManager::callAsync ([safe = juce::Component::SafePointer<EasyStripAudioProcessorEditor> (this)]
+                {
+                    if (safe != nullptr) safe->applySettings();
+                });
+            };
+            classicHolder.addAndMakeVisible (*classic);
+            addAndMakeVisible (classicHolder);
+        }
+        else
+        {
+            hologram = std::make_unique<Holo::View> (strip, settings);
+            hologram->onSettingsChanged = [this]
+            {
+                // (after the click that changed it has finished)
+                juce::MessageManager::callAsync ([safe = juce::Component::SafePointer<EasyStripAudioProcessorEditor> (this)]
+                {
+                    if (safe != nullptr) safe->applySettings();
+                });
+            };
+            addAndMakeVisible (*hologram);
+        }
+
+        builtSkin = settings.skin;
+        builtTicker = settings.ticker;
+    }
+
+    const auto native = nativeSize();
+    if (auto* c = getConstrainer())
+    {
+        c->setFixedAspectRatio ((double) native.x / (double) native.y);
+        c->setSizeLimits (native.x / 2, native.y / 2, native.x * 2, native.y * 2);
+    }
+
+    const int w = juce::roundToInt ((float) native.x * settings.scale);
+    const int h = juce::roundToInt ((float) native.y * settings.scale);
+    if (getWidth() != w || getHeight() != h)
+        setSize (w, h);
+    else
+        resized();
+}
+
+void EasyStripAudioProcessorEditor::paint (juce::Graphics& g)
+{
+    g.fillAll (juce::Colour (0xff02050a));
+}
+
+void EasyStripAudioProcessorEditor::resized()
+{
+    auto* view = currentView();
+    if (view == nullptr)
+        return;
+
+    const auto native = nativeSize();
+    const float scale = (float) getWidth() / (float) native.x;
+    view->setBounds (0, 0, native.x, native.y);
+    view->setTransform (juce::AffineTransform::scale (scale));
+
+    if (! applying)
+        settings.scale = juce::jlimit (0.5f, 2.0f, scale);   // (dragged: remembered when the window closes)
 }

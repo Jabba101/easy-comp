@@ -2,6 +2,7 @@
 
 #include "EasyWindow.h"
 #include "PluginProcessor.h"
+#include "HoloView.h"
 
 //==============================================================================
 /** A plain level meter (-60 to +6 dB), with a peak line that falls back slowly. */
@@ -19,8 +20,8 @@ private:
 
 //==============================================================================
 /**
-    The Easy Strip window - for now a plain working layout (the HOLOGRAM look
-    comes later):
+    The CLASSIC skin: a plain working layout that shows each module's own
+    standalone window in the middle (chosen in SETUP; HOLOGRAM is the default):
 
         header      BYPASS (the whole strip), INIT (the whole strip), presets
         INPUT       TRIM, the polarity flip, a meter
@@ -29,11 +30,14 @@ private:
         OUTPUT      LEVEL, a meter, short-term and integrated LUFS (click
                     the integrated number to start it again)
 */
-class EasyStripAudioProcessorEditor : public EasyWindow
+class ClassicStripWindow : public EasyWindow
 {
 public:
-    explicit EasyStripAudioProcessorEditor (EasyStripAudioProcessor&);
-    ~EasyStripAudioProcessorEditor() override;
+    explicit ClassicStripWindow (EasyStripAudioProcessor&);
+    ~ClassicStripWindow() override;
+
+    std::function<void()> onSwitchToHologram;
+    juce::TextButton hologramButton { "HOLOGRAM LOOK" };
 
     /** Shows module m's own window in the middle. */
     void showModule (int m);
@@ -70,6 +74,49 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> polarityAttachment;
 
     juce::Rectangle<int> inputPanel, outputPanel, modulePanel, moduleArea;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ClassicStripWindow)
+};
+
+//==============================================================================
+/**
+    The Easy Strip's window. It shows one of two skins:
+
+        HOLOGRAM   (the default) every module's controls on one panel
+                   around the big screen - see HoloView.h
+        CLASSIC    the plain layout above, with each module's own window
+
+    and can be any size: pick one in SETUP or drag the corner (the shape stays
+    the same). The size, skin and other SETUP choices are remembered for
+    every Easy Strip.
+*/
+class EasyStripAudioProcessorEditor : public juce::AudioProcessorEditor
+{
+public:
+    explicit EasyStripAudioProcessorEditor (EasyStripAudioProcessor&);
+    ~EasyStripAudioProcessorEditor() override;
+
+    void paint (juce::Graphics&) override;
+    void resized() override;
+
+    Holo::View* getHologram() const noexcept         { return hologram.get(); }
+    ClassicStripWindow* getClassic() const noexcept  { return classic.get(); }
+    StripSettings& getSettings() noexcept            { return settings; }
+
+    /** Builds the chosen skin at the chosen size (after a SETUP change). */
+    void applySettings();
+
+private:
+    juce::Component* currentView() const;
+    juce::Point<int> nativeSize() const;
+
+    EasyStripAudioProcessor& strip;
+    StripSettings settings;
+    std::unique_ptr<Holo::View> hologram;
+    std::unique_ptr<ClassicStripWindow> classic;
+    juce::Component classicHolder;   // (an editor inside an editor mustn't be transformed itself)
+    int builtSkin = -1;
+    bool builtTicker = true, applying = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EasyStripAudioProcessorEditor)
 };

@@ -102,6 +102,14 @@ public:
     //==== For the window ======================================================
     static constexpr int numModules = StripModules::numModules;
     EasyProcessor& getModule (int m) noexcept           { return *all[(size_t) m]; }
+    EasyGateAudioProcessor&      getGate() noexcept     { return gate; }
+    EasyAmpAudioProcessor&       getAmp() noexcept      { return amp; }
+    EasyEQAudioProcessor&        getEQ() noexcept       { return eq; }
+    EasyDSAudioProcessor&        getDS() noexcept       { return ds; }
+    EasyCompAudioProcessor&      getComp() noexcept     { return comp; }
+    EasyTransientAudioProcessor& getTrans() noexcept    { return trans; }
+    BitchSlapAudioProcessor&     getSlap() noexcept     { return slap; }
+    EasyClipAudioProcessor&      getClip() noexcept     { return clip; }
     bool isModuleOn (int m) const noexcept;
 
     /** The loudest the sound was going in / coming out since last asked (gain, not dB). */
@@ -110,6 +118,17 @@ public:
     float getShortTermLufs() const noexcept            { return loudness.getShortTermLufs(); }
     float getIntegratedLufs() const noexcept           { return loudness.getIntegratedLufs(); }
     void resetIntegratedLufs() noexcept                { loudness.resetIntegrated(); }
+
+    /** Hands changed settings to the modules from the window, for when the
+        DAW isn't running audio (normally the audio does it, each block). */
+    void pushSettingsIfIdle (int& lastSeenCount, int& quietFrames) noexcept
+    {
+        const int now = blocksProcessed.load();
+        quietFrames = now == lastSeenCount ? quietFrames + 1 : 0;
+        lastSeenCount = now;
+        if (quietFrames > 3)
+            pushSettings();
+    }
 
     /** (Tests) whether a switched-off module is really being skipped. */
     bool isModuleSkipped (int m) const noexcept        { return links[(size_t) m].skipped; }
@@ -126,6 +145,7 @@ private:
     // One module setting and its twin in the strip's list
     struct Link : public juce::AudioProcessorParameter::Listener
     {
+        EasyStripAudioProcessor* owner = nullptr;
         juce::RangedAudioParameter* strip = nullptr;
         juce::RangedAudioParameter* module = nullptr;
         std::atomic<float> last { -1.0f };
@@ -160,6 +180,7 @@ private:
     int reportedLatency = 0;
 
     std::atomic<float> inputPeak { 0.0f }, outputPeak { 0.0f };
+    std::atomic<int> blocksProcessed { 0 };
     LoudnessMeter loudness;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EasyStripAudioProcessor)

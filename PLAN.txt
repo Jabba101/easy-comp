@@ -170,10 +170,14 @@ BUILD ORDER
                            sidechain and OVERSAMPLING, INPUT TRIM / polarity,
                            OUTPUT LEVEL, meters, LUFS S / I, whole-strip
                            INIT and BYPASS, saving.
-                           Next: SETUP (window size, skin, ticker, meter
-                           reference 0 dBFS / -18), the HOLOGRAM skin with
-                           the big screen and page buttons, the ticker,
-                           strip presets, A / B for Comp and the strip,
+                           Stage 2 done (0.2.0): the HOLOGRAM skin (every
+                           module's controls on one panel, the big screen
+                           with a page per module, the ticker with the
+                           standalones' own hints, per-module INIT and Pr,
+                           DIM), SETUP (size 60-150% or drag, skin
+                           HOLOGRAM / CLASSIC, ticker, meter 0 = 0 dBFS or
+                           -18 dBFS), resizable window.
+                           Next: strip presets, A / B for Comp and the strip,
                            EQ MASTER precision, GATE + DS sharing one
                            2 ms look-ahead. Later: module order, Comp
                            mid-side, WEAPON SELECT (Easy SFX).

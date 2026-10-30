@@ -36,7 +36,10 @@ Tests/                 -> /home/claude/verify2
     the sidechain, switched-off modules skipped with no clicks, settings
     both ways, the delay (and the EQ's MASTER changing it), INPUT /
     OUTPUT / BYPASS, LUFS against known tones and an independent
-    measurement, saving, the window, speed).
+    measurement, saving, both skins' windows - every module knob on the
+    HOLOGRAM panel, nothing overlapping, hints word for word, dragging,
+    double-click reset and typing, power / INIT / LINK, pages, SETUP
+    sizes - with PNG renders, speed).
     The sound (against theory and real material), the DAW plumbing
     (settings, saving, presets, buses), the window (and PNG renders of
     it), skipping silence (must match working through it), and speed

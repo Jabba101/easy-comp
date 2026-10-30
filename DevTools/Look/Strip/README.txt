@@ -339,6 +339,13 @@ STILL TO DECIDE
    Ideas from the skin tests worth keeping in any skin: a lit arc
    around each knob showing its setting, a dB scale on the big screen,
    SLOPE on the HPF and LPF.
+   BUILT (Easy Strip 0.2.0, 30 October 2026): the plugin's HOLOGRAM skin
+   follows strip_wireframe_hologram_digital.html; renders in
+   DevTools/Look/EasyStrip/. Differences from the wireframe, by the rule
+   that each module = its standalone: Amp has its sections 1 HOW MUCH
+   (DRIVE), 2 TONE (TONE, TIGHT), 3 OUTPUT (MIX, AUTO GAIN); the EQ adds
+   each band's LISTEN, LPF's 12 / 24, AUTO GAIN and A / B / COPY in its
+   header, ANALYSER on the big screen; OVERSAMPLING has 4x / 8x first.
    Full HOLOGRAM wireframe: strip_wireframe_hologram_digital.html (+ .png)
    - the look to work from (AI "more sci-fi" renders only added glow).
    Tweaks to add next (agreed): chamfered (cut-off) panel corners instead

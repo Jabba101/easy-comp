@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.14.0)
+project(EasyPlugins VERSION 1.15.0)
 
 # Build the Visual C++ runtime into the plugins themselves, so they also work
 # on a PC that doesn't have Visual Studio installed. (No effect on macOS / Linux.)
@@ -223,7 +223,7 @@ endforeach()
 add_easy_plugin(EasyStrip
     NAME        "Easy Strip"
     CODE        Ezst
-    VERSION     0.1.0
+    VERSION     0.2.0
     BUNDLE_ID   com.homestudio.easystrip
     CATEGORIES  Fx
     SOURCES     Effects/LoudnessMeter.h
@@ -231,6 +231,28 @@ add_easy_plugin(EasyStrip
                 Plugins/EasyStrip/PluginProcessor.cpp
                 Plugins/EasyStrip/PluginEditor.h
                 Plugins/EasyStrip/PluginEditor.cpp
+                Plugins/EasyStrip/StripSettings.h
+                Plugins/EasyStrip/StripSettings.cpp
+                Plugins/EasyStrip/HoloLook.h
+                Plugins/EasyStrip/HoloLook.cpp
+                Plugins/EasyStrip/HoloControls.h
+                Plugins/EasyStrip/HoloControls.cpp
+                Plugins/EasyStrip/HoloScreen.h
+                Plugins/EasyStrip/HoloScreen.cpp
+                Plugins/EasyStrip/HoloView.h
+                Plugins/EasyStrip/HoloView.cpp
+                Plugins/EasyStrip/HoloSlabs.h
+                Plugins/EasyStrip/HoloSlabs.cpp
                 ${STRIP_MODULE_SOURCES})
 target_compile_definitions(EasyStrip PRIVATE EASY_STRIP_MODULE=1)
-target_link_libraries(EasyStrip PRIVATE juce::juce_dsp pffft)
+
+# The HOLOGRAM look's fonts, built into the plugin (free fonts - see ThirdParty/Fonts)
+juce_add_binary_data(StripFonts
+    HEADER_NAME StripFonts.h
+    NAMESPACE   StripFonts
+    SOURCES     ThirdParty/Fonts/BarlowCondensed-Medium.ttf
+                ThirdParty/Fonts/BarlowCondensed-SemiBold.ttf
+                ThirdParty/Fonts/BarlowCondensed-Bold.ttf
+                ThirdParty/Fonts/Orbitron-Bold.ttf)
+set_target_properties(StripFonts PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(EasyStrip PRIVATE juce::juce_dsp pffft StripFonts)

@@ -63,7 +63,12 @@ foreach(module EasyGate EasyAmp EasyEQ EasyDS EasyComp EasyTransient BitchSlap E
     list(APPEND STRIP_SOURCES ${P}/Plugins/${module}/PluginProcessor.cpp ${P}/Plugins/${module}/PluginEditor.cpp)
 endforeach()
 juce_add_console_app(StripTests PRODUCT_NAME "StripTests")
-target_sources(StripTests PRIVATE StripTests.cpp ${P}/Plugins/EasyStrip/PluginProcessor.cpp ${P}/Plugins/EasyStrip/PluginEditor.cpp ${STRIP_SOURCES} ${SHARED})
+set(HOLO ${P}/Plugins/EasyStrip/StripSettings.cpp ${P}/Plugins/EasyStrip/HoloLook.cpp ${P}/Plugins/EasyStrip/HoloControls.cpp
+         ${P}/Plugins/EasyStrip/HoloScreen.cpp ${P}/Plugins/EasyStrip/HoloView.cpp ${P}/Plugins/EasyStrip/HoloSlabs.cpp)
+juce_add_binary_data(StripFonts HEADER_NAME StripFonts.h NAMESPACE StripFonts
+    SOURCES ${P}/ThirdParty/Fonts/BarlowCondensed-Medium.ttf ${P}/ThirdParty/Fonts/BarlowCondensed-SemiBold.ttf
+            ${P}/ThirdParty/Fonts/BarlowCondensed-Bold.ttf ${P}/ThirdParty/Fonts/Orbitron-Bold.ttf)
+target_sources(StripTests PRIVATE StripTests.cpp ${P}/Plugins/EasyStrip/PluginProcessor.cpp ${P}/Plugins/EasyStrip/PluginEditor.cpp ${HOLO} ${STRIP_SOURCES} ${SHARED})
 target_include_directories(StripTests PRIVATE ${P}/Plugins/EasyStrip ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(StripTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Strip" EASY_STRIP_MODULE=1 JUCE_MODAL_LOOPS_PERMITTED=1)
-target_link_libraries(StripTests PRIVATE pffft juce::juce_audio_utils juce::juce_dsp PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+target_link_libraries(StripTests PRIVATE pffft StripFonts juce::juce_audio_utils juce::juce_dsp PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)

@@ -13,8 +13,7 @@ Right now this project makes:
                  can be louder)
     Easy Amp     a valve amp: from warmth to an overdriven rock growl
     Easy EQ      a four-band EQ with filters, mid-side and linear phase
-    Easy Strip   all of the above in one channel strip (early test
-                 version: plain layout, the HOLOGRAM look comes later)
+    Easy Strip   all of the above in one channel strip (HOLOGRAM look)
 
 Every time the project changes on GitHub, GitHub builds the plugins for you
 on its own Windows computers. You just download and install them.
@@ -425,31 +424,45 @@ YOUR FIRST FIVE MINUTES WITH EASY EQ
 
 
 ====================================================================
-YOUR FIRST FIVE MINUTES WITH EASY STRIP (early test version)
+YOUR FIRST FIVE MINUTES WITH EASY STRIP
 ====================================================================
    Every Easy plugin in one channel strip, in this order:
       INPUT > GATE > AMP > EQ > DS > COMP > TRANS > BITCH-SLAP > CLIP > OUTPUT
 
    Each module IS its plugin: the same sound (tested sample for sample),
-   the same window, presets, INIT and help. Your own saved presets are
-   shared with the standalone plugins.
+   the same controls, numbered sections, presets and help text. Your own
+   saved presets are shared with the standalone plugins.
 
-   1. Every module starts switched off. Click a module's ON lamp (under
-      its tab) to switch it on; click the tab to open its window in the
-      middle. Switched-off modules aren't run at all, so they cost
-      nothing - and the strip's timing never changes when you switch.
-      (A module's own BYPASS button is the same switch.)
-   2. INPUT (left): TRIM, and the polarity flip for multi-mic drums.
-      Aim for the meter peaking around -6 dB.
-   3. OUTPUT (right): LEVEL, the meter, and loudness in LUFS - S for the
-      last 3 seconds, I for the whole song so far. Click I to start it
-      again (e.g. at the top of the song).
-   4. OVERSAMPLING (above the module window) is one setting for AMP and
-      CLIP together.
-   5. The sidechain input goes to both GATE and COMP (each one's
-      LISTENS TO / OPENED BY decides whether it uses it).
-   6. INIT (top right, small and red) resets the whole strip. Each
-      module's own INIT resets just that module.
+   The HOLOGRAM look (the default) puts every module on one panel:
+   1. Every module starts switched off. Click a module's name button (the
+      big one at the top of its panel) to switch it on - lit = on. Off,
+      it isn't run at all and costs nothing, and the strip's timing never
+      changes when you switch.
+   2. Each module has its own INIT (red: just that module back to its
+      defaults) and Pr (that module's presets - load or save).
+   3. The big screen shows ONE module: press its page button (the row
+      under the header). On the EQ page, drag the numbered dots.
+   4. Every control: drag up or down (Shift for fine), or use the mouse
+      wheel. Double-click the control to reset it; double-click its
+      NUMBER to type a value (10 on a frequency means 10 kHz where that
+      fits; "off" works where there's an OFF).
+   5. The ticker along the bottom explains whatever the mouse is over,
+      and shows the exact value while you turn something.
+   6. INPUT (left): TRIM, the polarity flip, the meter. OUTPUT (right):
+      PEAK / LUFS meter, LUFS S (last 3 seconds) and I (whole song -
+      click it to start again), LEVEL.
+   7. Header: the strip's presets (arrows step through them), one
+      OVERSAMPLING for AMP and CLIP, DIM (panel brightness), INIT (the
+      whole strip), BYPASS (the whole strip), SETUP.
+   8. Clip's ADVANCED shows its SOUND DESIGN row under the EQ.
+   9. The sidechain input goes to both GATE and COMP (each one's
+      OPENED BY / LISTENS TO decides whether it uses it).
+
+   SETUP (top right): window size (60% to 150%, or drag the window's
+   corner), the skin (HOLOGRAM, or CLASSIC - which shows each module's
+   own standalone window), the ticker on or off, and what 0 means on the
+   INPUT / OUTPUT meters (0 dBFS, or -18 dBFS like a VU meter). These are
+   remembered for every Easy Strip.
 
    In Samplitude every module's settings show up as "Comp Threshold",
    "Gate Range" and so on, so automation works on all of them.
@@ -508,7 +521,9 @@ WHAT'S IN THIS FOLDER
    Plugins\EasyAmp\       Easy Amp's knobs, window and presets.
    Plugins\EasyEQ\        Easy EQ's knobs, screen and presets.
    Plugins\EasyStrip\     Easy Strip: the plumbing that runs the plugins
-                          above as its modules, and its window.
+                          above as its modules, and its windows (Holo* =
+                          the HOLOGRAM look).
+   ThirdParty\Fonts\     The HOLOGRAM look's fonts (see their licence).
 
    ThirdParty\pffft\      PFFFT, the fast FFT behind Bitch-Slap's reverb
                           (someone else's free code - see its README.txt).
@@ -529,3 +544,7 @@ A NOTE ON JUCE'S LICENCE
    Bitch-Slap also uses PFFFT (ThirdParty\pffft), which is free under a
    BSD-style licence. Its only condition: if you give the plugins to
    anyone, include the text of ThirdParty\pffft\LICENSE.txt with them.
+
+   The Easy Strip's HOLOGRAM look uses the fonts Barlow Condensed and
+   Orbitron (ThirdParty\Fonts), free under the SIL Open Font License:
+   they can be built into the plugin and shared or sold with it.

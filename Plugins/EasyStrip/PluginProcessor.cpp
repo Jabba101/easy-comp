@@ -128,6 +128,7 @@ void EasyStripAudioProcessor::connectModules()
             }
 
             auto link = std::make_unique<Link>();
+            link->owner = this;
             link->module = setting;
             link->strip = parameters.getParameter (StripIDs::moduleID (m, setting->paramID));
             jassert (link->strip != nullptr);
@@ -150,6 +151,7 @@ void EasyStripAudioProcessor::Link::parameterValueChanged (int, float newValue)
     // Changed in the module's own window (a knob, a preset, INIT, A / B): tell the strip, and so the DAW
     last.store (newValue);
     strip->setValueNotifyingHost (newValue);
+    owner->markPresetEdited();   // (the strip's preset name then shows it's been changed)
 }
 
 void EasyStripAudioProcessor::Link::parameterGestureChanged (int, bool starting)
@@ -413,6 +415,8 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 
         writePos = (writePos + n) & ringMask;
     }
+
+    blocksProcessed.fetch_add (1);
 
     const int latency = totalLatency();
     if (latency != reportedLatency)

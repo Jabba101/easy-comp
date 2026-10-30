@@ -2,6 +2,7 @@
 #include "TestHelpers.h"
 #include "../EasyPlugins/Plugins/EasyStrip/PluginProcessor.h"
 #include "../EasyPlugins/Plugins/EasyStrip/PluginEditor.h"
+#include "../EasyPlugins/Plugins/EasyStrip/HoloSlabs.h"
 
 using namespace th;
 using S = EasyStripAudioProcessor;
@@ -395,17 +396,30 @@ namespace
     }
 
     //==========================================================================
-    void testWindow (const juce::File& outDir)
+    void useSettings (int skin, float scale = 1.0f, bool ticker = true)
     {
-        std::cout << "\n[window]\n";
+        static const auto file = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("easystrip-test.settings");
+        file.deleteFile();
+        StripSettings::useFileForTesting (file);
+        StripSettings st;
+        st.skin = skin; st.scale = scale; st.ticker = ticker;
+        st.save();
+    }
+
+    void testClassicWindow (const juce::File& outDir)
+    {
+        std::cout << "\n[window: CLASSIC skin]\n";
+        useSettings (StripSettings::classic, 1.0f);
         S s; prepareStereo (s, true);
         switchOn (s, 4, true); switchOn (s, 2, true);
         process (s, music (1.0));
 
-        std::unique_ptr<juce::AudioProcessorEditor> editor (s.createEditor());
-        auto* window = dynamic_cast<EasyStripAudioProcessorEditor*> (editor.get());
-        check (window != nullptr && window->getModuleWindow() != nullptr, "opens, showing the first module's own window");
-        if (window == nullptr) return;
+        std::unique_ptr<juce::AudioProcessorEditor> editor (s.createEditorAndMakeActive());
+        auto* outer = dynamic_cast<EasyStripAudioProcessorEditor*> (editor.get());
+        auto* window = outer != nullptr ? outer->getClassic() : nullptr;
+        check (window != nullptr && window->getModuleWindow() != nullptr && outer->getHologram() == nullptr,
+               "CLASSIC (chosen in SETUP): opens showing the first module's own window");
+        if (window == nullptr) { s.editorBeingDeleted (editor.get()); return; }
 
         bool everyWindow = true;
         for (int m = 0; m < S::numModules; ++m)
@@ -413,7 +427,7 @@ namespace
             window->tabs[(size_t) m].onClick();
             auto* shown = window->getModuleWindow();
             everyWindow = everyWindow && shown != nullptr && window->getShownModule() == m
-                          && editor->getLocalBounds().contains (shown->getBoundsInParent());
+                          && window->getLocalBounds().contains (shown->getBoundsInParent());
         }
         check (everyWindow, "each tab shows that module's own window, fitted inside");
 
@@ -422,7 +436,6 @@ namespace
         window->onLamps[6]->onClick();
         check (! s.isModuleOn (6), "...and off");
 
-        // INIT: the whole strip
         setStrip (s, StripIDs::trim, 5.0f);
         window->initAllButton.onClick();
         bool allOff = true;
@@ -432,10 +445,184 @@ namespace
         switchOn (s, 4, true); switchOn (s, 2, true);
         window->tabs[4].onClick();
         for (int i = 0; i < 20; ++i) { process (s, music (0.1)); window->updateDisplaysNow(); }
-        check (window->shortTermReadout.getText().contains ("LUFS") && window->integratedReadout.getText().contains ("LUFS"), "shows S and I LUFS (" + window->shortTermReadout.getText() + ", " + window->integratedReadout.getText() + ")");
-        savePng (*editor, outDir.getChildFile ("strip.png"));
-        window->tabs[2].onClick();
-        savePng (*editor, outDir.getChildFile ("strip-eq.png"));
+        check (window->shortTermReadout.getText().contains ("LUFS"), "shows S and I LUFS (" + window->shortTermReadout.getText() + ", " + window->integratedReadout.getText() + ")");
+        savePng (*editor, outDir.getChildFile ("strip-classic.png"));
+
+        window->hologramButton.onClick();
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (50);
+        check (outer->getHologram() != nullptr && outer->getClassic() == nullptr, "HOLOGRAM LOOK switches to the HOLOGRAM skin");
+        s.editorBeingDeleted (editor.get());
+    }
+
+    // Presses the mouse on a component and drags it (in its own coordinates)
+    void drag (juce::Component& c, juce::Point<float> from, juce::Point<float> to, bool doubleClick = false)
+    {
+        auto source = juce::Desktop::getInstance().getMainMouseSource();
+        const auto now = juce::Time::getCurrentTime();
+        const auto event = [&] (juce::Point<float> pos, int clicks)
+        {
+            return juce::MouseEvent (source, pos, {}, juce::MouseInputSource::defaultPressure, juce::MouseInputSource::defaultOrientation,
+                                     juce::MouseInputSource::defaultRotation, juce::MouseInputSource::defaultTiltX, juce::MouseInputSource::defaultTiltY,
+                                     &c, &c, now, from, now, clicks, false);
+        };
+        if (doubleClick) { c.mouseDoubleClick (event (from, 2)); return; }
+        c.mouseDown (event (from, 1));
+        c.mouseDrag (event (to, 1));
+        c.mouseUp (event (to, 1));
+    }
+
+    void testHologram (const juce::File& outDir)
+    {
+        std::cout << "\n[window: HOLOGRAM skin]\n";
+        useSettings (StripSettings::hologram, 1.0f);
+        S s; prepareStereo (s, true);
+        for (int m : { 0, 2, 3, 4, 5, 7 }) switchOn (s, m, true);
+        s.getModule (2).loadPreset (s.getModule (2).getBuiltInPresets()[5]);
+        s.getModule (4).loadPreset (s.getModule (4).getBuiltInPresets()[6]);
+        process (s, music (1.0));
+
+        std::unique_ptr<juce::AudioProcessorEditor> editor (s.createEditorAndMakeActive());
+        auto* outer = dynamic_cast<EasyStripAudioProcessorEditor*> (editor.get());
+        auto* view = outer != nullptr ? outer->getHologram() : nullptr;
+        check (view != nullptr && editor->getWidth() == 1800 && editor->getHeight() == 1030, "HOLOGRAM by default; 1800 x 1030 at 100%");
+        if (view == nullptr) { if (editor) s.editorBeingDeleted (editor.get()); return; }
+
+        // Every setting of every module has its control (the standalone's controls, all of them)
+        juce::StringArray missing;
+        const juce::StringArray notKnobs { CommonIDs::bypass, CommonIDs::autoGain, "quality", "view", "analyser", "link", "master",
+                                           "openedby", "turnsdown", "reactsto", "character", "thrust", "listensto", "sync",
+                                           "lowshelf", "highshelf", "hpfslope", "lpfslope", "lowtarget", "lowmidtarget", "highmidtarget", "hightarget" };
+        for (int m = 0; m < S::numModules; ++m)
+            for (auto* p : s.getModule (m).getParameters())
+                if (auto* r = dynamic_cast<juce::RangedAudioParameter*> (p))
+                    if (! notKnobs.contains (r->paramID) && view->findControl (m, r->paramID) == nullptr)
+                        missing.add (juce::String (StripModules::names[m]) + "/" + r->paramID);
+        check (missing.isEmpty(), "every knob of every module is on the panel" + (missing.isEmpty() ? juce::String() : " (missing: " + missing.joinIntoString (", ") + ")"));
+
+        // Nothing sticks out of its panel, and nothing overlaps inside a module
+        view->updateNow();
+        bool tidy = true;
+        juce::StringArray problems;
+        for (auto& slab : view->slabs)
+        {
+            std::vector<juce::Rectangle<int>> placed;
+            for (auto* child : slab->getChildren())
+            {
+                if (! child->isVisible()) continue;
+                const auto b = child->getBounds();
+                if (! slab->getLocalBounds().contains (b)) { tidy = false; problems.add (juce::String (StripModules::names[slab->getModule()]) + " outside: " + juce::String (b.toString())); }
+                for (auto& other : placed)
+                    if (other.intersects (b)) { tidy = false; problems.add (juce::String (StripModules::names[slab->getModule()]) + " overlap: " + b.toString() + " / " + other.toString()); }
+                placed.push_back (b);
+            }
+        }
+        check (tidy, "inside every module, nothing overlaps or sticks out" + (tidy ? juce::String() : " (" + problems.joinIntoString ("; ").substring (0, 400) + ")"));
+
+        // Hints: the standalones' own words
+        auto* threshold = view->findControl (4, CompIDs::threshold);
+        view->mouseEnter (hoverEvent (threshold));
+        check (view->getTickerText() == view->moduleHint (4, "THRESHOLD") && view->getTickerText().isNotEmpty(),
+               "hovering Comp's THRESHOLD shows Easy Comp's own hint on the ticker");
+
+        // Dragging, double-click to reset, typing a value
+        auto* compThreshold = view->findControl (4, CompIDs::threshold);
+        const float before = getParam (s.getModule (4), CompIDs::threshold);
+        drag (*compThreshold, { 28.0f, 100.0f }, { 28.0f, 136.0f });
+        process (s, music (0.05));
+        const float after = getParam (s.getModule (4), CompIDs::threshold);
+        check (after < before - 1.0f && near (s.parameters.getParameter (StripIDs::moduleID (4, CompIDs::threshold))->getValue(),
+                                              s.getModule (4).parameters.getParameter (CompIDs::threshold)->getValue(), 1.0e-5f),
+               "dragging THRESHOLD down lowers it (" + juce::String (before, 1) + " -> " + juce::String (after, 1) + " dB), and the DAW sees it");
+
+        drag (*compThreshold, { 28.0f, 30.0f }, { 28.0f, 30.0f }, true);
+        const float defaultThreshold = s.getModule (4).parameters.getParameter (CompIDs::threshold)->convertFrom0to1 (
+                                         s.getModule (4).parameters.getParameter (CompIDs::threshold)->getDefaultValue());
+        check (near (getParam (s.getModule (4), CompIDs::threshold), defaultThreshold, 0.05f), "double-click the bar: back to its default");
+
+        auto* highFreq = dynamic_cast<Holo::Ring*> (view->findControl (2, EQIDs::freq[3]));
+        highFreq->getParameter().setValueNotifyingHost (highFreq->getParameter().convertTo0to1 (5000.0f));
+        const auto centre = juce::Point<float> (highFreq->getWidth() * 0.5f, highFreq->getHeight() - 58.0f * 0.46f);
+        drag (*highFreq, centre, centre, true);
+        auto* entry = dynamic_cast<juce::TextEditor*> (view->getChildren().getLast());
+        for (auto* c : view->getChildren()) if (auto* t = dynamic_cast<juce::TextEditor*> (c)) entry = t;
+        const bool opened = entry != nullptr && entry->isVisible();
+        if (opened) { entry->setText ("10"); entry->onReturnKey(); }
+        check (opened && near (getParam (s.getModule (2), EQIDs::freq[3]), 10000.0f, 1.0f),
+               "double-click a number to type: \"10\" on HIGH's frequency gives 10 kHz");
+
+        // Power, INIT, presets
+        auto& slapPower = view->slabs[6]->power;
+        slapPower.triggerClick();
+        juce::MessageManager::getInstance()->runDispatchLoopUntil (30);
+        process (s, music (0.05));
+        check (s.isModuleOn (6), "a module's name button switches it on");
+
+        s.getModule (5).parameters.getParameter (TransientIDs::punch)->setValueNotifyingHost (0.9f);
+        view->slabs[5]->init.onClick();
+        check (near (getParam (s.getModule (5), TransientIDs::punch), 0.0f, 0.5f) && s.isModuleOn (4), "a module's INIT resets just that module");
+
+        // Clip ADVANCED appears under the EQ
+        setParam (s.getModule (7), ClipIDs::view, 1.0f);
+        view->updateNow();
+        check (view->clipAdvanced->isVisible(), "Clip on ADVANCED: SOUND DESIGN appears under the EQ");
+
+        // LINK: TOP and BOTTOM keep their gap
+        setParam (s.getModule (7), ClipIDs::top, -2.0f);
+        setParam (s.getModule (7), ClipIDs::bottom, -5.0f);
+        setParam (s.getModule (7), ClipIDs::link, 1.0f);
+        view->findControl (7, ClipIDs::top)->setFromUser (s.getModule (7).parameters.getParameter (ClipIDs::top)->convertTo0to1 (-4.0f));
+        check (near (getParam (s.getModule (7), ClipIDs::top), -4.0f, 0.06f) && near (getParam (s.getModule (7), ClipIDs::bottom), -7.0f, 0.06f),
+               "LINK keeps the gap between TOP and BOTTOM");
+
+        // Pages and live displays
+        for (int i = 0; i < 25; ++i) { process (s, music (0.05)); view->updateNow(); }
+        for (int m = 0; m < S::numModules; ++m)
+        {
+            view->pageButtons[(size_t) m]->onClick();
+            check (view->getScreen().getPage() == m, juce::String ("page button ") + StripModules::tabs[m] + " shows it on the big screen");
+        }
+        view->pageButtons[2]->onClick();
+        process (s, music (0.3)); view->updateNow();
+        savePng (*editor, outDir.getChildFile ("strip-hologram.png"));
+        view->pageButtons[4]->onClick();
+        for (int i = 0; i < 10; ++i) { process (s, music (0.05)); view->updateNow(); }
+        savePng (*editor, outDir.getChildFile ("strip-hologram-comp.png"));
+
+        // SETUP: size
+        view->showSetup (true);
+        check (view->isSetupShowing(), "SETUP opens");
+        view->getSettings().scale = 0.8f;
+        outer->applySettings();
+        check (editor->getWidth() == 1440 && editor->getHeight() == 824, "SETUP size 80%: 1440 x 824 (" + juce::String (editor->getWidth()) + " x " + juce::String (editor->getHeight()) + ")");
+        savePng (*editor, outDir.getChildFile ("strip-hologram-80.png"));
+        view->showSetup (false);
+
+        view->getSettings().ticker = false;
+        outer->applySettings();
+        check (outer->getHologram() != nullptr && editor->getHeight() == juce::roundToInt (974 * 0.8f), "ticker off: the window gets shorter");
+        s.editorBeingDeleted (editor.get());
+    }
+
+    void testHologramSpeed()
+    {
+        std::cout << "\n[window speed]\n";
+        useSettings (StripSettings::hologram, 1.0f);
+        S s; prepareStereo (s, true);
+        for (int m = 0; m < S::numModules; ++m) switchOn (s, m, true);
+        std::unique_ptr<juce::AudioProcessorEditor> editor (s.createEditorAndMakeActive());
+        auto* view = dynamic_cast<EasyStripAudioProcessorEditor*> (editor.get())->getHologram();
+        juce::Image image (juce::Image::ARGB, editor->getWidth(), editor->getHeight(), true);
+        const auto t0 = std::chrono::steady_clock::now();
+        for (int i = 0; i < 10; ++i)
+        {
+            process (s, music (0.033));
+            view->updateNow();
+            juce::Graphics g (image);
+            editor->paintEntireComponent (g, true);
+        }
+        const double ms = std::chrono::duration<double, std::milli> (std::chrono::steady_clock::now() - t0).count() / 10.0;
+        std::cout << "    whole window drawn: " << ms << " ms per frame (software drawing; the plugin only redraws what moves)\n";
+        s.editorBeingDeleted (editor.get());
     }
 
     //==========================================================================
@@ -469,6 +656,20 @@ namespace
 int main (int argc, char** argv)
 {
     juce::ScopedJuceInitialiser_GUI gui;
+    if (argc > 2 && juce::String (argv[2]) == "hints")
+    {
+        S s;
+        for (int m = 0; m < S::numModules; ++m)
+        {
+            std::unique_ptr<juce::AudioProcessorEditor> e (s.getModule (m).createEditorAndMakeActive());
+            std::cout << "=== " << StripModules::names[m] << "\n";
+            juce::StringArray seen;
+            for (auto& [t, x] : dynamic_cast<EasyWindow*> (e.get())->getAllHints())
+                if (! seen.contains (t)) { seen.add (t); std::cout << t << " | " << x << "\n"; }
+            s.getModule (m).editorBeingDeleted (e.get());
+        }
+        return 0;
+    }
     const juce::File outDir (argc > 1 ? juce::String (argv[1]) : juce::File::getCurrentWorkingDirectory().getFullPathName());
 
     testAllOff();
@@ -480,7 +681,9 @@ int main (int argc, char** argv)
     testLatencyChange();
     testLufs();
     testSaving();
-    testWindow (outDir);
+    testClassicWindow (outDir);
+    testHologram (outDir);
+    testHologramSpeed();
     testSpeed();
     return finish();
 }
