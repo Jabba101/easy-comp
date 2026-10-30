@@ -505,6 +505,12 @@ namespace Holo
 
         void refresh() override
         {
+            // On a mono track, mid-side does nothing: ST / MID / SIDE go dim
+            const bool mono = strip.getMainBusNumInputChannels() == 1;
+            for (auto& band : bands)
+                if (band.target != nullptr && std::abs (band.target->getAlpha() - (mono ? 0.35f : 1.0f)) > 0.01f)
+                    band.target->setAlpha (mono ? 0.35f : 1.0f);
+
             const int active = strip.getEQ().getActiveSlot();
             for (int s = 0; s < 2; ++s)
                 slot[s].setToggleState (s == active, juce::dontSendNotification);

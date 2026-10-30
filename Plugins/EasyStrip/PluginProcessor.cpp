@@ -106,6 +106,18 @@ std::vector<Preset> EasyStripAudioProcessor::makeStripPresets (StripModules& mod
         for (auto* swap : recipe.order)
             preset.values.push_back ({ swap, 1.0f });
 
+        // Knobs set on top of the module presets
+        for (auto& set : recipe.sets)
+        {
+            const auto id = StripIDs::moduleID ((int) set.module, set.id);
+            jassert (modules.all[(size_t) set.module]->parameters.getParameter (set.id) != nullptr);   // (a typo in StripPresets.h)
+            bool replaced = false;
+            for (auto& [existing, value] : preset.values)
+                if (existing == id) { value = set.value; replaced = true; }
+            if (! replaced)
+                preset.values.push_back ({ id, set.value });
+        }
+
         presets.push_back (std::move (preset));
     }
 

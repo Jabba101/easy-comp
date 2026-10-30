@@ -197,7 +197,13 @@ BUILD ORDER
                            BEFORE DRIVE, DRIVE AFTER COMP, SHAPE BEFORE
                            COMP) on an ORDER button (menu) and in SETUP;
                            panels stay put; in presets and A / B.
-                           Later: Comp mid-side, WEAPON SELECT (Easy SFX).
+                           0.6.0: 14 genre presets (Mix Bus: Genres - the
+                           user's own definitions, heavy bass throughout),
+                           two lo-fi vocal presets (de-ess before / after
+                           the drive), strip presets can set single knobs,
+                           the EQ's ST / MID / SIDE dim on mono tracks.
+                           Later: Comp mid-side, the standalones in the
+                           HOLOGRAM look, WEAPON SELECT (Easy SFX).
 
 
 ====================================================================

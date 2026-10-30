@@ -9,6 +9,9 @@
     same presets as the standalone plugins, so every module keeps its tuned
     settings). Modules a recipe doesn't mention are switched off.
 
+    A recipe can also set individual knobs on top of a module's preset
+    ("sets"): the genre mix-bus presets are tuned that way.
+
     Gates and thresholds depend on how loud your recording is: the tips say
     which knob to check first.
 */
@@ -17,6 +20,7 @@ namespace StripPresetRecipes
     enum Module { gate = 0, amp, eq, ds, comp, trans, slap, clip };
 
     struct Use { Module module; const char* preset; };
+    struct Set { Module module; const char* id; float value; };   // one knob, in its own units
 
     struct Recipe
     {
@@ -25,7 +29,11 @@ namespace StripPresetRecipes
         const char* tip;
         std::vector<Use> uses;
         std::vector<const char*> order = {};   // ORDER swaps this preset switches on (StripIDs), if any
+        std::vector<Set> sets = {};            // knobs set on top of the module presets
     };
+
+    // (shorthands for the EQ's choices)
+    constexpr float stereo = 0.0f, mid = 1.0f, side = 2.0f, bell = 0.0f, shelf = 1.0f;
 
     inline const std::vector<Recipe>& all()
     {
@@ -298,6 +306,208 @@ namespace StripPresetRecipes
             { "FX Send", "Send - Tight Room",
               "On an FX track: a short, tight room, reverb only.",
               { { slap, "Send - Tight Room" } } },
+
+            //==== Lo-fi vocals ================================================
+            { "Vocals", "Lo-Fi Vocal - De-ess Before Drive",
+              "Telephone-thin and overdriven, the S sounds tamed BEFORE the drive (DE-ESS BEFORE DRIVE), so they don't distort into spitty hiss.",
+              { { amp, "Vocal - Distorted Shout" }, { eq, "Vocal - Radio Telephone" }, { ds, "Classic (Whole Sound)" }, { comp, "Vocal - Rock & Metal" } },
+              { "deessbeforedrive" },
+              { { ds, "range", 9.0f }, { ds, "from", 4000.0f } } },
+            { "Vocals", "Lo-Fi Vocal - De-ess After Drive",
+              "The same lo-fi vocal, de-essed AFTER the drive: tames the fizz the distortion adds, but lets the S sounds crunch.",
+              { { amp, "Vocal - Distorted Shout" }, { eq, "Vocal - Radio Telephone" }, { ds, "Classic (Whole Sound)" }, { comp, "Vocal - Rock & Metal" } },
+              {},
+              { { ds, "range", 9.0f }, { ds, "from", 4000.0f } } },
+
+            //==== Mix bus: genres =============================================
+            // (Heavy low end throughout, boosted across the whole bass range (the shelf's corner around
+            //  80-100 Hz) - MONO BASS keeps it solid in the middle, PROTECT LOWS keeps CLIP off it;
+            //  EQ AFTER COMP where the bass boost shouldn't make the compressor pump.)
+            { "Mix Bus: Genres", "Midnight Jazz",
+              "Smoky 40s / 50s jazz club, made to sound good (not lo-fi): valve warmth, a deep round bottom, a softened edge, a gentle vintage top. Slow vintage compression keeps the playing's dynamics.",
+              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Jazz, Folk & Classical" }, { clip, "Master - Gentle Safety Net" } },
+              { "eqaftercomp" },
+              { { amp, "drive", 20.0f }, { amp, "tone", -10.0f }, { amp, "tight", 100.0f },
+                { eq, "lowfreq", 100.0f }, { eq, "lowgain", 7.0f }, { eq, "lowshelf", shelf }, { eq, "lowtarget", stereo },
+                { eq, "lowmidfreq", 250.0f }, { eq, "lowmidgain", 1.5f }, { eq, "lowmidtarget", stereo },
+                { eq, "highmidfreq", 3500.0f }, { eq, "highmidgain", -2.0f },
+                { eq, "highfreq", 10000.0f }, { eq, "highgain", 0.0f }, { eq, "highshelf", shelf },
+                { eq, "hpf", 25.0f }, { eq, "lpf", 17000.0f }, { eq, "monobass", 60.0f },
+                { comp, "character", 1.0f }, { comp, "attack", 30.0f }, { comp, "release", 400.0f } } },
+
+            { "Mix Bus: Genres", "Electric Jazz",
+              "Modern fusion: electric guitars, organ and bass. A big clean bottom, the low-mid mud cleared, definition in the mids, air on the sides.",
+              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Glue (Pop & Rock)" },
+                { trans, "Mix Bus - A Little More Punch" }, { clip, "Master - Gentle Safety Net" } },
+              { "eqaftercomp" },
+              { { amp, "tight", 100.0f }, { amp, "drive", 10.0f },
+                { eq, "lowfreq", 100.0f }, { eq, "lowgain", 6.0f }, { eq, "lowshelf", shelf }, { eq, "lowtarget", stereo },
+                { eq, "lowmidfreq", 400.0f }, { eq, "lowmidgain", -2.0f },
+                { eq, "highmidfreq", 2500.0f }, { eq, "highmidgain", 1.5f },
+                { eq, "highfreq", 12000.0f }, { eq, "highgain", 2.0f }, { eq, "highshelf", shelf }, { eq, "hightarget", side },
+                { eq, "monobass", 60.0f } } },
+
+            { "Mix Bus: Genres", "Heavy Jazz",
+              "Big band, heavy: a huge low end, the sharp brass bite pulled back, and drums that punch through like rock.",
+              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
+                { trans, "Mix Bus - A Little More Punch" }, { clip, "Master - Clean Loudness" } },
+              { "eqaftercomp" },
+              { { amp, "tight", 100.0f }, { amp, "drive", 15.0f },
+                { eq, "lowfreq", 100.0f }, { eq, "lowgain", 7.0f }, { eq, "lowshelf", shelf }, { eq, "lowtarget", stereo },
+                { eq, "lowmidfreq", 300.0f }, { eq, "lowmidgain", -1.5f },
+                { eq, "highmidfreq", 2800.0f }, { eq, "highmidgain", -3.0f }, { eq, "highmidtarget", mid },
+                { eq, "highfreq", 10000.0f }, { eq, "highgain", 1.0f }, { eq, "highshelf", shelf },
+                { eq, "monobass", 60.0f },
+                { comp, "attack", 30.0f }, { comp, "release", 150.0f }, { comp, "ratio", 2.5f },
+                { trans, "punch", 25.0f }, { clip, "protectlows", 100.0f } } },
+
+            { "Mix Bus: Genres", "Americana",
+              "Acoustic folk, from an Irish pub band to fiddles, banjo and accordion: a full bottom, the boom cleared, vocal and harmonica presence, air on the strings, harsh banjo and fiddle edges tamed.",
+              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { ds, "Mix Bus - Gentle" },
+                { comp, "Mix Bus - Jazz, Folk & Classical" }, { clip, "Master - Gentle Safety Net" } },
+              { "eqaftercomp" },
+              { { amp, "tight", 100.0f }, { amp, "drive", 8.0f },
+                { eq, "lowfreq", 100.0f }, { eq, "lowgain", 7.0f }, { eq, "lowshelf", shelf }, { eq, "lowtarget", stereo },
+                { eq, "lowmidfreq", 250.0f }, { eq, "lowmidgain", -2.0f },
+                { eq, "highmidfreq", 3000.0f }, { eq, "highmidgain", 1.5f }, { eq, "highmidtarget", mid },
+                { eq, "highfreq", 12000.0f }, { eq, "highgain", 3.0f }, { eq, "highshelf", shelf },
+                { eq, "hpf", 30.0f }, { eq, "monobass", 80.0f },
+                { ds, "from", 4500.0f } } },
+
+            { "Mix Bus: Genres", "Industrial Bass",
+              "A gut punch: squeezed, THEN driven hard (DRIVE AFTER COMP) for a crunchy, distorted bass and highs, then the EQ (EQ AFTER COMP) adds the weight and the clear mids. The deepest sub stays clean.",
+              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Hip-Hop & EDM" },
+                { trans, "Mix Bus - A Little More Punch" }, { clip, "Master - Loud Rock & Punk" } },
+              { "driveaftercomp", "eqaftercomp" },
+              { { amp, "drive", 55.0f }, { amp, "tone", 60.0f }, { amp, "tight", 90.0f }, { amp, "mix", 50.0f },
+                { eq, "lowfreq", 100.0f }, { eq, "lowgain", 7.0f }, { eq, "lowshelf", shelf }, { eq, "lowtarget", stereo },
+                { eq, "lowmidfreq", 350.0f }, { eq, "lowmidgain", -3.0f },
+                { eq, "highmidfreq", 1500.0f }, { eq, "highmidgain", 2.5f },
+                { eq, "highfreq", 8000.0f }, { eq, "highgain", 4.0f }, { eq, "highshelf", shelf },
+                { eq, "monobass", 100.0f },
+                { comp, "ratio", 6.0f }, { comp, "attack", 5.0f }, { comp, "release", 80.0f }, { comp, "mix", 60.0f }, { comp, "thrust", 1.0f },
+                { trans, "punch", 35.0f }, { clip, "protectlows", 100.0f }, { clip, "push", 6.0f }, { clip, "softness", 35.0f } } },
+
+            { "Mix Bus: Genres", "Darksynth",
+              "Crunchy bass and mids (squeezed, then driven: DRIVE AFTER COMP; the EQ after it), the highs thrown wide on the sides only - mono-safe, as the lows stay centred and only the level of the sides changes.",
+              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
+                { slap, "Mix Bus - Synced 1/16 (Darksynth)" }, { clip, "Master - Synthwave Shine" } },
+              { "driveaftercomp", "eqaftercomp" },
+              { { amp, "drive", 40.0f }, { amp, "tone", 45.0f }, { amp, "tight", 90.0f }, { amp, "mix", 60.0f },
+                { eq, "lowfreq", 90.0f }, { eq, "lowgain", 8.0f }, { eq, "lowshelf", shelf }, { eq, "lowtarget", stereo },
+                { eq, "lowmidfreq", 600.0f }, { eq, "lowmidgain", 2.0f },
+                { eq, "highmidfreq", 5000.0f }, { eq, "highmidgain", 2.0f },
+                { eq, "highfreq", 6000.0f }, { eq, "highgain", 5.0f }, { eq, "highshelf", shelf }, { eq, "hightarget", side },
+                { eq, "hpf", 25.0f }, { eq, "monobass", 120.0f },
+                { comp, "ratio", 3.0f }, { comp, "attack", 10.0f }, { comp, "release", 80.0f },
+                { clip, "protectlows", 100.0f }, { clip, "push", 5.0f }, { clip, "softness", 40.0f } } },
+
+            { "Mix Bus: Genres", "Cyberpunk",
+              "Synthwave, bass-heavy and crunchy: a deep sub, warm tape-like drive, wide tops, a touch of 80s space.",
+              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
+                { slap, "Mix Bus - 80s Space" }, { clip, "Master - Synthwave Shine" } },
+              { "driveaftercomp" },
+              { { amp, "mix", 70.0f }, { amp, "drive", 35.0f }, { amp, "tone", 30.0f }, { amp, "tight", 90.0f },
+                { eq, "lowfreq", 80.0f }, { eq, "lowgain", 8.0f }, { eq, "lowshelf", shelf }, { eq, "lowtarget", stereo },
+                { eq, "lowmidfreq", 200.0f }, { eq, "lowmidgain", 1.0f },
+                { eq, "highmidfreq", 3000.0f }, { eq, "highmidgain", -1.0f },
+                { eq, "highfreq", 9000.0f }, { eq, "highgain", 4.0f }, { eq, "highshelf", shelf }, { eq, "hightarget", side },
+                { eq, "lpf", 16000.0f }, { eq, "monobass", 110.0f },
+                { slap, "mix", 10.0f }, { clip, "protectlows", 100.0f }, { clip, "push", 5.0f }, { clip, "softness", 50.0f } } },
+
+            { "Mix Bus: Genres", "Synthwave",
+              "The 80s cassette sound - warm saturation, softened upper mids and top, gentle glue - with a deep EDM bass running underneath it all.",
+              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
+                { slap, "Mix Bus - 80s Space" }, { clip, "Master - Synthwave Shine" } },
+              { "eqaftercomp" },
+              { { amp, "drive", 20.0f }, { amp, "tone", -10.0f }, { amp, "tight", 120.0f },
+                { eq, "lowfreq", 80.0f }, { eq, "lowgain", 7.0f }, { eq, "lowshelf", shelf }, { eq, "lowtarget", stereo },
+                { eq, "lowmidfreq", 250.0f }, { eq, "lowmidgain", -1.5f },
+                { eq, "highmidfreq", 3000.0f }, { eq, "highmidgain", -1.5f },
+                { eq, "highfreq", 9000.0f }, { eq, "highgain", -1.0f }, { eq, "highshelf", shelf },
+                { eq, "lpf", 15000.0f }, { eq, "monobass", 100.0f },
+                { clip, "protectlows", 100.0f }, { clip, "softness", 60.0f } } },
+
+            { "Mix Bus: Genres", "Retrowave",
+              "The 80s cassette sound in its purest form: the tape's low bump, warm saturation, a soft top, gentle vintage glue and a touch of 80s space.",
+              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
+                { slap, "Mix Bus - 80s Space" }, { clip, "Master - Synthwave Shine" } },
+              {},
+              { { amp, "tight", 100.0f }, { amp, "drive", 22.0f }, { amp, "tone", -15.0f },
+                { eq, "lowfreq", 90.0f }, { eq, "lowgain", 5.0f }, { eq, "lowshelf", shelf }, { eq, "lowtarget", stereo },
+                { eq, "lowmidfreq", 300.0f }, { eq, "lowmidgain", -1.0f },
+                { eq, "highmidfreq", 3000.0f }, { eq, "highmidgain", -2.0f },
+                { eq, "highfreq", 8000.0f }, { eq, "highgain", -2.0f }, { eq, "highshelf", shelf },
+                { eq, "lpf", 13000.0f }, { eq, "monobass", 80.0f },
+                { comp, "ratio", 2.0f }, { comp, "attack", 30.0f }, { comp, "release", 300.0f },
+                { clip, "protectlows", 100.0f }, { clip, "push", 3.0f }, { clip, "softness", 70.0f } } },
+
+            { "Mix Bus: Genres", "Heavy Rock",
+              "AC/DC meets Deep Purple, with the bass boosted: valve grit, a big bottom, the mud cleared, guitar bite, loud and punchy.",
+              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Glue (Pop & Rock)" },
+                { trans, "Mix Bus - A Little More Punch" }, { clip, "Master - Loud Rock & Punk" } },
+              { "eqaftercomp" },
+              { { amp, "drive", 25.0f }, { amp, "tone", 5.0f }, { amp, "tight", 100.0f },
+                { eq, "lowfreq", 100.0f }, { eq, "lowgain", 7.0f }, { eq, "lowshelf", shelf }, { eq, "lowtarget", stereo },
+                { eq, "lowmidfreq", 400.0f }, { eq, "lowmidgain", -2.0f },
+                { eq, "highmidfreq", 2500.0f }, { eq, "highmidgain", 2.0f },
+                { eq, "highfreq", 10000.0f }, { eq, "highgain", 1.5f }, { eq, "highshelf", shelf },
+                { eq, "monobass", 90.0f },
+                { comp, "character", 1.0f }, { comp, "attack", 30.0f },
+                { clip, "protectlows", 100.0f } } },
+
+            { "Mix Bus: Genres", "Heavy Metal",
+              "Iron Maiden with the bass boosted: a big but tight low end, the galloping bass's clank and the guitars' bite, tight hits, the cymbals tamed.",
+              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { ds, "Mix Bus - Gentle" }, { comp, "Mix Bus - Hip-Hop & EDM" },
+                { trans, "Mix Bus - A Little Tighter" }, { clip, "Master - Loud Rock & Punk" } },
+              { "eqaftercomp" },
+              { { amp, "drive", 12.0f }, { amp, "tight", 100.0f },
+                { eq, "lowfreq", 100.0f }, { eq, "lowgain", 7.0f }, { eq, "lowshelf", shelf }, { eq, "lowtarget", stereo },
+                { eq, "lowmidfreq", 300.0f }, { eq, "lowmidgain", -3.0f },
+                { eq, "highmidfreq", 1800.0f }, { eq, "highmidgain", 2.0f },
+                { eq, "highfreq", 10000.0f }, { eq, "highgain", 1.5f }, { eq, "highshelf", shelf },
+                { eq, "hpf", 30.0f }, { eq, "monobass", 90.0f },
+                { comp, "ratio", 3.0f }, { comp, "attack", 15.0f }, { comp, "release", 80.0f }, { comp, "thrust", 1.0f },
+                { clip, "protectlows", 100.0f } } },
+
+            { "Mix Bus: Genres", "Neo Punk",
+              "Punk played on expensive equipment - early Southern Rock (ZZ Top, CCR, Skynyrd) crossed with early Santana: warm, open, hi-fi, a fat bottom, the dynamics kept.",
+              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
+                { trans, "Mix Bus - A Little More Punch" }, { clip, "Master - Clean Loudness" } },
+              { "eqaftercomp" },
+              { { amp, "drive", 15.0f }, { amp, "tight", 100.0f },
+                { eq, "lowfreq", 100.0f }, { eq, "lowgain", 6.0f }, { eq, "lowshelf", shelf }, { eq, "lowtarget", stereo },
+                { eq, "lowmidfreq", 350.0f }, { eq, "lowmidgain", -1.5f },
+                { eq, "highmidfreq", 3000.0f }, { eq, "highmidgain", 1.5f },
+                { eq, "highfreq", 12000.0f }, { eq, "highgain", 2.0f }, { eq, "highshelf", shelf },
+                { eq, "monobass", 90.0f },
+                { comp, "ratio", 2.0f }, { comp, "attack", 30.0f }, { comp, "release", 250.0f },
+                { trans, "punch", 10.0f }, { clip, "protectlows", 100.0f } } },{ "Mix Bus: Genres", "New Wave",
+              "Synthwave without the cassette: digital sound in its purest form - no warmth added, bright and crisp, hard clean clipping, a heavy bass, and the digital gated burst.",
+              { { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Hip-Hop & EDM" }, { trans, "Mix Bus - A Little More Punch" },
+                { slap, "Mix Bus - Subtle Size" }, { clip, "Master - Clean Loudness" } },
+              { "eqaftercomp" },
+              { { eq, "lowfreq", 90.0f }, { eq, "lowgain", 6.5f }, { eq, "lowshelf", shelf }, { eq, "lowtarget", stereo },
+                { eq, "lowmidfreq", 300.0f }, { eq, "lowmidgain", -1.5f },
+                { eq, "highmidfreq", 4000.0f }, { eq, "highmidgain", 1.5f },
+                { eq, "highfreq", 10000.0f }, { eq, "highgain", 3.0f }, { eq, "highshelf", shelf },
+                { eq, "hpf", 25.0f }, { eq, "monobass", 90.0f },
+                { comp, "ratio", 3.0f }, { comp, "attack", 10.0f }, { comp, "release", 100.0f },
+                { trans, "punch", 20.0f }, { clip, "softness", 0.0f }, { clip, "protectlows", 90.0f } } },
+
+            { "Mix Bus: Genres", "Gospel",
+              "Motown warmth with the group harmonies lifted: a round bottom, the choir's mud cleared, air on top, slow vintage glue - and the many voices' stacked S sounds tamed.",
+              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { ds, "Mix Bus - Gentle" },
+                { comp, "Mix Bus - Vintage Glue" }, { clip, "Master - Gentle Safety Net" } },
+              { "eqaftercomp" },
+              { { amp, "drive", 15.0f }, { amp, "tone", -5.0f }, { amp, "tight", 100.0f },
+                { eq, "lowfreq", 100.0f }, { eq, "lowgain", 6.0f }, { eq, "lowshelf", shelf }, { eq, "lowtarget", stereo },
+                { eq, "lowmidfreq", 250.0f }, { eq, "lowmidgain", -1.5f },
+                { eq, "highmidfreq", 1500.0f }, { eq, "highmidgain", 1.5f }, { eq, "highmidtarget", mid },
+                { eq, "highfreq", 11000.0f }, { eq, "highgain", 3.0f }, { eq, "highshelf", shelf },
+                { eq, "monobass", 90.0f },
+                { ds, "range", 4.0f },
+                { comp, "reactsto", 1.0f }, { comp, "ratio", 2.0f }, { comp, "attack", 30.0f }, { comp, "release", 300.0f } } },
         };
         return recipes;
     }

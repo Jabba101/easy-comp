@@ -39,7 +39,10 @@ Tests/                 -> /home/claude/verify2
     measurement, saving, both skins' windows - every module knob on the
     HOLOGRAM panel, nothing overlapping, hints word for word, dragging,
     double-click reset and typing, power / INIT / LINK, pages, SETUP
-    sizes - with PNG renders, speed).
+    sizes - with PNG renders, speed). "StripTests . genres" measures the
+    genre presets on the test mixes (genre_presets_measured.txt: the bass,
+    mids and highs before and after, the width); "StripTests . genres
+    <name>" breaks one preset down module by module.
     The sound (against theory and real material), the DAW plumbing
     (settings, saving, presets, buses), the window (and PNG renders of
     it), skipping silence (must match working through it), and speed

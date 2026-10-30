@@ -5,6 +5,7 @@
 #include "../EasyPlugins/Plugins/EasyStrip/HoloSlabs.h"
 #include "../EasyPlugins/Plugins/EasyStrip/StripPresets.h"
 #include "../EasyPlugins/Plugins/EasyComp/PluginEditor.h"
+#include <juce_audio_formats/juce_audio_formats.h>
 
 using namespace th;
 using S = EasyStripAudioProcessor;
@@ -424,8 +425,12 @@ namespace
                 for (auto& q : t.getModule (use.module).getBuiltInPresets()) if (q.name == use.preset) modulePreset = &q;
                 if (modulePreset == nullptr) { allGood = false; problems.add (juce::String (recipe.name) + ": no module preset " + use.preset); continue; }
                 for (auto& [id, value] : modulePreset->values)
-                    if (! near (getParam (t.getModule (use.module), id.toRawUTF8()), value, 0.02f + std::abs (value) * 0.002f))
+                {
+                    bool overridden = false;
+                    for (auto& set : recipe.sets) if (set.module == use.module && id == set.id) overridden = true;
+                    if (! overridden && ! near (getParam (t.getModule (use.module), id.toRawUTF8()), value, 0.02f + std::abs (value) * 0.002f))
                     { allGood = false; problems.add (juce::String (recipe.name) + ": " + id); }
+                }
             }
             for (int m = 0; m < 8; ++m)
                 if (t.isModuleOn (m) != wanted[(size_t) m]) { allGood = false; problems.add (juce::String (recipe.name) + ": module " + juce::String (m) + " on/off"); }
@@ -433,6 +438,23 @@ namespace
             const auto out = process (t, music (1.0));
             if (! allFinite (out) || peak (out, 0, 0, out.getNumSamples()) > 4.0f) { allGood = false; problems.add (juce::String (recipe.name) + ": level"); }
         }
+        // Knobs a recipe sets on top land exactly
+        bool setsLand = true;
+        for (auto& recipe : StripPresetRecipes::all())
+        {
+            if (recipe.sets.empty()) continue;
+            S t;
+            for (auto& q : t.getBuiltInPresets()) if (q.name == recipe.name) t.loadPreset (q);
+            prepareStereo (t, true);
+            process (t, music (0.02));
+            for (auto& set : recipe.sets)
+                if (! near (getParam (t.getModule (set.module), set.id), set.value, 0.02f + std::abs (set.value) * 0.002f))
+                { setsLand = false; problems.add (juce::String (recipe.name) + ": set " + set.id); }
+            for (auto* swap : recipe.order)
+                if (getParam (t, swap) < 0.5f) { setsLand = false; problems.add (juce::String (recipe.name) + ": order " + swap); }
+        }
+        check (setsLand, "the genre presets' own knob settings and ORDER land exactly" + (setsLand ? juce::String() : " (" + problems.joinIntoString ("; ").substring (0, 400) + ")"));
+
         check (allGood, "every strip preset switches on its modules with their own presets, and sounds sane"
                           + (allGood ? juce::String() : " (" + problems.joinIntoString ("; ").substring (0, 500) + ")"));
 
@@ -944,6 +966,97 @@ namespace
 int main (int argc, char** argv)
 {
     juce::ScopedJuceInitialiser_GUI gui;
+    if (argc > 2 && juce::String (argv[2]) == "genres")
+    {
+        juce::AudioFormatManager formats; formats.registerBasicFormats();
+        const auto load = [&] (const char* name)
+        {
+            std::unique_ptr<juce::AudioFormatReader> r (formats.createReaderFor (juce::File ("/home/claude/presetcheck/material").getChildFile (name)));
+            juce::AudioBuffer<float> b (2, (int) std::min<long long> ((long long) r->lengthInSamples, 48000LL * 20));
+            r->read (&b, 0, b.getNumSamples(), 0, true, true);
+            return b;
+        };
+        const auto band = [] (const juce::AudioBuffer<float>& b, int start, int end, double lo, double hi)
+        {
+            double sum = 0;
+            for (int ch = 0; ch < 2; ++ch)
+            {
+                juce::IIRFilter a, c, d, e;
+                if (lo > 0) { a.setCoefficients (juce::IIRCoefficients::makeHighPass (48000, lo)); c.setCoefficients (juce::IIRCoefficients::makeHighPass (48000, lo)); }
+                if (hi > 0) { d.setCoefficients (juce::IIRCoefficients::makeLowPass (48000, hi)); e.setCoefficients (juce::IIRCoefficients::makeLowPass (48000, hi)); }
+                for (int i = 0; i < end; ++i)
+                {
+                    float x = b.getSample (ch, i);
+                    if (lo > 0) x = c.processSingleSampleRaw (a.processSingleSampleRaw (x));
+                    if (hi > 0) x = e.processSingleSampleRaw (d.processSingleSampleRaw (x));
+                    if (i >= start) sum += (double) x * x;
+                }
+            }
+            return 10.0 * std::log10 (sum / (end - start) + 1e-20);
+        };
+        const std::vector<std::pair<const char*, const char*>> jobs {
+            { "Midnight Jazz", "mix_jazz.wav" }, { "Electric Jazz", "mix_jazz.wav" }, { "Heavy Jazz", "mix_jazz.wav" },
+            { "Americana", "mix_acoustic.wav" }, { "Industrial Bass", "mix_edm.wav" }, { "Darksynth", "mix_edm.wav" },
+            { "Cyberpunk", "mix_edm.wav" }, { "Synthwave", "mix_edm.wav" }, { "Retrowave", "mix_edm.wav" },
+            { "Heavy Rock", "mix_rock.wav" }, { "Heavy Metal", "mix_rock.wav" }, { "Neo Punk", "mix_rock.wav" },
+            { "New Wave", "mix_song.wav" }, { "Gospel", "mix_song.wav" } };
+        std::cout << "preset              mix        LUFS in/out   peak   low<90   mid300-3k  high>6k (vs the loudness change)  LOW-MID HIGH-MID  sides\n";
+        std::vector<std::tuple<const char*, const char*, int>> runs;
+        const bool solo = argc > 3;
+        for (auto& [name, file] : jobs)
+        {
+            if (solo && juce::String (name) != juce::String (argv[3])) continue;
+            runs.push_back ({ name, file, -1 });
+            if (solo) for (int m = 0; m < 8; ++m) runs.push_back ({ name, file, m });
+        }
+        for (auto& [name, file, without] : runs)
+        {
+            auto in = load (file);
+            S s;
+            for (auto& q : s.getBuiltInPresets()) if (q.name == name) s.loadPreset (q);
+            if (without >= 0) { if (! s.isModuleOn (without)) continue; switchOn (s, without, false); std::cout << "  without " << StripModules::names[without] << ":\n"; }
+            prepareStereo (s, true);
+            const auto out = process (s, in);
+            const int lat = s.getLatencySamples(), a = 48000 * 4, z = in.getNumSamples() - lat;
+            juce::AudioBuffer<float> aligned (2, z - a);
+            for (int ch = 0; ch < 2; ++ch) aligned.copyFrom (ch, 0, out, ch, a + lat, z - a);
+            juce::AudioBuffer<float> orig (2, z - a);
+            for (int ch = 0; ch < 2; ++ch) orig.copyFrom (ch, 0, in, ch, a, z - a);
+            const double lin = -0.691 + loudnessDb (orig, 0, orig.getNumSamples()), lout = -0.691 + loudnessDb (aligned, 0, aligned.getNumSamples());
+            const double all = lout - lin;   // (each band's change relative to the loudness change)
+            const auto rel = [&] (double lo, double hi) { return band (aligned, 0, aligned.getNumSamples(), lo, hi) - band (orig, 0, orig.getNumSamples(), lo, hi) - all; };
+            juce::AudioBuffer<float> sideIn (1, orig.getNumSamples()), sideOut (1, orig.getNumSamples());
+            double sIn = 0, sOut = 0, mIn = 0, mOut = 0;
+            for (int i = 0; i < orig.getNumSamples(); ++i)
+            {
+                const double si = 0.5 * (orig.getSample (0, i) - orig.getSample (1, i)), mi = 0.5 * (orig.getSample (0, i) + orig.getSample (1, i));
+                const double so = 0.5 * (aligned.getSample (0, i) - aligned.getSample (1, i)), mo = 0.5 * (aligned.getSample (0, i) + aligned.getSample (1, i));
+                sIn += si * si; sOut += so * so; mIn += mi * mi; mOut += mo * mo;
+            }
+            const double sides = 10 * std::log10 ((sOut / (mOut + 1e-20)) / (sIn / (mIn + 1e-20) + 1e-20) + 1e-20);
+            std::printf ("%-18s %-17s %6.1f / %5.1f  %5.1f   %+5.1f    %+5.1f      %+5.1f   %+5.1f  %+5.1f    %+5.1f\n", name, file, lin, lout,
+                         toDb (juce::jmax (peak (aligned, 0, 0, aligned.getNumSamples()), peak (aligned, 1, 0, aligned.getNumSamples()))),
+                         rel (0, 90), rel (300, 3000), rel (6000, 0), rel (0, 90) - rel (300, 3000), rel (6000, 0) - rel (300, 3000), sides);
+        }
+        return 0;
+    }
+    if (argc > 2 && juce::String (argv[2]) == "params")
+    {
+        S s;
+        for (int m = 0; m < S::numModules; ++m)
+        {
+            std::cout << "=== " << StripModules::names[m] << "\n";
+            for (auto* p : s.getModule (m).getParameters())
+                if (auto* r = dynamic_cast<juce::RangedAudioParameter*> (p))
+                {
+                    const auto& range = r->getNormalisableRange();
+                    std::cout << r->paramID << " [" << range.start << " .. " << range.end << "] default " << r->convertFrom0to1 (r->getDefaultValue());
+                    if (auto* c = dynamic_cast<juce::AudioParameterChoice*> (r)) std::cout << " {" << c->choices.joinIntoString (", ") << "}";
+                    std::cout << "\n";
+                }
+        }
+        return 0;
+    }
     if (argc > 2 && juce::String (argv[2]) == "presets")
     {
         S s;
