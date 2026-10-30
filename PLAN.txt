@@ -211,8 +211,15 @@ LATER
      standalone first, then the strip. (The full two-compressor M/S
      version is mastering territory: not planned.)
    - Once the essentials are perfected: EASY SFX, an effects rack.
-     WEAPON SELECT swaps the whole strip layout for the rack; closing the
-     rack brings the strip back. The brainstorm (30 October 2026):
+     WEAPON SELECT opens the rack IN PLACE of the panels to its left:
+     Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the
+     effects rack; Trans, Bitch-Slap, Clip (and INPUT / OUTPUT and the
+     header) stay visible and working. Pressing it again brings the
+     strip back. At 100% that gives the rack about 1340 x 740 px (room
+     for the six effects as a 3 x 2 grid, ~440 x 365 each). Assumed
+     until decided: the row under Amp / EQ (the name, Clip's ADVANCED
+     row) stays, and the DISPLAY FOCUS buttons hide while the rack is
+     open (there's no big screen behind them). The brainstorm (30 October 2026):
        - FLANGER / CHORUS with a vibrato mode, to make things feel
          wider; rates lockable to the song's tempo
        - MOD FILTER: tempo-locked pulses, wide stereo filtering (left
