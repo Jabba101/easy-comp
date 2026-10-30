@@ -94,8 +94,8 @@ THE CHANNEL STRIP, IN SIGNAL ORDER
      orders or swap switches rather than free dragging: e.g. "EQ after
      the compressor", "De-ess before drive". Presets can set the order
      too. Changing it while playing crossfades (no clicks), and the
-     strip's small delay stays the same whatever the order (Easy Gate
-     and Easy DS share one 2 ms look-ahead).
+     strip's small delay stays the same whatever the order (every
+     module's delay always counts, on or off).
    - Sidechain input, so the kick can duck the bass (done in Easy Gate
      and Easy Comp; the strip will share one sidechain input).
 
