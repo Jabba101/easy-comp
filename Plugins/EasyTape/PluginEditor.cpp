@@ -130,7 +130,7 @@ void TapeDisplay::paintMeter (juce::Graphics& g, juce::Rectangle<float> area)
     const auto face = area.reduced (16.0f, 10.0f);
     const float radius = juce::jmin (face.getWidth() * 0.62f, face.getHeight() * 1.15f);
     const juce::Point<float> pivot (face.getCentreX(), face.getY() + radius + 6.0f);
-    constexpr float sweep = 0.78f;   // radians either side of straight up
+    static constexpr float sweep = 0.78f;   // radians either side of straight up
 
     const auto angleOf = [] (float vu)
     {
