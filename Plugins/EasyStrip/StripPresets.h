@@ -24,6 +24,7 @@ namespace StripPresetRecipes
         const char* name;
         const char* tip;
         std::vector<Use> uses;
+        std::vector<const char*> order = {};   // ORDER swaps this preset switches on (StripIDs), if any
     };
 
     inline const std::vector<Recipe>& all()
@@ -32,8 +33,9 @@ namespace StripPresetRecipes
         {
             //==== Kick ========================================================
             { "Drums", "Kick - Rock",
-              "Gate, EQ, compressor, more click, clipped peaks. Check the GATE's THRESHOLD first: it should open on every kick, not on the snare.",
-              { { gate, "Kick - Tight" }, { eq, "Kick - Punch & Click" }, { comp, "Kick - Rock & Metal" }, { trans, "Kick - More Click" }, { clip, "Kick - Tight & Loud" } } },
+              "Gate, EQ, more click into the compressor (SHAPE BEFORE COMP), clipped peaks. Check the GATE's THRESHOLD first: it should open on every kick, not on the snare.",
+              { { gate, "Kick - Tight" }, { eq, "Kick - Punch & Click" }, { comp, "Kick - Rock & Metal" }, { trans, "Kick - More Click" }, { clip, "Kick - Tight & Loud" } },
+              { "shapebeforecomp" } },
             { "Drums", "Kick - Natural",
               "A gentle gate, punch and a little compression - keeps the drum's own sound. Check the GATE's THRESHOLD first.",
               { { gate, "Kick - Natural" }, { eq, "Kick - Punch & Click" }, { comp, "Kick - Punch" } } },
@@ -181,8 +183,9 @@ namespace StripPresetRecipes
               "Headphone bleed gated, present and firmly compressed, the loudest words caught.",
               { { gate, "Vocal - Remove Headphone Bleed" }, { eq, "Vocal - Clear & Present" }, { ds, "Male Vocal" }, { comp, "Vocal - Rock & Metal" }, { clip, "Vocal - Catch the Loud Words" } } },
             { "Vocals", "Vocal - Punk Shout",
-              "Distorted, in-your-face and squashed.",
-              { { amp, "Vocal - Distorted Shout" }, { eq, "Vocal - Less Boxy" }, { ds, "Male Vocal" }, { comp, "Vocal - Rock & Metal" } } },
+              "Distorted, in-your-face and squashed - de-essed before the drive (DE-ESS BEFORE DRIVE), so S sounds don't turn to spitty hiss.",
+              { { amp, "Vocal - Distorted Shout" }, { eq, "Vocal - Less Boxy" }, { ds, "Male Vocal" }, { comp, "Vocal - Rock & Metal" } },
+              { "deessbeforedrive" } },
             { "Vocals", "Vocal - 80s Shout",
               "A rock vocal with the 80s gated burst on it.",
               { { eq, "Vocal - Clear & Present" }, { ds, "Male Vocal" }, { comp, "Vocal - Rock & Metal" }, { slap, "Vocal - 80s Shout" } } },
@@ -222,8 +225,9 @@ namespace StripPresetRecipes
               "Steady, with the valve amp just breaking up.",
               { { amp, "Guitar - Edge of Breakup" }, { comp, "Organ - Steady" } } },
             { "Keys & Synths", "Synth Lead - Synthwave",
-              "Overdriven, upfront and biting.",
-              { { amp, "Synth Lead - Overdrive" }, { comp, "Synth Lead - Upfront" }, { clip, "Synth Lead - Bite" } } },
+              "Compressed, then overdriven (DRIVE AFTER COMP) for an even bite on every note.",
+              { { amp, "Synth Lead - Overdrive" }, { comp, "Synth Lead - Upfront" }, { clip, "Synth Lead - Bite" } },
+              { "driveaftercomp" } },
             { "Keys & Synths", "Synth Pad - Out of the Way",
               "Warm and smooth, with room left for the vocal and the drums.",
               { { amp, "Synth Pad - Warmth" }, { eq, "Synth Pad - Out of the Way" }, { comp, "Synth Pad - Smooth" } } },
@@ -256,8 +260,9 @@ namespace StripPresetRecipes
 
             //==== Buses and master ============================================
             { "Mix Bus & Master", "Mix Bus - Pop & Rock Glue",
-              "Gentle valve warmth, polish and glue on the whole mix.",
-              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Glue (Pop & Rock)" } } },
+              "Gentle valve warmth and glue, then the polish (EQ AFTER COMP) on the whole mix.",
+              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Glue (Pop & Rock)" } },
+              { "eqaftercomp" } },
             { "Mix Bus & Master", "Mix Bus - Rock & Punk",
               "Glued, a little more punch, and a burst of size.",
               { { comp, "Mix Bus - Glue (Pop & Rock)" }, { trans, "Mix Bus - A Little More Punch" }, { slap, "Mix Bus - Rock & Punk Punch" } } },

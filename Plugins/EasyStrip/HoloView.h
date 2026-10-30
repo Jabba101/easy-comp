@@ -79,6 +79,8 @@ namespace Holo
         Button bypassButton { "BYPASS", Colours::warn };
         Button setupButton { "SETUP", Colours::cyan };
         Button presetPrevious { "<", Colours::selected }, presetNext { ">", Colours::selected };
+        Button orderButton { "ORDER", Colours::selected };   // the four swaps, as a menu
+        void showOrderMenu();
         Button slotA { "A", Colours::selected }, slotB { "B", Colours::selected }, copySlot { "A > B", Colours::selected };   // the strip's A / B
         Button weaponSelect { "WEAPON SELECT", Colours::hazard };
         Button polarityButton { juce::String::fromUTF8 ("\xc3\x98"), Colours::cyan };

@@ -87,7 +87,8 @@ namespace Holo
 
         //======================================================================
         /** The SETUP panel: choices that belong to you, for every strip. */
-        struct SetupPanel : public juce::Component
+        struct SetupPanel : public juce::Component,
+                            private juce::Timer
         {
             explicit SetupPanel (View& v) : view (v)
             {
@@ -118,9 +119,27 @@ namespace Holo
                                                             juce::StringArray { "LOW", "MEDIUM", "HIGH" }, Colours::delayMode, true);
                 addAndMakeVisible (*precisionChoice);
 
+                // ORDER (this strip): the four swaps
+                for (int i = 0; i < 4; ++i)
+                {
+                    auto& b = orderButtons[(size_t) i];
+                    b = std::make_unique<Button> (StripIDs::orderNames[i], Colours::selected);
+                    b->fontSize = 13.5f;
+                    orderLinks[(size_t) i] = std::make_unique<ButtonLink> (*view.getStrip().parameters.getParameter (StripIDs::orderSwitches[i]), *b);
+                    addAndMakeVisible (*b);
+                }
+
                 close.onClick = [this] { view.showSetup (false); };
                 addAndMakeVisible (close);
-                setSize (640, 470);
+                setSize (640, 640);
+                shownFlow = EasyStripAudioProcessor::describe (view.getStrip().getWantedOrder());
+                startTimerHz (10);
+            }
+
+            void timerCallback() override
+            {
+                const auto flow = EasyStripAudioProcessor::describe (view.getStrip().getWantedOrder());
+                if (flow != shownFlow) { shownFlow = flow; repaint(); }
             }
 
             void add (std::unique_ptr<Choice>& c, const juce::StringArray& names, int chosen, std::function<void (int)> onChoice)
@@ -150,6 +169,9 @@ namespace Holo
                     y += rowHeight;
                 }
                 precisionChoice->setBounds (24 + labelWidth, rowTop + rowHeight * 5 + 44, 290, 30);
+                const int orderTop = rowTop + rowHeight * 5 + 10 + 92;
+                for (int i = 0; i < 4; ++i)
+                    orderButtons[(size_t) i]->setBounds (24 + labelWidth + (i % 2) * 196, orderTop + (i / 2) * 36, 190, 30);
                 close.setBounds (getWidth() - 24 - 100, getHeight() - 20 - 32, 100, 32);
             }
 
@@ -185,18 +207,27 @@ namespace Holo
                 g.setColour (Colours::ink);
                 g.drawText ("EQ MASTER PRECISION", juce::Rectangle<float> (24.0f, line + 30.0f, (float) labelWidth, 46.0f), juce::Justification::centredLeft, false);
 
+                g.drawText ("ORDER", juce::Rectangle<float> (24.0f, line + 88.0f, (float) labelWidth, 38.0f), juce::Justification::centredLeft, false);
+                g.setColour (Colours::selected);
+                g.setFont (text (14.0f, 1));
+                g.drawText (shownFlow, juce::Rectangle<float> (24.0f, line + 162.0f, r.getWidth() - 48.0f, 22.0f), juce::Justification::centredLeft, false);
+
                 g.setColour (Colours::dim);
                 g.setFont (text (13.0f, 0));
                 g.drawFittedText ("PRECISION (with the EQ's MASTER on): HIGH = the most exact low end, about 43 ms of delay. MEDIUM = about 21 ms. "
                                   "LOW = about 11 ms and less smear before each hit (good on drums), but bands below about 60 Hz come out broader.\n"
+                                  "ORDER changes only the order the sound goes through - the panels stay where they are. Also on the ORDER button by the presets.\n"
                                   "You can also drag the window's corner. Meters: 0 dBFS suits the master; -18 dBFS (like a VU meter) suits single tracks.",
-                                  juce::Rectangle<int> (24, (int) line + 82, (int) r.getWidth() - 48, 56), juce::Justification::topLeft, 4);
+                                  juce::Rectangle<int> (24, (int) line + 192, (int) r.getWidth() - 48, 74), juce::Justification::topLeft, 5);
                 g.drawText ("Easy Strip " JucePlugin_VersionString "  -  built " __DATE__,
                             juce::Rectangle<float> (24.0f, r.getHeight() - 52.0f, 380.0f, 32.0f), juce::Justification::centredLeft, false);
             }
 
             View& view;
             std::unique_ptr<Choice> sizeChoice, skinChoice, tickerChoice, meterChoice, brightnessChoice, precisionChoice;
+            std::array<std::unique_ptr<Button>, 4> orderButtons;
+            std::array<std::unique_ptr<ButtonLink>, 4> orderLinks;
+            juce::String shownFlow;
             Button close { "CLOSE", Colours::cyan };
         };
     }
@@ -279,6 +310,11 @@ namespace Holo
             addAndMakeVisible (b);
             addHint (b, "A / B (THE WHOLE STRIP)", stripSlotHint);
         }
+        orderButton.fontSize = 14.0f;
+        orderButton.onClick = [this] { showOrderMenu(); };
+        addAndMakeVisible (orderButton);
+        addHint (orderButton, "ORDER", {});   // (its text follows the order: see showHintFor)
+
         copySlot.fontSize = 13.5f;
         copySlot.onClick = [this] { strip.copyToOtherSlot(); announce ("COPIED", strip.getActiveSlot() == 0 ? "A to B" : "B to A", 3); };
         addAndMakeVisible (copySlot);
@@ -502,6 +538,8 @@ namespace Holo
             slotB.setBounds (h.removeFromLeft (32));
             h.removeFromLeft (8);
             copySlot.setBounds (h.removeFromLeft (52));
+            h.removeFromLeft (16);
+            orderButton.setBounds (h.removeFromLeft (76));
 
             setupButton.setBounds (h.removeFromRight (96));
             h.removeFromRight (12);
@@ -583,7 +621,7 @@ namespace Holo
         ticker->setVisible (! tickerArea.isEmpty());
 
         if (setupPanel != nullptr)
-            setupPanel->setCentrePosition (screen.getBounds().getCentreX(), 400);
+            setupPanel->setCentrePosition (screen.getBounds().getCentreX(), 440);
     }
 
     //==========================================================================
@@ -789,6 +827,12 @@ namespace Holo
                 if (h.component == walk)
                 {
                     juce::String title = h.title;
+                    if (walk == &orderButton)
+                    {
+                        setTicker ("ORDER", "The sound goes " + EasyStripAudioProcessor::describe (strip.getWantedOrder())
+                                   + ". Click for the four swaps (also in SETUP). The panels never move.", Colours::selected);
+                        return;
+                    }
                     if (auto* slab = walk->findParentComponentOfClass<Slab>())
                         if (! title.startsWith (StripModules::tabs[slab->getModule()]))
                             title = juce::String (slab->getModule() == 6 ? "BITCH-SLAP" : StripModules::tabs[slab->getModule()]) + " " + juce::String::fromUTF8 ("\xc2\xb7") + " " + title;
@@ -892,6 +936,7 @@ namespace Holo
             slotA.setToggleState (slot == 0, juce::dontSendNotification);
             slotB.setToggleState (slot == 1, juce::dontSendNotification);
             copySlot.setButtonText (slot == 0 ? "A > B" : "B > A");
+            orderButton.setToggleState (! strip.isStandardOrder(), juce::dontSendNotification);
         }
 
         {
@@ -965,7 +1010,7 @@ namespace Holo
         {
             setupPanel = std::make_unique<SetupPanel> (*this);
             addAndMakeVisible (*setupPanel);
-            setupPanel->setCentrePosition (screen.getBounds().getCentreX(), 400);
+            setupPanel->setCentrePosition (screen.getBounds().getCentreX(), 440);
         }
         else if (! show)
         {
@@ -1002,6 +1047,38 @@ namespace Holo
 
         index = (index + direction + (int) all.size()) % (int) all.size();
         loadStripPreset (all[(size_t) index]);
+    }
+
+    void View::showOrderMenu()
+    {
+        juce::PopupMenu menu;
+        menu.addSectionHeader ("THE SOUND GOES: " + EasyStripAudioProcessor::describe (strip.getWantedOrder()));
+        for (int i = 0; i < 4; ++i)
+            menu.addItem (i + 1, StripIDs::orderNames[i], true, strip.parameters.getRawParameterValue (StripIDs::orderSwitches[i])->load() > 0.5f);
+        menu.addSeparator();
+        menu.addItem (10, "STANDARD ORDER", ! strip.isStandardOrder());
+
+        juce::Component::SafePointer<View> safe (this);
+        menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&orderButton).withMinimumWidth (260), [safe] (int result)
+        {
+            if (safe == nullptr || result == 0)
+                return;
+            auto& v = *safe;
+            for (int i = 0; i < 4; ++i)
+            {
+                auto* p = v.strip.parameters.getParameter (StripIDs::orderSwitches[i]);
+                const bool now = p->getValue() > 0.5f;
+                const bool wanted = result == 10 ? false : (result == i + 1 ? ! now : now);
+                if (wanted != now)
+                {
+                    p->beginChangeGesture();
+                    p->setValueNotifyingHost (wanted ? 1.0f : 0.0f);
+                    p->endChangeGesture();
+                    v.settingMoved (*p);
+                }
+            }
+            v.announce ("ORDER", "The sound now goes " + EasyStripAudioProcessor::describe (v.strip.getWantedOrder()) + ".", 6);
+        });
     }
 
     void View::showPresetMenu (int module, juce::Component& under)

@@ -470,7 +470,15 @@ YOUR FIRST FIVE MINUTES WITH EASY STRIP
       OVERSAMPLING for AMP and CLIP, INIT (the whole strip), BYPASS (the
       whole strip), SETUP. Comp and the EQ also have their own A / B.
    8. Clip's ADVANCED shows its SOUND DESIGN row under the EQ.
-   9. The sidechain input goes to both GATE and COMP (each one's
+   9. ORDER (header, by A / B; also in SETUP): four swaps for the order
+      the sound goes through - EQ AFTER COMP, DE-ESS BEFORE DRIVE,
+      DRIVE AFTER COMP, SHAPE BEFORE COMP. The panels never move; the
+      menu (and the ticker, hovering ORDER) shows the order, and the
+      button lights while it isn't the standard one. Switching while
+      playing dips the sound for a moment (no clicks). GATE is always
+      first, BITCH-SLAP and CLIP always last. Presets and A / B include
+      the order.
+   10. The sidechain input goes to both GATE and COMP (each one's
       OPENED BY / LISTENS TO decides whether it uses it).
 
    SETUP (top right): window size (60% to 150%, or drag the window's

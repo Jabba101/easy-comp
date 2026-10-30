@@ -23,6 +23,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyStripAudioProcessor::cre
     layout.add (makeKnob (StripIDs::trim, 1, "Input Trim", { -24.0f, 24.0f, 0.1f }, 0.0f, Format::signedDecibels));
     layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { StripIDs::polarity, 1 }, "Input Polarity Flip", false));
     layout.add (makeKnob (StripIDs::level, 1, "Output Level", { -24.0f, 24.0f, 0.1f }, 0.0f, Format::signedDecibels));
+    for (int i = 0; i < 4; ++i)
+        layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { StripIDs::orderSwitches[i], 2 },
+                                                                "Order: " + juce::String (StripIDs::orderNames[i]).toLowerCase(), false));
     layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { StripIDs::oversampling, 1 }, "Oversampling (Amp, Clip)",
                                                               juce::StringArray { "4x Mixing / 8x Export", "Off", "4x", "8x" }, 0));
 
@@ -100,6 +103,9 @@ std::vector<Preset> EasyStripAudioProcessor::makeStripPresets (StripModules& mod
         for (int m = 0; m < StripModules::numModules; ++m)
             preset.values.push_back ({ StripIDs::moduleID (m, CommonIDs::bypass), on[(size_t) m] ? 0.0f : 1.0f });
 
+        for (auto* swap : recipe.order)
+            preset.values.push_back ({ swap, 1.0f });
+
         presets.push_back (std::move (preset));
     }
 
@@ -112,6 +118,8 @@ juce::StringArray EasyStripAudioProcessor::stripPresetIDs (StripModules& modules
     // and each module's own preset settings. (Not each module's AUTO-GAIN,
     // the EQ's MASTER and PRECISION, or OVERSAMPLING - as in the standalones.)
     juce::StringArray ids { StripIDs::trim, StripIDs::polarity, StripIDs::level };
+    for (auto* id : StripIDs::orderSwitches)
+        ids.add (id);   // (the ORDER is part of presets and A / B too)
 
     for (int m = 0; m < StripModules::numModules; ++m)
     {
@@ -133,6 +141,9 @@ EasyStripAudioProcessor::EasyStripAudioProcessor()
     levelValue    = parameters.getRawParameterValue (StripIDs::level);
     bypassValue   = parameters.getRawParameterValue (CommonIDs::bypass);
     autoGainValue = parameters.getRawParameterValue (CommonIDs::autoGain);
+    for (int i = 0; i < 4; ++i)
+        orderValues[(size_t) i] = parameters.getRawParameterValue (StripIDs::orderSwitches[i]);
+    order = getWantedOrder();
     oversamplingParameter = parameters.getParameter (StripIDs::oversampling);
 
     connectModules();
@@ -298,6 +309,10 @@ void EasyStripAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
     outputGain.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (levelValue->load()));
     bypassFade.setCurrentAndTargetValue (bypassValue->load() > 0.5f ? 1.0f : 0.0f);
 
+    order = getWantedOrder();
+    orderFade = OrderFade::steady;
+    orderGain = 1.0f;
+
     autoIn.prepare (sampleRate, 100.0f);
     autoOut.prepare (sampleRate, 100.0f);
     autoListenIn = autoListenOut = 0.0;
@@ -378,9 +393,20 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
                 sidechain.clear (ch, 0, n);
         }
 
-        // The modules, in order
-        for (int m = 0; m < numModules; ++m)
+        // ORDER changed: dip out, swap (once silent), come back in
+        if (orderFade == OrderFade::steady && getWantedOrder() != order)
+            orderFade = OrderFade::out;
+        else if (orderFade == OrderFade::out && orderGain <= 0.0f)
         {
+            order = getWantedOrder();
+            orderFade = OrderFade::hold;
+            orderHold = totalLatency() + 256;
+        }
+
+        // The modules, in order
+        for (int step = 0; step < numModules; ++step)
+        {
+            const int m = order[(size_t) step];
             auto& link = links[(size_t) m];
             auto& module = *all[(size_t) m];
             const int latency = juce::jmin (module.getLatencySamples(), maxRingLatency);
@@ -446,7 +472,11 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         float loudestOut = 0.0f;
         for (int i = 0; i < n; ++i)
         {
-            const float g = outputGain.getNextValue() * autoGainSmoothed.getNextValue();
+            if (orderFade == OrderFade::out)       orderGain = juce::jmax (0.0f, orderGain - 1.0f / 480.0f);
+            else if (orderFade == OrderFade::hold) { if (--orderHold <= 0) orderFade = OrderFade::in; }
+            else if (orderFade == OrderFade::in)   { orderGain = juce::jmin (1.0f, orderGain + 1.0f / 480.0f); if (orderGain >= 1.0f) orderFade = OrderFade::steady; }
+
+            const float g = outputGain.getNextValue() * autoGainSmoothed.getNextValue() * orderGain;
             const float bypass = bypassFade.getNextValue();
 
             for (int ch = 0; ch < channels; ++ch)
@@ -475,6 +505,48 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         reportedLatency = latency;
         triggerAsyncUpdate();
     }
+}
+
+//==============================================================================
+EasyStripAudioProcessor::Order EasyStripAudioProcessor::orderFor (bool eqAfterComp, bool deEssBeforeDrive,
+                                                                bool driveAfterComp, bool shapeBeforeComp) noexcept
+{
+    enum { gate, amp, eq, ds, comp, trans, slap, clip };
+    Order o {};
+    int n = 0;
+    o[(size_t) n++] = gate;
+
+    // Before COMP
+    if (deEssBeforeDrive)  o[(size_t) n++] = ds;
+    if (! driveAfterComp)  o[(size_t) n++] = amp;
+    if (! eqAfterComp)     o[(size_t) n++] = eq;
+    if (! deEssBeforeDrive) o[(size_t) n++] = ds;
+    if (shapeBeforeComp)   o[(size_t) n++] = trans;
+
+    o[(size_t) n++] = comp;
+
+    // After COMP (drive first, then the EQ shapes it)
+    if (driveAfterComp)    o[(size_t) n++] = amp;
+    if (eqAfterComp)       o[(size_t) n++] = eq;
+    if (! shapeBeforeComp) o[(size_t) n++] = trans;
+
+    o[(size_t) n++] = slap;
+    o[(size_t) n++] = clip;
+    return o;
+}
+
+EasyStripAudioProcessor::Order EasyStripAudioProcessor::getWantedOrder() const noexcept
+{
+    const auto on = [this] (int i) { return orderValues[(size_t) i] != nullptr && orderValues[(size_t) i]->load() > 0.5f; };
+    return orderFor (on (0), on (1), on (2), on (3));
+}
+
+juce::String EasyStripAudioProcessor::describe (const Order& o)
+{
+    juce::StringArray names;
+    for (auto m : o)
+        names.add (m == 6 ? "BITCH-SLAP" : StripModules::tabs[m]);
+    return names.joinIntoString (" > ");
 }
 
 //==============================================================================

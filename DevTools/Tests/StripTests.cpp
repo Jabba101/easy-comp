@@ -518,6 +518,91 @@ namespace
                && ! s.getPresetParameterIDs().contains (CommonIDs::autoGain), "starts off, and presets / A / B leave it alone");
     }
 
+    void testOrder()
+    {
+        std::cout << "\n[ORDER]\n";
+        check (S::describe (S::orderFor (false, false, false, false)) == "GATE > AMP > EQ > DS > COMP > TRANS > BITCH-SLAP > CLIP",
+               "standard: " + S::describe (S::orderFor (false, false, false, false)));
+        check (S::describe (S::orderFor (true, false, false, false)) == "GATE > AMP > DS > COMP > EQ > TRANS > BITCH-SLAP > CLIP", "EQ AFTER COMP");
+        check (S::describe (S::orderFor (false, true, false, false)) == "GATE > DS > AMP > EQ > COMP > TRANS > BITCH-SLAP > CLIP", "DE-ESS BEFORE DRIVE");
+        check (S::describe (S::orderFor (false, false, true, false)) == "GATE > EQ > DS > COMP > AMP > TRANS > BITCH-SLAP > CLIP", "DRIVE AFTER COMP");
+        check (S::describe (S::orderFor (false, false, false, true)) == "GATE > AMP > EQ > DS > TRANS > COMP > BITCH-SLAP > CLIP", "SHAPE BEFORE COMP");
+        bool allValid = true;
+        for (int mask = 0; mask < 16; ++mask)
+        {
+            auto o = S::orderFor (mask & 1, mask & 2, mask & 4, mask & 8);
+            auto sorted = o; std::sort (sorted.begin(), sorted.end());
+            for (int i = 0; i < 8; ++i) allValid = allValid && sorted[(size_t) i] == i;
+            allValid = allValid && o[0] == 0 && o[6] == 6 && o[7] == 7;
+            if (mask & 2) allValid = allValid && std::find (o.begin(), o.end(), 3) < std::find (o.begin(), o.end(), 1);
+        }
+        check (allValid, "all 16 combinations: every module exactly once, GATE first, BITCH-SLAP and CLIP last");
+
+        // All four swaps on: identical to the standalones run in that order
+        {
+            S s;
+            std::vector<std::unique_ptr<EasyProcessor>> alone;
+            alone.push_back (std::make_unique<EasyGateAudioProcessor>());
+            alone.push_back (std::make_unique<EasyAmpAudioProcessor>());
+            alone.push_back (std::make_unique<EasyEQAudioProcessor>());
+            alone.push_back (std::make_unique<EasyDSAudioProcessor>());
+            alone.push_back (std::make_unique<EasyCompAudioProcessor>());
+            alone.push_back (std::make_unique<EasyTransientAudioProcessor>());
+            alone.push_back (std::make_unique<BitchSlapAudioProcessor>());
+            alone.push_back (std::make_unique<EasyClipAudioProcessor>());
+            const int choice[] { 2, 1, 3, 1, 3, 1, 1, 2 };
+            for (int m = 0; m < 8; ++m)
+            {
+                alone[(size_t) m]->loadPreset (alone[(size_t) m]->getBuiltInPresets()[(size_t) choice[m]]);
+                s.getModule (m).loadPreset (s.getModule (m).getBuiltInPresets()[(size_t) choice[m]]);
+                switchOn (s, m, true);
+                prepareStereo (*alone[(size_t) m], true);
+            }
+            for (auto* id : StripIDs::orderSwitches) setStrip (s, id, 1.0f);
+            prepareStereo (s, true);
+
+            const auto in = music (3.0);
+            auto expected = in;
+            for (auto m : S::orderFor (true, true, true, true))
+                expected = process (*alone[(size_t) m], expected);
+            const auto out = process (s, in);
+            const float diff = maxDifference (out, expected);
+            check (diff < 1.0e-5f, "all four swaps on: identical to the plugins run in that order (" + juce::String (toDb (diff), 1) + " dB)");
+        }
+
+        // Changing it while playing: a short dip, no click, then the new order
+        {
+            S s; switchOn (s, 1, true); switchOn (s, 4, true);
+            s.getModule (1).loadPreset (s.getModule (1).getBuiltInPresets()[3]);
+            prepareStereo (s, true);
+            const auto in = sine (sr, 200.0, 0.2f, 1.5);
+            const auto out = process (s, in, [&] (int start) { if (start == 24576) setStrip (s, StripIDs::driveAfterComp, 1.0f); });
+            float jump = 0.0f;
+            for (int i = 24576; i < 24576 + 4800; ++i) jump = std::max (jump, std::abs (out.getSample (0, i) - out.getSample (0, i - 1)));
+            float before = 0.0f;   // (the biggest normal step, in the old order and the new one)
+            for (int i = 12000; i < 24000; ++i) before = std::max (before, std::abs (out.getSample (0, i) - out.getSample (0, i - 1)));
+            for (int i = 48000; i < 60000; ++i) before = std::max (before, std::abs (out.getSample (0, i) - out.getSample (0, i - 1)));
+            check (jump <= before * 1.5f + 1.0e-4f && s.getWantedOrder() == S::orderFor (false, false, true, false),
+                   "switched while playing: no click (biggest step " + juce::String (jump / juce::jmax (1.0e-6f, before), 2) + "x normal)");
+        }
+
+        // Presets and A / B carry the order
+        {
+            S s;
+            for (auto& p : s.getBuiltInPresets()) if (p.name == "Vocal - Punk Shout") s.loadPreset (p);
+            const bool presetSets = getParam (s, StripIDs::deEssBeforeDrive) > 0.5f;
+            for (auto& p : s.getBuiltInPresets()) if (p.name == "Vocal - Pop") s.loadPreset (p);
+            const bool otherClears = s.isStandardOrder();
+            s.switchToSlot (1);
+            setStrip (s, StripIDs::eqAfterComp, 1.0f);
+            s.switchToSlot (0);
+            const bool aStandard = s.isStandardOrder();
+            s.switchToSlot (1);
+            check (presetSets && otherClears && aStandard && getParam (s, StripIDs::eqAfterComp) > 0.5f,
+                   "presets set the order (Vocal - Punk Shout: DE-ESS BEFORE DRIVE; others: standard), and A / B keeps one each");
+        }
+    }
+
     //==========================================================================
     void testLufs()
     {
@@ -880,6 +965,7 @@ int main (int argc, char** argv)
     testPrecision();
     testPresetsAndAB();
     testStripAutoGain();
+    testOrder();
     testLufs();
     testSaving();
     testClassicWindow (outDir);

@@ -88,12 +88,11 @@ THE CHANNEL STRIP, IN SIGNAL ORDER
                     the chain.
 
    Occasional extras:
-   - Changing the order: the panels stay where they are, and a small
-     "signal flow" row along the top (GATE -> DRIVE -> EQ -> ...) shows
-     the order the sound goes through. To start with, a few named
-     orders or swap switches rather than free dragging: e.g. "EQ after
-     the compressor", "De-ess before drive". Presets can set the order
-     too. Changing it while playing crossfades (no clicks), and the
+   - Changing the order (DONE in 0.5.0): the panels stay where they
+     are; four swap switches on the ORDER button's menu and in SETUP
+     (EQ AFTER COMP, DE-ESS BEFORE DRIVE, DRIVE AFTER COMP, SHAPE BEFORE
+     COMP); the menu shows the order the sound goes through. Presets
+     set the order too. Changing it while playing crossfades (no clicks), and the
      strip's small delay stays the same whatever the order (every
      module's delay always counts, on or off).
    - Sidechain input, so the kick can duck the bass (done in Easy Gate
@@ -194,8 +193,11 @@ BUILD ORDER
                            different from Easy DS, or running AMP and the
                            EQ twice. Revisit only if a low-latency mode for
                            recording through the strip is ever wanted.
-                           Later: module order, Comp mid-side, WEAPON
-                           SELECT (Easy SFX).
+                           0.5.0: ORDER - four swaps (EQ AFTER COMP, DE-ESS
+                           BEFORE DRIVE, DRIVE AFTER COMP, SHAPE BEFORE
+                           COMP) on an ORDER button (menu) and in SETUP;
+                           panels stay put; in presets and A / B.
+                           Later: Comp mid-side, WEAPON SELECT (Easy SFX).
 
 
 ====================================================================

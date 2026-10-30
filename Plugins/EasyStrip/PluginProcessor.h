@@ -77,6 +77,14 @@ namespace StripIDs
     inline constexpr const char* polarity     = "polarity";
     inline constexpr const char* level        = "level";
     inline constexpr const char* oversampling = "oversampling";
+
+    // ORDER: four swaps (the panels never move; only the order the sound goes through)
+    inline constexpr const char* eqAfterComp      = "eqaftercomp";       // COMP, then EQ
+    inline constexpr const char* deEssBeforeDrive = "deessbeforedrive";  // DS before AMP
+    inline constexpr const char* driveAfterComp   = "driveaftercomp";    // COMP, then AMP
+    inline constexpr const char* shapeBeforeComp  = "shapebeforecomp";   // TRANS before COMP
+    inline constexpr const char* orderSwitches[] { eqAfterComp, deEssBeforeDrive, driveAfterComp, shapeBeforeComp };
+    inline constexpr const char* orderNames[]    { "EQ AFTER COMP", "DE-ESS BEFORE DRIVE", "DRIVE AFTER COMP", "SHAPE BEFORE COMP" };
     inline juce::String moduleID (int module, const juce::String& id)   { return juce::String (StripModules::keys[module]) + "_" + id; }
 }
 
@@ -118,6 +126,20 @@ public:
     float getShortTermLufs() const noexcept            { return loudness.getShortTermLufs(); }
     float getIntegratedLufs() const noexcept           { return loudness.getIntegratedLufs(); }
     void resetIntegratedLufs() noexcept                { loudness.resetIntegrated(); }
+
+    //==== ORDER ===============================================================
+    using Order = std::array<int, StripModules::numModules>;
+
+    /** The order the modules run in, for a set of the four swaps (see StripIDs). GATE is
+        always first; BITCH-SLAP and CLIP always last. */
+    static Order orderFor (bool eqAfterComp, bool deEssBeforeDrive, bool driveAfterComp, bool shapeBeforeComp) noexcept;
+
+    /** The order the switches ask for right now (the sound follows within ~20 ms). */
+    Order getWantedOrder() const noexcept;
+
+    /** e.g. "GATE > DS > AMP > EQ > COMP > TRANS > BITCH-SLAP > CLIP" */
+    static juce::String describe (const Order&);
+    bool isStandardOrder() const noexcept   { return getWantedOrder() == orderFor (false, false, false, false); }
 
     /** How many dB the strip's AUTO-GAIN would add (or take away) right now. */
     float getAutoGainDb() const noexcept               { return autoGainDb.load(); }
@@ -193,6 +215,13 @@ private:
 
     std::atomic<float> inputPeak { 0.0f }, outputPeak { 0.0f };
     std::atomic<int> blocksProcessed { 0 };
+
+    // ORDER: changing it dips the sound (~30 ms), swaps, and comes back (no clicks)
+    std::array<std::atomic<float>*, 4> orderValues {};
+    Order order {};
+    enum class OrderFade { steady, out, hold, in } orderFade = OrderFade::steady;
+    float orderGain = 1.0f;
+    int orderHold = 0;   // (after swapping, stay silent while the new order's filters settle)
     LoudnessMeter loudness;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EasyStripAudioProcessor)
