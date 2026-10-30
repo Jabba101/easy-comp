@@ -210,18 +210,18 @@ inline const CompPreset compressorPresets[] =
     { "Strings, Brass & Wind", "Flute & Woodwind - Gentle", -18.5f,  2.0f, 15.0f,  200.0f,   2.0f, 100.0f,  20.0f, average, modern,  normal,
       "Light control for flute, clarinet and other woodwind. Aim for 1-3 dB." },
 
-    // ---- Mix Bus & Master ------------------------------------------------------
-    { "Mix Bus & Master", "Mix Bus - Glue (Pop & Rock)", -20.5f,  2.0f, 30.0f,  200.0f,   1.5f, 100.0f, 100.0f, average, modern,  normal,
+    // ---- Mix Bus ---- Mix Bus & Master --------- Mastering --------------------------------------------------
+    { "Mix Bus", "Mix Bus - Glue (Pop & Rock)", -20.5f,  2.0f, 30.0f,  200.0f,   1.5f, 100.0f, 100.0f, average, modern,  normal,
       "Ties the whole mix together. Aim for 1-3 dB - if you can clearly hear it working, back off." },
-    { "Mix Bus & Master", "Mix Bus - Hip-Hop & EDM", -28.0f,  4.0f, 30.0f,  100.0f,   2.5f, 100.0f, 120.0f, peaks,   modern,  normal,
+    { "Mix Bus", "Mix Bus - Hip-Hop & EDM", -28.0f,  4.0f, 30.0f,  100.0f,   2.5f, 100.0f, 120.0f, peaks,   modern,  normal,
       "Firmer glue with punch. IGNORE BELOW stops the kick and bass making the whole mix pump. Aim for 2-4 dB." },
-    { "Mix Bus & Master", "Mix Bus - Jazz, Folk & Classical", -21.0f,  1.5f, 30.0f,  400.0f,   1.0f, 100.0f, 100.0f, average, modern,  normal,
+    { "Mix Bus", "Mix Bus - Jazz, Folk & Classical", -21.0f,  1.5f, 30.0f,  400.0f,   1.0f, 100.0f, 100.0f, average, modern,  normal,
       "Barely-there control that keeps all the natural dynamics. Aim for about 1 dB - you should hardly hear it." },
-    { "Mix Bus & Master", "Mix Bus - Vintage Glue", -24.5f,  2.0f, 30.0f,  200.0f,   1.5f, 100.0f,  20.0f, peaks,   vintage, thrust,
+    { "Mix Bus", "Mix Bus - Vintage Glue", -24.5f,  2.0f, 30.0f,  200.0f,   1.5f, 100.0f,  20.0f, peaks,   vintage, thrust,
       "Classic bus glue: VINTAGE ties the mix together and THRUST stops the kick and bass making it pump. Aim for 1-3 dB." },
-    { "Mix Bus & Master", "Group Bus - Glue",       -21.5f,  2.0f, 20.0f,  200.0f,   2.0f, 100.0f,  80.0f, average, modern,  normal,
+    { "Mix Bus", "Group Bus - Glue",       -21.5f,  2.0f, 20.0f,  200.0f,   2.0f, 100.0f,  80.0f, average, modern,  normal,
       "Ties a group of tracks together - guitars, keys or backing vocals sent to one bus. Aim for 1-3 dB." },
-    { "Mix Bus & Master", "Master - Light Touch",   -16.5f,  1.5f, 30.0f,  300.0f,   1.0f, 100.0f, 100.0f, average, modern,  normal,
+    { "Mastering", "Master - Light Touch",   -16.5f,  1.5f, 30.0f,  300.0f,   1.0f, 100.0f, 100.0f, average, modern,  normal,
       "A gentle 1-2 dB of control for a finished mix, at the very end of the chain. (For real loudness, a limiter comes "
       "after it.)" },
 

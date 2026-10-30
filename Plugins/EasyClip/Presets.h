@@ -97,13 +97,13 @@ inline const ClipPreset clipPresets[] =
       "Gently rounds off the odd loud word or shout. Keep PUSH low on vocals: clipping a voice hard is very easy to hear." },
 
     // ---- The whole mix ---------------------------------------------------------
-    { "Mix Bus & Master", "Master - Gentle Safety Net", 0.0f, -1.0f,  20.0f, 20.0f, 0.0f, 0.0f,  0.0f, 100.0f,
+    { "Mastering", "Master - Gentle Safety Net", 0.0f, -1.0f,  20.0f, 20.0f, 0.0f, 0.0f,  0.0f, 100.0f,
       "On the finished mix: catches the odd stray peak before it goes over -1 dB. You shouldn't hear it working." },
-    { "Mix Bus & Master", "Master - Clean Loudness",    3.0f, -1.0f,  10.0f, 20.0f, 0.0f, 0.0f,  0.0f, 100.0f,
+    { "Mastering", "Master - Clean Loudness",    3.0f, -1.0f,  10.0f, 20.0f, 0.0f, 0.0f,  0.0f, 100.0f,
       "On the finished mix: a few dB louder with the peaks shaved cleanly. If you can hear it working, lower PUSH." },
-    { "Mix Bus & Master", "Master - Loud Rock & Punk",  5.0f, -1.0f,   0.0f, 20.0f, 0.0f, 0.0f,  0.0f, 100.0f,
+    { "Mastering", "Master - Loud Rock & Punk",  5.0f, -1.0f,   0.0f, 20.0f, 0.0f, 0.0f,  0.0f, 100.0f,
       "On the finished mix: loud and aggressive, the drums' peaks shaved hard. Compare with BYPASS at the same loudness." },
-    { "Mix Bus & Master", "Master - Synthwave Shine",   4.0f, -1.0f,  30.0f, 90.0f, 0.0f, 0.0f,  0.0f, 100.0f,
+    { "Mastering", "Master - Synthwave Shine",   4.0f, -1.0f,  30.0f, 90.0f, 0.0f, 0.0f,  0.0f, 100.0f,
       "On the finished mix: louder and brighter, with the bass and kick protected so the low end stays smooth and big." },
 };
 

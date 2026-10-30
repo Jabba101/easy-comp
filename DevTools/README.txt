@@ -27,7 +27,11 @@ Tests/                 -> /home/claude/verify2
     move, the delay, aliasing per OVERSAMPLING setting, PROTECT LOWS,
     LINK, the ADVANCED INIT, speed), AmpTests (Easy Amp: clean at DRIVE 0,
     harmonics rising with DRIVE (even and odd reported), level matching on
-    drums and bass, TIGHT, aliasing, the breathing, speed), EQTests (Easy
+    drums and bass, TIGHT, aliasing, the breathing, speed), TapeTests (Easy
+    Tape: the head bump and flat top measured at each speed against the
+    drawn curve, distortion against level, the highs squashing only when
+    pushed, DRIVE keeping the volume, wow & flutter depth, no clicks
+    changing settings, the VU meter, speed), EQTests (Easy
     EQ: flat = untouched, each band measured against the drawn curve, the
     matched (uncramped) filters, proportional Q, the filters, mid-side and
     MONO BASS, no clicks, LISTEN, AUTO-GAIN, MASTER's linear phase and

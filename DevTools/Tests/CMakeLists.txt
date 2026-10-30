@@ -52,6 +52,12 @@ target_include_directories(AmpTests PRIVATE ${P}/Plugins/EasyAmp ${P}/Shared ${P
 target_compile_definitions(AmpTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Amp")
 target_link_libraries(AmpTests PRIVATE juce::juce_audio_utils juce::juce_dsp PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 
+juce_add_console_app(TapeTests PRODUCT_NAME "TapeTests")
+target_sources(TapeTests PRIVATE TapeTests.cpp ${P}/Plugins/EasyTape/PluginProcessor.cpp ${P}/Plugins/EasyTape/PluginEditor.cpp ${SHARED})
+target_include_directories(TapeTests PRIVATE ${P}/Plugins/EasyTape ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(TapeTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Tape")
+target_link_libraries(TapeTests PRIVATE juce::juce_audio_utils juce::juce_dsp PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
 juce_add_console_app(EQTests PRODUCT_NAME "EQTests")
 target_sources(EQTests PRIVATE EQTests.cpp ${P}/Plugins/EasyEQ/PluginProcessor.cpp ${P}/Plugins/EasyEQ/PluginEditor.cpp ${SHARED})
 target_include_directories(EQTests PRIVATE ${P}/Plugins/EasyEQ ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})

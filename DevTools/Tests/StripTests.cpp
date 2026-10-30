@@ -396,6 +396,18 @@ namespace
         S s;
         const auto& presets = s.getBuiltInPresets();
         check (presets.size() >= 60, "a comprehensive set of strip presets (" + juce::String ((int) presets.size()) + ")");
+        {
+            juce::StringArray categories;
+            bool masterOnlyInMastering = true;
+            for (auto& preset : presets)
+            {
+                if (preset.category.isNotEmpty()) categories.addIfNotAlreadyThere (preset.category);
+                if (preset.name.startsWith ("Master - ") != (preset.category == "Mastering")) masterOnlyInMastering = false;
+            }
+            bool tidy = masterOnlyInMastering && categories.contains ("Mix Bus") && categories.contains ("Mastering");
+            for (auto& c : categories) if (c.startsWith ("Mix Bus") && c != "Mix Bus") tidy = false;
+            check (tidy, "full-mix presets in two lists - Mix Bus (genres and lo-fi included) and Mastering: " + categories.joinIntoString (", "));
+        }
 
         // Every recipe found all its module presets, and loads exactly what it says
         bool allGood = true;

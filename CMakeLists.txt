@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.16.0)
+project(EasyPlugins VERSION 1.17.0)
 
 # Build the Visual C++ runtime into the plugins themselves, so they also work
 # on a PC that doesn't have Visual Studio installed. (No effect on macOS / Linux.)
@@ -103,7 +103,7 @@ endfunction()
 add_easy_plugin(EasyComp
     NAME        "Easy Comp"
     CODE        Ezcp
-    VERSION     1.7.0
+    VERSION     1.7.1
     BUNDLE_ID   com.homestudio.easycomp
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/Compressor.h
@@ -142,7 +142,7 @@ add_easy_plugin(EasyGate
 add_easy_plugin(EasyDS
     NAME        "Easy DS"
     CODE        Ezds
-    VERSION     1.0.1
+    VERSION     1.0.2
     BUNDLE_ID   com.homestudio.easyds
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/DeEsser.h
@@ -170,7 +170,7 @@ target_link_libraries(BitchSlap PRIVATE pffft)
 add_easy_plugin(EasyClip
     NAME        "Easy Clip"
     CODE        Ezcl
-    VERSION     1.0.3
+    VERSION     1.0.4
     BUNDLE_ID   com.homestudio.easyclip
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/Clipper.h
@@ -195,10 +195,24 @@ add_easy_plugin(EasyAmp
                 Plugins/EasyAmp/PluginEditor.cpp)
 target_link_libraries(EasyAmp PRIVATE juce::juce_dsp)   # (oversampling)
 
+add_easy_plugin(EasyTape
+    NAME        "Easy Tape"
+    CODE        Eztp
+    VERSION     1.0.0
+    BUNDLE_ID   com.homestudio.easytape
+    CATEGORIES  Fx Distortion
+    SOURCES     Effects/TapeMachine.h
+                Plugins/EasyTape/Presets.h
+                Plugins/EasyTape/PluginProcessor.h
+                Plugins/EasyTape/PluginProcessor.cpp
+                Plugins/EasyTape/PluginEditor.h
+                Plugins/EasyTape/PluginEditor.cpp)
+target_link_libraries(EasyTape PRIVATE juce::juce_dsp)   # (oversampling)
+
 add_easy_plugin(EasyEQ
     NAME        "Easy EQ"
     CODE        Ezeq
-    VERSION     1.2.0
+    VERSION     1.2.1
     BUNDLE_ID   com.homestudio.easyeq
     CATEGORIES  Fx EQ
     SOURCES     Effects/Equalizer.h
@@ -223,7 +237,7 @@ endforeach()
 add_easy_plugin(EasyStrip
     NAME        "Easy Strip"
     CODE        Ezst
-    VERSION     0.6.1
+    VERSION     0.6.2
     BUNDLE_ID   com.homestudio.easystrip
     CATEGORIES  Fx
     SOURCES     Effects/LoudnessMeter.h

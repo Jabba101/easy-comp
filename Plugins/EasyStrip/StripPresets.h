@@ -267,35 +267,35 @@ namespace StripPresetRecipes
               { { comp, "Horns - Solo Trumpet & Sax" } } },
 
             //==== Buses and master ============================================
-            { "Mix Bus & Master", "Mix Bus - Pop & Rock Glue",
+            { "Mix Bus", "Mix Bus - Pop & Rock Glue",
               "Gentle valve warmth and glue, then the polish (EQ AFTER COMP) on the whole mix.",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Glue (Pop & Rock)" } },
               { "eqaftercomp" } },
-            { "Mix Bus & Master", "Mix Bus - Rock & Punk",
+            { "Mix Bus", "Mix Bus - Rock & Punk",
               "Glued, a little more punch, and a burst of size.",
               { { comp, "Mix Bus - Glue (Pop & Rock)" }, { trans, "Mix Bus - A Little More Punch" }, { slap, "Mix Bus - Rock & Punk Punch" } } },
-            { "Mix Bus & Master", "Mix Bus - Hip-Hop & EDM",
+            { "Mix Bus", "Mix Bus - Hip-Hop & EDM",
               "Polished, glued and punchy.",
               { { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Hip-Hop & EDM" }, { trans, "Mix Bus - A Little More Punch" } } },
-            { "Mix Bus & Master", "Mix Bus - Synthwave",
+            { "Mix Bus", "Mix Bus - Synthwave",
               "Wide, vintage-glued, with 80s space.",
               { { eq, "Mix Bus - Wider (Side Air)" }, { comp, "Mix Bus - Vintage Glue" }, { slap, "Mix Bus - 80s Space" } } },
-            { "Mix Bus & Master", "Mix Bus - Jazz & Acoustic",
+            { "Mix Bus", "Mix Bus - Jazz & Acoustic",
               "A light polish and gentle glue that keeps the dynamics.",
               { { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Jazz, Folk & Classical" } } },
-            { "Mix Bus & Master", "Group Bus - Glue",
+            { "Mix Bus", "Group Bus - Glue",
               "For a group of tracks (guitars, vocals, keys): holds them together.",
               { { comp, "Group Bus - Glue" } } },
-            { "Mix Bus & Master", "Master - Light Touch",
+            { "Mastering", "Master - Light Touch",
               "Mono lows, air, a light touch of compression, a safety net at the ceiling. (Try the EQ's MASTER button here.)",
               { { eq, "Master - Mono Bass & Air" }, { comp, "Master - Light Touch" }, { clip, "Master - Gentle Safety Net" } } },
-            { "Mix Bus & Master", "Master - Clean Loudness",
+            { "Mastering", "Master - Clean Loudness",
               "Louder without losing the punch: watch LUFS I on the OUTPUT.",
               { { eq, "Master - Mono Bass & Air" }, { comp, "Master - Light Touch" }, { clip, "Master - Clean Loudness" } } },
-            { "Mix Bus & Master", "Master - Loud Rock & Punk",
+            { "Mastering", "Master - Loud Rock & Punk",
               "Loud and aggressive. Watch LUFS I on the OUTPUT.",
               { { eq, "Master - Mono Bass & Air" }, { comp, "Master - Light Touch" }, { clip, "Master - Loud Rock & Punk" } } },
-            { "Mix Bus & Master", "Master - Synthwave Shine",
+            { "Mastering", "Master - Synthwave Shine",
               "Wide, glued and shining.",
               { { eq, "Mix Bus - Wider (Side Air)" }, { comp, "Mix Bus - Vintage Glue" }, { clip, "Master - Synthwave Shine" } } },
 
@@ -323,7 +323,7 @@ namespace StripPresetRecipes
             // (Heavy low end throughout, boosted across the whole bass range (the shelf's corner around
             //  80-100 Hz) - MONO BASS keeps it solid in the middle, PROTECT LOWS keeps CLIP off it;
             //  EQ AFTER COMP where the bass boost shouldn't make the compressor pump.)
-            { "Mix Bus: Genres", "Midnight Jazz",
+            { "Mix Bus", "Midnight Jazz",
               "Smoky 40s / 50s jazz club, made to sound good (not lo-fi): valve warmth, a deep round bottom, the edge just softened, an open top. Slow vintage compression keeps the playing's dynamics.",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Jazz, Folk & Classical" }, { clip, "Master - Gentle Safety Net" } },
               { "eqaftercomp" },
@@ -335,7 +335,7 @@ namespace StripPresetRecipes
                 { eq, "hpf", 25.0f }, { eq, "lpf", 20000.0f }, { eq, "monobass", 60.0f },
                 { comp, "character", 1.0f }, { comp, "attack", 30.0f }, { comp, "release", 400.0f } } },
 
-            { "Mix Bus: Genres", "Electric Jazz",
+            { "Mix Bus", "Electric Jazz",
               "Modern fusion: electric guitars, organ and bass. A big clean bottom, the low-mid mud cleared, definition in the mids, air on the sides.",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Glue (Pop & Rock)" },
                 { trans, "Mix Bus - A Little More Punch" }, { clip, "Master - Gentle Safety Net" } },
@@ -347,7 +347,7 @@ namespace StripPresetRecipes
                 { eq, "highfreq", 12000.0f }, { eq, "highgain", 2.0f }, { eq, "highshelf", shelf }, { eq, "hightarget", side },
                 { eq, "monobass", 60.0f } } },
 
-            { "Mix Bus: Genres", "Heavy Jazz",
+            { "Mix Bus", "Heavy Jazz",
               "Big band, heavy: a huge low end, the sharp brass bite pulled back, and drums that punch through like rock.",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
                 { trans, "Mix Bus - A Little More Punch" }, { clip, "Master - Clean Loudness" } },
@@ -361,7 +361,7 @@ namespace StripPresetRecipes
                 { comp, "attack", 30.0f }, { comp, "release", 150.0f }, { comp, "ratio", 2.5f },
                 { trans, "punch", 25.0f }, { clip, "protectlows", 100.0f } } },
 
-            { "Mix Bus: Genres", "Americana",
+            { "Mix Bus", "Americana",
               "Acoustic folk, from an Irish pub band to fiddles, banjo and accordion: a full bottom, the boom cleared, vocal and harmonica presence, air on the strings, harsh banjo and fiddle edges tamed.",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { ds, "Mix Bus - Gentle" },
                 { comp, "Mix Bus - Jazz, Folk & Classical" }, { clip, "Master - Gentle Safety Net" } },
@@ -374,7 +374,7 @@ namespace StripPresetRecipes
                 { eq, "hpf", 30.0f }, { eq, "monobass", 80.0f },
                 { ds, "from", 4500.0f } } },
 
-            { "Mix Bus: Genres", "Industrial Bass",
+            { "Mix Bus", "Industrial Bass",
               "A gut punch: squeezed, THEN driven hard (DRIVE AFTER COMP) for a crunchy, distorted bass and highs, then the EQ (EQ AFTER COMP) adds the weight and the clear mids. The deepest sub stays clean.",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Hip-Hop & EDM" },
                 { trans, "Mix Bus - A Little More Punch" }, { clip, "Master - Loud Rock & Punk" } },
@@ -388,7 +388,7 @@ namespace StripPresetRecipes
                 { comp, "ratio", 6.0f }, { comp, "attack", 5.0f }, { comp, "release", 80.0f }, { comp, "mix", 60.0f }, { comp, "thrust", 1.0f },
                 { trans, "punch", 35.0f }, { clip, "protectlows", 100.0f }, { clip, "push", 6.0f }, { clip, "softness", 35.0f } } },
 
-            { "Mix Bus: Genres", "Darksynth",
+            { "Mix Bus", "Darksynth",
               "Crunchy bass and mids (squeezed, then driven: DRIVE AFTER COMP; the EQ after it), the highs thrown wide on the sides only - mono-safe, as the lows stay centred and only the level of the sides changes.",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
                 { slap, "Mix Bus - Synced 1/16 (Darksynth)" }, { clip, "Master - Synthwave Shine" } },
@@ -402,7 +402,7 @@ namespace StripPresetRecipes
                 { comp, "ratio", 3.0f }, { comp, "attack", 10.0f }, { comp, "release", 80.0f },
                 { clip, "protectlows", 100.0f }, { clip, "push", 5.0f }, { clip, "softness", 40.0f } } },
 
-            { "Mix Bus: Genres", "Cyberpunk",
+            { "Mix Bus", "Cyberpunk",
               "Synthwave, bass-heavy and crunchy: a deep sub, warm drive, wide tops, a touch of 80s space.",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
                 { slap, "Mix Bus - 80s Space" }, { clip, "Master - Synthwave Shine" } },
@@ -415,7 +415,7 @@ namespace StripPresetRecipes
                 { eq, "lpf", 20000.0f }, { eq, "monobass", 110.0f },
                 { slap, "mix", 10.0f }, { clip, "protectlows", 100.0f }, { clip, "push", 5.0f }, { clip, "softness", 50.0f } } },
 
-            { "Mix Bus: Genres", "Synthwave",
+            { "Mix Bus", "Synthwave",
               "80s warmth - gentle saturation and glue, an open top - with a deep EDM bass running underneath it all. (Easy Tape, coming, will add the real tape character.)",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
                 { slap, "Mix Bus - 80s Space" }, { clip, "Master - Synthwave Shine" } },
@@ -428,7 +428,7 @@ namespace StripPresetRecipes
                 { eq, "lpf", 20000.0f }, { eq, "monobass", 100.0f },
                 { clip, "protectlows", 100.0f }, { clip, "softness", 60.0f } } },
 
-            { "Mix Bus: Genres", "Retrowave",
+            { "Mix Bus", "Retrowave",
               "The 80s sound in its purest form: a warm low end, gentle saturation, an open top, vintage glue and a touch of 80s space. (Easy Tape, coming, will add the real tape character.)",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
                 { slap, "Mix Bus - 80s Space" }, { clip, "Master - Synthwave Shine" } },
@@ -442,7 +442,7 @@ namespace StripPresetRecipes
                 { comp, "ratio", 2.0f }, { comp, "attack", 30.0f }, { comp, "release", 300.0f },
                 { clip, "protectlows", 100.0f }, { clip, "push", 3.0f }, { clip, "softness", 70.0f } } },
 
-            { "Mix Bus: Genres", "Heavy Rock",
+            { "Mix Bus", "Heavy Rock",
               "AC/DC meets Deep Purple, with the bass boosted: valve grit, a big bottom, the mud cleared, guitar bite, loud and punchy.",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Glue (Pop & Rock)" },
                 { trans, "Mix Bus - A Little More Punch" }, { clip, "Master - Loud Rock & Punk" } },
@@ -456,7 +456,7 @@ namespace StripPresetRecipes
                 { comp, "character", 1.0f }, { comp, "attack", 30.0f },
                 { clip, "protectlows", 100.0f } } },
 
-            { "Mix Bus: Genres", "Heavy Metal",
+            { "Mix Bus", "Heavy Metal",
               "Iron Maiden with the bass boosted: a big but tight low end, the galloping bass's clank and the guitars' bite, tight hits, the cymbals tamed.",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { ds, "Mix Bus - Gentle" }, { comp, "Mix Bus - Hip-Hop & EDM" },
                 { trans, "Mix Bus - A Little Tighter" }, { clip, "Master - Loud Rock & Punk" } },
@@ -470,7 +470,7 @@ namespace StripPresetRecipes
                 { comp, "ratio", 3.0f }, { comp, "attack", 15.0f }, { comp, "release", 80.0f }, { comp, "thrust", 1.0f },
                 { clip, "protectlows", 100.0f } } },
 
-            { "Mix Bus: Genres", "Neo Punk",
+            { "Mix Bus", "Neo Punk",
               "Punk played on expensive equipment - early Southern Rock (ZZ Top, CCR, Skynyrd) crossed with early Santana: warm, open, hi-fi, a fat bottom, the dynamics kept.",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
                 { trans, "Mix Bus - A Little More Punch" }, { clip, "Master - Clean Loudness" } },
@@ -482,7 +482,7 @@ namespace StripPresetRecipes
                 { eq, "highfreq", 12000.0f }, { eq, "highgain", 2.0f }, { eq, "highshelf", shelf },
                 { eq, "monobass", 90.0f },
                 { comp, "ratio", 2.0f }, { comp, "attack", 30.0f }, { comp, "release", 250.0f },
-                { trans, "punch", 10.0f }, { clip, "protectlows", 100.0f } } },{ "Mix Bus: Genres", "New Wave",
+                { trans, "punch", 10.0f }, { clip, "protectlows", 100.0f } } },{ "Mix Bus", "New Wave",
               "Synthwave without the cassette: digital sound in its purest form - no warmth added, bright and crisp, hard clean clipping, a heavy bass, and the digital gated burst.",
               { { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Hip-Hop & EDM" }, { trans, "Mix Bus - A Little More Punch" },
                 { slap, "Mix Bus - Subtle Size" }, { clip, "Master - Clean Loudness" } },
@@ -495,7 +495,7 @@ namespace StripPresetRecipes
                 { comp, "ratio", 3.0f }, { comp, "attack", 10.0f }, { comp, "release", 100.0f },
                 { trans, "punch", 20.0f }, { clip, "softness", 0.0f }, { clip, "protectlows", 90.0f } } },
 
-            { "Mix Bus: Genres", "Gospel",
+            { "Mix Bus", "Gospel",
               "Motown warmth with the group harmonies lifted: a round bottom, the choir's mud cleared, air on top, slow vintage glue - and the many voices' stacked S sounds tamed.",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { ds, "Mix Bus - Gentle" },
                 { comp, "Mix Bus - Vintage Glue" }, { clip, "Master - Gentle Safety Net" } },
@@ -512,7 +512,7 @@ namespace StripPresetRecipes
             //==== Mix bus: lo-fi ==============================================
             // (Deliberately degraded - this is where heavy roll-off, narrowing and crushing
             //  belong. NOT tape: real tape is far more subtle - see Easy Tape in PLAN.txt.)
-            { "Mix Bus: Lo-Fi", "Lo-Fi Bus - Worn Cassette",
+            { "Mix Bus", "Lo-Fi Bus - Worn Cassette",
               "A worn, chewed-up cassette: thin lows, dull top, narrowed, squashed and saturated. Lo-fi on purpose.",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" }, { clip, "Master - Synthwave Shine" } },
               {},
@@ -525,7 +525,7 @@ namespace StripPresetRecipes
                 { comp, "ratio", 4.0f }, { comp, "attack", 10.0f }, { comp, "release", 150.0f },
                 { clip, "push", 4.0f }, { clip, "softness", 70.0f }, { clip, "protectlows", 20.0f } } },
 
-            { "Mix Bus: Lo-Fi", "Lo-Fi Bus - De-ess Before Drive",
+            { "Mix Bus", "Lo-Fi Bus - De-ess Before Drive",
               "Broad de-essing on the whole sound, THEN overdriven (DE-ESS BEFORE DRIVE): S sounds and cymbals don't distort into spitty hiss. Gritty, boxy, dusty.",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { ds, "Classic (Whole Sound)" }, { comp, "Mix Bus - Vintage Glue" },
                 { clip, "Master - Gentle Safety Net" } },
@@ -539,7 +539,7 @@ namespace StripPresetRecipes
                 { ds, "from", 3500.0f }, { ds, "range", 8.0f },
                 { comp, "ratio", 4.0f }, { comp, "attack", 10.0f }, { comp, "release", 150.0f } } },
 
-            { "Mix Bus: Lo-Fi", "Lo-Fi Bus - De-ess After Drive",
+            { "Mix Bus", "Lo-Fi Bus - De-ess After Drive",
               "The same dusty bus, de-essed AFTER the drive: tames the fizz the distortion adds, but lets S sounds and cymbals crunch.",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { ds, "Classic (Whole Sound)" }, { comp, "Mix Bus - Vintage Glue" },
                 { clip, "Master - Gentle Safety Net" } },
@@ -553,7 +553,7 @@ namespace StripPresetRecipes
                 { ds, "from", 3500.0f }, { ds, "range", 8.0f },
                 { comp, "ratio", 4.0f }, { comp, "attack", 10.0f }, { comp, "release", 150.0f } } },
 
-            { "Mix Bus: Lo-Fi", "Lo-Fi Bus - Old Radio",
+            { "Mix Bus", "Lo-Fi Bus - Old Radio",
               "A small, squashed old radio: no lows, no highs, honky mids, mono, overdriven.",
               { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" }, { clip, "Master - Gentle Safety Net" } },
               {},

@@ -207,8 +207,13 @@ BUILD ORDER
                            (real tape is close to flat on top); four lo-fi
                            bus presets (Mix Bus: Lo-Fi) - where heavy
                            roll-off belongs.
-                           Next: EASY TAPE. Later: Comp mid-side, the
-                           standalones in the HOLOGRAM look, WEAPON SELECT.
+                           0.6.2: the full-mix presets in two lists, MIX
+                           BUS (the generic ones, Group Bus - Glue, the 14
+                           genres and the 4 lo-fi bus presets) and
+                           MASTERING (the four Master - presets); the same
+                           split in Easy Comp, EQ, Clip and DS.
+                           Later: Comp mid-side, the standalones in the
+                           HOLOGRAM look, WEAPON SELECT.
 
 
 ====================================================================
@@ -223,24 +228,31 @@ LATER
      middle of a drum bus while the cymbals and room breathe. In the
      standalone first, then the strip. (The full two-compressor M/S
      version is mastering territory: not planned.)
-   - NEXT (before Easy SFX): EASY TAPE - real tape, done properly (30
-     October 2026; the user used tape in studios for years). Real tape
-     is SUBTLE - not the lo-fi caricature of a muffled top. What it does:
-       - saturation that follows the level: soft, gently rounds the
-         transients ("glue"), more the harder you hit it, next to
-         nothing when you don't
-       - the head bump: a small low lift (its frequency set by the
-         speed) with a slight dip below it
-       - the top end essentially flat; the highs only COMPRESS when the
-         tape is driven hard (no fixed roll-off)
-       - wow, flutter, hiss: tiny on a good machine - off by default
-     SPEED: 15 ips = the multitrack setting (deep tones; the 24-track
-     sound) and the default; 30 ips = the near-perfect, subtle mastering
-     touch; anything slower is cassette territory - for lo-fi, not for
-     a 24-track. The user is the judge of whether it sounds right.
-     Then: the tape-flavoured strip presets (Synthwave, Retrowave,
-     Cyberpunk...) use it, and decide whether it's a strip module or a
-     WEAPON SELECT effect.
+   - EASY TAPE 1.0.0 (done, 30 October 2026): real tape, done
+     properly - the user used tape in studios for years and is the
+     judge of whether it sounds right. Real tape is SUBTLE, not the
+     lo-fi caricature. Effects/TapeMachine.h:
+       - record emphasis -> tape saturation (soft, symmetric, a touch
+         of 2nd harmonic from the bias) -> exact playback de-emphasis:
+         quietly they cancel (flat); loud, the highs reach the tape's
+         limit first, so they soften only when pushed. Measured on a
+         1 kHz sine at 15 ips: 0.01% at -20 VU, 0.2% at 0 VU, 0.8% at
+         +6, 2.7% at +12. 10 kHz squashes 2.6 dB more than 1 kHz when
+         pushed +9 (30 ips 0.5 dB, cassette 8 dB).
+       - the head bump: 15 ips +1.5 dB at 50 Hz, -2.6 dB at 20 Hz, flat
+         300 Hz - 10 kHz, -1 dB at 20 kHz; 30 ips +0.9 dB at 100 Hz with
+         a dip at 50 Hz, -0.4 dB at 20 kHz; cassette -3 dB at 10 kHz.
+       - WOW & FLUTTER (up to 0.2% at 15 ips, 0.7% on cassette) and
+         HISS: 0 by default.
+       - DRIVE = record level (0 dB = -18 dBFS RMS hits 0 VU); playback
+         follows it, AUTO-GAIN trims the rest. A VU meter (average
+         reading, ~300 ms) and the response curve in the window.
+       - OVERSAMPLING as Easy Amp; one fixed delay (oversampling + the
+         3 ms wow & flutter swing around).
+     NEXT for tape: hear it (the user). Then the tape-flavoured strip
+     presets (Synthwave, Retrowave, Cyberpunk, Midnight Jazz...) use
+     it - which needs deciding whether it's a strip module (a ninth
+     panel - where?) or a WEAPON SELECT effect.
    - Once the essentials are perfected: EASY SFX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the
