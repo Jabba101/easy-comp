@@ -836,13 +836,23 @@ namespace Holo
 
         // The name, under Amp
         {
-            const auto r = logoArea.toFloat();
-            const auto big = display (34.0f);
-            const float wide = widthOf (big, "AARDVARK");
-            auto small = display (22.0f);
-            small = small.withHeight (22.0f * wide / juce::jmax (1.0f, widthOf (small, "EASY STRIP")));
-            drawGlowText (g, "AARDVARK", r.withHeight (r.getHeight() * 0.56f), juce::Justification::centredBottom, big, juce::Colour (0xffe6fbff), 0.9f);
-            drawGlowText (g, "EASY STRIP", r.withTrimmedTop (r.getHeight() * 0.58f), juce::Justification::centredTop, small, juce::Colour (0xff9fe9ff), 0.9f);
+            // Both lines as wide as the space allows (92% of it), as tall as fits two lines
+            const auto r = logoArea.toFloat().reduced (0.0f, 4.0f);
+            const float target = r.getWidth() * 0.92f;
+            const auto fitted = [&] (const char* text, float maxHeight)
+            {
+                const float natural = widthOf (display (34.0f), text);
+                return display (juce::jmin (maxHeight, 34.0f * target / juce::jmax (1.0f, natural)));
+            };
+            const auto big = fitted ("AARDVARK", r.getHeight() * 0.5f);
+            auto small = fitted ("EASY STRIP", r.getHeight() * 0.42f);
+            small = small.withHeight (small.getHeight() * widthOf (big, "AARDVARK") / juce::jmax (1.0f, widthOf (small, "EASY STRIP")));   // (same width as AARDVARK)
+            const float gap = r.getHeight() * 0.06f;
+            const float total = big.getHeight() + gap + small.getHeight();
+            auto lines = r.withSizeKeepingCentre (r.getWidth(), total);
+            drawGlowText (g, "AARDVARK", lines.removeFromTop (big.getHeight()), juce::Justification::centred, big, juce::Colour (0xffe6fbff), 0.9f);
+            lines.removeFromTop (gap);
+            drawGlowText (g, "EASY STRIP", lines, juce::Justification::centred, small, juce::Colour (0xff9fe9ff), 0.9f);
         }
 
         // The standby panel under the EQ (when Clip isn't showing ADVANCED there)
