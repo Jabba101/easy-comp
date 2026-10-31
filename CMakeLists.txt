@@ -19,6 +19,12 @@ cmake_minimum_required(VERSION 3.22)
 
 project(EasyPlugins VERSION 1.17.0)
 
+# Link-time optimisation squeezes a few more percent of speed out of the
+# finished plugins, but makes every build much slower (each plugin is
+# optimised again as a whole at the end). On by default; GitHub's build turns
+# it off so a build takes minutes rather than an hour.
+option(EASY_LTO "Link-time optimisation (slower builds, slightly faster plugins)" ON)
+
 # Build the Visual C++ runtime into the plugins themselves, so they also work
 # on a PC that doesn't have Visual Studio installed. (No effect on macOS / Linux.)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
@@ -95,7 +101,7 @@ function(add_easy_plugin target)
             juce::juce_audio_utils
         PUBLIC
             juce::juce_recommended_config_flags
-            juce::juce_recommended_lto_flags
+            $<$<BOOL:${EASY_LTO}>:juce::juce_recommended_lto_flags>
             juce::juce_recommended_warning_flags)
 endfunction()
 

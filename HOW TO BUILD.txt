@@ -26,7 +26,9 @@ GETTING THE LATEST PLUGINS FROM GITHUB
  1. Go to your repository on github.com and click the "Actions" tab.
 
  2. Click the newest run with a green tick. (A yellow dot means it's
-    still building - it takes about 10 minutes.)
+    still building. The first build after a big change takes about 40
+    minutes; after that, most take a few minutes, because GitHub keeps
+    copies of everything that didn't change.)
 
  3. Scroll down to "Artifacts" and click the download there. Its name
     ends with when it was built (year-month-day-time, UK time): e.g.
@@ -602,10 +604,13 @@ WHAT'S IN THIS FOLDER
 A NOTE ON JUCE'S LICENCE
 ====================================================================
    JUCE is free to use under the AGPLv3 open-source licence, or under a
-   commercial JUCE licence. Building these for your own music is fine -
-   keep the GitHub repository private. If you ever share or sell the
-   plugins, read the licence terms at https://juce.com first - they decide
-   whether you'd need to share your source code or buy a licence.
+   commercial JUCE licence. This project uses the free one: the Aardvark
+   Easy Suite's own code is shared under the AGPLv3 too (see LICENSE),
+   and the GitHub repository is public. (Public projects also get
+   unlimited free build time on GitHub.) That means anyone may use,
+   change and share the code and the plugins - but anyone who shares
+   them, changed or not, has to share the source code under the same
+   licence.
 
    Bitch-Slap also uses PFFFT (ThirdParty\pffft), which is free under a
    BSD-style licence. Its only condition: if you give the plugins to

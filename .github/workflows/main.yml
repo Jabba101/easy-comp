@@ -24,7 +24,9 @@ jobs:
   windows:
     name: Windows VST3
     runs-on: windows-latest
-    timeout-minutes: 120   # (the whole suite takes about an hour on GitHub's computers)
+    timeout-minutes: 120   # (a build from scratch takes about 40 minutes; with the cache, a few)
+    env:
+      SCCACHE_GHA_ENABLED: "true"   # sccache keeps its copies in GitHub's cache
 
     steps:
       # GitHub's computers run on UTC. Switching this one to UK time makes the
@@ -36,12 +38,34 @@ jobs:
       - name: Get the project files
         uses: actions/checkout@v7
 
+      # The Visual C++ compiler, ready to use from the command line
+      - name: Set up the compiler
+        uses: ilammy/msvc-dev-cmd@v1
+
+      # sccache remembers every file it has compiled. Next time, anything
+      # that hasn't changed (JUCE, and most of the plugins) is copied back
+      # instead of compiled again - most builds then take a few minutes.
+      - name: Set up the compile cache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      # Link-time optimisation is off here (EASY_LTO): it re-optimises every
+      # plugin as a whole at the end, which made each build take an hour.
       - name: Set up the build (downloads JUCE)
-        run: cmake -S . -B build
+        run: >
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DEASY_LTO=OFF
+          -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Build the plugins
         shell: bash
-        run: cmake --build build --config Release --parallel 2>&1 | tee build-log.txt
+        run: |
+          set -o pipefail
+          cmake --build build --parallel 2>&1 | tee build-log.txt
+
+      - name: How much the cache saved
+        if: always()
+        shell: bash
+        run: sccache --show-stats || true
 
       # If the build fails, this copies the error lines onto the run's summary
       # page, so they're easy to find (and to paste to Claude).
