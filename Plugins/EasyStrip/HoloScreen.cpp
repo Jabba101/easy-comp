@@ -600,7 +600,7 @@ namespace Holo
     void Screen::paintSlap (juce::Graphics& g)
     {
         const auto plot = plotArea();
-        drawFrame (g, "BITCH-SLAP:  YOUR SOUND (GREY)   THE BURST (RED)");
+        drawFrame (g, "VERB:  YOUR SOUND (GREY)   THE REVERB (RED)");
         drawLevelGrid (g, plot, -60.0f, 0.0f, { 0.0f, -20.0f, -40.0f, -60.0f });
         g.setColour (traceGrey.withAlpha (0.55f));
         g.fillPath (tracePath (traces[6], 0, plot, -60.0f, 0.0f, true));

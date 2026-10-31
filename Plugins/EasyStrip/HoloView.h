@@ -20,7 +20,7 @@ namespace Holo
         values) along the bottom.
 
         WEAPON SELECT swaps GATE, AMP, the screen, EQ, DS and COMP for the
-        effects rack (seven bays: WAH, FLANGE, TREMOLO, DELAY and BITCH-SLAP so far).
+        effects rack (seven bays: WAH, FLANGE, TREMOLO, DELAY and VERB so far).
         TRANS, TAPE, CLIP, INPUT / OUTPUT and the header stay. Pressing it
         again brings the strip back.
 
@@ -82,12 +82,12 @@ namespace Holo
         juce::Component* getRack() const noexcept                   { return rack.get(); }
 
         static constexpr int numBays = 7, wahBay = 0, flangeBay = 1, tremBay = 3, delayBay = 4, slapBay = 5;
-        static constexpr const char* bayNames[numBays] { "AUTO-WAH", "FLANGE / CHORUS", "MOD FILTER", "TREMOLO", "STEREO DELAY", "BITCH-SLAP", "LIMITER" };
+        static constexpr const char* bayNames[numBays] { "AUTO-WAH", "FLANGE / CHORUS", "MOD FILTER", "TREMOLO", "STEREO DELAY", "REVERB", "LIMITER" };
 
         /** A message on the ticker for a while (FIND's progress, WEAPON SELECT...). */
         void announce (const juce::String& title, const juce::String& text, int seconds);
 
-        std::array<std::unique_ptr<Button>, StripModules::numModules> pageButtons;   // (by module; BITCH-SLAP's isn't shown)
+        std::array<std::unique_ptr<Button>, StripModules::numModules> pageButtons;   // (by module; the rack effects' aren't shown)
         Button initAllButton { "INIT", Colours::warn, Button::Style::init };
         Button bypassButton { "BYPASS", Colours::warn };
         Button setupButton { "SETUP", Colours::cyan };

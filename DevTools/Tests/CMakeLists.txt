@@ -102,3 +102,9 @@ target_sources(StripTests PRIVATE StripTests.cpp ${P}/Plugins/EasyStrip/PluginPr
 target_include_directories(StripTests PRIVATE ${P}/Plugins/EasyStrip ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(StripTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Strip" EASY_STRIP_MODULE=1 JUCE_MODAL_LOOPS_PERMITTED=1)
 target_link_libraries(StripTests PRIVATE pffft StripFonts juce::juce_audio_utils juce::juce_audio_formats juce::juce_dsp PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
+juce_add_console_app(VerbDspProbe PRODUCT_NAME "VerbDspProbe")
+target_sources(VerbDspProbe PRIVATE VerbDspProbe.cpp)
+target_include_directories(VerbDspProbe PRIVATE ${P}/Effects)
+target_compile_definitions(VerbDspProbe PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_link_libraries(VerbDspProbe PRIVATE juce::juce_audio_basics PUBLIC juce::juce_recommended_config_flags)

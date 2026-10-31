@@ -6,7 +6,7 @@ Beginner-friendly mixing plugins (VST3) for Windows, built with [JUCE](https://j
 - **Easy Trans** – transient shaper
 - **Easy Gate** – gate
 - **Easy DS** – de-esser
-- **Bitch-Slap** – 80s gated reverb
+- **Easy Verb** – live rooms, clubs and halls, a plate, and the Bitch-Slap 80s gated burst (formerly Bitch-Slap)
 - **Easy Clip** – clipper
 - **Easy Amp** – valve amp, from warmth to an overdriven growl
 - **Easy EQ** – four-band EQ with filters, mid-side and linear phase

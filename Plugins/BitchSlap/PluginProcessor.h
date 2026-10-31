@@ -1,19 +1,21 @@
 #pragma once
 
 #include "EasyProcessor.h"
-#include "GatedReverb.h"
+#include "VerbEngine.h"
 #include "Presets.h"
 
 //==============================================================================
 /**
-    Bitch-Slap as your DAW sees it: the gated reverb.
+    Easy Verb as your DAW sees it (called Bitch-Slap up to 1.22 - the gated
+    burst is now one TYPE of it, alongside ROOM, CLUB, HALL and PLATE).
 
     The shared parts (BYPASS, presets, saving with your project) come from
-    EasyProcessor. This adds MIX, LENGTH and SYNC, works out LENGTH from the
-    song's tempo when SYNC is on, hands the settings to the GatedReverb once
-    per block of audio, and notes how loud each moment was going in and how
-    loud the reverb was, so the window can draw it. The sound itself lives
-    in Effects/GatedReverb.h.
+    EasyProcessor. This adds TYPE, MIX, LENGTH and SYNC (BITCH-SLAP), DECAY,
+    PRE-DELAY and TONE (the others), works out LENGTH from the song's tempo
+    when SYNC is on, hands the settings to the VerbEngine once per block of
+    audio, and notes how loud each moment was going in and how loud the
+    reverb was, so the window can draw it. The sound itself lives in
+    Effects/VerbEngine.h (and GatedReverb.h, NaturalReverb.h).
 */
 class BitchSlapAudioProcessor : public EasyProcessor
 {
@@ -46,7 +48,10 @@ public:
 
     /** All the settings right now, in the form the reverb uses (with SYNC
         worked out). */
-    GatedReverb::Settings getCurrentSettings() const noexcept;
+    VerbEngine::Settings getCurrentSettings() const noexcept;
+
+    /** Your own presets stay where Bitch-Slap kept them. */
+    juce::String getPresetFolderName() const override   { return "Bitch-Slap"; }
 
     /** The song's tempo, as your DAW last said (120 until it says). */
     double getTempo() const noexcept           { return tempo.load(); }
@@ -63,8 +68,9 @@ private:
     std::atomic<float>* syncValue   = nullptr;
     std::atomic<float>* noteValue   = nullptr;
     std::atomic<float>* bypassValue = nullptr;
+    std::atomic<float>* typeValue = nullptr, *decayValue = nullptr, *preDelayValue = nullptr, *toneValue = nullptr;
 
-    GatedReverb reverb;
+    VerbEngine reverb;
     std::atomic<double> tempo { 120.0 };
     std::atomic<bool> tempoFromDAW { false };
 

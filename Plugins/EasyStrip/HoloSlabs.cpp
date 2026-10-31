@@ -935,69 +935,62 @@ namespace Holo
     };
 
     //==========================================================================
-    // BITCH-SLAP
+    // VERB (Easy Verb: the gated BITCH-SLAP burst, and the live spaces)
     //==========================================================================
     class SlapSlab : public Slab
     {
     public:
-        explicit SlapSlab (View& v) : Slab (v, 6, Colours::slap, "BITCH|SLAP")
+        explicit SlapSlab (View& v) : Slab (v, 6, Colours::slap, "VERB")
         {
             deepRed = true;
-            power.fontSize = 13.5f;
+            power.fontSize = 14.0f;
+            type = &choice (SlapIDs::type, { "BITCH-SLAP", "ROOM", "CLUB", "HALL", "PLATE" }, "TYPE");
             mix = &ring (SlapIDs::mix, "MIX", Format::percent, "%");
-            guide = &caption ("0%  DRY\n50%  BOTH\n100%  REVERB", juce::Colour (0xfff3c9d2), 13.5f);
-            guide->setJustificationType (juce::Justification::centredLeft);
+            guide = &caption ("0% DRY  50% BOTH\n100% REVERB", juce::Colour (0xfff3c9d2), 12.5f);
+            guide->setJustificationType (juce::Justification::centred);
             length = &ring (SlapIDs::length, "LENGTH", Format::whole, "ms");
             note = &ring (SlapIDs::note, "LENGTH", Format::asText, {}, Ring::small, {}, "LENGTH");
-            syncLabel = &caption ("SYNC");
-            sync = &choice (SlapIDs::sync, { "OFF", "TEMPO" }, "SYNC");
+            sync = &choice (SlapIDs::sync, { "OFF", "TEMPO" }, "SYNC", true);
+            decay = &ring (SlapIDs::decay, "DECAY", Format::asText, {});
+            preDelay = &ring (SlapIDs::predelay, "PRE-DLY", Format::whole, "ms", Ring::tiny, {}, "PRE-DELAY");
+            tone = &ring (SlapIDs::tone, "TONE", Format::signedPercent, "%", Ring::tiny);
+            tone->setFromCentre (true);
         }
 
         void resized() override
         {
             clearSections();
-            const bool narrow = getWidth() < 220;   // (its bay in the WEAPON SELECT rack)
-            auto body = placeHeader (getLocalBounds().reduced (9, 6), narrow, 76);
+            auto body = placeHeader (getLocalBounds().reduced (9, 6), true, 80);
+            constexpr int gap = 8;
+            const auto take = [&] (int height) { auto r = body.removeFromTop (height); body.removeFromTop (gap); return r; };
 
-            if (narrow)
-            {
-                // Tall and narrow: its bay in the WEAPON SELECT rack
-                auto s1 = section (body.removeFromTop (juce::jmin (230, body.getHeight() / 2 - 4)), 1, "HOW MUCH");
-                body.removeFromTop (8);
-                auto s2 = section (body.removeFromTop (juce::jmin (body.getHeight(), 250)), 2, "HOW LONG");
-                centreIn (*mix, s1, s1.getY() + 4);
-                guide->setJustificationType (juce::Justification::centred);
-                guide->setBounds (s1.withTop (mix->getBottom() + 8).withHeight (60));
-                centreIn (*length, s2, s2.getY() + 4);
-                centreIn (*note, s2, s2.getY() + 4);
-                auto c = s2.withTop (length->getBottom() + 12).withSizeKeepingCentre (juce::jmin (110, s2.getWidth()), 17 + 6 + sync->getIdealHeight());
-                syncLabel->setBounds (c.removeFromTop (17));
-                c.removeFromTop (6);
-                sync->setBounds (c);
-                return;
-            }
+            auto s1 = section (take (27 + type->getIdealHeight() + 9), 1, "TYPE");
+            auto s2 = section (take (27 + mix->getIdealHeight() + 4 + 34 + 9), 2, "HOW MUCH");
+            auto s3 = section (take (juce::jmin (body.getHeight(), 27 + decay->getIdealHeight() + 10 + preDelay->getIdealHeight() + 9)), 3, "HOW LONG");
 
-            guide->setJustificationType (juce::Justification::centredLeft);
-            auto s1 = section (body.removeFromTop (body.getHeight() / 2 - 4), 1, "HOW MUCH");
-            body.removeFromTop (8);
-            auto s2 = section (body, 2, "HOW LONG");
-            centreIn (*mix, s1.removeFromLeft (s1.getWidth() / 2), s1.getY());
-            guide->setBounds (s1.withSizeKeepingCentre (s1.getWidth(), 60));
-            guide->setBounds (guide->getBounds().withX (juce::jmax (guide->getX(), mix->getRight() + 4)).withRight (s1.getRight()));
-            auto left = s2.removeFromLeft (s2.getWidth() / 2);
-            centreIn (*length, left, s2.getY());
-            centreIn (*note, left, s2.getY());
-            auto c = s2.withSizeKeepingCentre (juce::jmin (90, s2.getWidth()), 17 + 6 + sync->getIdealHeight());
-            syncLabel->setBounds (c.removeFromTop (17));
-            c.removeFromTop (6);
-            sync->setBounds (c);
+            type->setBounds (s1.withHeight (type->getIdealHeight()).withSizeKeepingCentre (juce::jmin (130, s1.getWidth()), type->getIdealHeight()));
+            centreIn (*mix, s2, s2.getY());
+            guide->setBounds (s2.withTop (mix->getBottom() + 4).withHeight (34));
+
+            // BITCH-SLAP: LENGTH (or the note) and SYNC.  The spaces: DECAY, then PRE-DELAY and TONE
+            centreIn (*length, s3, s3.getY());
+            centreIn (*note, s3, s3.getY());
+            centreIn (*decay, s3, s3.getY());
+            sync->setBounds (s3.withTop (length->getBottom() + 10).withHeight (sync->getIdealHeight()));
+            auto lower = s3.withTop (decay->getBottom() + 10);
+            centreIn (*preDelay, lower.removeFromLeft (lower.getWidth() / 2), lower.getY());
+            centreIn (*tone, lower, lower.getY());
         }
 
         void refresh() override
         {
+            const bool space = type->getChosen() != 0;
             const bool tempo = sync->getChosen() == 1;
-            length->setVisible (! tempo);
-            note->setVisible (tempo);
+            length->setVisible (! space && ! tempo);
+            note->setVisible (! space && tempo);
+            sync->setVisible (! space);
+            for (auto* r : { decay, preDelay, tone })
+                r->setVisible (space);
 
             BitchSlapAudioProcessor::Moment moments[64];
             for (int n; (n = strip.getSlap().takeMoments (moments, 64)) > 0;)
@@ -1006,9 +999,9 @@ namespace Holo
         }
 
     private:
-        Ring *mix = nullptr, *length = nullptr, *note = nullptr;
-        juce::Label *guide = nullptr, *syncLabel = nullptr;
-        Choice* sync = nullptr;
+        Ring *mix = nullptr, *length = nullptr, *note = nullptr, *decay = nullptr, *preDelay = nullptr, *tone = nullptr;
+        juce::Label* guide = nullptr;
+        Choice *type = nullptr, *sync = nullptr;
     };
 
     //==========================================================================

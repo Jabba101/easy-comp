@@ -5,6 +5,7 @@
 #include "PluginEditor.h"
 #include "TestHelpers.h"
 #include <juce_audio_formats/juce_audio_formats.h>
+#include <chrono>
 
 JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wfloat-equal")   // (exact answers are the point here)
 
@@ -151,7 +152,7 @@ namespace
     {
         std::cout << "\n[settings your DAW sees]\n";
         P p;
-        check (p.getParameters().size() == 5, "5 settings: MIX, LENGTH, SYNC, NOTE, BYPASS (" + juce::String (p.getParameters().size()) + ")");
+        check (p.getParameters().size() == 9, "9 settings: MIX, LENGTH, SYNC, NOTE, TYPE, DECAY, PRE-DELAY, TONE, BYPASS (" + juce::String (p.getParameters().size()) + ")");
         check (! p.hasAutoGain(), "no AUTO-GAIN (a reverb adds sound on purpose)");
         check (getParam (p, SlapIDs::mix) == 35.0f && getParam (p, SlapIDs::length) == 300.0f && getParam (p, SlapIDs::sync) == 0.0f
                  && getParam (p, SlapIDs::note) == (float) n8,
@@ -639,14 +640,14 @@ namespace
         std::cout << "\n[the window]\n";
         P p; prepareSlap (p);
         std::unique_ptr<juce::AudioProcessorEditor> ed (p.createEditor());
-        check (ed->getWidth() == 1100 && ed->getHeight() == 600, "opens at 1100 x 600");
+        check (ed->getWidth() == 1100 && ed->getHeight() == 640, "opens at 1100 x 640");
 
         std::vector<juce::Slider*> sliders;
         for (auto* child : ed->getChildren())
             if (auto* s = dynamic_cast<juce::Slider*> (child)) sliders.push_back (s);
-        check (sliders.size() == 3, "three knobs: MIX, LENGTH (ms) and LENGTH (as a note)");
+        check (sliders.size() == 6, "six knobs: MIX, LENGTH (ms), LENGTH (as a note), DECAY, PRE-DELAY, TONE");
 
-        if (sliders.size() == 3)
+        if (sliders.size() == 6)
         {
             check (hintTitleOver (*ed, *sliders[0]) == "MIX" && hintTitleOver (*ed, *sliders[1]) == "LENGTH", "the help bar explains MIX and LENGTH");
             check (sliders[1]->isVisible() && ! sliders[2]->isVisible(), "SYNC OFF: the LENGTH knob in ms");
@@ -712,6 +713,295 @@ namespace
         render ("slap_send_kit.png", stereoOf (kit, 0.0, 4.5), [] (P& q) { loadPresetNamed (q, "Send - 80s Snare & Toms"); });
         render ("slap_bypassed.png", stereoOf (snare, 1.0, 4.0), [] (P& q) { setParam (q, CommonIDs::bypass, 1.0f); });
     }
+
+    //==========================================================================
+    // Easy Verb: the natural spaces
+    //==========================================================================
+    using VT = VerbEngine::Type;
+
+    void setSpace (P& p, int type, float decay, float preDelay = 0.0f, float tone = 0.0f, float mix = 50.0f)
+    {
+        setParam (p, SlapIDs::type, (float) type);
+        setParam (p, SlapIDs::decay, decay);
+        setParam (p, SlapIDs::predelay, preDelay);
+        setParam (p, SlapIDs::tone, tone);
+        setParam (p, SlapIDs::mix, mix);
+    }
+
+    /** The reverb alone (MIX 100%) of one click at 0.1 s. */
+    juce::AudioBuffer<float> spaceImpulse (int type, float decay, float preDelay = 0.0f, float tone = 0.0f, int block = 512)
+    {
+        P p; prepareSlap (p, sr, block);
+        setSpace (p, type, decay, preDelay, tone, 100.0f);
+        const int n = (int) (sr * (decay * 1.6 + 0.6));
+        return runSlap (p, clicks (n, { { (int) (0.1 * sr), 0.8f } }), block);
+    }
+
+    /** Energy (dB) in a 20 ms window starting at t seconds, both sides. */
+    double windowDb (const juce::AudioBuffer<float>& b, double t)
+    {
+        const int a = (int) (t * sr), len = (int) (0.02 * sr);
+        double e = 0.0;
+        for (int ch = 0; ch < b.getNumChannels(); ++ch)
+            for (int i = a; i < a + len && i < b.getNumSamples(); ++i)
+                e += (double) b.getSample (ch, i) * b.getSample (ch, i);
+        return 10.0 * std::log10 (e / len + 1e-30);
+    }
+
+    /** RT60 from the fall between -5 and -25 dB (T20, the way rooms are measured). */
+    double measuredDecay (const juce::AudioBuffer<float>& b)
+    {
+        double top = -300.0;
+        for (double t = 0.1; t < 0.4; t += 0.005) top = std::max (top, windowDb (b, t));
+        double t5 = -1.0, t25 = -1.0;
+        for (double t = 0.1; t < (double) b.getNumSamples() / sr - 0.02; t += 0.005)
+        {
+            const double d = windowDb (b, t);
+            if (t5 < 0.0 && d < top - 5.0) t5 = t;
+            if (t25 < 0.0 && d < top - 25.0) { t25 = t; break; }
+        }
+        return t25 > 0.0 && t5 > 0.0 ? (t25 - t5) * 3.0 : -1.0;
+    }
+
+    double sideCorrelation (const juce::AudioBuffer<float>& b)
+    {
+        double lr = 0.0, ll = 0.0, rr = 0.0;
+        for (int i = 0; i < b.getNumSamples(); ++i)
+        {
+            const double l = b.getSample (0, i), r = b.getSample (1, i);
+            lr += l * r; ll += l * l; rr += r * r;
+        }
+        return lr / std::sqrt (ll * rr + 1e-30);
+    }
+
+    void testSpaces()
+    {
+        std::cout << "\n[Easy Verb: the spaces]\n";
+        const char* names[] { "", "ROOM", "CLUB", "HALL", "PLATE" };
+
+        // Old projects (saved before TYPE existed) open as Bitch-Slap, sounding as before
+        {
+            P a; prepareSlap (a);
+            setParam (a, SlapIDs::mix, 42.0f);
+            setParam (a, SlapIDs::length, 480.0f);
+            juce::MemoryBlock state;
+            a.getStateInformation (state);
+            auto xml = juce::AudioProcessor::getXmlFromBinary (state.getData(), (int) state.getSize());
+            int removed = 0;
+            if (xml != nullptr)
+                for (auto* id : { SlapIDs::type, SlapIDs::decay, SlapIDs::predelay, SlapIDs::tone })
+                    for (auto* e = xml->getFirstChildElement(); e != nullptr; e = e->getNextElement())
+                        if (e->getStringAttribute ("id") == id) { xml->removeChildElement (e, true); ++removed; break; }
+            juce::MemoryBlock old;
+            if (xml != nullptr) juce::AudioProcessor::copyXmlToBinary (*xml, old);
+            P b; prepareSlap (b);
+            b.setStateInformation (old.getData(), (int) old.getSize());
+            check (removed == 4 && getParam (b, SlapIDs::type) == 0.0f && getParam (b, SlapIDs::mix) == 42.0f && getParam (b, SlapIDs::length) == 480.0f,
+                   "a project saved by Bitch-Slap opens as BITCH-SLAP, with its settings (" + juce::String (removed) + " new settings missing from it)");
+            check (b.getPresetFolderName() == "Bitch-Slap", "your own presets: still in the Bitch-Slap folder");
+        }
+
+        // Each space: dies away in DECAY, wide, clean, at a sensible level
+        for (int t = 1; t <= 4; ++t)
+        {
+            juce::String report;
+            bool decayOk = true, wide = true, finite = true, levelOk = true;
+            for (float decay : { 0.6f, 1.5f, 3.0f })
+            {
+                if (t == 4 && decay < 1.0f) continue;   // (a plate can't be that short: its tank alone rings longer)
+                const auto wet = spaceImpulse (t, decay);
+                const double got = measuredDecay (wet);
+                decayOk = decayOk && got > decay * 0.65 && got < decay * 1.35;
+                wide = wide && std::abs (sideCorrelation (wet)) < 0.6;
+                finite = finite && allFinite (wet);
+                const float top = toDb (std::max (peak (wet, 0, 0, wet.getNumSamples()), peak (wet, 1, 0, wet.getNumSamples())));
+                levelOk = levelOk && top > -40.0f && top < -6.0f;
+                report << juce::String (decay, 1) << " s -> " << juce::String (got, 2) << " s, ";
+            }
+            check (decayOk, juce::String (names[t]) + ": dies away (-60 dB) in about DECAY (" + report.dropLastCharacters (2) + ")");
+            check (wide && finite && levelOk, juce::String (names[t]) + ": wide (the sides unalike), clean, and at a sensible level");
+        }
+
+        // PRE-DELAY: nothing before it, the space straight after
+        {
+            bool ok = true;
+            juce::String report;
+            for (float pre : { 0.0f, 30.0f, 100.0f })
+            {
+                const auto wet = spaceImpulse ((int) VT::room, 1.0f, pre);
+                int first = -1;
+                for (int i = 0; i < wet.getNumSamples() && first < 0; ++i)
+                    if (std::abs (wet.getSample (0, i)) > 1e-4f || std::abs (wet.getSample (1, i)) > 1e-4f) first = i;
+                const double ms = (first - 0.1 * sr) * 1000.0 / sr;
+                ok = ok && ms >= pre - 0.5 && ms < pre + 8.0;
+                report << juce::String (pre, 0) << " -> " << juce::String (ms, 1) << " ms, ";
+            }
+            check (ok, "PRE-DELAY: the reverb starts that long after the sound (" + report.dropLastCharacters (2) + ")");
+        }
+
+        // TONE: dark loses its highs, bright keeps them
+        {
+            const auto highShare = [] (const juce::AudioBuffer<float>& b)
+            {
+                // the tail's energy above 5 kHz, against all of it
+                juce::IIRFilter high;
+                high.setCoefficients (juce::IIRCoefficients::makeHighPass (sr, 5000.0));
+                double hi = 0.0, all = 0.0;
+                for (int i = 0; i < b.getNumSamples(); ++i)
+                {
+                    const float x = b.getSample (0, i);
+                    const float h = high.processSingleSampleRaw (x);
+                    if (i < (int) (0.15 * sr)) continue;
+                    hi += (double) h * h; all += (double) x * x;
+                }
+                return 10.0 * std::log10 (hi / (all + 1e-30));
+            };
+            const double dark = highShare (spaceImpulse ((int) VT::club, 1.5f, 0.0f, -100.0f));
+            const double mid = highShare (spaceImpulse ((int) VT::club, 1.5f, 0.0f, 0.0f));
+            const double bright = highShare (spaceImpulse ((int) VT::club, 1.5f, 0.0f, 100.0f));
+            check (dark < mid - 3.0 && mid < bright - 3.0, "TONE: darker has less top in the tail, brighter more (" + juce::String (dark, 1) + " / "
+                   + juce::String (mid, 1) + " / " + juce::String (bright, 1) + " dB)");
+        }
+
+        // MIX 0% and BYPASS: exactly your sound; a mono track gets a stereo space
+        {
+            const auto loop = drumLoop (sr, 3.0);
+            P p; prepareSlap (p);
+            setSpace (p, (int) VT::hall, 2.0f, 20.0f, 0.0f, 0.0f);
+            check (maxDifference (runSlap (p, loop), loop) == 0.0f, "MIX 0%: exactly your sound");
+
+            P q; prepareSlap (q);
+            setSpace (q, (int) VT::club, 1.5f);
+            const int half = loop.getNumSamples() / 2;
+            const auto out = runSlap (q, loop, 512, [&] (int start) { if (start >= half) setParam (q, CommonIDs::bypass, 1.0f); });
+            float after = 0.0f;
+            for (int ch = 0; ch < 2; ++ch)
+                for (int i = half + (int) (0.1 * sr); i < loop.getNumSamples(); ++i)
+                    after = std::max (after, std::abs (out.getSample (ch, i) - loop.getSample (ch, i)));
+            check (after == 0.0f, "BYPASS: 100 ms later you hear exactly your original sound");
+
+            P m; prepareSlap (m, sr, 512, 1, 2);
+            setSpace (m, (int) VT::room, 0.8f, 0.0f, 0.0f, 100.0f);
+            juce::AudioBuffer<float> mono (2, loop.getNumSamples());
+            mono.copyFrom (0, 0, loop, 0, 0, loop.getNumSamples());
+            mono.clear (1, 0, mono.getNumSamples());
+            const auto wet = runSlap (m, mono);
+            check (std::abs (sideCorrelation (wet)) < 0.7 && rms (wet, 1, 0, wet.getNumSamples()) > 0.0f, "a mono track with a stereo output: the space comes out in stereo");
+        }
+
+        // Changing TYPE while playing: no clicks
+        {
+            const auto loop = drumLoop (sr, 4.0);
+            float worstJump = 0.0f, steadyJump = 0.0f;
+            for (int pass = 0; pass < 2; ++pass)
+            {
+                P p; prepareSlap (p, sr, 256);
+                setSpace (p, (int) VT::room, 1.2f, 10.0f, 0.0f, 40.0f);
+                int step = 0;
+                const auto out = runSlap (p, loop, 256, [&] (int start)
+                {
+                    if (pass == 1 && start > 0 && start % (int) (0.35 * sr) < 256)
+                        setParam (p, SlapIDs::type, (float) (++step % VerbEngine::numTypes));
+                });
+                float jump = 0.0f;
+                for (int ch = 0; ch < 2; ++ch)
+                    for (int i = 2; i < out.getNumSamples(); ++i)   // (the second difference: a click stands out from the music)
+                        jump = std::max (jump, std::abs (out.getSample (ch, i) - 2.0f * out.getSample (ch, i - 1) + out.getSample (ch, i - 2)));
+                (pass == 0 ? steadyJump : worstJump) = jump;
+            }
+            check (worstJump < steadyJump * 1.5f, "switching TYPE every 350 ms on a drum loop: no clicks (biggest jump " + juce::String (worstJump / steadyJump, 2) + "x a steady room's)");
+        }
+
+        // Block sizes, resting, tail
+        {
+            const auto hits = clicks ((int) (6.0 * sr), { { (int) (0.1 * sr), 0.8f }, { (int) (4.5 * sr), 0.5f } });
+            juce::AudioBuffer<float> reference;
+            double worst = -300.0;
+            for (int block : { 512, 1, 7, 100, 2048 })
+            {
+                P p; prepareSlap (p, sr, block);
+                setSpace (p, (int) VT::hall, 1.0f, 15.0f, 20.0f, 60.0f);
+                const auto out = runSlap (p, hits, block);
+                if (block == 512) { reference = out; continue; }
+                juce::AudioBuffer<float> diff (out);
+                for (int ch = 0; ch < 2; ++ch) diff.addFrom (ch, 0, reference, ch, 0, out.getNumSamples(), -1.0f);
+                worst = std::max (worst, (double) toDb (std::max (peak (diff, 0, 0, out.getNumSamples()), peak (diff, 1, 0, out.getNumSamples()))));
+            }
+            check (worst < -90.0, "blocks of 1, 7, 100 and 2048 samples give the same sound, resting in the silence between (worst " + juce::String (worst, 1) + " dB)");
+
+            P p; prepareSlap (p);
+            setSpace (p, (int) VT::club, 1.4f, 25.0f);
+            check (std::abs (p.getTailLengthSeconds() - (1.4 + 0.025 + 0.1)) < 0.001, "your DAW is told the tail: DECAY + PRE-DELAY (+0.1 s)");
+            juce::AudioBuffer<float> quiet (2, (int) (2 * sr));
+            quiet.clear();
+            const auto silence = runSlap (p, quiet);
+            check (peak (silence, 0, 0, silence.getNumSamples()) == 0.0f, "silence in, silence out");
+        }
+
+        // Speed
+        {
+            P p; prepareSlap (p);
+            setSpace (p, (int) VT::hall, 2.0f, 20.0f);
+            const auto loop = drumLoop (sr, 10.0);
+            const auto start = std::chrono::steady_clock::now();
+            runSlap (p, loop);
+            const double ms = std::chrono::duration<double, std::milli> (std::chrono::steady_clock::now() - start).count();
+           #if defined (NDEBUG)
+            check (ms < 300.0, "HALL: 10 s of stereo drums in " + juce::String (ms, 1) + " ms");
+           #else
+            std::cout << "  (HALL: 10 s in " << juce::String (ms, 1) << " ms - speed only counts in the optimised build)\n";
+           #endif
+        }
+    }
+
+    void testSpacesWindow()
+    {
+        std::cout << "\n[Easy Verb: the window]\n";
+        P p; prepareSlap (p);
+        setParam (p, SlapIDs::type, (float) VT::club);
+        std::unique_ptr<juce::AudioProcessorEditor> ed (p.createEditor());
+        auto* e = dynamic_cast<BitchSlapAudioProcessorEditor*> (ed.get());
+        using E = BitchSlapAudioProcessorEditor;
+        check (e != nullptr && e->isShowingSpaceKnobs() && e->getKnob (E::decayKnob).isVisible() && e->getKnob (E::preDelayKnob).isVisible()
+                 && e->getKnob (E::toneKnob).isVisible() && ! e->getKnob (E::lengthKnob).isVisible() && ! e->getKnob (E::noteKnob).isVisible(),
+               "CLUB: DECAY, PRE-DELAY and TONE in place of LENGTH and SYNC");
+        check (e != nullptr && e->getKnob (E::decayKnob).getTextFromValue (1.2) == "1.20 s" && e->getKnob (E::toneKnob).getTextFromValue (-30) == "-30%",
+               "...reading \"1.20 s\" and \"-30%\"");
+        check (hintTitleOver (*ed, e->getKnob (E::decayKnob)) == "DECAY" && hintTitleOver (*ed, e->getKnob (E::preDelayKnob)) == "PRE-DELAY", "the help bar explains them");
+
+        // No two visible things overlap, in either mode
+        for (int type : { 0, 2 })
+        {
+            setParam (p, SlapIDs::type, (float) type);
+            ed.reset (p.createEditor());
+            std::vector<juce::Component*> shown;
+            for (auto* c : ed->getChildren())
+                if (c->isVisible() && ! c->getBounds().isEmpty()) shown.push_back (c);
+            int overlaps = 0;
+            for (size_t i = 0; i < shown.size(); ++i)
+                for (size_t j = i + 1; j < shown.size(); ++j)
+                    if (shown[i]->getBounds().intersects (shown[j]->getBounds())) ++overlaps;
+            check (overlaps == 0, juce::String (type == 0 ? "BITCH-SLAP" : "CLUB") + ": nothing in the window overlaps (" + juce::String (overlaps) + ")");
+        }
+    }
+
+    void spaceRenders (const juce::File& outDir)
+    {
+        std::cout << "\n[renders: the spaces]\n";
+        const auto snare = loadWav ("snare_rock");
+        if (snare.getNumSamples() == 0) return;
+        const auto render = [&] (const char* fileName, const char* preset)
+        {
+            P q; prepareSlap (q);
+            loadPresetNamed (q, preset);
+            runSlap (q, stereoOf (snare, 1.0, 4.0), 480);
+            std::unique_ptr<juce::AudioProcessorEditor> ed (q.createEditor());
+            savePng (*ed, outDir.getChildFile (fileName));
+        };
+        render ("verb_club.png", "Snare - Club Gig");
+        render ("verb_hall.png", "Drums - Arena Rock");
+        render ("verb_room.png", "Drums - Live Room");
+    }
 }
 
 int main (int argc, char** argv)
@@ -730,7 +1020,10 @@ int main (int argc, char** argv)
     testEfficiency();
     testStateAndPresets();
     testWindow();
+    testSpaces();
+    testSpacesWindow();
     renders (outDir);
+    spaceRenders (outDir);
     return finish();
 }
 

@@ -17,8 +17,8 @@ namespace Holo
           DS     the whole sound, the harsh band, the line, how far it turns down
           COMP   the compression curve, and gain reduction over time
           TRANS  before and after
-          SLAP   your sound and the burst (not on the strip's main page now:
-                 BITCH-SLAP lives in the WEAPON SELECT rack)
+          VERB   your sound and the reverb (not on the strip's main page now:
+                 VERB lives in the WEAPON SELECT rack)
           CLIP   what would have been, what comes out, the CEILING, what's shaved
           TAPE   how hard the sound hits the tape (a VU meter), and the
                  machine's response at this SPEED

@@ -132,6 +132,7 @@ BUILD ORDER
    2. Easy DS              done (1.0.0)
    3. Easy Comp update     done (1.6.0)
    4. Bitch-Slap           done (1.0.0): the gated reverb, its own plugin
+                           (2.0.0: grown into Easy Verb - rooms, clubs, halls, plate)
                            (on the track or as a send); joins the strip later
    5. Easy EQ              done (1.0.0, all three stages at once); as decided (2026-10-29):
                            LOW 30-400 Hz, LOW MID 75 Hz-1.2 kHz, HIGH MID
@@ -325,6 +326,27 @@ LATER
      side's swing offset up to half a cycle); MIX (equal-power blend).
      TYPE changes fade out, switch (feedback too), fade back in. No added
      delay. 15 presets.
+   - EASY VERB 2.0.0 (done, 31 October 2026): Bitch-Slap grown into a
+     full reverb, keeping its name as a TYPE (same CODE Ezbs, target and
+     folder BitchSlap, presets folder "Bitch-Slap": old projects open on
+     BITCH-SLAP, sounding the same). The user captures live performance
+     rather than the studio sound: rooms all the time, plates and
+     chambers rarely - so the TYPEs are BITCH-SLAP / ROOM / CLUB / HALL /
+     PLATE (no chamber). Effects/NaturalReverb.h: ROOM, CLUB, HALL = an
+     8-line feedback delay network (Hadamard mix) scaled 1x / 1.8x / 3.2x,
+     four allpass diffusers, ten early reflections spread with the size,
+     per-line high-cut set so the very top dies in a share of DECAY (TONE:
+     8% dark .. 18% .. 50% bright), two lines gently modulated; PLATE =
+     Dattorro's tank. DECAY 0.2-6 s, PRE-DELAY 0-120 ms, TONE +-100%.
+     Effects/VerbEngine.h: the TYPE switch (30 ms crossfade), MIX law as
+     Bitch-Slap's, BYPASS. No added delay; rests in silence. 23 new
+     presets ("Live Spaces - Drums", "Live Spaces - Vocals & Instruments",
+     Mix Bus "Live in a Room / at the Club / in Concert", FX sends,
+     Plate). In the strip: VERB (bay 6, "REVERB"); Midnight Jazz (club),
+     Americana (room) and Gospel (hall) now have a live space, plus strip
+     presets Drum Bus - Live Room and Send - Live Room / Club / Hall.
+     Mix-bus MIX levels for the spaces are first guesses - to be set by
+     ear on the user's mixes.
    - Once the essentials are perfected: EASY SFX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the
@@ -342,7 +364,7 @@ LATER
      effect has its own fixed place in the strip's chain:
        INPUT > GATE > [AUTO-WAH] > AMP > EQ > DS > COMP > TRANS >
        [CHORUS / FLANGER] > [MOD FILTER] > [TREMOLO] > [DELAY] >
-       BITCH-SLAP > CLIP > [LIMITER] > OUTPUT
+       VERB > CLIP > [LIMITER] > OUTPUT
      - AUTO-WAH before any levelling (it follows how hard you play, so
        COMP mustn't flatten that first) and before AMP, like a wah pedal
        into an amp.

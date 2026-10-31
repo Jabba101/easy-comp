@@ -365,7 +365,7 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 
     for (auto* module : all)
     {
-        module->setPlayHead (getPlayHead());     // (Bitch-Slap's SYNC follows the song's tempo)
+        module->setPlayHead (getPlayHead());     // (VERB's SYNC follows the song's tempo)
         module->setNonRealtime (isNonRealtime());
     }
 
@@ -547,7 +547,7 @@ EasyStripAudioProcessor::Order EasyStripAudioProcessor::orderFor (bool eqAfterCo
 
     o[(size_t) n++] = flange;  // (the modulation after COMP, so it doesn't even out the movement)
     o[(size_t) n++] = trem;    // (after COMP, or COMP would even out the pulsing)
-    o[(size_t) n++] = delay;   // (before BITCH-SLAP, so the gated reverb catches the echoes)
+    o[(size_t) n++] = delay;   // (before VERB, so the reverb catches the echoes)
     o[(size_t) n++] = slap;
     if (tapeAtEnd)         o[(size_t) n++] = tape;   // (mixed down to the master machine)
     o[(size_t) n++] = clip;
@@ -564,7 +564,7 @@ juce::String EasyStripAudioProcessor::describe (const Order& o)
 {
     juce::StringArray names;
     for (auto m : o)
-        names.add (m == 6 ? "BITCH-SLAP" : StripModules::tabs[m]);
+        names.add (StripModules::tabs[m]);
     return names.joinIntoString (" > ");
 }
 
@@ -652,7 +652,9 @@ void EasyStripAudioProcessor::setStateInformation (const void* data, int sizeInB
 //==============================================================================
 double EasyStripAudioProcessor::getTailLengthSeconds() const
 {
-    double tail = 2.0;   // (Bitch-Slap)
+    double tail = 2.0;
+    if (isModuleOn (slapIndex))
+        tail = juce::jmax (tail, slap.getTailLengthSeconds() + 0.5);
     if (isModuleOn (delayIndex))
         tail = juce::jmax (tail, delay.getTailLengthSeconds() + 2.0);
     return tail;

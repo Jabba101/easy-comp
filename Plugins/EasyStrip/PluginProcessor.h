@@ -23,15 +23,15 @@
     Each module IS its standalone plugin - the very same code, sound,
     presets and window - running inside the strip, in this order:
 
-        INPUT > TAPE > GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > TREMOLO > DELAY > BITCH-SLAP > CLIP > OUTPUT
+        INPUT > TAPE > GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > TREMOLO > DELAY > VERB > CLIP > OUTPUT
 
     (TAPE first: as if the track was recorded to tape and you're mixing
     from the machine. ORDER's TAPE AT THE END moves it to just before CLIP.
-    WAH, FLANGE, TREMOLO, DELAY and BITCH-SLAP's panels are in the WEAPON
+    WAH, FLANGE, TREMOLO, DELAY and VERB's panels are in the WEAPON
     SELECT rack: WAH straight after GATE (before AMP, like a pedal into an amp,
     and before anything evens out how hard you play), FLANGE and TREMOLO
     after COMP (or COMP would even out the pulsing), DELAY before
-    BITCH-SLAP, so the gated reverb catches the echoes.)
+    VERB, so the reverb catches the echoes.)
 
     How it fits together:
       - Settings. The strip shows your DAW one list of settings: every
@@ -86,8 +86,8 @@ struct StripModules
     std::array<EasyProcessor*, numModules> all { &gate, &amp, &eq, &ds, &comp, &trans, &slap, &clip, &tape, &delay, &trem, &wah, &flange };
 
     static constexpr const char* keys[numModules]  { "gate", "amp", "eq", "ds", "comp", "trans", "slap", "clip", "tape", "delay", "tremolo", "wah", "flange" };
-    static constexpr const char* names[numModules] { "Gate", "Amp", "EQ", "DS", "Comp", "Trans", "Bitch-Slap", "Clip", "Tape", "Delay", "Tremolo", "Wah", "Flange" };
-    static constexpr const char* tabs[numModules]  { "GATE", "AMP", "EQ", "DS", "COMP", "TRANS", "BITCH-SLAP", "CLIP", "TAPE", "DELAY", "TREMOLO", "WAH", "FLANGE" };
+    static constexpr const char* names[numModules] { "Gate", "Amp", "EQ", "DS", "Comp", "Trans", "Verb", "Clip", "Tape", "Delay", "Tremolo", "Wah", "Flange" };
+    static constexpr const char* tabs[numModules]  { "GATE", "AMP", "EQ", "DS", "COMP", "TRANS", "VERB", "CLIP", "TAPE", "DELAY", "TREMOLO", "WAH", "FLANGE" };
 
     /** The effects that live in the WEAPON SELECT rack (not on the main page). */
     static bool isRackEffect (int m) noexcept       { return m == slapIndex || m == delayIndex || m == tremIndex || m == wahIndex || m == flangeIndex; }
@@ -127,7 +127,7 @@ public:
     using EasyProcessor::processBlock;
     void reset() override;
     juce::AudioProcessorEditor* createEditor() override;
-    double getTailLengthSeconds() const override;   // (Bitch-Slap's and DELAY's tails)
+    double getTailLengthSeconds() const override;   // (VERB's and DELAY's tails)
 
     void getStateInformation (juce::MemoryBlock&) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
@@ -161,14 +161,14 @@ public:
     using Order = std::array<int, StripModules::numModules>;
 
     /** The order the modules run in, for a set of the five switches (see StripIDs). TAPE
-        first (or, TAPE AT THE END, just before CLIP), then GATE; BITCH-SLAP and CLIP last. */
+        first (or, TAPE AT THE END, just before CLIP), then GATE; VERB and CLIP last. */
     static Order orderFor (bool eqAfterComp, bool deEssBeforeDrive, bool driveAfterComp, bool shapeBeforeComp,
                            bool tapeAtEnd = false) noexcept;
 
     /** The order the switches ask for right now (the sound follows within ~20 ms). */
     Order getWantedOrder() const noexcept;
 
-    /** e.g. "TAPE > GATE > DS > AMP > EQ > COMP > TRANS > BITCH-SLAP > CLIP" */
+    /** e.g. "TAPE > GATE > DS > AMP > EQ > COMP > TRANS > VERB > CLIP" */
     static juce::String describe (const Order&);
     bool isStandardOrder() const noexcept   { return getWantedOrder() == orderFor (false, false, false, false); }
 

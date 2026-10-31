@@ -1,6 +1,6 @@
 PFFFT - "a pretty fast FFT"
 ===========================
-Used by Bitch-Slap (Effects/GatedReverb.h) to do its reverb with FFTs.
+Used by Easy Verb's BITCH-SLAP burst (Effects/GatedReverb.h) to do its reverb with FFTs.
 It's about 15 times quicker than the FFT built into JUCE, which is what
 keeps a one-second burst of reverb down to a fraction of a percent of
 your processor.

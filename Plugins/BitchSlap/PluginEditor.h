@@ -5,9 +5,10 @@
 
 //==============================================================================
 /** "WHAT IT'S DOING": the last couple of seconds - your sound (grey) and the
-    reverb (amber), scrolling from right to left. Every hit shows up as a
-    spike with a flat-topped burst after it, stopping dead after LENGTH (the
-    bar in the top corner shows how long that is).
+    reverb (amber), scrolling from right to left. With BITCH-SLAP every hit
+    shows up as a spike with a flat-topped burst after it, stopping dead
+    after LENGTH; with the natural spaces, a tail fading away over DECAY.
+    (The bar in the top corner shows how long LENGTH or DECAY is.)
 
     The scale moves to fit the sound, so the peaks stay in view whether the
     track is loud or quiet. */
@@ -18,7 +19,7 @@ public:
 
     void addMoments (const BitchSlapAudioProcessor::Moment* newMoments, int count);
     void setBypassed (bool isBypassed);
-    void setLength (float lengthMs);
+    void setLength (float lengthMs, const juce::String& name = "LENGTH");
 
     void paint (juce::Graphics&) override;
 
@@ -34,18 +35,24 @@ private:
     int next = 0;
     bool bypassed = false;
     float lengthMs = 300.0f;
+    juce::String lengthName { "LENGTH" };
 
     float topDb = 0.0f, targetTopDb = 0.0f;   // the scale glides from one to the other
     bool hasFitted = false;                   // (the first time, it jumps straight there)
 };
 
 //==============================================================================
-/** The Bitch-Slap window: the shared header and help bar (from EasyWindow),
-    with MIX, LENGTH and SYNC on the left and the display on the right. */
+/** The Easy Verb window: the shared header and help bar (from EasyWindow),
+    TYPE and MIX on the left, the display in the middle, and on the right
+    LENGTH and SYNC (BITCH-SLAP) or DECAY, PRE-DELAY and TONE (the spaces). */
 class BitchSlapAudioProcessorEditor : public EasyWindow
 {
 public:
     explicit BitchSlapAudioProcessorEditor (BitchSlapAudioProcessor&);
+
+    juce::Button& getInitAllButton()           { return initAllButton; }
+    juce::Slider& getKnob (size_t index)       { return knobs[index].slider; }
+    bool isShowingSpaceKnobs() const noexcept  { return showingSpace; }
 
     /** What the line under SYNC says, e.g. "1/8 note at 120 BPM = 250 ms". */
     static juce::String describeLength (bool synced, int noteIndex, float lengthMs, double bpm, bool tempoFromDAW);
@@ -54,7 +61,7 @@ private:
     void layoutBody (juce::Rectangle<int> area) override;
     void paintBody (juce::Graphics&) override;
     void refreshLiveDisplays() override;
-    void showSyncedKnob (bool synced);
+    void showKnobs (bool natural, bool synced);
 
     struct Knob
     {
@@ -65,21 +72,28 @@ private:
 
     BitchSlapAudioProcessor& slapProcessor;
 
-    // MIX, LENGTH (in ms) and NOTE (LENGTH as a note: shown in LENGTH's place when SYNC is TEMPO)
-    std::array<Knob, 3> knobs;
-    static constexpr size_t mixKnob = 0, lengthKnob = 1, noteKnob = 2;
+public:
+    // MIX, LENGTH (in ms), NOTE (LENGTH as a note: shown in LENGTH's place when SYNC is TEMPO),
+    // and the spaces' DECAY, PRE-DELAY and TONE
+    static constexpr size_t mixKnob = 0, lengthKnob = 1, noteKnob = 2, decayKnob = 3, preDelayKnob = 4, toneKnob = 5;
 
+private:
+    std::array<Knob, 6> knobs;
+
+    juce::TextButton initAllButton { "INIT" };
+    ChoiceSwitch typeSwitch;
+    juce::Label typeInfo;
     juce::Label syncLabel;
     ChoiceSwitch syncSwitch;
     juce::Label lengthInfo;
-    bool showingSynced = false;
+    bool showingSynced = false, showingSpace = false;
 
     BurstDisplay display;
     std::vector<BitchSlapAudioProcessor::Moment> incoming;
 
     // Areas worked out in layoutBody() and drawn in paintBody()
     juce::Rectangle<int> displayPanel, mixScale;
-    std::array<juce::Rectangle<int>, 2> groupPanels;
+    std::array<juce::Rectangle<int>, 3> groupPanels;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (BitchSlapAudioProcessorEditor)
 };

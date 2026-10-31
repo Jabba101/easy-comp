@@ -27,6 +27,21 @@ juce::AudioProcessorValueTreeState::ParameterLayout BitchSlapAudioProcessor::cre
     layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { SlapIDs::note, 1 }, "Note",
                                                               noteNames, defaults.note));
 
+    // Easy Verb (1.23): TYPE, and the natural spaces' settings. (TYPE starts at
+    // BITCH-SLAP, so projects saved before then sound exactly as they did.)
+    layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { SlapIDs::type, 2 }, "Type",
+                                                              verbTypeNames, bitchSlap));
+
+    juce::NormalisableRange<float> decayRange (NaturalReverb::minDecay, NaturalReverb::maxDecay, 0.01f);
+    decayRange.setSkewForCentre (1.5f);
+    juce::NormalisableRange<float> preDelayRange (0.0f, NaturalReverb::maxPreDelayMs, 1.0f);
+    preDelayRange.setSkewForCentre (25.0f);
+    const auto secondsText = [] (float s) { return juce::String (s, s < 9.95f ? 2 : 1) + " s"; };
+
+    layout.add (makeKnob (SlapIDs::decay,    2, "Decay",     decayRange,    defaultDecay,    secondsText));
+    layout.add (makeKnob (SlapIDs::predelay, 2, "Pre-Delay", preDelayRange, defaultPreDelay, Format::milliseconds));
+    layout.add (makeKnob (SlapIDs::tone,     2, "Tone",      juce::NormalisableRange<float> (-100.0f, 100.0f, 1.0f), defaultTone, Format::signedPercent));
+
     addCommonParameters (layout, false);   // BYPASS (a reverb adds sound, so AUTO-GAIN makes no sense)
     return layout;
 }
@@ -40,6 +55,10 @@ BitchSlapAudioProcessor::BitchSlapAudioProcessor()
     syncValue   = parameters.getRawParameterValue (SlapIDs::sync);
     noteValue   = parameters.getRawParameterValue (SlapIDs::note);
     bypassValue = parameters.getRawParameterValue (CommonIDs::bypass);
+    typeValue     = parameters.getRawParameterValue (SlapIDs::type);
+    decayValue    = parameters.getRawParameterValue (SlapIDs::decay);
+    preDelayValue = parameters.getRawParameterValue (SlapIDs::predelay);
+    toneValue     = parameters.getRawParameterValue (SlapIDs::tone);
 }
 
 bool BitchSlapAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -55,7 +74,7 @@ bool BitchSlapAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts
 
 double BitchSlapAudioProcessor::getTailLengthSeconds() const
 {
-    return (getCurrentSettings().lengthMs + 50.0) / 1000.0;
+    return (double) VerbEngine::tailSeconds (getCurrentSettings());
 }
 
 float BitchSlapAudioProcessor::lengthForNote (int noteIndex, double beatsPerMinute) noexcept
@@ -65,9 +84,13 @@ float BitchSlapAudioProcessor::lengthForNote (int noteIndex, double beatsPerMinu
     return (float) juce::jlimit ((double) GatedReverb::minLengthMs, (double) GatedReverb::maxLengthMs, ms);
 }
 
-GatedReverb::Settings BitchSlapAudioProcessor::getCurrentSettings() const noexcept
+VerbEngine::Settings BitchSlapAudioProcessor::getCurrentSettings() const noexcept
 {
-    GatedReverb::Settings settings;
+    VerbEngine::Settings settings;
+    settings.type = (VerbEngine::Type) juce::jlimit (0, VerbEngine::numTypes - 1, juce::roundToInt (typeValue->load()));
+    settings.decay = decayValue->load();
+    settings.preDelayMs = preDelayValue->load();
+    settings.tone = toneValue->load() / 100.0f;
     settings.mix = mixValue->load() / 100.0f;   // the knob shows %, the maths wants 0..1
     settings.lengthMs = juce::roundToInt (syncValue->load()) == syncTempo
                           ? lengthForNote (juce::roundToInt (noteValue->load()), tempo.load())

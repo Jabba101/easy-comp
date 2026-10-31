@@ -12,11 +12,11 @@ namespace
         const char* hint;
     };
 
-    const std::array<KnobInfo, 3> knobInfo
+    const std::array<KnobInfo, 6> knobInfo
     {{
         { SlapIDs::mix, "MIX",
-          "How much reverb. Up to 50% it only adds reverb - at 50% the burst is about as loud as a snare. Above 50% it also "
-          "turns your original sound down, until 100% = reverb only: use that on an FX send or bus." },
+          "How much reverb. Up to 50% it only adds reverb (with BITCH-SLAP, at 50% the burst is about as loud as a snare). Above "
+          "50% it also turns your original sound down, until 100% = reverb only: use that on an FX send or bus." },
 
         { SlapIDs::length, "LENGTH",
           "How long each burst lasts, from the hit until it slams shut. Short (100-200 ms) = tight and punchy, for fast songs. "
@@ -25,9 +25,38 @@ namespace
         { SlapIDs::note, "LENGTH",
           "How long each burst lasts, as a note length at your song's tempo - it follows tempo changes. 1/8 note = an eighth "
           "note. Triplets are a third shorter than the plain note, dotted notes half as long again." },
+
+        { SlapIDs::decay, "DECAY",
+          "How long the reverb takes to die away. Rooms: about 0.4 - 1 s. Clubs: 1 - 1.5 s. Halls: 1.5 - 2.5 s. Longer for big, "
+          "washy pads. The highs always fade sooner than the lows, as in a real space." },
+
+        { SlapIDs::predelay, "PRE-DELAY",
+          "A short gap before the reverb starts. 0 = the sound and the space arrive together (far from the stage). 10 - 40 ms "
+          "keeps vocals and snares clear and upfront, with the space behind them." },
+
+        { SlapIDs::tone, "TONE",
+          "Darker (below 0): the tail loses its highs quickly - a room full of people, curtains, wood. Brighter (above 0): "
+          "hard walls, a glassy plate. 0 is a natural middle." },
     }};
 
-    const std::array<const char*, 2> groupNames { "HOW MUCH", "HOW LONG" };
+    const std::array<const char*, 3> groupNames { "WHAT KIND", "HOW MUCH", "HOW LONG" };
+
+    /** What each TYPE is, shown under the switch. */
+    const std::array<const char*, 5> typeDescriptions
+    {{
+        "The gated burst: every hit gets a huge reverb that stops dead.",
+        "A rehearsal or drum room: close walls, a short, lively tail.",
+        "A small gig venue: a fuller tail - the band on stage.",
+        "A theatre or concert hall: far walls, a long, smooth tail.",
+        "The 60s studio plate: bright and silky, no room at all.",
+    }};
+
+    constexpr const char* typeHint =
+        "What kind of reverb. BITCH-SLAP: the gated 80s burst. ROOM, CLUB and HALL: the live spaces - a band playing in a real "
+        "place, bigger as you go down. PLATE: the classic studio plate, for the odd vocal or snare.";
+
+    constexpr const char* initAllHint =
+        "Sets everything back to how it starts (the Default settings preset).";
 
     constexpr const char* syncHint =
         "OFF: set LENGTH in milliseconds. TEMPO: set it as a note length (1/8, 1/4...) that follows your song's tempo, so "
@@ -37,12 +66,13 @@ namespace
         "How LENGTH fits your song: as a note length at the song's tempo, or (with SYNC on TEMPO) in milliseconds.";
 
     constexpr const char* displayHint =
-        "The last couple of seconds: grey = your sound going in, amber = the reverb. Every hit gets its own burst that stops "
-        "dead after LENGTH - the bar in the top corner shows how long that is. The scale moves to fit your track.";
+        "The last couple of seconds: grey = your sound going in, amber = the reverb. BITCH-SLAP: every hit gets a burst that "
+        "stops dead after LENGTH. The spaces: a tail fading away over DECAY. The bar in the top corner shows how long. The "
+        "scale moves to fit your track.";
 
     constexpr const char* gettingStartedHint =
-        "Pick a preset, or play your drums and turn up MIX until the burst sits where you like it. Then set LENGTH so each "
-        "burst ends before the next hit. Hover over anything for an explanation. Double-click a knob to reset it.";
+        "Pick a TYPE (or a preset), then turn up MIX until the reverb sits where you like it, and set how long it lasts. "
+        "Hover over anything for an explanation. Double-click a knob to reset it.";
 }
 
 //==============================================================================
@@ -100,11 +130,12 @@ void BurstDisplay::setBypassed (bool isBypassed)
     }
 }
 
-void BurstDisplay::setLength (float newLengthMs)
+void BurstDisplay::setLength (float newLengthMs, const juce::String& name)
 {
-    if (std::abs (newLengthMs - lengthMs) > 0.25f)
+    if (std::abs (newLengthMs - lengthMs) > 0.25f || name != lengthName)
     {
         lengthMs = newLengthMs;
+        lengthName = name;
         repaint();
     }
 }
@@ -214,7 +245,7 @@ void BurstDisplay::paint (juce::Graphics& g)
 
         g.setFont (juce::Font (juce::FontOptions (12.0f, juce::Font::bold)));
         g.setColour (Palette::textDim);
-        g.drawText ("LENGTH " + Format::milliseconds (lengthMs), juce::Rectangle<float> (right - 200.0f, y - 22.0f, 200.0f, 14.0f),
+        g.drawText (lengthName + " " + (lengthMs >= 1000.0f ? juce::String (lengthMs / 1000.0f, 2) + " s" : Format::milliseconds (lengthMs)), juce::Rectangle<float> (right - 200.0f, y - 22.0f, 200.0f, 14.0f),
                     juce::Justification::centredRight, false);
     }
 
@@ -239,11 +270,12 @@ void BurstDisplay::paint (juce::Graphics& g)
 }
 
 //==============================================================================
-// The Bitch-Slap window
+// The Easy Verb window
 //==============================================================================
 BitchSlapAudioProcessorEditor::BitchSlapAudioProcessorEditor (BitchSlapAudioProcessor& p)
-    : EasyWindow (p, "BITCH-SLAP", "Gated reverb: every hit gets a burst that stops dead - hover over anything for help", gettingStartedHint),
+    : EasyWindow (p, "EASY VERB", "Live rooms, clubs and halls - and the Bitch-Slap burst - hover over anything for help", gettingStartedHint),
       slapProcessor (p),
+      typeSwitch (*p.parameters.getParameter (SlapIDs::type), { "BITCH-SLAP", "ROOM", "CLUB", "HALL", "PLATE" }, Palette::accent),
       syncSwitch (*p.parameters.getParameter (SlapIDs::sync), { "OFF", "TEMPO" }, Palette::accent),
       incoming ((size_t) BurstDisplay::numMoments)
 {
@@ -253,6 +285,8 @@ BitchSlapAudioProcessorEditor::BitchSlapAudioProcessorEditor (BitchSlapAudioProc
 
         knob.slider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);   // drag up/down or left/right
         knob.slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 110, 24);
+        if (i == toneKnob)
+            knob.slider.getProperties().set ("fillFromCentre", true);
         addAndMakeVisible (knob.slider);
 
         knob.label.setText (knobInfo[i].name, juce::dontSendNotification);
@@ -268,6 +302,24 @@ BitchSlapAudioProcessorEditor::BitchSlapAudioProcessorEditor (BitchSlapAudioProc
         addHint (knob.slider, knobInfo[i].name, knobInfo[i].hint);
         addHint (knob.label, knobInfo[i].name, knobInfo[i].hint);
     }
+
+    initAllButton.setColour (juce::TextButton::buttonColourId, Palette::panel);
+    initAllButton.setColour (juce::TextButton::textColourOffId, Palette::meterHigh);
+    initAllButton.setColour (juce::ComboBox::outlineColourId, Palette::meterHigh);
+    initAllButton.onClick = [this] { presetBrowser.onPresetChosen (easyProcessor.getBuiltInPresets().front()); };
+    addAndMakeVisible (initAllButton);
+    addHint (initAllButton, "INIT", initAllHint);
+
+    addAndMakeVisible (typeSwitch);
+    typeSwitch.onUserChange = [this] { knobMoved(); };
+    addHint (typeSwitch, "TYPE", typeHint);
+
+    typeInfo.setFont (juce::Font (juce::FontOptions (12.5f)));
+    typeInfo.setColour (juce::Label::textColourId, Palette::textDim);
+    typeInfo.setJustificationType (juce::Justification::centred);
+    typeInfo.setMinimumHorizontalScale (1.0f);
+    addAndMakeVisible (typeInfo);
+    addHint (typeInfo, "TYPE", typeHint);
 
     syncLabel.setText ("SYNC", juce::dontSendNotification);
     syncLabel.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
@@ -288,18 +340,25 @@ BitchSlapAudioProcessorEditor::BitchSlapAudioProcessorEditor (BitchSlapAudioProc
     addAndMakeVisible (display);
     addHint (display, "WHAT IT'S DOING", displayHint);
 
-    showSyncedKnob (juce::roundToInt (p.parameters.getRawParameterValue (SlapIDs::sync)->load()) == syncTempo);
+    const auto settings = p.getCurrentSettings();
+    showKnobs (VerbEngine::isNatural (settings.type), juce::roundToInt (p.parameters.getRawParameterValue (SlapIDs::sync)->load()) == syncTempo);
+    typeInfo.setText (typeDescriptions[(size_t) settings.type], juce::dontSendNotification);
 
-    finishSetup (1100, 600);
+    finishSetup (1100, 640);
 }
 
-void BitchSlapAudioProcessorEditor::showSyncedKnob (bool synced)
+void BitchSlapAudioProcessorEditor::showKnobs (bool natural, bool synced)
 {
     showingSynced = synced;
-    knobs[lengthKnob].slider.setVisible (! synced);
-    knobs[lengthKnob].label.setVisible (! synced);
-    knobs[noteKnob].slider.setVisible (synced);
-    knobs[noteKnob].label.setVisible (synced);
+    showingSpace = natural;
+    const auto show = [this] (size_t k, bool visible) { knobs[k].slider.setVisible (visible); knobs[k].label.setVisible (visible); };
+    show (lengthKnob, ! natural && ! synced);
+    show (noteKnob, ! natural && synced);
+    for (auto k : { decayKnob, preDelayKnob, toneKnob })
+        show (k, natural);
+    syncLabel.setVisible (! natural);
+    syncSwitch.setVisible (! natural);
+    lengthInfo.setVisible (! natural);
 }
 
 juce::String BitchSlapAudioProcessorEditor::describeLength (bool synced, int noteIndex, float lengthMs, double bpm, bool tempoFromDAW)
@@ -364,7 +423,7 @@ void BitchSlapAudioProcessorEditor::paintBody (juce::Graphics& g)
 
     // What MIX's numbers mean, beside the knob
     struct Row { const char* value; const char* meaning; };
-    static constexpr Row rows[] = { { "0%", "your sound only" }, { "50%", "both at full level" }, { "100%", "reverb only" } };
+    static constexpr Row rows[] = { { "0%", "dry only" }, { "50%", "both full" }, { "100%", "reverb only" } };
 
     auto area = mixScale.withSizeKeepingCentre (mixScale.getWidth(), 3 * 22 + 18);
 
@@ -373,77 +432,103 @@ void BitchSlapAudioProcessorEditor::paintBody (juce::Graphics& g)
         auto line = area.removeFromTop (22);
         g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
         g.setColour (Palette::accent);
-        g.drawText (row.value, line.removeFromLeft (44), juce::Justification::centredRight, false);
-        line.removeFromLeft (10);
+        g.drawText (row.value, line.removeFromLeft (40), juce::Justification::centredRight, false);
+        line.removeFromLeft (8);
         g.setFont (juce::Font (juce::FontOptions (12.5f)));
         g.setColour (Palette::textDim);
         g.drawText (row.meaning, line, juce::Justification::centredLeft, false);
     }
 
     g.setFont (juce::Font (juce::FontOptions (12.0f)));
-    g.drawText ("(for an FX send)", area.withTrimmedLeft (54), juce::Justification::topLeft, false);
+    g.drawText ("(for an FX send)", area.withTrimmedLeft (48), juce::Justification::topLeft, false);
 }
 
 void BitchSlapAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
 {
     constexpr int gap = 14;
+    const auto preset = presetBrowser.getBounds();
+    initAllButton.setBounds (preset.getX() - 10 - 52, preset.getCentreY() - 13, 52, 26);
+    bypassButton.setBounds (bypassButton.getBounds().withX (initAllButton.getX() - 34 - bypassButton.getWidth()));
 
-    auto column = area.removeFromLeft (380);
+    constexpr int nameHeight = 20, spacing = 4, valueBoxHeight = 24;
+    const auto placeKnob = [&] (Knob& knob, juce::Rectangle<int> column, int knobSize)
+    {
+        auto c = column.withSizeKeepingCentre (column.getWidth(), nameHeight + spacing + knobSize + valueBoxHeight);
+        knob.label.setBounds (c.removeFromTop (nameHeight));
+        c.removeFromTop (spacing);
+        knob.slider.setBounds (c.withSizeKeepingCentre (knobSize + 20, c.getHeight()));
+    };
+
+    auto left = area.removeFromLeft (300);
     area.removeFromLeft (gap);
+    auto right = area.removeFromRight (300);
+    area.removeFromRight (gap);
     displayPanel = area;
     display.setBounds (displayPanel.reduced (12, 12).withTrimmedTop (24));
 
-    const int panelHeight = (column.getHeight() - gap) / 2;
-    groupPanels[0] = column.removeFromTop (panelHeight);
-    column.removeFromTop (gap);
-    groupPanels[1] = column;
-
-    // A knob in the left half of a panel
-    const auto placeKnob = [] (Knob& knob, juce::Rectangle<int> space)
+    // 1 WHAT KIND: TYPE, and what it is
+    groupPanels[0] = left.removeFromTop (juce::jmin (left.getHeight() - 180, 5 * 32 + 28 + 24 + 50));
+    left.removeFromTop (gap);
+    groupPanels[1] = left;
     {
-        constexpr int nameHeight = 20, spacing = 4, valueBoxHeight = 24;
-        const int knobSize = juce::jmin (space.getWidth() - 20, space.getHeight() - nameHeight - spacing - valueBoxHeight);
-        auto columnArea = space.withSizeKeepingCentre (space.getWidth(), nameHeight + spacing + knobSize + valueBoxHeight);
+        auto inside = groupPanels[0].reduced (14, 12).withTrimmedTop (28);
+        typeInfo.setBounds (inside.removeFromBottom (40));
+        inside.removeFromBottom (4);
+        typeSwitch.setBounds (inside.withSizeKeepingCentre (juce::jmin (180, inside.getWidth()), inside.getHeight()));
+    }
 
-        knob.label.setBounds (columnArea.removeFromTop (nameHeight));
-        columnArea.removeFromTop (spacing);
-        knob.slider.setBounds (columnArea);
-    };
+    // 2 HOW MUCH: MIX, and what its numbers mean
+    {
+        auto inside = groupPanels[1].reduced (10, 12).withTrimmedTop (26);
+        auto knobSpace = inside.removeFromLeft (inside.getWidth() / 2);
+        placeKnob (knobs[mixKnob], knobSpace, juce::jmin (knobSpace.getWidth() - 30, inside.getHeight() - nameHeight - spacing - valueBoxHeight));
+        mixScale = inside;
+    }
 
-    // 1 HOW MUCH: MIX, and what its numbers mean
-    auto inside = groupPanels[0].reduced (10, 12).withTrimmedTop (26);
-    placeKnob (knobs[mixKnob], inside.removeFromLeft (inside.getWidth() / 2));
-    mixScale = inside;
+    // 3 HOW LONG: LENGTH (or the note) and SYNC - or DECAY, then PRE-DELAY and TONE side by side
+    groupPanels[2] = right;
+    {
+        auto inside = right.reduced (10, 12).withTrimmedTop (26);
+        auto top = inside.removeFromTop (inside.getHeight() / 2);
+        const int bigSize = juce::jmin (top.getWidth() - 140, top.getHeight() - nameHeight - spacing - valueBoxHeight);
+        placeKnob (knobs[lengthKnob], top, bigSize);
+        placeKnob (knobs[noteKnob], top, bigSize);
+        placeKnob (knobs[decayKnob], top, bigSize);
 
-    // 2 HOW LONG: LENGTH (or the note, when synced); SYNC and how it fits the song beside it
-    inside = groupPanels[1].reduced (10, 12).withTrimmedTop (26);
-    const auto knobSpace = inside.removeFromLeft (inside.getWidth() / 2);
-    placeKnob (knobs[lengthKnob], knobSpace);
-    placeKnob (knobs[noteKnob], knobSpace);
+        auto bottom = inside;
+        const int smallSize = juce::jmin (bottom.getWidth() / 2 - 40, bottom.getHeight() - nameHeight - spacing - valueBoxHeight - 10);
+        placeKnob (knobs[preDelayKnob], bottom.withWidth (bottom.getWidth() / 2), smallSize);
+        placeKnob (knobs[toneKnob], bottom.withTrimmedLeft (bottom.getWidth() / 2), smallSize);
 
-    inside.removeFromLeft (6);
-    auto syncArea = inside.removeFromTop (20 + 4 + 2 * 28 + 8);
-    syncLabel.setBounds (syncArea.removeFromTop (20));
-    syncArea.removeFromTop (4);
-    syncSwitch.setBounds (syncArea.withSizeKeepingCentre (juce::jmin (130, syncArea.getWidth()), syncArea.getHeight()));
-    inside.removeFromTop (6);
-    lengthInfo.setBounds (inside);
+        auto syncArea = bottom.removeFromTop (nameHeight + 4 + 2 * 28 + 4);
+        syncLabel.setBounds (syncArea.removeFromTop (nameHeight));
+        syncArea.removeFromTop (4);
+        syncSwitch.setBounds (syncArea.withSizeKeepingCentre (juce::jmin (130, syncArea.getWidth()), syncArea.getHeight()));
+        bottom.removeFromTop (6);
+        lengthInfo.setBounds (bottom);
+    }
 }
 
 //==============================================================================
 void BitchSlapAudioProcessorEditor::refreshLiveDisplays()
 {
     const auto settings = slapProcessor.getCurrentSettings();
+    const bool natural = VerbEngine::isNatural (settings.type);
     const bool synced = juce::roundToInt (easyProcessor.parameters.getRawParameterValue (SlapIDs::sync)->load()) == syncTempo;
     const int note = juce::roundToInt (easyProcessor.parameters.getRawParameterValue (SlapIDs::note)->load());
 
     const int count = slapProcessor.takeMoments (incoming.data(), (int) incoming.size());
     display.addMoments (incoming.data(), count);
     display.setBypassed (settings.bypassed);
-    display.setLength (settings.lengthMs);
+    if (natural) display.setLength (settings.decay * 1000.0f, "DECAY");
+    else         display.setLength (settings.lengthMs, "LENGTH");
 
-    if (synced != showingSynced)
-        showSyncedKnob (synced);
+    if (synced != showingSynced || natural != showingSpace)
+        showKnobs (natural, synced);
+
+    const juce::String description (typeDescriptions[(size_t) settings.type]);
+    if (description != typeInfo.getText())
+        typeInfo.setText (description, juce::dontSendNotification);
 
     const auto info = describeLength (synced, note, settings.lengthMs, slapProcessor.getTempo(), slapProcessor.isTempoFromDAW());
 

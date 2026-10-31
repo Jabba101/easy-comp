@@ -22,7 +22,9 @@ WHAT'S HERE
 ====================================================================
 Tests/                 -> /home/claude/verify2
     One program per plugin: CompTests, TransientTests, GateTests, DSTests,
-    SlapTests (Bitch-Slap: its reverb against a plain, slow convolution),
+    SlapTests (Easy Verb: the BITCH-SLAP burst against a plain, slow convolution;
+    the spaces' DECAY, PRE-DELAY, TONE, width, TYPE crossfades), VerbDspProbe (the
+    spaces measured on their own: decay times, level, width, speed),
     ClipTests (Easy Clip: the ceiling under every setting and while knobs
     move, the delay, aliasing per OVERSAMPLING setting, PROTECT LOWS,
     LINK, the ADVANCED INIT, speed), AmpTests (Easy Amp: clean at DRIVE 0,

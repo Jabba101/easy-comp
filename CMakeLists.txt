@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.22.0)
+project(EasyPlugins VERSION 1.23.0)
 
 # Link-time optimisation squeezes a few more percent of speed out of the
 # finished plugins, but makes every build much slower (each plugin is
@@ -49,7 +49,7 @@ set(SHARED_SOURCES
 
 set(FINISHED_PLUGINS_FOLDER "${CMAKE_BINARY_DIR}/Finished Plugins")
 
-# ---- PFFFT: the fast FFT behind Bitch-Slap's reverb (ThirdParty/pffft/README.txt)
+# ---- PFFFT: the fast FFT behind Easy Verb's BITCH-SLAP burst (ThirdParty/pffft/README.txt)
 add_library(pffft STATIC ThirdParty/pffft/pffft.c ThirdParty/pffft/pffft_common.c)
 target_include_directories(pffft PUBLIC ThirdParty/pffft)
 target_compile_definitions(pffft PUBLIC PFFFT_STATIC_DEFINE)
@@ -159,13 +159,18 @@ add_easy_plugin(EasyDS
                 Plugins/EasyDS/PluginEditor.h
                 Plugins/EasyDS/PluginEditor.cpp)
 
+# Easy Verb - called Bitch-Slap up to 1.0.x (the gated burst is now one TYPE of it).
+# The folder, target, CODE and bundle ID stay as they were, so your DAW sees the
+# same plugin: projects that used Bitch-Slap open in Easy Verb, sounding the same.
 add_easy_plugin(BitchSlap
-    NAME        "Bitch-Slap"
+    NAME        "Easy Verb"
     CODE        Ezbs
-    VERSION     1.0.1
+    VERSION     2.0.0
     BUNDLE_ID   com.homestudio.bitchslap
     CATEGORIES  Fx Reverb
     SOURCES     Effects/GatedReverb.h
+                Effects/NaturalReverb.h
+                Effects/VerbEngine.h
                 Plugins/BitchSlap/Presets.h
                 Plugins/BitchSlap/PluginProcessor.h
                 Plugins/BitchSlap/PluginProcessor.cpp
@@ -295,7 +300,7 @@ endforeach()
 add_easy_plugin(EasyStrip
     NAME        "Easy Strip"
     CODE        Ezst
-    VERSION     0.11.0
+    VERSION     0.12.0
     BUNDLE_ID   com.homestudio.easystrip
     CATEGORIES  Fx
     SOURCES     Effects/LoudnessMeter.h

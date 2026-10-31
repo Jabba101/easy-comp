@@ -185,6 +185,7 @@ namespace
         { EasyCompAudioProcessor a;      compareModule (4, a, 6); }
         { EasyTransientAudioProcessor a; compareModule (5, a, 3); }
         { BitchSlapAudioProcessor a;     compareModule (6, a, 2); }
+        { BitchSlapAudioProcessor a;     compareModule (6, a, 29); }   // (a live space: "Snare - Club Gig")
         { EasyClipAudioProcessor a;      compareModule (7, a, 5); }
         { EasyTapeAudioProcessor a;      compareModule (8, a, 4); }
         { EasyDelayAudioProcessor a;     compareModule (9, a, 5); }
@@ -581,13 +582,13 @@ namespace
     void testOrder()
     {
         std::cout << "\n[ORDER]\n";
-        check (S::describe (S::orderFor (false, false, false, false)) == "TAPE > GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > TREMOLO > DELAY > BITCH-SLAP > CLIP",
+        check (S::describe (S::orderFor (false, false, false, false)) == "TAPE > GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > TREMOLO > DELAY > VERB > CLIP",
                "standard: " + S::describe (S::orderFor (false, false, false, false)));
-        check (S::describe (S::orderFor (true, false, false, false)) == "TAPE > GATE > WAH > AMP > DS > COMP > EQ > TRANS > FLANGE > TREMOLO > DELAY > BITCH-SLAP > CLIP", "EQ AFTER COMP");
-        check (S::describe (S::orderFor (false, true, false, false)) == "TAPE > GATE > WAH > DS > AMP > EQ > COMP > TRANS > FLANGE > TREMOLO > DELAY > BITCH-SLAP > CLIP", "DE-ESS BEFORE DRIVE");
-        check (S::describe (S::orderFor (false, false, true, false)) == "TAPE > GATE > WAH > EQ > DS > COMP > AMP > TRANS > FLANGE > TREMOLO > DELAY > BITCH-SLAP > CLIP", "DRIVE AFTER COMP");
-        check (S::describe (S::orderFor (false, false, false, true)) == "TAPE > GATE > WAH > AMP > EQ > DS > TRANS > COMP > FLANGE > TREMOLO > DELAY > BITCH-SLAP > CLIP", "SHAPE BEFORE COMP");
-        check (S::describe (S::orderFor (false, false, false, false, true)) == "GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > TREMOLO > DELAY > BITCH-SLAP > TAPE > CLIP", "TAPE AT THE END");
+        check (S::describe (S::orderFor (true, false, false, false)) == "TAPE > GATE > WAH > AMP > DS > COMP > EQ > TRANS > FLANGE > TREMOLO > DELAY > VERB > CLIP", "EQ AFTER COMP");
+        check (S::describe (S::orderFor (false, true, false, false)) == "TAPE > GATE > WAH > DS > AMP > EQ > COMP > TRANS > FLANGE > TREMOLO > DELAY > VERB > CLIP", "DE-ESS BEFORE DRIVE");
+        check (S::describe (S::orderFor (false, false, true, false)) == "TAPE > GATE > WAH > EQ > DS > COMP > AMP > TRANS > FLANGE > TREMOLO > DELAY > VERB > CLIP", "DRIVE AFTER COMP");
+        check (S::describe (S::orderFor (false, false, false, true)) == "TAPE > GATE > WAH > AMP > EQ > DS > TRANS > COMP > FLANGE > TREMOLO > DELAY > VERB > CLIP", "SHAPE BEFORE COMP");
+        check (S::describe (S::orderFor (false, false, false, false, true)) == "GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > TREMOLO > DELAY > VERB > TAPE > CLIP", "TAPE AT THE END");
         bool allValid = true;
         for (int mask = 0; mask < 32; ++mask)
         {
@@ -598,7 +599,7 @@ namespace
             else           allValid = allValid && o[0] == 8 && o[1] == 0 && o[2] == 11 && o[8] == 12 && o[9] == 10 && o[10] == 9 && o[11] == 6 && o[12] == 7;
             if (mask & 2) allValid = allValid && std::find (o.begin(), o.end(), 3) < std::find (o.begin(), o.end(), 1);
         }
-        check (allValid, "all 32 combinations: every module exactly once; TAPE first (or just before CLIP), then GATE and WAH; FLANGE, TREMOLO, DELAY, BITCH-SLAP and CLIP last");
+        check (allValid, "all 32 combinations: every module exactly once; TAPE first (or just before CLIP), then GATE and WAH; FLANGE, TREMOLO, DELAY, VERB and CLIP last");
 
         // All five switches on: identical to the standalones run in that order
         {
@@ -954,7 +955,7 @@ namespace
             for (int m : { 0, 1, 2, 3, 4 }) swapped = swapped && ! view->slabs[(size_t) m]->isVisible();
             for (int m : { 5, 7, 8 })       swapped = swapped && view->slabs[(size_t) m]->isVisible() && ! rackArea.intersects (view->slabs[(size_t) m]->getBounds());
             for (auto& b : view->pageButtons) swapped = swapped && ! b->isVisible();
-            check (swapped, "WEAPON SELECT: the rack replaces GATE, AMP, the screen, EQ, DS and COMP; WAH, FLANGE, TREMOLO, DELAY and BITCH-SLAP are in it; TRANS, TAPE, CLIP stay");
+            check (swapped, "WEAPON SELECT: the rack replaces GATE, AMP, the screen, EQ, DS and COMP; WAH, FLANGE, TREMOLO, DELAY and VERB are in it; TRANS, TAPE, CLIP stay");
 
             switchOn (s, 6, true);
             switchOn (s, 9, true);
@@ -967,14 +968,20 @@ namespace
             loadPresetNamed (s.getModule (12), "Guitar - Jet Flanger");
             for (int i = 0; i < 10; ++i) { process (s, music (0.05)); view->updateNow(); }
             savePng (*editor, outDir.getChildFile ("strip-hologram-rack.png"));
+            loadPresetNamed (s.getModule (6), "Vocal - Club Stage");
+            for (int i = 0; i < 4; ++i) { process (s, music (0.05)); view->updateNow(); }
+            check (view->findControl (6, SlapIDs::decay) != nullptr && view->findControl (6, SlapIDs::decay)->isVisible()
+                     && ! view->findControl (6, SlapIDs::length)->isVisible(),
+                   "VERB on CLUB: DECAY, PRE-DELAY and TONE take LENGTH and SYNC's place in its bay");
+            savePng (*editor, outDir.getChildFile ("strip-hologram-rack-verb.png"));
             view->mouseEnter (hoverEvent (view->findControl (6, SlapIDs::mix)));
             check (view->getTickerText() == view->moduleHint (6, "MIX") && view->getTickerText().isNotEmpty(),
-                   "in the rack, BITCH-SLAP's controls still explain themselves (Bitch-Slap's own hints)");
+                   "in the rack, VERB's controls still explain themselves (Easy Verb's own hints)");
 
             view->weaponSelect.onClick();
             bool back = ! view->isRackShown() && ! view->getRack()->isVisible() && view->getScreen().isVisible() && ! slapSlab.isVisible() && ! delaySlab.isVisible() && ! tremSlab.isVisible() && ! wahSlab.isVisible() && ! flangeSlab.isVisible();
             for (int m : { 0, 1, 2, 3, 4, 5, 7, 8 }) back = back && view->slabs[(size_t) m]->isVisible();
-            check (back && s.isModuleOn (6), "WEAPON SELECT again: back to the strip (BITCH-SLAP keeps playing)");
+            check (back && s.isModuleOn (6), "WEAPON SELECT again: back to the strip (VERB keeps playing)");
         }
         view->pageButtons[2]->onClick();
         process (s, music (0.3)); view->updateNow();

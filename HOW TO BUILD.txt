@@ -8,7 +8,9 @@ Right now this project makes:
     Easy Gate    a gate (silences the noise and bleed between the
                  sounds you want)
     Easy DS      a de-esser (tames harsh S sounds, and harsh cymbals)
-    Bitch-Slap   a gated reverb (the big 80s burst that stops dead)
+    Easy Verb    a reverb: live rooms, clubs and halls, a studio plate -
+                 and the Bitch-Slap gated burst (the big 80s burst that
+                 stops dead). Called Bitch-Slap up to 1.0.1
     Easy Clip    a clipper (shaves the peaks so a track or a whole mix
                  can be louder)
     Easy Amp     a valve amp: from warmth to an overdriven rock growl
@@ -54,19 +56,21 @@ GETTING THE LATEST PLUGINS FROM GITHUB
     Updating from Easy Transient? It's now called Easy Trans, so also
     DELETE the old "Easy Transient.vst3" folder there. Otherwise your
     DAW finds two copies of the same plugin.
+    Updating from Bitch-Slap? It's now Easy Verb (the gated burst is its
+    BITCH-SLAP type), so also DELETE the old "Bitch-Slap.vst3" folder.
 
  7. Open your DAW and rescan your plugins. They're listed under
     "Aardvark Easy Suite" (it used to be "Home Studio"), in effects /
-    dynamics - Bitch-Slap in effects / reverb, Easy Delay in effects /
+    dynamics - Easy Verb in effects / reverb, Easy Delay in effects /
     delay, Easy Tremolo and Easy Flange in effects / modulation, Easy Wah in effects / filter,
     Easy Amp and Easy Tape in effects / distortion, Easy EQ in
     effects / EQ.
 
  Your projects keep working: newer versions open older projects with
  any new features switched off, so they sound exactly as they did. That
- includes projects that used Easy Transient: your DAW recognises the
- plugin by a hidden code that never changes, so they open with Easy
- Trans and your settings.
+ includes projects that used Easy Transient or Bitch-Slap: your DAW
+ recognises the plugin by a hidden code that never changes, so they open
+ with Easy Trans or Easy Verb (on BITCH-SLAP) and your settings.
 
  If a build shows a red cross:
     Click on the run, then on the job, copy the red error lines, and
@@ -270,11 +274,34 @@ YOUR FIRST FIVE MINUTES WITH EASY DS
 
 
 ====================================================================
-YOUR FIRST FIVE MINUTES WITH BITCH-SLAP
+YOUR FIRST FIVE MINUTES WITH EASY VERB
 ====================================================================
-   The 80s gated reverb: every hit - each snare, tom, ghost note, even
-   the bleed - gets its own burst of big, wide reverb that stops dead.
+   One reverb, five kinds (TYPE):
+     BITCH-SLAP  the 80s gated reverb: every hit gets its own burst of
+                 big, wide reverb that stops dead (Bitch-Slap, as it was)
+     ROOM        a rehearsal or drum room: close walls, a short, lively
+                 tail
+     CLUB        a small gig venue: a fuller tail - the band on stage
+     HALL        a theatre or concert hall: a long, smooth tail
+     PLATE       the 60s studio plate: bright and silky, no room at all
+   ROOM, CLUB and HALL are the live spaces - the sound of a band playing
+   in a real place, rather than "studio reverb". Each has the early
+   reflections off the walls that tell your ear how big the place is.
 
+   THE SPACES (ROOM, CLUB, HALL, PLATE)
+   1. Pick a preset from "Live Spaces", or a TYPE, then turn up MIX
+      (as below) until the space sits where you like it.
+   2. DECAY: how long the tail takes to die away. Rooms about 0.4 - 1 s,
+      clubs 1 - 1.5 s, halls 1.5 - 2.5 s. The highs always fade sooner
+      than the lows, as in a real place.
+   3. PRE-DELAY: a short gap before the reverb starts. 10 - 40 ms keeps
+      a vocal or snare clear and upfront with the space behind it; 0
+      puts you further back, out in the room.
+   4. TONE: darker (a room full of people, curtains, wood) or brighter
+      (hard walls). 0 is a natural middle.
+   Changing TYPE while playing crossfades - no clicks.
+
+   BITCH-SLAP
    1. Put it on a snare or tom track and pick a preset, or play the
       track and turn up MIX. Up to 50% it only adds reverb (at 50% the
       burst is about as loud as the snare). Above 50% it also turns
@@ -301,9 +328,13 @@ YOUR FIRST FIVE MINUTES WITH BITCH-SLAP
      AUX-Send slider in the mixer to send it to the bus; the bus's fader
      sets how much reverb you hear overall.
 
-   On the mix bus: start from one of the "Mix Bus" presets. On a whole
-   mix everything feeds the reverb at once, so it comes out far louder
-   than on a single drum - MIX around 10-20% is plenty.
+   On the mix bus: start from one of the "Mix Bus" presets - "Live in a
+   Room", "Live at the Club" and "Live in Concert" put the whole band in
+   one space. On a whole mix everything feeds the reverb at once, so it
+   comes out far louder than on a single drum - MIX around 10-20% is
+   plenty.
+
+   Your own presets saved in Bitch-Slap are still there (same folder).
 
    Wide or mono: the burst is wide (different on the left and right).
    On a mono track, your DAW may give the plugin a mono output, and the
@@ -571,7 +602,7 @@ YOUR FIRST FIVE MINUTES WITH EASY EQ
 YOUR FIRST FIVE MINUTES WITH EASY STRIP
 ====================================================================
    Every Easy plugin in one channel strip, in this order:
-      INPUT > TAPE > GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > TREMOLO > DELAY > BITCH-SLAP > CLIP > OUTPUT
+      INPUT > TAPE > GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > TREMOLO > DELAY > VERB > CLIP > OUTPUT
 
    TAPE comes first: as if the track had been recorded to tape and you're
    mixing from the machine (the most natural-sounding place; ORDER can
@@ -619,13 +650,13 @@ YOUR FIRST FIVE MINUTES WITH EASY STRIP
       move; the menu (and the ticker, hovering ORDER) shows the order,
       and the button lights while it isn't the standard one. Switching
       while playing dips the sound for a moment (no clicks). FLANGE,
-      TREMOLO, DELAY, BITCH-SLAP and CLIP are always last (DELAY before BITCH-SLAP, so the
-      gated reverb catches the echoes). Presets and A / B include the order.
+      TREMOLO, DELAY, VERB and CLIP are always last (DELAY before VERB, so the
+      reverb catches the echoes). Presets and A / B include the order.
    10. WEAPON SELECT (the striped button under TAPE) opens the effects
       rack in place of GATE, AMP, the big screen, EQ, DS and COMP - they
       keep working, they're just out of sight. TRANS, TAPE, CLIP, INPUT
       / OUTPUT and the header stay. WAH (bay 1), FLANGE (bay 2), TREMOLO
-      (bay 4), DELAY (bay 5) and BITCH-SLAP (bay 6) live in the rack; the
+      (bay 4), DELAY (bay 5) and VERB (bay 6) live in the rack; the
       other bays are where the mod filter and limiter will go. WAH
       runs straight after GATE, like a pedal into an amp. Press WEAPON
       SELECT again to go back.
@@ -672,7 +703,9 @@ WHAT'S IN THIS FOLDER
      Gate.h                 the gate
      DeEsser.h              the de-esser
      HarshnessFinder.h      Easy DS's FIND button
-     GatedReverb.h          Bitch-Slap's reverb
+     GatedReverb.h          Easy Verb's BITCH-SLAP burst
+     NaturalReverb.h        Easy Verb's rooms, clubs, halls and plate
+     VerbEngine.h           Easy Verb's TYPE switch, MIX and BYPASS
      Clipper.h              Easy Clip's clipper (and its oversampling)
      ValveAmp.h             Easy Amp's valve amp
      TapeMachine.h          Easy Tape's tape machine
@@ -696,7 +729,8 @@ WHAT'S IN THIS FOLDER
                           folder keeps the old name).
    Plugins\EasyGate\      Easy Gate's knobs, window and presets.
    Plugins\EasyDS\        Easy DS's knobs, window and presets.
-   Plugins\BitchSlap\     Bitch-Slap's knobs, window and presets.
+   Plugins\BitchSlap\     Easy Verb's knobs, window and presets (the folder
+                          keeps Bitch-Slap's name).
    Plugins\EasyClip\      Easy Clip's knobs, window and presets.
    Plugins\EasyAmp\       Easy Amp's knobs, window and presets.
    Plugins\EasyEQ\        Easy EQ's knobs, screen and presets.
@@ -710,7 +744,7 @@ WHAT'S IN THIS FOLDER
                           the HOLOGRAM look).
    ThirdParty\Fonts\     The HOLOGRAM look's fonts (see their licence).
 
-   ThirdParty\pffft\      PFFFT, the fast FFT behind Bitch-Slap's reverb
+   ThirdParty\pffft\      PFFFT, the fast FFT behind the BITCH-SLAP burst
                           (someone else's free code - see its README.txt).
 
    On a Mac, the same folder builds VST3 and AU versions (needs Xcode and
@@ -729,7 +763,7 @@ A NOTE ON JUCE'S LICENCE
    them, changed or not, has to share the source code under the same
    licence.
 
-   Bitch-Slap also uses PFFFT (ThirdParty\pffft), which is free under a
+   Easy Verb also uses PFFFT (ThirdParty\pffft), which is free under a
    BSD-style licence. Its only condition: if you give the plugins to
    anyone, include the text of ThirdParty\pffft\LICENSE.txt with them.
 

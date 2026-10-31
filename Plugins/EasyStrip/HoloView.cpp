@@ -53,12 +53,12 @@ namespace Holo
             "Copies the strip you're on to the other one (A to B, or B to A) - then change one of them and compare.";
         const juce::String weaponHint =
             "Weapon select: opens the effects rack in place of GATE, AMP, the screen, EQ, DS and COMP (they keep working). "
-            "WAH, FLANGE, TREMOLO, DELAY and BITCH-SLAP are in there; the mod filter and the limiter are coming. Press it again to go back.";
+            "WAH, FLANGE, TREMOLO, DELAY and VERB are in there; the mod filter and the limiter are coming. Press it again to go back.";
         const juce::String rackHint =
-            "The effects rack (Easy SFX). WAH, FLANGE, TREMOLO, DELAY and BITCH-SLAP work now; the empty bays are where the mod filter "
+            "The effects rack (Easy SFX). WAH, FLANGE, TREMOLO, DELAY and VERB work now; the empty bays are where the mod filter "
             "and the rest will go. WEAPON SELECT again takes you back to the strip.";
 
-        // The page buttons, left to right (DELAY's and BITCH-SLAP's panels are in the rack: no page for them)
+        // The page buttons, left to right (the rack effects' panels are in the rack: no page for them)
         constexpr int pageOrder[] { 0, 1, 2, 3, 4, 5, 8, 7 };
 
         constexpr const char* bayNotes[] {
@@ -259,7 +259,7 @@ namespace Holo
     };
 
     //==========================================================================
-    /** WEAPON SELECT's effects rack: seven bays side by side. BITCH-SLAP's
+    /** WEAPON SELECT's effects rack: seven bays side by side. VERB's
         panel sits in its own bay; the rest say what's coming. */
     struct RackPanel : public juce::Component
     {
@@ -430,17 +430,17 @@ namespace Holo
         addAndMakeVisible (setupButton);
         addHint (setupButton, "SETUP", setupHint);
 
-        // The page buttons (by module; BITCH-SLAP's isn't shown - its panel is in the rack)
+        // The page buttons (by module; the rack effects' aren't shown - their panels are in the rack)
         for (int m = 0; m < StripModules::numModules; ++m)
         {
-            pageButtons[(size_t) m] = std::make_unique<Button> (m == 6 ? juce::String ("BITCH|SLAP") : juce::String (StripModules::tabs[m]),
+            pageButtons[(size_t) m] = std::make_unique<Button> (juce::String (StripModules::tabs[m]),
                                                                 Colours::selected, Button::Style::view);
             auto& b = *pageButtons[(size_t) m];
             b.fontSize = m == 6 ? 13.0f : 14.5f;
             b.onClick = [this, m] { showPage (m); };
             if (! StripModules::isRackEffect (m))
                 addAndMakeVisible (b);
-            addHint (b, "DISPLAY FOCUS: " + juce::String (m == 6 ? "BITCH-SLAP" : StripModules::tabs[m]), pageHint);
+            addHint (b, "DISPLAY FOCUS: " + juce::String (StripModules::tabs[m]), pageHint);
         }
 
         addAndMakeVisible (screen);
@@ -696,7 +696,7 @@ namespace Holo
         slabs[3]->setBounds (colRight, mainY, wRight, 268);
         slabs[4]->setBounds (colRight, mainY + 278, wRight, 842 - (mainY + 278));
         slabs[5]->setBounds (colRight2, mainY, wRight2, 320);
-        slabs[StripModules::tapeIndex]->setBounds (colRight2, mainY + 330, wRight2, 298);   // (BITCH-SLAP's old place)
+        slabs[StripModules::tapeIndex]->setBounds (colRight2, mainY + 330, wRight2, 298);   // (VERB's old place)
         weaponArea = { colRight2, mainY + 638, wRight2, 842 - (mainY + 638) };
         weaponSelect.setBounds (weaponArea.withSizeKeepingCentre (212, 46));
         slabs[7]->setBounds (colRight, 852, colRight2 + wRight2 - colRight, bottom - 852);
@@ -924,7 +924,7 @@ namespace Holo
                     }
                     if (auto* slab = walk->findParentComponentOfClass<Slab>())
                         if (! title.startsWith (StripModules::tabs[slab->getModule()]))
-                            title = juce::String (slab->getModule() == 6 ? "BITCH-SLAP" : StripModules::tabs[slab->getModule()]) + " " + juce::String::fromUTF8 ("\xc2\xb7") + " " + title;
+                            title = juce::String (StripModules::tabs[slab->getModule()]) + " " + juce::String::fromUTF8 ("\xc2\xb7") + " " + title;
                     setTicker (title, h.text, tintFor (walk));
                     return;
                 }
@@ -1101,7 +1101,7 @@ namespace Holo
             inside.removeFromLeft (gap);
         }
 
-        // DELAY and BITCH-SLAP: in their bays while the rack's open (BITCH-SLAP's old place on the main page is TAPE's)
+        // The rack effects: in their bays while the rack's open (VERB's old place on the main page is TAPE's)
         slabs[StripModules::slapIndex]->setBounds (panel->bays[(size_t) slapBay] + rack->getPosition());
         slabs[StripModules::delayIndex]->setBounds (panel->bays[(size_t) delayBay] + rack->getPosition());
         slabs[StripModules::tremIndex]->setBounds (panel->bays[(size_t) tremBay] + rack->getPosition());
