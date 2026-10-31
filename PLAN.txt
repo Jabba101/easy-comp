@@ -411,6 +411,28 @@ LATER
      built in at the end, with full meters (true peak, LUFS as a reading -
      never a target - correlation, spectrum). Multiband dynamics maybe
      later. Easy Comp keeps its simple WORKS ON (same settings for both).
+   - EASY MASTER (planned, not started - 31 October 2026): a dedicated
+     mastering plugin for the master bus, after mixing in Easy Strip
+     (Easy Comp keeps its simple WORKS ON for buses). Only worth building
+     if it can replace the user's professional mastering plugins: the
+     same quality, less CPU - judged the way Easy Limiter beat Stealth
+     Limiter (blind, level-matched, on the user's own mixes, plus a CPU
+     comparison).
+     Chain: INPUT (trim, MONO check, LISTEN MID / SIDE) > EQ (linear
+     phase, 5 gentle bands, each STEREO / MID / SIDE - from Easy EQ) >
+     DYNAMICS (M/S compressor, separate MID and SIDE settings via EDIT:
+     MID / SIDE, slow glue ranges) > COLOUR (off by default: subtle 30 ips
+     tape) > WIDTH (side level, MONO BASS below a frequency) > LIMITER (the
+     Easy Limiter engine) > DITHER (16-bit exports only).
+     Meters (readings, not targets): true peak, LUFS I / S / M, PLR,
+     correlation, spectrum with the EQ curve over it, gain reduction for
+     MID, SIDE and the limiter. MATCH across the whole chain; A / B.
+     Open questions: multiband dynamics (biggest new job - maybe later);
+     a level-matched reference track; window size (1080p full-screen or
+     two pages).
+     Stages: 1 chain + M/S comp + limiter + meters; 2 EQ; 3 colour, width,
+     dither; 4 multiband if still wanted. Most engines exist and are
+     tested; the work is mainly assembly and the window.
    - Once the essentials are perfected: EASY FX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the
