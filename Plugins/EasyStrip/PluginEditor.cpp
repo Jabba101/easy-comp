@@ -266,7 +266,7 @@ void ClassicStripWindow::layoutBody (juce::Rectangle<int> area)
     auto tabRow = middle.removeFromTop (34);
     auto lampRow = middle.removeFromTop (30);
     const int tabWidth = tabRow.getWidth() / EasyStripAudioProcessor::numModules;
-    for (int m : { (int) StripModules::tapeIndex, 0, (int) StripModules::wahIndex, 1, 2, 3, 4, 5, (int) StripModules::flangeIndex, (int) StripModules::tremIndex, (int) StripModules::delayIndex, 6, 7 })   // (in the order the sound goes)
+    for (int m : { (int) StripModules::tapeIndex, 0, (int) StripModules::wahIndex, 1, 2, 3, 4, 5, (int) StripModules::flangeIndex, (int) StripModules::filterIndex, (int) StripModules::tremIndex, (int) StripModules::delayIndex, 6, 7 })   // (in the order the sound goes)
     {
         tabs[(size_t) m].setBounds (tabRow.removeFromLeft (tabWidth).reduced (3, 0));
         onLamps[(size_t) m]->setBounds (lampRow.removeFromLeft (tabWidth).withSizeKeepingCentre (56, 24));

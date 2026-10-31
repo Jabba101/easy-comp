@@ -17,7 +17,7 @@
 */
 namespace StripPresetRecipes
 {
-    enum Module { gate = 0, amp, eq, ds, comp, trans, slap, clip, tape, delay, tremolo, wah, flange };
+    enum Module { gate = 0, amp, eq, ds, comp, trans, slap, clip, tape, delay, tremolo, wah, flange, filter };
 
     struct Use { Module module; const char* preset; };
     struct Set { Module module; const char* id; float value; };   // one knob, in its own units
@@ -124,6 +124,9 @@ namespace StripPresetRecipes
             { "Drum Bus", "Drum Bus - Live Room",
               "The kit glued and played in a lively room - the live drum sound, not the studio one.",
               { { comp, "Drum Bus - Vintage Glue" }, { slap, "Drums - Live Room" } } },
+            { "Drum Bus", "Drum Bus - High-Pass Build",
+              "Glued drums whose low end thins out over four bars, then crashes back in: the build before a drop.",
+              { { comp, "Drum Bus - Vintage Glue" }, { filter, "Drum Bus - High-Pass Build (4 bars)" } } },
             { "Drum Bus", "Drum Bus - Jazz & Acoustic",
               "Light glue and just a touch of space.",
               { { comp, "Drum Bus - Jazz & Acoustic" }, { slap, "Jazz Kit - Just a Touch" } } },
@@ -236,6 +239,13 @@ namespace StripPresetRecipes
             { "Keys & Synths", "Organ - Rock",
               "Steady, with the valve amp just breaking up.",
               { { amp, "Guitar - Edge of Breakup" }, { comp, "Organ - Steady" } } },
+            { "Keys & Synths", "Synth Pad - Wide Filter Sweep",
+              "A pad opening and closing over four bars, the two sides drifting apart, with a hall behind it.",
+              { { comp, "Synth Pad - Smooth" }, { filter, "Synth Pad - Slow Wide Sweep" }, { slap, "Send - Hall" } },
+              {}, { { slap, "mix", 22.0f } } },
+            { "Keys & Synths", "Synth - Sample & Hold Bubbles",
+              "A synth bubbling through a new random filter every 16th note, a ping-pong echo behind it.",
+              { { filter, "Synth - Sample & Hold 1/16" }, { delay, "Synth - Synthwave Ping-Pong" } } },
             { "Keys & Synths", "Synth Lead - Synthwave",
               "Compressed, then overdriven (DRIVE AFTER COMP) for an even bite on every note, eighth-note echoes bouncing left and right.",
               { { amp, "Synth Lead - Overdrive" }, { comp, "Synth Lead - Upfront" }, { delay, "Synth - Synthwave Ping-Pong" }, { clip, "Synth Lead - Bite" } },

@@ -1286,6 +1286,69 @@ namespace Holo
     };
 
     //==========================================================================
+    // MOD FILTER (Easy Filter; its panel is in the WEAPON SELECT rack: tall and narrow)
+    //==========================================================================
+    class FilterSlab : public Slab
+    {
+    public:
+        explicit FilterSlab (View& v) : Slab (v, StripModules::filterIndex, Colours::filter, "FILTER")
+        {
+            power.fontSize = 14.0f;
+            type = &choice (FilterIDs::type, { "LOW", "HIGH", "BAND" }, "TYPE", true);
+            cutoff = &ring (FilterIDs::cutoff, "CUTOFF", Format::hertz, "Hz", Ring::tiny);
+            resonance = &ring (FilterIDs::resonance, "RESO", Format::percent, "%", Ring::tiny, {}, "RESONANCE");
+            shape = &choice (FilterIDs::shape, { "SINE", "TRIANGLE", "RAMP UP", "RAMP DOWN", "SQUARE", "RANDOM" }, "SHAPE");
+            shape->segmentHeight = 21;
+            shape->fontSize = 12.5f;
+            rate = &ring (FilterIDs::rate, "RATE", Format::asText, {}, Ring::tiny);
+            note = &ring (FilterIDs::note, "RATE", Format::asText, {}, Ring::tiny, {}, "RATE");
+            sync = &choice (FilterIDs::sync, { "OFF", "TEMPO" }, "SYNC");
+            sync->segmentHeight = 24;
+            depth = &ring (FilterIDs::depth, "DEPTH", Format::percent, "%", Ring::tiny);
+            width = &ring (FilterIDs::width, "WIDTH", Format::percent, "%", Ring::tiny);
+            mix = &ring (FilterIDs::mix, "MIX", Format::percent, "%", Ring::tiny);
+        }
+
+        void resized() override
+        {
+            clearSections();
+            auto body = placeHeader (getLocalBounds().reduced (9, 6), true, 80);
+            constexpr int gap = 8;
+            const auto take = [&] (int height) { auto r = body.removeFromTop (height); body.removeFromTop (gap); return r; };
+
+            auto s1 = section (take (27 + type->getIdealHeight() + 9), 1, "TYPE");
+            auto s2 = section (take (27 + cutoff->getIdealHeight() + 9), 2, "FILTER");
+            auto s3 = section (take (27 + shape->getIdealHeight() + 9), 3, "SHAPE");
+            auto s4 = section (take (27 + juce::jmax (rate->getIdealHeight(), sync->getIdealHeight()) + 9), 4, "SPEED");
+            auto s5 = section (take (juce::jmin (body.getHeight(), 27 + depth->getIdealHeight() + 4 + mix->getIdealHeight() + 9)), 5, "HOW MUCH");
+
+            type->setBounds (s1.withHeight (type->getIdealHeight()));
+            centreIn (*cutoff, s2.removeFromLeft (s2.getWidth() / 2), s2.getY());
+            centreIn (*resonance, s2, s2.getY());
+            shape->setBounds (s3.withHeight (shape->getIdealHeight()).withSizeKeepingCentre (juce::jmin (130, s3.getWidth()), shape->getIdealHeight()));
+            auto left = s4.removeFromLeft (s4.getWidth() / 2);
+            centreIn (*rate, left, s4.getY());
+            centreIn (*note, left, s4.getY());
+            sync->setBounds (s4.withSizeKeepingCentre (juce::jmin (68, s4.getWidth() - 4), sync->getIdealHeight()).withY (s4.getY() + 4));
+            const int half = s5.getWidth() / 2;
+            centreIn (*depth, s5.withWidth (half), s5.getY());
+            centreIn (*width, s5.withTrimmedLeft (half), s5.getY());
+            centreIn (*mix, s5, depth->getBottom() + 4);
+        }
+
+        void refresh() override
+        {
+            const bool tempo = sync->getChosen() == 1;
+            rate->setVisible (! tempo);
+            note->setVisible (tempo);
+        }
+
+    private:
+        Ring *cutoff = nullptr, *resonance = nullptr, *rate = nullptr, *note = nullptr, *depth = nullptr, *width = nullptr, *mix = nullptr;
+        Choice *type = nullptr, *shape = nullptr, *sync = nullptr;
+    };
+
+    //==========================================================================
     // CLIP
     //==========================================================================
     class ClipSlab : public Slab
@@ -1431,6 +1494,7 @@ namespace Holo
             case 10: return std::make_unique<TremoloSlab> (v);
             case 11: return std::make_unique<WahSlab> (v);
             case 12: return std::make_unique<FlangeSlab> (v);
+            case 13: return std::make_unique<FilterSlab> (v);
             default: return std::make_unique<ClipSlab> (v);
         }
     }

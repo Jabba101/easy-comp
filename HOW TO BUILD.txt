@@ -20,6 +20,7 @@ Right now this project makes:
     Easy Tremolo the volume pulsing, or side to side (auto-pan), in time
     Easy Wah     an automatic wah: follows your playing, or rocks in time
     Easy Flange  flanger, chorus and vibrato
+    Easy Filter  a moving filter: sweeps, wobbles and pulses in time
     Easy Strip   all of the above in one channel strip (HOLOGRAM look)
 
 Every time the project changes on GitHub, GitHub builds the plugins for you
@@ -62,7 +63,7 @@ GETTING THE LATEST PLUGINS FROM GITHUB
  7. Open your DAW and rescan your plugins. They're listed under
     "Aardvark Easy Suite" (it used to be "Home Studio"), in effects /
     dynamics - Easy Verb in effects / reverb, Easy Delay in effects /
-    delay, Easy Tremolo and Easy Flange in effects / modulation, Easy Wah in effects / filter,
+    delay, Easy Tremolo and Easy Flange in effects / modulation, Easy Wah and Easy Filter in effects / filter,
     Easy Amp and Easy Tape in effects / distortion, Easy EQ in
     effects / EQ.
 
@@ -551,6 +552,33 @@ YOUR FIRST FIVE MINUTES WITH EASY FLANGE
 
 
 ====================================================================
+YOUR FIRST FIVE MINUTES WITH EASY FILTER
+====================================================================
+   A resonant filter whose cutoff moves by itself - slow sweeps, synth
+   wobbles, sample & hold bubbling, pulses locked to the beat - with the
+   left and right sides able to move apart.
+
+   1. TYPE: LOW-PASS (takes the top off - the classic synth sweep),
+      HIGH-PASS (thins out the bottom - the build-up before a drop) or
+      BAND-PASS (only a band - telephone, radio, a wah-like quack).
+   2. FILTER: CUTOFF (where it sits - the middle of the movement) and
+      RESONANCE (a singing peak at the cutoff; it never howls).
+   3. HOW MUCH: DEPTH (0 = a still filter, 100% = three octaves up and
+      down), WIDTH (the two sides moving apart - one opens as the other
+      closes at 100%) and MIX.
+   4. SHAPE: SINE and TRIANGLE sweep smoothly; RAMP UP / DOWN rise or
+      fall every cycle (pumping); SQUARE jumps between two settings
+      (pulses); RANDOM picks a new place every cycle (sample & hold).
+      The jumps are eased over a few milliseconds, so they never tick.
+   5. SPEED: RATE in cycles a second, or with SYNC on TEMPO a note length
+      (1/32 to 8 bars) locked to the beat - the same place in the song
+      sounds the same every time it plays, RANDOM included.
+   The display shows the curve right now (left amber, right green) over
+   the range it moves through, and two cycles of the movement. No delay
+   added.
+
+
+====================================================================
 YOUR FIRST FIVE MINUTES WITH EASY EQ
 ====================================================================
    Four bands - LOW, LOW MID, HIGH MID, HIGH - plus filters, drawn on a
@@ -602,7 +630,7 @@ YOUR FIRST FIVE MINUTES WITH EASY EQ
 YOUR FIRST FIVE MINUTES WITH EASY STRIP
 ====================================================================
    Every Easy plugin in one channel strip, in this order:
-      INPUT > TAPE > GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > TREMOLO > DELAY > VERB > CLIP > OUTPUT
+      INPUT > TAPE > GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > FILTER > TREMOLO > DELAY > VERB > CLIP > OUTPUT
 
    TAPE comes first: as if the track had been recorded to tape and you're
    mixing from the machine (the most natural-sounding place; ORDER can
@@ -650,14 +678,15 @@ YOUR FIRST FIVE MINUTES WITH EASY STRIP
       move; the menu (and the ticker, hovering ORDER) shows the order,
       and the button lights while it isn't the standard one. Switching
       while playing dips the sound for a moment (no clicks). FLANGE,
-      TREMOLO, DELAY, VERB and CLIP are always last (DELAY before VERB, so the
+      FILTER, TREMOLO, DELAY, VERB and CLIP are always last (DELAY before VERB, so the
       reverb catches the echoes). Presets and A / B include the order.
    10. WEAPON SELECT (the striped button under TAPE) opens the effects
       rack in place of GATE, AMP, the big screen, EQ, DS and COMP - they
       keep working, they're just out of sight. TRANS, TAPE, CLIP, INPUT
-      / OUTPUT and the header stay. WAH (bay 1), FLANGE (bay 2), TREMOLO
-      (bay 4), DELAY (bay 5) and VERB (bay 6) live in the rack; the
-      other bays are where the mod filter and limiter will go. WAH
+      / OUTPUT and the header stay. WAH (bay 1), FLANGE (bay 2), FILTER
+      (bay 3), TREMOLO (bay 4), DELAY (bay 5) and VERB (bay 6) live in
+      the rack; the last bay is where the limiter will go. WEAPON
+      SELECT lights up while any of them is switched on. WAH
       runs straight after GATE, like a pedal into an amp. Press WEAPON
       SELECT again to go back.
    11. The sidechain input goes to both GATE and COMP (each one's
@@ -713,6 +742,7 @@ WHAT'S IN THIS FOLDER
      Tremolo.h              Easy Tremolo's tremolo / auto-pan
      AutoWah.h              Easy Wah's automatic wah
      Flanger.h              Easy Flange's flanger / chorus / vibrato
+     ModFilter.h            Easy Filter's moving filter
      Equalizer.h            Easy EQ's EQ
      LinearPhaseEQ.h        Easy EQ's MASTER (linear phase)
      LoudnessMatcher.h      AUTO-GAIN (shared by every plugin)
@@ -739,6 +769,7 @@ WHAT'S IN THIS FOLDER
    Plugins\EasyTremolo\   Easy Tremolo's knobs, picture of the movement and presets.
    Plugins\EasyWah\       Easy Wah's knobs, picture of the filter and pedal, and presets.
    Plugins\EasyFlange\    Easy Flange's knobs, picture of the swing and presets.
+   Plugins\EasyFilter\    Easy Filter's knobs, picture of the filter and presets.
    Plugins\EasyStrip\     Easy Strip: the plumbing that runs the plugins
                           above as its modules, and its windows (Holo* =
                           the HOLOGRAM look).

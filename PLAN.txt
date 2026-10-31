@@ -347,6 +347,27 @@ LATER
      presets Drum Bus - Live Room and Send - Live Room / Club / Hall.
      Mix-bus MIX levels for the spaces are first guesses - to be set by
      ear on the user's mixes.
+   - EASY FILTER 1.0.0 (done, 31 October 2026), the MOD FILTER (bay 3; the
+     strip's fourteenth module, "filter_", after FLANGE, before TREMOLO).
+     Effects/ModFilter.h: TPT state-variable filters - LOW-PASS and
+     HIGH-PASS 24 dB/oct (a gentle stage then the resonant one), BAND-PASS
+     12 dB/oct (unity at the peak); all three always running so TYPE
+     crossfades (10 ms). CUTOFF 20 Hz-20 kHz (the middle of the movement),
+     RESONANCE (k down to 0.15; level eased by 1/(1+0.6 r^2)), DEPTH (up to
+     3 octaves each way), SHAPE SINE / TRIANGLE / RAMP UP / RAMP DOWN /
+     SQUARE / RANDOM (jumps eased by two one-poles, ~6 ms, S-shaped: no
+     ticks), RATE 0.02-20 Hz or SYNC 1/32 to 8 bars locked to the song
+     (RANDOM from a hash of the cycle number, so a loop repeats exactly),
+     WIDTH (right side up to half a cycle later; RANDOM picks per side),
+     MIX. No added delay. 19 presets.
+   - The strip's look (31 October 2026): the track's name top left (from
+     the DAW, follows renames - if the host sends it); the presets row
+     moved right, ORDER as close to the OVERSAMPLING lettering as its
+     buttons; lit buttons drawn like lamps (each its own hot and cool
+     spots, from its name and place) with a soft bleed onto the console;
+     WEAPON SELECT a real panel button (recessed, backlit cap, black
+     painted lettering, solid hazard bezel, glow round it) that lights
+     while any EASY FX is on; the rack is called EASY FX.
    - Once the essentials are perfected: EASY FX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the
