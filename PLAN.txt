@@ -385,9 +385,12 @@ LATER
      Latency 3 ms + 6 samples (150 at 48 kHz). Tests: never over at any
      ceiling pushed 0-18 dB, a 12 kHz intersample tone held, a 60 Hz
      note pushed 6 dB: -159 dB THD once settled; exact below the ceiling.
-     STILL TO DO: the user's blind, level-matched comparison with IK
-     Stealth Limiter on their own mixes - it only replaces Stealth if it's
-     indistinguishable or better.
+     PASSED the user's comparison with IK Stealth Limiter (31 October
+     2026): at +10 dB into both, same integrated LUFS, Easy Limiter clean
+     while Stealth distorts slightly (and so sounds a touch "louder");
+     a laid-back jazz mix (vibraphone, sax, brushes, clean bass) pushed
+     the full +18 dB, ceiling -0.1, release SET 30 ms: perfectly clean.
+     It replaces Stealth Limiter.
    - DISPLAY FOCUS buttons: lit amber with black lettering (31 October 2026).
    - Once the essentials are perfected: EASY FX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
