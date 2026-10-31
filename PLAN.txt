@@ -402,6 +402,15 @@ LATER
      Snare, Toms & Kick, Whole Kit and Live Spaces - Drums sub-menus
      folded in - the names keep them together), and one MIXING &
      MASTERING sub-menu for every Mix Bus, Lo-Fi Bus and Master preset.
+   - NEXT (agreed 31 October 2026, not started - waiting for weekly
+     usage): EASY MASTER, a dedicated mastering plugin (Easy Strip can't
+     be expected to do it all). Chain: mastering EQ (linear phase, MID /
+     SIDE per band) > M/S compressor with SEPARATE mid and side settings
+     (EDIT: MID / SIDE switch; threshold, ratio, attack, release, make-up
+     per part) > tape colour (30 ips) and width / mono bass > Easy Limiter
+     built in at the end, with full meters (true peak, LUFS as a reading -
+     never a target - correlation, spectrum). Multiband dynamics maybe
+     later. Easy Comp keeps its simple WORKS ON (same settings for both).
    - Once the essentials are perfected: EASY FX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the
