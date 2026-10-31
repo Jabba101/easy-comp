@@ -524,11 +524,12 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 EasyStripAudioProcessor::Order EasyStripAudioProcessor::orderFor (bool eqAfterComp, bool deEssBeforeDrive,
                                                                 bool driveAfterComp, bool shapeBeforeComp, bool tapeAtEnd) noexcept
 {
-    enum { gate, amp, eq, ds, comp, trans, slap, clip, tape, delay, trem };
+    enum { gate, amp, eq, ds, comp, trans, slap, clip, tape, delay, trem, wah };
     Order o {};
     int n = 0;
     if (! tapeAtEnd)       o[(size_t) n++] = tape;   // (recorded to tape: the usual, most natural-sounding place)
     o[(size_t) n++] = gate;
+    o[(size_t) n++] = wah;     // (before AMP and anything that evens out how hard you play)
 
     // Before COMP
     if (deEssBeforeDrive)  o[(size_t) n++] = ds;

@@ -53,16 +53,16 @@ namespace Holo
             "Copies the strip you're on to the other one (A to B, or B to A) - then change one of them and compare.";
         const juce::String weaponHint =
             "Weapon select: opens the effects rack in place of GATE, AMP, the screen, EQ, DS and COMP (they keep working). "
-            "TREMOLO, DELAY and BITCH-SLAP are in there; chorus, auto-wah and more are coming. Press it again to go back.";
+            "WAH, TREMOLO, DELAY and BITCH-SLAP are in there; chorus, mod filter and the limiter are coming. Press it again to go back.";
         const juce::String rackHint =
-            "The effects rack (Easy SFX). TREMOLO, DELAY and BITCH-SLAP work now; the empty bays are where the chorus, auto-wah "
+            "The effects rack (Easy SFX). WAH, TREMOLO, DELAY and BITCH-SLAP work now; the empty bays are where the chorus, mod filter "
             "and the rest will go. WEAPON SELECT again takes you back to the strip.";
 
         // The page buttons, left to right (DELAY's and BITCH-SLAP's panels are in the rack: no page for them)
         constexpr int pageOrder[] { 0, 1, 2, 3, 4, 5, 8, 7 };
 
         constexpr const char* bayNotes[] {
-            "Follows your playing: funk guitar, clavinet, bass.",
+            "",
             "Chorus, flanger and vibrato. Tempo-lockable.",
             "Filter pulses locked to the tempo; wide stereo sweeps.",
             "",
@@ -290,7 +290,7 @@ namespace Holo
 
             for (int b = 0; b < View::numBays; ++b)
             {
-                if (b == View::slapBay || b == View::delayBay || b == View::tremBay)
+                if (b == View::slapBay || b == View::delayBay || b == View::tremBay || b == View::wahBay)
                     continue;   // (that effect's own panel is there)
 
                 const auto bay = bays[(size_t) b].toFloat();
@@ -470,7 +470,7 @@ namespace Holo
             slabs.push_back (makeSlab (*this, m));
             addAndMakeVisible (*slabs.back());
         }
-        for (int m : { (int) StripModules::slapIndex, (int) StripModules::delayIndex, (int) StripModules::tremIndex })
+        for (int m : { (int) StripModules::slapIndex, (int) StripModules::delayIndex, (int) StripModules::tremIndex, (int) StripModules::wahIndex })
             slabs[(size_t) m]->setVisible (false);   // (their panels are in the WEAPON SELECT rack)
         clipAdvanced = std::make_unique<ClipAdvanced> (*this);
         addChildComponent (*clipAdvanced);
@@ -1079,7 +1079,7 @@ namespace Holo
             pageButtons[(size_t) m]->setToggleState (m == module, juce::dontSendNotification);
 
         static const char* screenHints[] { "WHAT IT'S DOING", "WHAT IT'S DOING", "THE CURVE", "WHAT IT'S DOING",
-                                           "COMPRESSION CURVE", "WHAT IT'S DOING", "WHAT IT'S DOING", "WHAT IT'S DOING", "WHAT IT'S DOING", "WHAT IT'S DOING", "WHAT IT'S DOING" };
+                                           "COMPRESSION CURVE", "WHAT IT'S DOING", "WHAT IT'S DOING", "WHAT IT'S DOING", "WHAT IT'S DOING", "WHAT IT'S DOING", "WHAT IT'S DOING", "WHAT IT'S DOING" };
         for (auto& h : hints)
             if (h.component == &screen)
                 h.text = moduleHint (module, screenHints[module]);
@@ -1105,6 +1105,7 @@ namespace Holo
         slabs[StripModules::slapIndex]->setBounds (panel->bays[(size_t) slapBay] + rack->getPosition());
         slabs[StripModules::delayIndex]->setBounds (panel->bays[(size_t) delayBay] + rack->getPosition());
         slabs[StripModules::tremIndex]->setBounds (panel->bays[(size_t) tremBay] + rack->getPosition());
+        slabs[StripModules::wahIndex]->setBounds (panel->bays[(size_t) wahBay] + rack->getPosition());
     }
 
     void View::showRack (bool show)
@@ -1116,7 +1117,7 @@ namespace Holo
         screen.setVisible (! show);
         for (int m : pageOrder)
             pageButtons[(size_t) m]->setVisible (! show);
-        for (int m : { (int) StripModules::slapIndex, (int) StripModules::delayIndex, (int) StripModules::tremIndex })
+        for (int m : { (int) StripModules::slapIndex, (int) StripModules::delayIndex, (int) StripModules::tremIndex, (int) StripModules::wahIndex })
         {
             slabs[(size_t) m]->setVisible (show);
             if (show)

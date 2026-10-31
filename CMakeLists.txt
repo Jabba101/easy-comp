@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.20.0)
+project(EasyPlugins VERSION 1.21.0)
 
 # Link-time optimisation squeezes a few more percent of speed out of the
 # finished plugins, but makes every build much slower (each plugin is
@@ -241,6 +241,19 @@ add_easy_plugin(EasyTremolo
                 Plugins/EasyTremolo/PluginEditor.h
                 Plugins/EasyTremolo/PluginEditor.cpp)
 
+add_easy_plugin(EasyWah
+    NAME        "Easy Wah"
+    CODE        Ezwh
+    VERSION     1.0.0
+    BUNDLE_ID   com.homestudio.easywah
+    CATEGORIES  Fx Filter
+    SOURCES     Effects/AutoWah.h
+                Plugins/EasyWah/Presets.h
+                Plugins/EasyWah/PluginProcessor.h
+                Plugins/EasyWah/PluginProcessor.cpp
+                Plugins/EasyWah/PluginEditor.h
+                Plugins/EasyWah/PluginEditor.cpp)
+
 add_easy_plugin(EasyEQ
     NAME        "Easy EQ"
     CODE        Ezeq
@@ -258,7 +271,7 @@ target_link_libraries(EasyEQ PRIVATE juce::juce_dsp)   # (MASTER's convolution, 
 
 # ---- The Easy Strip: every plugin above, in one channel strip ---------------
 # (It builds each plugin's own code in as a module, so they sound identical.)
-set(STRIP_MODULES EasyGate EasyAmp EasyEQ EasyDS EasyComp EasyTransient BitchSlap EasyClip EasyTape EasyDelay EasyTremolo)
+set(STRIP_MODULES EasyGate EasyAmp EasyEQ EasyDS EasyComp EasyTransient BitchSlap EasyClip EasyTape EasyDelay EasyTremolo EasyWah)
 set(STRIP_MODULE_SOURCES)
 foreach(module ${STRIP_MODULES})
     list(APPEND STRIP_MODULE_SOURCES
@@ -269,7 +282,7 @@ endforeach()
 add_easy_plugin(EasyStrip
     NAME        "Easy Strip"
     CODE        Ezst
-    VERSION     0.9.0
+    VERSION     0.10.0
     BUNDLE_ID   com.homestudio.easystrip
     CATEGORIES  Fx
     SOURCES     Effects/LoudnessMeter.h

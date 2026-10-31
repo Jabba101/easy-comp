@@ -37,7 +37,9 @@ Tests/                 -> /home/claude/verify2
     clicks moving TIME, speed), TremoloTests (Easy Tremolo: depth and rate
     measured, locked to the beat with a pretend DAW playing (SINE full on
     the beat, PUMP dipping on it), SQUARE without clicks, AUTO-PAN side to
-    side, speed), EQTests (Easy
+    side, speed), WahTests (Easy Wah: heel and toe peaks measured against the
+    drawn curve, the pedal following plucked notes (SENSITIVITY, cocked,
+    DOWN), TEMPO, no clicks at full resonance, AUTO-GAIN, speed), EQTests (Easy
     EQ: flat = untouched, each band measured against the drawn curve, the
     matched (uncramped) filters, proportional Q, the filters, mid-side and
     MONO BASS, no clicks, LISTEN, AUTO-GAIN, MASTER's linear phase and

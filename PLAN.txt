@@ -305,6 +305,16 @@ LATER
      beat doesn't allow for the modules before it (TAPE etc. delay the
      sound by a few ms; the EQ's MASTER by up to 43 ms) - fine unless
      MASTER is on; could be compensated later.
+   - EASY WAH 1.0.0 (done, 31 October 2026), the rack's third new effect -
+     a standalone plugin AND the strip's twelfth module ("wah_"; bay 1,
+     straight after GATE, before AMP). Effects/AutoWah.h: a TPT state-
+     variable filter (smooth however fast it moves), log sweep FROM (heel)
+     - TO (toe). MODE AUTO (envelope follower: SENSITIVITY, RESPONSE
+     SNAPPY / SMOOTH / LAZY, DIRECTION UP / DOWN) or TEMPO (rocks in time,
+     locked to the beat; SWEEP as a note); PEDAL = rest position (with
+     SENSITIVITY 0: the cocked wah); RESONANCE (Q 1.5-10); MIX; AUTO-GAIN on
+     by default (up to +-18 dB - a narrow wah on a drum loop takes ~13 dB
+     out). No added delay. 13 presets.
    - Once the essentials are perfected: EASY SFX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the

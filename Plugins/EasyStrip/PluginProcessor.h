@@ -13,6 +13,7 @@
 #include "../EasyTape/PluginProcessor.h"
 #include "../EasyDelay/PluginProcessor.h"
 #include "../EasyTremolo/PluginProcessor.h"
+#include "../EasyWah/PluginProcessor.h"
 
 //==============================================================================
 /**
@@ -21,12 +22,13 @@
     Each module IS its standalone plugin - the very same code, sound,
     presets and window - running inside the strip, in this order:
 
-        INPUT > TAPE > GATE > AMP > EQ > DS > COMP > TRANS > TREMOLO > DELAY > BITCH-SLAP > CLIP > OUTPUT
+        INPUT > TAPE > GATE > WAH > AMP > EQ > DS > COMP > TRANS > TREMOLO > DELAY > BITCH-SLAP > CLIP > OUTPUT
 
     (TAPE first: as if the track was recorded to tape and you're mixing
     from the machine. ORDER's TAPE AT THE END moves it to just before CLIP.
-    TREMOLO, DELAY and BITCH-SLAP's panels are in the WEAPON SELECT rack:
-    TREMOLO after COMP (or COMP would even out the pulsing), DELAY before
+    WAH, TREMOLO, DELAY and BITCH-SLAP's panels are in the WEAPON SELECT
+    rack: WAH straight after GATE (before AMP, like a pedal into an amp,
+    and before anything evens out how hard you play), TREMOLO after COMP (or COMP would even out the pulsing), DELAY before
     BITCH-SLAP, so the gated reverb catches the echoes.)
 
     How it fits together:
@@ -73,18 +75,19 @@ struct StripModules
     Module<EasyTapeAudioProcessor>      tape  { "Easy Tape" };
     Module<EasyDelayAudioProcessor>     delay { "Easy Delay" };
     Module<EasyTremoloAudioProcessor>   trem  { "Easy Tremolo" };
+    Module<EasyWahAudioProcessor>       wah   { "Easy Wah" };
 
     // (The numbers are what the strip's saved settings use: new modules go on the end.)
-    enum Index { gateIndex, ampIndex, eqIndex, dsIndex, compIndex, transIndex, slapIndex, clipIndex, tapeIndex, delayIndex, tremIndex };
-    static constexpr int numModules = 11;
-    std::array<EasyProcessor*, numModules> all { &gate, &amp, &eq, &ds, &comp, &trans, &slap, &clip, &tape, &delay, &trem };
+    enum Index { gateIndex, ampIndex, eqIndex, dsIndex, compIndex, transIndex, slapIndex, clipIndex, tapeIndex, delayIndex, tremIndex, wahIndex };
+    static constexpr int numModules = 12;
+    std::array<EasyProcessor*, numModules> all { &gate, &amp, &eq, &ds, &comp, &trans, &slap, &clip, &tape, &delay, &trem, &wah };
 
-    static constexpr const char* keys[numModules]  { "gate", "amp", "eq", "ds", "comp", "trans", "slap", "clip", "tape", "delay", "tremolo" };
-    static constexpr const char* names[numModules] { "Gate", "Amp", "EQ", "DS", "Comp", "Trans", "Bitch-Slap", "Clip", "Tape", "Delay", "Tremolo" };
-    static constexpr const char* tabs[numModules]  { "GATE", "AMP", "EQ", "DS", "COMP", "TRANS", "BITCH-SLAP", "CLIP", "TAPE", "DELAY", "TREMOLO" };
+    static constexpr const char* keys[numModules]  { "gate", "amp", "eq", "ds", "comp", "trans", "slap", "clip", "tape", "delay", "tremolo", "wah" };
+    static constexpr const char* names[numModules] { "Gate", "Amp", "EQ", "DS", "Comp", "Trans", "Bitch-Slap", "Clip", "Tape", "Delay", "Tremolo", "Wah" };
+    static constexpr const char* tabs[numModules]  { "GATE", "AMP", "EQ", "DS", "COMP", "TRANS", "BITCH-SLAP", "CLIP", "TAPE", "DELAY", "TREMOLO", "WAH" };
 
     /** The effects that live in the WEAPON SELECT rack (not on the main page). */
-    static bool isRackEffect (int m) noexcept       { return m == slapIndex || m == delayIndex || m == tremIndex; }
+    static bool isRackEffect (int m) noexcept       { return m == slapIndex || m == delayIndex || m == tremIndex || m == wahIndex; }
     static bool hasSidechain (int m) noexcept       { return m == 0 || m == 4; }   // GATE and COMP
 };
 
@@ -140,6 +143,7 @@ public:
     EasyTapeAudioProcessor&      getTape() noexcept     { return tape; }
     EasyDelayAudioProcessor&     getDelay() noexcept    { return delay; }
     EasyTremoloAudioProcessor&   getTremolo() noexcept  { return trem; }
+    EasyWahAudioProcessor&       getWah() noexcept      { return wah; }
     bool isModuleOn (int m) const noexcept;
 
     /** The loudest the sound was going in / coming out since last asked (gain, not dB). */

@@ -1166,6 +1166,75 @@ namespace Holo
     };
 
     //==========================================================================
+    // WAH (its panel is in the WEAPON SELECT rack: tall and narrow)
+    //==========================================================================
+    class WahSlab : public Slab
+    {
+    public:
+        explicit WahSlab (View& v) : Slab (v, StripModules::wahIndex, Colours::wah, "WAH")
+        {
+            mode = &choice (WahIDs::mode, { "AUTO", "TEMPO" }, "MODE", true);
+            sensitivity = &ring (WahIDs::sensitivity, "SENSITIVITY", Format::percent, "%");
+            response = &choice (WahIDs::response, { "SNAPPY", "SMOOTH", "LAZY" }, "RESPONSE");
+            note = &ring (WahIDs::note, "SWEEP", Format::asText, {}, Ring::small, {}, "SWEEP");
+            direction = &choice (WahIDs::direction, { "UP", "DOWN" }, "DIRECTION", true);
+            pedal = &ring (WahIDs::pedal, "PEDAL", Format::percent, "%", Ring::tiny);
+            from = &ring (WahIDs::from, "FROM", Format::hertz, "Hz", Ring::tiny, Colours::frequency);
+            to = &ring (WahIDs::to, "TO", Format::hertz, "Hz", Ring::tiny, Colours::frequency);
+            resonance = &ring (WahIDs::resonance, "RESO", Format::percent, "%", Ring::tiny, {}, "RESONANCE");
+            mix = &ring (WahIDs::mix, "MIX", Format::percent, "%", Ring::tiny);
+            autoGain = &toggle (CommonIDs::autoGain, "AUTO|GAIN", "AUTO-GAIN", Button::Style::square, Colours::gate);
+        }
+
+        void resized() override
+        {
+            clearSections();
+            auto body = placeHeader (getLocalBounds().reduced (9, 6), true, 76);
+            constexpr int gap = 8;
+            const auto take = [&] (int height) { auto r = body.removeFromTop (height); body.removeFromTop (gap); return r; };
+
+            auto s1 = section (take (27 + mode->getIdealHeight() + 8 + sensitivity->getIdealHeight() + 8 + response->getIdealHeight() + 8
+                                     + direction->getIdealHeight() + 9), 1, "HOW IT MOVES");
+            auto s2 = section (take (27 + pedal->getIdealHeight() + 8 + from->getIdealHeight() + 9), 2, "THE PEDAL");
+            auto s3 = section (take (27 + resonance->getIdealHeight() + 8 + 46 + 9), 3, "SOUND");
+
+            mode->setBounds (s1.removeFromTop (mode->getIdealHeight()));
+            s1.removeFromTop (8);
+            centreIn (*sensitivity, s1, s1.getY());
+            s1.removeFromTop (sensitivity->getIdealHeight() + 8);
+            auto lower = s1;
+            response->setBounds (lower.removeFromTop (response->getIdealHeight()).withSizeKeepingCentre (juce::jmin (120, lower.getWidth()), response->getIdealHeight()));
+            lower.removeFromTop (8);
+            direction->setBounds (lower.removeFromTop (direction->getIdealHeight()));
+            centreIn (*note, s1, s1.getY() + 10);
+
+            centreIn (*pedal, s2, s2.getY());
+            auto row = s2.withTop (s2.getY() + pedal->getIdealHeight() + 8);
+            centreIn (*from, row.removeFromLeft (row.getWidth() / 2), row.getY());
+            centreIn (*to, row, row.getY());
+
+            auto knobRow = s3.removeFromTop (resonance->getIdealHeight());
+            centreIn (*resonance, knobRow.removeFromLeft (knobRow.getWidth() / 2), knobRow.getY());
+            centreIn (*mix, knobRow, knobRow.getY());
+            s3.removeFromTop (8);
+            autoGain->setBounds (s3.removeFromTop (46).withSizeKeepingCentre (64, 46));
+        }
+
+        void refresh() override
+        {
+            const bool tempo = mode->getChosen() == 1;
+            note->setVisible (tempo);
+            response->setVisible (! tempo);
+            direction->setVisible (! tempo);
+        }
+
+    private:
+        Ring *sensitivity = nullptr, *note = nullptr, *pedal = nullptr, *from = nullptr, *to = nullptr, *resonance = nullptr, *mix = nullptr;
+        Choice *mode = nullptr, *response = nullptr, *direction = nullptr;
+        Button* autoGain = nullptr;
+    };
+
+    //==========================================================================
     // CLIP
     //==========================================================================
     class ClipSlab : public Slab
@@ -1309,6 +1378,7 @@ namespace Holo
             case 8:  return std::make_unique<TapeSlab> (v);
             case 9:  return std::make_unique<DelaySlab> (v);
             case 10: return std::make_unique<TremoloSlab> (v);
+            case 11: return std::make_unique<WahSlab> (v);
             default: return std::make_unique<ClipSlab> (v);
         }
     }
