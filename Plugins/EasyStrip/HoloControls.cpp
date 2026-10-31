@@ -281,8 +281,17 @@ namespace Holo
         g.setColour (juce::Colour (0xffeaf4ff));
         g.fillEllipse (juce::Rectangle<float> (dotRadius * 2.0f, dotRadius * 2.0f).withCentre (dot));
 
-        const float fontSize = size == large ? 28.0f : size == big ? 25.0f : size == small ? 16.0f : size == tiny ? 15.0f : 18.0f;
-        const auto valueText = getValueText();
+        float fontSize = size == large ? 28.0f : size == big ? 25.0f : size == small ? 16.0f : size == tiny ? 15.0f : 18.0f;
+        auto valueText = getValueText();
+        if (format == Format::asText)
+        {
+            // Note lengths, compact: "1/8 NOTE" -> "1/8", "DOTTED 1/8" -> "1/8 D", "1/16 TRIPLET" -> "1/16 T"
+            valueText = valueText.replace (" NOTE", "").replace (" TRIPLET", " T").replace ("WHOLE", "1/1");
+            if (valueText.startsWith ("DOTTED "))
+                valueText = valueText.fromFirstOccurrenceOf ("DOTTED ", false, false) + " D";
+        }
+        while (fontSize > 9.0f && widthOf (text (fontSize, 1), valueText) > sz * 0.82f)
+            fontSize -= 1.0f;   // (shrinks to fit inside the ring)
         g.setColour (Colours::value);
         g.setFont (text (fontSize, 1));
         g.drawText (valueText, juce::Rectangle<float> (sz, fontSize).withCentre (centre), juce::Justification::centred, false);

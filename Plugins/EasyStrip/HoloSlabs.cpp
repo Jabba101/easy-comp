@@ -1117,6 +1117,55 @@ namespace Holo
     };
 
     //==========================================================================
+    // TREMOLO (its panel is in the WEAPON SELECT rack: tall and narrow)
+    //==========================================================================
+    class TremoloSlab : public Slab
+    {
+    public:
+        explicit TremoloSlab (View& v) : Slab (v, StripModules::tremIndex, Colours::trem, "TREMOLO")
+        {
+            power.fontSize = 13.0f;
+            rate = &ring (TremoloIDs::rate, "RATE", Format::asText, {});
+            note = &ring (TremoloIDs::note, "RATE", Format::asText, {}, Ring::small, {}, "RATE");
+            sync = &choice (TremoloIDs::sync, { "OFF", "TEMPO" }, "SYNC");
+            depth = &ring (TremoloIDs::depth, "DEPTH", Format::percent, "%", Ring::medium);
+            shape = &choice (TremoloIDs::shape, { "SINE", "TRIANGLE", "SQUARE", "PUMP" }, "SHAPE");
+            mode = &choice (TremoloIDs::mode, { "TREMOLO", "AUTO-PAN" }, "MODE");
+        }
+
+        void resized() override
+        {
+            clearSections();
+            auto body = placeHeader (getLocalBounds().reduced (9, 6), true, 82);
+            constexpr int gap = 8;
+
+            const auto take = [&] (int height) { auto r = body.removeFromTop (height); body.removeFromTop (gap); return r; };
+            auto s1 = section (take (27 + rate->getIdealHeight() + 10 + sync->getIdealHeight() + 9), 1, "SPEED");
+            auto s2 = section (take (27 + depth->getIdealHeight() + 9), 2, "HOW MUCH");
+            auto s3 = section (take (27 + shape->getIdealHeight() + 9), 3, "SHAPE");
+            auto s4 = section (take (27 + mode->getIdealHeight() + 9), 4, "MODE");
+
+            centreIn (*rate, s1, s1.getY());
+            centreIn (*note, s1, s1.getY());
+            sync->setBounds (s1.withTop (rate->getBottom() + 10).withHeight (sync->getIdealHeight()).withSizeKeepingCentre (juce::jmin (120, s1.getWidth()), sync->getIdealHeight()));
+            centreIn (*depth, s2, s2.getY());
+            shape->setBounds (s3.withHeight (shape->getIdealHeight()).withSizeKeepingCentre (juce::jmin (130, s3.getWidth()), shape->getIdealHeight()));
+            mode->setBounds (s4.withHeight (mode->getIdealHeight()).withSizeKeepingCentre (juce::jmin (130, s4.getWidth()), mode->getIdealHeight()));
+        }
+
+        void refresh() override
+        {
+            const bool tempo = sync->getChosen() == 1;
+            rate->setVisible (! tempo);
+            note->setVisible (tempo);
+        }
+
+    private:
+        Ring *rate = nullptr, *note = nullptr, *depth = nullptr;
+        Choice *sync = nullptr, *shape = nullptr, *mode = nullptr;
+    };
+
+    //==========================================================================
     // CLIP
     //==========================================================================
     class ClipSlab : public Slab
@@ -1259,6 +1308,7 @@ namespace Holo
             case 6:  return std::make_unique<SlapSlab> (v);
             case 8:  return std::make_unique<TapeSlab> (v);
             case 9:  return std::make_unique<DelaySlab> (v);
+            case 10: return std::make_unique<TremoloSlab> (v);
             default: return std::make_unique<ClipSlab> (v);
         }
     }

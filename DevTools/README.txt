@@ -34,7 +34,10 @@ Tests/                 -> /home/claude/verify2
     changing settings, the VU meter, speed), DelayTests (Easy Delay: echoes
     to the sample, ping-pong / wide, SYNC, MIX 0 / 100, the filters getting
     stronger with each repeat, DUCK, 95% feedback never running away, no
-    clicks moving TIME, speed), EQTests (Easy
+    clicks moving TIME, speed), TremoloTests (Easy Tremolo: depth and rate
+    measured, locked to the beat with a pretend DAW playing (SINE full on
+    the beat, PUMP dipping on it), SQUARE without clicks, AUTO-PAN side to
+    side, speed), EQTests (Easy
     EQ: flat = untouched, each band measured against the drawn curve, the
     matched (uncramped) filters, proportional Q, the filters, mid-side and
     MONO BASS, no clicks, LISTEN, AUTO-GAIN, MASTER's linear phase and

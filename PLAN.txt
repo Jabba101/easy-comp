@@ -291,6 +291,20 @@ LATER
      doubler, synthwave ping-pong, darksynth tape, sends). Not yet used by
      any strip preset - candidates: vocal slapback in the rock / punk
      vocal presets, ping-pong on the synth leads.
+     Strip presets using it (31 October): Vocal - Rock and Vocal - Punk
+     Shout (tape slapback), Guitar - Hot Lead (dotted eighth), Synth
+     Lead - Synthwave (ping-pong), Synth Pluck & Arp (triplets).
+   - EASY TREMOLO 1.0.0 (done, 31 October 2026), the rack's second new
+     effect - a standalone plugin AND the strip's eleventh module
+     ("tremolo_"; bay 4, after TRANS, before DELAY). Effects/Tremolo.h:
+     RATE (0.1-20 Hz) or a note with SYNC (1/32 to 2 bars) LOCKED TO THE
+     BEAT while the song plays (from the DAW's position); DEPTH; SHAPE
+     SINE / TRIANGLE / SQUARE (2 ms edges: no clicks) / PUMP (dips on the
+     beat, swells back); MODE TREMOLO / AUTO-PAN. Never louder than the
+     input. No added delay. 16 presets. Inside the strip the lock to the
+     beat doesn't allow for the modules before it (TAPE etc. delay the
+     sound by a few ms; the EQ's MASTER by up to 43 ms) - fine unless
+     MASTER is on; could be compensated later.
    - Once the essentials are perfected: EASY SFX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the

@@ -17,7 +17,7 @@
 */
 namespace StripPresetRecipes
 {
-    enum Module { gate = 0, amp, eq, ds, comp, trans, slap, clip, tape, delay };
+    enum Module { gate = 0, amp, eq, ds, comp, trans, slap, clip, tape, delay, tremolo };
 
     struct Use { Module module; const char* preset; };
     struct Set { Module module; const char* id; float value; };   // one knob, in its own units
@@ -168,8 +168,8 @@ namespace StripPresetRecipes
               "For a clean or DI guitar: the valve amp does the crunch.",
               { { amp, "Guitar - Classic Rock Crunch" }, { eq, "Distorted Guitar - Tighten" }, { comp, "Electric Guitar - Distorted" } } },
             { "Guitars", "Guitar - Hot Lead",
-              "For a clean or DI guitar: a singing overdriven lead.",
-              { { amp, "Guitar - Hot Lead" }, { comp, "Electric Guitar - Lead" } } },
+              "For a clean or DI guitar: a singing overdriven lead with a dotted-eighth echo rolling behind it.",
+              { { amp, "Guitar - Hot Lead" }, { comp, "Electric Guitar - Lead" }, { delay, "Guitar - Dotted-Eighth Lead" } } },
             { "Guitars", "Clean Guitar - Sparkle",
               "Bright and even, with the hum gated between parts.",
               { { gate, "Clean Guitar - Hum Between Parts" }, { eq, "Clean Guitar - Sparkle" }, { comp, "Electric Guitar - Clean" } } },
@@ -188,11 +188,12 @@ namespace StripPresetRecipes
               "Clear, present, smooth S sounds, upfront. Check DS's THRESHOLD on the S sounds.",
               { { eq, "Vocal - Clear & Present" }, { ds, "Female Vocal" }, { comp, "Vocal - Pop & R&B" } } },
             { "Vocals", "Vocal - Rock",
-              "Headphone bleed gated, present and firmly compressed, the loudest words caught.",
-              { { gate, "Vocal - Remove Headphone Bleed" }, { eq, "Vocal - Clear & Present" }, { ds, "Male Vocal" }, { comp, "Vocal - Rock & Metal" }, { clip, "Vocal - Catch the Loud Words" } } },
+              "Headphone bleed gated, present and firmly compressed, the loudest words caught, a tape slapback right behind it.",
+              { { gate, "Vocal - Remove Headphone Bleed" }, { eq, "Vocal - Clear & Present" }, { ds, "Male Vocal" }, { comp, "Vocal - Rock & Metal" },
+                { delay, "Vocal - Slapback" }, { clip, "Vocal - Catch the Loud Words" } } },
             { "Vocals", "Vocal - Punk Shout",
-              "Distorted, in-your-face and squashed - de-essed before the drive (DE-ESS BEFORE DRIVE), so S sounds don't turn to spitty hiss.",
-              { { amp, "Vocal - Distorted Shout" }, { eq, "Vocal - Less Boxy" }, { ds, "Male Vocal" }, { comp, "Vocal - Rock & Metal" } },
+              "Distorted, in-your-face and squashed, with a slapback - de-essed before the drive (DE-ESS BEFORE DRIVE), so S sounds don't turn to spitty hiss.",
+              { { amp, "Vocal - Distorted Shout" }, { eq, "Vocal - Less Boxy" }, { ds, "Male Vocal" }, { comp, "Vocal - Rock & Metal" }, { delay, "Vocal - Slapback" } },
               { "deessbeforedrive" } },
             { "Vocals", "Vocal - 80s Shout",
               "A rock vocal with the 80s gated burst on it.",
@@ -233,8 +234,8 @@ namespace StripPresetRecipes
               "Steady, with the valve amp just breaking up.",
               { { amp, "Guitar - Edge of Breakup" }, { comp, "Organ - Steady" } } },
             { "Keys & Synths", "Synth Lead - Synthwave",
-              "Compressed, then overdriven (DRIVE AFTER COMP) for an even bite on every note.",
-              { { amp, "Synth Lead - Overdrive" }, { comp, "Synth Lead - Upfront" }, { clip, "Synth Lead - Bite" } },
+              "Compressed, then overdriven (DRIVE AFTER COMP) for an even bite on every note, eighth-note echoes bouncing left and right.",
+              { { amp, "Synth Lead - Overdrive" }, { comp, "Synth Lead - Upfront" }, { delay, "Synth - Synthwave Ping-Pong" }, { clip, "Synth Lead - Bite" } },
               { "driveaftercomp" } },
             { "Keys & Synths", "Synth Pad - Out of the Way",
               "Warm and smooth, with room left for the vocal and the drums.",
@@ -243,8 +244,8 @@ namespace StripPresetRecipes
               "Send the kick to the strip's sidechain: the pad pumps in time.",
               { { eq, "Synth Pad - Out of the Way" }, { comp, "Synth Pad - Pumping to the Kick" } } },
             { "Keys & Synths", "Synth Pluck & Arp",
-              "Snappy and even.",
-              { { comp, "Synth Pluck & Arp" }, { trans, "Synth Pluck - Snappier" } } },
+              "Snappy and even, with triplet echoes that make the pattern roll.",
+              { { comp, "Synth Pluck & Arp" }, { trans, "Synth Pluck - Snappier" }, { delay, "Synth - Arp Triplets" } } },
             { "Keys & Synths", "Synth Bass - Darksynth",
               "Gritty, deep and growling.",
               { { amp, "Synth Bass - Grit" }, { eq, "Synth Bass - Deep & Tight" }, { comp, "Synth Bass & 808" }, { clip, "Bass - Growl" } } },

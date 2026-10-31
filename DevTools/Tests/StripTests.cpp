@@ -102,6 +102,7 @@ namespace
         v.push_back (std::make_unique<EasyClipAudioProcessor>());
         v.push_back (std::make_unique<EasyTapeAudioProcessor>());
         v.push_back (std::make_unique<EasyDelayAudioProcessor>());
+        v.push_back (std::make_unique<EasyTremoloAudioProcessor>());
         return v;
     }
 
@@ -185,6 +186,7 @@ namespace
         { EasyClipAudioProcessor a;      compareModule (7, a, 5); }
         { EasyTapeAudioProcessor a;      compareModule (8, a, 4); }
         { EasyDelayAudioProcessor a;     compareModule (9, a, 5); }
+        { EasyTremoloAudioProcessor a;   compareModule (10, a, 1); }
     }
 
     void testSidechainAndChain()
@@ -218,10 +220,10 @@ namespace
                    "the sidechain reaches COMP, just as in Easy Comp (and it makes a difference)");
         }
 
-        {   // All ten on, against the ten standalones one after another
+        {   // All eleven on, against the eleven standalones one after another
             S s;
             auto chain = standalones();
-            const int choice[] { 2, 1, 3, 1, 3, 1, 1, 2, 2, 5 };
+            const int choice[] { 2, 1, 3, 1, 3, 1, 1, 2, 2, 5, 1 };
             for (int m = 0; m < S::numModules; ++m)
             {
                 chain[(size_t) m]->loadPreset (chain[(size_t) m]->getBuiltInPresets()[(size_t) choice[m]]);
@@ -236,7 +238,7 @@ namespace
             const auto out = process (s, in);
             const float diff = maxDifference (out, expected);
             check (diff < 1.0e-5f && s.getLatencySamples() == moduleLatencySum (s),
-                   "all ten on: identical to the ten plugins one after another, TAPE first (difference " + juce::String (toDb (diff), 1) + " dB)");
+                   "all eleven on: identical to the eleven plugins one after another, TAPE first (difference " + juce::String (toDb (diff), 1) + " dB)");
         }
     }
 
@@ -575,30 +577,30 @@ namespace
     void testOrder()
     {
         std::cout << "\n[ORDER]\n";
-        check (S::describe (S::orderFor (false, false, false, false)) == "TAPE > GATE > AMP > EQ > DS > COMP > TRANS > DELAY > BITCH-SLAP > CLIP",
+        check (S::describe (S::orderFor (false, false, false, false)) == "TAPE > GATE > AMP > EQ > DS > COMP > TRANS > TREMOLO > DELAY > BITCH-SLAP > CLIP",
                "standard: " + S::describe (S::orderFor (false, false, false, false)));
-        check (S::describe (S::orderFor (true, false, false, false)) == "TAPE > GATE > AMP > DS > COMP > EQ > TRANS > DELAY > BITCH-SLAP > CLIP", "EQ AFTER COMP");
-        check (S::describe (S::orderFor (false, true, false, false)) == "TAPE > GATE > DS > AMP > EQ > COMP > TRANS > DELAY > BITCH-SLAP > CLIP", "DE-ESS BEFORE DRIVE");
-        check (S::describe (S::orderFor (false, false, true, false)) == "TAPE > GATE > EQ > DS > COMP > AMP > TRANS > DELAY > BITCH-SLAP > CLIP", "DRIVE AFTER COMP");
-        check (S::describe (S::orderFor (false, false, false, true)) == "TAPE > GATE > AMP > EQ > DS > TRANS > COMP > DELAY > BITCH-SLAP > CLIP", "SHAPE BEFORE COMP");
-        check (S::describe (S::orderFor (false, false, false, false, true)) == "GATE > AMP > EQ > DS > COMP > TRANS > DELAY > BITCH-SLAP > TAPE > CLIP", "TAPE AT THE END");
+        check (S::describe (S::orderFor (true, false, false, false)) == "TAPE > GATE > AMP > DS > COMP > EQ > TRANS > TREMOLO > DELAY > BITCH-SLAP > CLIP", "EQ AFTER COMP");
+        check (S::describe (S::orderFor (false, true, false, false)) == "TAPE > GATE > DS > AMP > EQ > COMP > TRANS > TREMOLO > DELAY > BITCH-SLAP > CLIP", "DE-ESS BEFORE DRIVE");
+        check (S::describe (S::orderFor (false, false, true, false)) == "TAPE > GATE > EQ > DS > COMP > AMP > TRANS > TREMOLO > DELAY > BITCH-SLAP > CLIP", "DRIVE AFTER COMP");
+        check (S::describe (S::orderFor (false, false, false, true)) == "TAPE > GATE > AMP > EQ > DS > TRANS > COMP > TREMOLO > DELAY > BITCH-SLAP > CLIP", "SHAPE BEFORE COMP");
+        check (S::describe (S::orderFor (false, false, false, false, true)) == "GATE > AMP > EQ > DS > COMP > TRANS > TREMOLO > DELAY > BITCH-SLAP > TAPE > CLIP", "TAPE AT THE END");
         bool allValid = true;
         for (int mask = 0; mask < 32; ++mask)
         {
             auto o = S::orderFor (mask & 1, mask & 2, mask & 4, mask & 8, mask & 16);
             auto sorted = o; std::sort (sorted.begin(), sorted.end());
             for (int i = 0; i < S::numModules; ++i) allValid = allValid && sorted[(size_t) i] == i;
-            if (mask & 16) allValid = allValid && o[0] == 0 && o[6] == 9 && o[7] == 6 && o[8] == 8 && o[9] == 7;
-            else           allValid = allValid && o[0] == 8 && o[1] == 0 && o[7] == 9 && o[8] == 6 && o[9] == 7;
+            if (mask & 16) allValid = allValid && o[0] == 0 && o[6] == 10 && o[7] == 9 && o[8] == 6 && o[9] == 8 && o[10] == 7;
+            else           allValid = allValid && o[0] == 8 && o[1] == 0 && o[7] == 10 && o[8] == 9 && o[9] == 6 && o[10] == 7;
             if (mask & 2) allValid = allValid && std::find (o.begin(), o.end(), 3) < std::find (o.begin(), o.end(), 1);
         }
-        check (allValid, "all 32 combinations: every module exactly once; TAPE first (or just before CLIP), then GATE; DELAY, BITCH-SLAP and CLIP last");
+        check (allValid, "all 32 combinations: every module exactly once; TAPE first (or just before CLIP), then GATE; TREMOLO, DELAY, BITCH-SLAP and CLIP last");
 
         // All five switches on: identical to the standalones run in that order
         {
             S s;
             auto alone = standalones();
-            const int choice[] { 2, 1, 3, 1, 3, 1, 1, 2, 2, 5 };
+            const int choice[] { 2, 1, 3, 1, 3, 1, 1, 2, 2, 5, 1 };
             for (int m = 0; m < S::numModules; ++m)
             {
                 alone[(size_t) m]->loadPreset (alone[(size_t) m]->getBuiltInPresets()[(size_t) choice[m]]);
@@ -802,7 +804,7 @@ namespace
         juce::StringArray missing;
         const juce::StringArray notKnobs { CommonIDs::bypass, CommonIDs::autoGain, "quality", "view", "analyser", "link", "master",
                                            "openedby", "turnsdown", "precision", "reactsto", "character", "thrust", "listensto", "sync",
-                                           "lowshelf", "highshelf", "hpfslope", "lpfslope", "lowtarget", "lowmidtarget", "highmidtarget", "hightarget", "speed", "mode", "character" };
+                                           "lowshelf", "highshelf", "hpfslope", "lpfslope", "lowtarget", "lowmidtarget", "highmidtarget", "hightarget", "speed", "mode", "character", "shape" };
         for (int m = 0; m < S::numModules; ++m)
             for (auto* p : s.getModule (m).getParameters())
                 if (auto* r = dynamic_cast<juce::RangedAudioParameter*> (p))
@@ -912,8 +914,8 @@ namespace
                     ++shown;
                     over = over && b->getX() >= screenArea.getX() && b->getRight() <= screenArea.getRight();
                 }
-            check (over && shown == 8 && ! view->pageButtons[6]->isVisible() && ! view->pageButtons[9]->isVisible(),
-                   "the DISPLAY FOCUS buttons (8: TAPE in; DELAY and BITCH-SLAP are in the rack) all sit above the big screen");
+            check (over && shown == 8 && ! view->pageButtons[6]->isVisible() && ! view->pageButtons[9]->isVisible() && ! view->pageButtons[10]->isVisible(),
+                   "the DISPLAY FOCUS buttons (8: TAPE in; TREMOLO, DELAY and BITCH-SLAP are in the rack) all sit above the big screen");
         }
 
         // Pages and live displays
@@ -936,17 +938,21 @@ namespace
             const auto rackArea = view->getRack()->getBounds();
             const auto& slapSlab = *view->slabs[6];
             const auto& delaySlab = *view->slabs[9];
+            const auto& tremSlab = *view->slabs[10];
             bool swapped = view->isRackShown() && view->getRack()->isVisible() && ! view->getScreen().isVisible() && slapSlab.isVisible()
                            && rackArea.contains (slapSlab.getBounds()) && delaySlab.isVisible() && rackArea.contains (delaySlab.getBounds())
-                           && delaySlab.getRight() < slapSlab.getX();
+                           && delaySlab.getRight() < slapSlab.getX()
+                           && tremSlab.isVisible() && rackArea.contains (tremSlab.getBounds()) && tremSlab.getRight() < delaySlab.getX();
             for (int m : { 0, 1, 2, 3, 4 }) swapped = swapped && ! view->slabs[(size_t) m]->isVisible();
             for (int m : { 5, 7, 8 })       swapped = swapped && view->slabs[(size_t) m]->isVisible() && ! rackArea.intersects (view->slabs[(size_t) m]->getBounds());
             for (auto& b : view->pageButtons) swapped = swapped && ! b->isVisible();
-            check (swapped, "WEAPON SELECT: the rack replaces GATE, AMP, the screen, EQ, DS and COMP; DELAY and BITCH-SLAP are in it; TRANS, TAPE, CLIP stay");
+            check (swapped, "WEAPON SELECT: the rack replaces GATE, AMP, the screen, EQ, DS and COMP; TREMOLO, DELAY and BITCH-SLAP are in it; TRANS, TAPE, CLIP stay");
 
             switchOn (s, 6, true);
             switchOn (s, 9, true);
             loadPresetNamed (s.getModule (9), "Synth - Synthwave Ping-Pong");
+            switchOn (s, 10, true);
+            loadPresetNamed (s.getModule (10), "Synth Pad - Trance Gate");
             for (int i = 0; i < 10; ++i) { process (s, music (0.05)); view->updateNow(); }
             savePng (*editor, outDir.getChildFile ("strip-hologram-rack.png"));
             view->mouseEnter (hoverEvent (view->findControl (6, SlapIDs::mix)));
@@ -954,7 +960,7 @@ namespace
                    "in the rack, BITCH-SLAP's controls still explain themselves (Bitch-Slap's own hints)");
 
             view->weaponSelect.onClick();
-            bool back = ! view->isRackShown() && ! view->getRack()->isVisible() && view->getScreen().isVisible() && ! slapSlab.isVisible() && ! delaySlab.isVisible();
+            bool back = ! view->isRackShown() && ! view->getRack()->isVisible() && view->getScreen().isVisible() && ! slapSlab.isVisible() && ! delaySlab.isVisible() && ! tremSlab.isVisible();
             for (int m : { 0, 1, 2, 3, 4, 5, 7, 8 }) back = back && view->slabs[(size_t) m]->isVisible();
             check (back && s.isModuleOn (6), "WEAPON SELECT again: back to the strip (BITCH-SLAP keeps playing)");
         }

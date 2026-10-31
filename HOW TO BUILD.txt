@@ -15,6 +15,7 @@ Right now this project makes:
     Easy EQ      a four-band EQ with filters, mid-side and linear phase
     Easy Tape    a real tape machine: 15 ips, 30 ips, or cassette for lo-fi
     Easy Delay   a stereo delay (echo), in time with your song
+    Easy Tremolo the volume pulsing, or side to side (auto-pan), in time
     Easy Strip   all of the above in one channel strip (HOLOGRAM look)
 
 Every time the project changes on GitHub, GitHub builds the plugins for you
@@ -55,7 +56,7 @@ GETTING THE LATEST PLUGINS FROM GITHUB
  7. Open your DAW and rescan your plugins. They're listed under
     "Aardvark Easy Suite" (it used to be "Home Studio"), in effects /
     dynamics - Bitch-Slap in effects / reverb, Easy Delay in effects /
-    delay, Easy Amp and Easy Tape in effects / distortion, Easy EQ in
+    delay, Easy Tremolo in effects / modulation, Easy Amp and Easy Tape in effects / distortion, Easy EQ in
     effects / EQ.
 
  Your projects keep working: newer versions open older projects with
@@ -456,6 +457,26 @@ YOUR FIRST FIVE MINUTES WITH EASY DELAY
 
 
 ====================================================================
+YOUR FIRST FIVE MINUTES WITH EASY TREMOLO
+====================================================================
+   The volume pulsing - from a vintage amp's throb to a hard trance
+   chop - or the sound moving from side to side, locked to your song.
+
+   1. Pick a preset, or set the speed and turn DEPTH up.
+   2. SPEED: with SYNC on TEMPO, RATE is a note length (one pulse, down
+      and back up) that stays locked to the beat while the song plays;
+      OFF sets it in pulses a second (3-6 Hz is the classic amp sound).
+   3. SHAPE: SINE (smooth, vintage), TRIANGLE, SQUARE (chopped on and
+      off - trance gate, stutter) or PUMP (dips on every pulse and swells
+      back: the pumping sidechain sound without a sidechain).
+   4. MODE: TREMOLO (the volume) or AUTO-PAN (side to side).
+
+   It never makes anything louder: at the top of each pulse your sound
+   is untouched. No delay added. The small red INIT goes back to the
+   defaults.
+
+
+====================================================================
 YOUR FIRST FIVE MINUTES WITH EASY EQ
 ====================================================================
    Four bands - LOW, LOW MID, HIGH MID, HIGH - plus filters, drawn on a
@@ -507,7 +528,7 @@ YOUR FIRST FIVE MINUTES WITH EASY EQ
 YOUR FIRST FIVE MINUTES WITH EASY STRIP
 ====================================================================
    Every Easy plugin in one channel strip, in this order:
-      INPUT > TAPE > GATE > AMP > EQ > DS > COMP > TRANS > DELAY > BITCH-SLAP > CLIP > OUTPUT
+      INPUT > TAPE > GATE > AMP > EQ > DS > COMP > TRANS > TREMOLO > DELAY > BITCH-SLAP > CLIP > OUTPUT
 
    TAPE comes first: as if the track had been recorded to tape and you're
    mixing from the machine (the most natural-sounding place; ORDER can
@@ -554,15 +575,15 @@ YOUR FIRST FIVE MINUTES WITH EASY STRIP
       machine - for buses, mastering and creative use). The panels never
       move; the menu (and the ticker, hovering ORDER) shows the order,
       and the button lights while it isn't the standard one. Switching
-      while playing dips the sound for a moment (no clicks). DELAY,
-      BITCH-SLAP and CLIP are always last (DELAY before BITCH-SLAP, so the
+      while playing dips the sound for a moment (no clicks). TREMOLO,
+      DELAY, BITCH-SLAP and CLIP are always last (DELAY before BITCH-SLAP, so the
       gated reverb catches the echoes). Presets and A / B include the order.
    10. WEAPON SELECT (the striped button under TAPE) opens the effects
       rack in place of GATE, AMP, the big screen, EQ, DS and COMP - they
       keep working, they're just out of sight. TRANS, TAPE, CLIP, INPUT
-      / OUTPUT and the header stay. DELAY (bay 5) and BITCH-SLAP (bay 6)
-      live in the rack; the other bays are where the auto-wah, chorus /
-      flanger, mod filter, tremolo and limiter will go. Press WEAPON
+      / OUTPUT and the header stay. TREMOLO (bay 4), DELAY (bay 5) and
+      BITCH-SLAP (bay 6) live in the rack; the other bays are where the
+      auto-wah, chorus / flanger, mod filter and limiter will go. Press WEAPON
       SELECT again to go back.
    11. The sidechain input goes to both GATE and COMP (each one's
       OPENED BY / LISTENS TO decides whether it uses it).
@@ -612,6 +633,7 @@ WHAT'S IN THIS FOLDER
      ValveAmp.h             Easy Amp's valve amp
      TapeMachine.h          Easy Tape's tape machine
      StereoDelay.h          Easy Delay's delay
+     Tremolo.h              Easy Tremolo's tremolo / auto-pan
      Equalizer.h            Easy EQ's EQ
      LinearPhaseEQ.h        Easy EQ's MASTER (linear phase)
      LoudnessMatcher.h      AUTO-GAIN (shared by every plugin)
@@ -634,6 +656,7 @@ WHAT'S IN THIS FOLDER
    Plugins\EasyEQ\        Easy EQ's knobs, screen and presets.
    Plugins\EasyTape\      Easy Tape's knobs, VU meter and presets.
    Plugins\EasyDelay\     Easy Delay's knobs, picture of the echoes and presets.
+   Plugins\EasyTremolo\   Easy Tremolo's knobs, picture of the movement and presets.
    Plugins\EasyStrip\     Easy Strip: the plumbing that runs the plugins
                           above as its modules, and its windows (Holo* =
                           the HOLOGRAM look).
