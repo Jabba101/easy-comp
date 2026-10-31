@@ -347,7 +347,7 @@ LATER
      presets Drum Bus - Live Room and Send - Live Room / Club / Hall.
      Mix-bus MIX levels for the spaces are first guesses - to be set by
      ear on the user's mixes.
-   - Once the essentials are perfected: EASY SFX, an effects rack.
+   - Once the essentials are perfected: EASY FX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the
      effects rack; Trans, Bitch-Slap, Clip (and INPUT / OUTPUT and the

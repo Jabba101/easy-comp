@@ -55,7 +55,7 @@ namespace Holo
             "Weapon select: opens the effects rack in place of GATE, AMP, the screen, EQ, DS and COMP (they keep working). "
             "WAH, FLANGE, TREMOLO, DELAY and VERB are in there; the mod filter and the limiter are coming. Press it again to go back.";
         const juce::String rackHint =
-            "The effects rack (Easy SFX). WAH, FLANGE, TREMOLO, DELAY and VERB work now; the empty bays are where the mod filter "
+            "The effects rack (Easy FX). WAH, FLANGE, TREMOLO, DELAY and VERB work now; the empty bays are where the mod filter "
             "and the rest will go. WEAPON SELECT again takes you back to the strip.";
 
         // The page buttons, left to right (the rack effects' panels are in the rack: no page for them)
@@ -282,7 +282,7 @@ namespace Holo
             }
             strokeGlow (g, shape, Colours::hazard, 1.2f, 0.4f);
 
-            drawGlowText (g, "EASY SFX", juce::Rectangle<float> (18.0f, 6.0f, 300.0f, 30.0f), juce::Justification::centredLeft, display (22.0f), Colours::hazard, 0.7f);
+            drawGlowText (g, "EASY FX", juce::Rectangle<float> (18.0f, 6.0f, 300.0f, 30.0f), juce::Justification::centredLeft, display (22.0f), Colours::hazard, 0.7f);
             g.setColour (Colours::dim);
             g.setFont (text (14.0f, 1));
             g.drawText ("THE EFFECTS RACK   -   WEAPON SELECT AGAIN: BACK TO THE STRIP", juce::Rectangle<float> (170.0f, 6.0f, r.getWidth() - 190.0f, 30.0f),
@@ -462,7 +462,7 @@ namespace Holo
         // The rack (WEAPON SELECT), behind the modules' panels
         rack = std::make_unique<RackPanel>();
         addChildComponent (*rack);
-        addHint (*rack, "EASY SFX", rackHint);
+        addHint (*rack, "EASY FX", rackHint);
 
         // The modules
         for (int m = 0; m < StripModules::numModules; ++m)

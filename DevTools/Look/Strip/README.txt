@@ -292,13 +292,13 @@ darker and quieter than the labels and controls), and never next to a
 control, so nothing is mistaken for a button.
 
 ====================================================================
-LATER: EASY SFX
+LATER: EASY FX
 ====================================================================
 (30 October 2026: the rack opens IN PLACE of everything left of WEAPON
 SELECT - Gate, Amp, the screen, EQ, DS, Comp - while Trans, Bitch-Slap,
 Clip, INPUT / OUTPUT and the header stay. See PLAN.txt.)
 A huge pushbutton at the bottom of the strip reading WEAPON SELECT opens
-the effects window, EASY SFX (the "effects window" in PLAN.txt: easy
+the effects window, EASY FX (the "effects window" in PLAN.txt: easy
 versions of effects used a lot, e.g. slapback delay on vocals). Not
 designed yet - the strip itself comes first. Its place: in the right
 column under Bitch-Slap, its bottom level with Comp's natural bottom
