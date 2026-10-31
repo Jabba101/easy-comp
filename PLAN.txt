@@ -249,10 +249,20 @@ LATER
          reading, ~300 ms) and the response curve in the window.
        - OVERSAMPLING as Easy Amp; one fixed delay (oversampling + the
          3 ms wow & flutter swing around).
-     NEXT for tape: hear it (the user). Then the tape-flavoured strip
-     presets (Synthwave, Retrowave, Cyberpunk, Midnight Jazz...) use
-     it - which needs deciding whether it's a strip module (a ninth
-     panel - where?) or a WEAPON SELECT effect.
+     Heard (31 October): "sounds pretty good"; being able to push it
+     well past what anyone did with real tape is wanted (creative use).
+     DECIDED (31 October): TAPE goes on the strip's main page, in
+     Bitch-Slap's panel (right-hand column, under TRANS); BITCH-SLAP
+     moves into the WEAPON SELECT rack (a reverb is an effect; tape is
+     a tone stage you'd use on most tracks). So the rack gets built
+     first, with Bitch-Slap as its first effect (keeping its place in
+     the chain, after TRANS, before CLIP, and its strip presets).
+     Where tape sits: FIRST by default, right after INPUT ("recorded to
+     tape" - the user: copying the real chain, desk then tape, sounds
+     over the top with plugins; tape at the front sounds authentic).
+     A fifth ORDER switch, TAPE AT THE END (just before CLIP: mixing
+     down to the master machine) for creative use and bus / mastering
+     presets. Then the tape-flavoured strip presets use it.
    - Once the essentials are perfected: EASY SFX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the
