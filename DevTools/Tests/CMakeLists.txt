@@ -76,6 +76,12 @@ target_include_directories(WahTests PRIVATE ${P}/Plugins/EasyWah ${P}/Shared ${P
 target_compile_definitions(WahTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Wah")
 target_link_libraries(WahTests PRIVATE juce::juce_audio_utils PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 
+juce_add_console_app(FlangeTests PRODUCT_NAME "FlangeTests")
+target_sources(FlangeTests PRIVATE FlangeTests.cpp ${P}/Plugins/EasyFlange/PluginProcessor.cpp ${P}/Plugins/EasyFlange/PluginEditor.cpp ${SHARED})
+target_include_directories(FlangeTests PRIVATE ${P}/Plugins/EasyFlange ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(FlangeTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Flange")
+target_link_libraries(FlangeTests PRIVATE juce::juce_audio_utils PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
 juce_add_console_app(EQTests PRODUCT_NAME "EQTests")
 target_sources(EQTests PRIVATE EQTests.cpp ${P}/Plugins/EasyEQ/PluginProcessor.cpp ${P}/Plugins/EasyEQ/PluginEditor.cpp ${SHARED})
 target_include_directories(EQTests PRIVATE ${P}/Plugins/EasyEQ ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
@@ -83,7 +89,7 @@ target_compile_definitions(EQTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 Ju
 target_link_libraries(EQTests PRIVATE juce::juce_audio_utils juce::juce_dsp PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 
 set(STRIP_SOURCES)
-foreach(module EasyGate EasyAmp EasyEQ EasyDS EasyComp EasyTransient BitchSlap EasyClip EasyTape EasyDelay EasyTremolo EasyWah)
+foreach(module EasyGate EasyAmp EasyEQ EasyDS EasyComp EasyTransient BitchSlap EasyClip EasyTape EasyDelay EasyTremolo EasyWah EasyFlange)
     list(APPEND STRIP_SOURCES ${P}/Plugins/${module}/PluginProcessor.cpp ${P}/Plugins/${module}/PluginEditor.cpp)
 endforeach()
 juce_add_console_app(StripTests PRODUCT_NAME "StripTests")

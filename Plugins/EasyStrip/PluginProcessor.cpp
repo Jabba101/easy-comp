@@ -524,7 +524,7 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 EasyStripAudioProcessor::Order EasyStripAudioProcessor::orderFor (bool eqAfterComp, bool deEssBeforeDrive,
                                                                 bool driveAfterComp, bool shapeBeforeComp, bool tapeAtEnd) noexcept
 {
-    enum { gate, amp, eq, ds, comp, trans, slap, clip, tape, delay, trem, wah };
+    enum { gate, amp, eq, ds, comp, trans, slap, clip, tape, delay, trem, wah, flange };
     Order o {};
     int n = 0;
     if (! tapeAtEnd)       o[(size_t) n++] = tape;   // (recorded to tape: the usual, most natural-sounding place)
@@ -545,6 +545,7 @@ EasyStripAudioProcessor::Order EasyStripAudioProcessor::orderFor (bool eqAfterCo
     if (eqAfterComp)       o[(size_t) n++] = eq;
     if (! shapeBeforeComp) o[(size_t) n++] = trans;
 
+    o[(size_t) n++] = flange;  // (the modulation after COMP, so it doesn't even out the movement)
     o[(size_t) n++] = trem;    // (after COMP, or COMP would even out the pulsing)
     o[(size_t) n++] = delay;   // (before BITCH-SLAP, so the gated reverb catches the echoes)
     o[(size_t) n++] = slap;

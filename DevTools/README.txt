@@ -39,7 +39,10 @@ Tests/                 -> /home/claude/verify2
     the beat, PUMP dipping on it), SQUARE without clicks, AUTO-PAN side to
     side, speed), WahTests (Easy Wah: heel and toe peaks measured against the
     drawn curve, the pedal following plucked notes (SENSITIVITY, cocked,
-    DOWN), TEMPO, no clicks at full resonance, AUTO-GAIN, speed), EQTests (Easy
+    DOWN), TEMPO, no clicks at full resonance, AUTO-GAIN, speed), FlangeTests (Easy
+    Flange: the flanger's notch measured, the sweep, +-90% feedback under
+    control, chorus loudness and WIDTH, vibrato depth in semitones, no
+    clicks changing TYPE, speed), EQTests (Easy
     EQ: flat = untouched, each band measured against the drawn curve, the
     matched (uncramped) filters, proportional Q, the filters, mid-side and
     MONO BASS, no clicks, LISTEN, AUTO-GAIN, MASTER's linear phase and

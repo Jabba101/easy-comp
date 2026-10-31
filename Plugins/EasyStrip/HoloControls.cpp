@@ -286,7 +286,7 @@ namespace Holo
         if (format == Format::asText)
         {
             // Note lengths, compact: "1/8 NOTE" -> "1/8", "DOTTED 1/8" -> "1/8 D", "1/16 TRIPLET" -> "1/16 T"
-            valueText = valueText.replace (" NOTE", "").replace (" TRIPLET", " T").replace ("WHOLE", "1/1");
+            valueText = valueText.replace (" NOTE", "").replace (" TRIPLET", " T").replace ("WHOLE", "1/1").replace (" HZ", " Hz");
             if (valueText.startsWith ("DOTTED "))
                 valueText = valueText.fromFirstOccurrenceOf ("DOTTED ", false, false) + " D";
         }

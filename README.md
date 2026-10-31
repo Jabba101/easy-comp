@@ -14,6 +14,7 @@ Beginner-friendly mixing plugins (VST3) for Windows, built with [JUCE](https://j
 - **Easy Delay** – a stereo delay, in time with your song
 - **Easy Tremolo** – the volume pulsing, or side to side, locked to the beat
 - **Easy Wah** – an automatic wah: follows your playing, or rocks in time
+- **Easy Flange** – flanger, chorus and vibrato
 - **Easy Strip** – all of them in one channel strip
 
 Every knob explains itself in a help bar, and every plugin comes with presets.

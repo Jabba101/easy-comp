@@ -1235,6 +1235,62 @@ namespace Holo
     };
 
     //==========================================================================
+    // FLANGE (its panel is in the WEAPON SELECT rack: tall and narrow)
+    //==========================================================================
+    class FlangeSlab : public Slab
+    {
+    public:
+        explicit FlangeSlab (View& v) : Slab (v, StripModules::flangeIndex, Colours::flange, "FLANGE")
+        {
+            power.fontSize = 14.0f;
+            type = &choice (FlangeIDs::type, { "FLANGER", "CHORUS", "VIBRATO" }, "TYPE");
+            rate = &ring (FlangeIDs::rate, "RATE", Format::asText, {});
+            note = &ring (FlangeIDs::note, "RATE", Format::asText, {}, Ring::small, {}, "RATE");
+            sync = &choice (FlangeIDs::sync, { "OFF", "TEMPO" }, "SYNC", true);
+            depth = &ring (FlangeIDs::depth, "DEPTH", Format::percent, "%", Ring::tiny);
+            feedback = &ring (FlangeIDs::feedback, "FEEDBK", Format::signedPercent, "%", Ring::tiny, {}, "FEEDBACK");
+            feedback->setFromCentre (true);
+            width = &ring (FlangeIDs::width, "WIDTH", Format::percent, "%", Ring::tiny);
+            mix = &ring (FlangeIDs::mix, "MIX", Format::percent, "%", Ring::tiny);
+        }
+
+        void resized() override
+        {
+            clearSections();
+            auto body = placeHeader (getLocalBounds().reduced (9, 6), true, 80);
+            constexpr int gap = 8;
+            const auto take = [&] (int height) { auto r = body.removeFromTop (height); body.removeFromTop (gap); return r; };
+
+            auto s1 = section (take (27 + type->getIdealHeight() + 9), 1, "TYPE");
+            auto s2 = section (take (27 + rate->getIdealHeight() + 10 + sync->getIdealHeight() + 9), 2, "SPEED");
+            auto s3 = section (take (27 + depth->getIdealHeight() + 9), 3, "HOW MUCH");
+            auto s4 = section (take (27 + width->getIdealHeight() + 9), 4, "OUTPUT");
+
+            type->setBounds (s1.withHeight (type->getIdealHeight()).withSizeKeepingCentre (juce::jmin (130, s1.getWidth()), type->getIdealHeight()));
+            centreIn (*rate, s2, s2.getY());
+            centreIn (*note, s2, s2.getY());
+            sync->setBounds (s2.withTop (rate->getBottom() + 10).withHeight (sync->getIdealHeight()));
+            centreIn (*depth, s3.removeFromLeft (s3.getWidth() / 2), s3.getY());
+            centreIn (*feedback, s3, s3.getY());
+            centreIn (*width, s4.removeFromLeft (s4.getWidth() / 2), s4.getY());
+            centreIn (*mix, s4, s4.getY());
+        }
+
+        void refresh() override
+        {
+            const bool tempo = sync->getChosen() == 1;
+            rate->setVisible (! tempo);
+            note->setVisible (tempo);
+            const bool flanger = type->getChosen() == 0;
+            feedback->setAlpha (flanger ? 1.0f : 0.35f);
+        }
+
+    private:
+        Ring *rate = nullptr, *note = nullptr, *depth = nullptr, *feedback = nullptr, *width = nullptr, *mix = nullptr;
+        Choice *type = nullptr, *sync = nullptr;
+    };
+
+    //==========================================================================
     // CLIP
     //==========================================================================
     class ClipSlab : public Slab
@@ -1379,6 +1435,7 @@ namespace Holo
             case 9:  return std::make_unique<DelaySlab> (v);
             case 10: return std::make_unique<TremoloSlab> (v);
             case 11: return std::make_unique<WahSlab> (v);
+            case 12: return std::make_unique<FlangeSlab> (v);
             default: return std::make_unique<ClipSlab> (v);
         }
     }

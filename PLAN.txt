@@ -315,6 +315,16 @@ LATER
      SENSITIVITY 0: the cocked wah); RESONANCE (Q 1.5-10); MIX; AUTO-GAIN on
      by default (up to +-18 dB - a narrow wah on a drum loop takes ~13 dB
      out). No added delay. 13 presets.
+   - EASY FLANGE 1.0.0 (done, 31 October 2026), the rack's fourth new
+     effect (the brainstorm's FLANGER / CHORUS with a vibrato mode) - a
+     standalone plugin AND the strip's thirteenth module ("flange_"; bay
+     2, after TRANS, before TREMOLO). Effects/Flanger.h: one modulated
+     delay line. TYPE FLANGER (0.3-8 ms, FEEDBACK -90..+90%), CHORUS (two
+     voices around 12-21 ms), VIBRATO (1-7 ms, MIX 100%); RATE 0.02-10 Hz
+     or SYNC (1/16 to 8 bars, locked to the beat); DEPTH; WIDTH (right
+     side's swing offset up to half a cycle); MIX (equal-power blend).
+     TYPE changes fade out, switch (feedback too), fade back in. No added
+     delay. 15 presets.
    - Once the essentials are perfected: EASY SFX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the

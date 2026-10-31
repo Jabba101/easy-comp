@@ -46,6 +46,7 @@ namespace Holo
         inline const juce::Colour delay { 0xff7ad0ff };   // (echoes: a cool blue)
         inline const juce::Colour trem  { 0xffc7a2ff };   // (pulsing: lilac)
         inline const juce::Colour wah   { 0xff9be86a };   // (wah: lime)
+        inline const juce::Colour flange { 0xff6ae8d9 };  // (flange: aqua)
         inline const juce::Colour clip  { 0xffff8a3d };
 
         inline const juce::Colour mid   { 0xff4fe3ff };    // the EQ's MID curve
