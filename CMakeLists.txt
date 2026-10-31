@@ -109,7 +109,7 @@ endfunction()
 add_easy_plugin(EasyComp
     NAME        "Easy Comp"
     CODE        Ezcp
-    VERSION     1.7.1
+    VERSION     1.8.0
     BUNDLE_ID   com.homestudio.easycomp
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/Compressor.h

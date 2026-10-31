@@ -76,7 +76,7 @@ private:
     static constexpr size_t makeupKnob = 4;
 
     // REACTS TO and LISTENS TO (beside IGNORE BELOW); STYLE and LOW END (CHARACTER)
-    Switch reactsTo, listensTo, style, lowEnd;
+    Switch reactsTo, listensTo, style, lowEnd, worksOn;
 
     CurveGraph graph;
     GainReductionMeter meter;

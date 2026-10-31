@@ -224,11 +224,16 @@ LATER
      (A, B, C or a mix). The current clean look stays too.
    - A resizable window.
    - A / B: in Easy EQ, Easy Comp and the strip (done).
-   - Easy Comp: mid-side - one WORKS ON: STEREO / MID / SIDE choice
-     (default STEREO, so old presets sound the same), e.g. squash the
-     middle of a drum bus while the cymbals and room breathe. In the
-     standalone first, then the strip. (The full two-compressor M/S
-     version is mastering territory: not planned.)
+   - Easy Comp 1.8.0: mid-side (done, 31 October 2026) - WORKS ON:
+     STEREO / MID / SIDE / MID+SIDE (default STEREO, so old presets and
+     projects sound the same). MID and SIDE compress (L+R)/2 or (L-R)/2
+     and leave the other untouched; MID+SIDE runs two compressors (same
+     settings, each its own detector) - asked for once Easy Limiter made
+     mastering real. BYPASS done on left and right (exact); changing it
+     while playing dips for 20 ms (S-curve, no click). 5 presets: Drum
+     Bus - Squash the Middle, Mix Bus - Mid & Side Glue, Mix Bus - Tame
+     Wide Cymbals & Reverb, Master - Mid & Side (Gentle), Master - Steady
+     Middle. In the strip: a WORKS ON row along the bottom of COMP.
    - EASY TAPE 1.0.0 (done, 30 October 2026): real tape, done
      properly - the user used tape in studios for years and is the
      judge of whether it sounds right. Real tape is SUBTLE, not the

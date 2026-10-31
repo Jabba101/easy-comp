@@ -66,6 +66,10 @@ namespace
         "follows loud passages closely and eases back gently when the sound drops away. Thicker, with more glue: great "
         "on drum buses, bass and mixes.";
 
+    constexpr const char* worksOnHint =
+        "STEREO: both sides together. MID: only the middle - vocal, kick, snare, bass - while the sides (wide guitars, "
+        "cymbals, room, reverb) pass untouched. SIDE: only the sides. MID+SIDE: both, each compressed on its own, so a loud "
+        "middle doesn't pull the width down.";
     constexpr const char* lowEndHint =
         "THRUST: the compressor hears less and less of the low end the lower it goes (and a little more of the bright, "
         "edgy range), so the kick and bass punch through instead of setting it off. Only changes what it reacts to - you "
@@ -328,7 +332,8 @@ EasyCompAudioProcessorEditor::EasyCompAudioProcessorEditor (EasyCompAudioProcess
       reactsTo  (*p.parameters.getParameter (CompIDs::reactsTo),  "REACTS TO",  { "PEAKS", "AVERAGE" }),
       listensTo (*p.parameters.getParameter (CompIDs::listensTo), "LISTENS TO", { "THIS TRACK", "SIDECHAIN" }),
       style     (*p.parameters.getParameter (CompIDs::character), "STYLE",      { "MODERN", "VINTAGE" }),
-      lowEnd    (*p.parameters.getParameter (CompIDs::lowEnd),    "LOW END",    { "NORMAL", "THRUST" })
+      lowEnd    (*p.parameters.getParameter (CompIDs::lowEnd),    "LOW END",    { "NORMAL", "THRUST" }),
+      worksOn   (*p.parameters.getParameter (CompIDs::worksOn),   "WORKS ON",   { "STEREO", "MID", "SIDE", "MID+SIDE" })
 {
     for (size_t i = 0; i < knobs.size(); ++i)
     {
@@ -378,6 +383,7 @@ EasyCompAudioProcessorEditor::EasyCompAudioProcessorEditor (EasyCompAudioProcess
     addSwitch (listensTo, listensToHint);   // (not part of presets: it depends on how your tracks are routed)
     addSwitch (style,     styleHint);
     addSwitch (lowEnd,    lowEndHint);
+    addSwitch (worksOn,   worksOnHint);
 
     addAndMakeVisible (graph);
     addHint (graph, [this]
@@ -474,7 +480,7 @@ void EasyCompAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
         { { &knobs[2] }, { &knobs[3] } },                                  // ATTACK, RELEASE
         { { &knobs[4] }, { &knobs[5] } },                                  // MAKE-UP, MIX
         { { &knobs[6] }, { nullptr, &reactsTo }, { nullptr, &listensTo } }, // IGNORE BELOW, REACTS TO, LISTENS TO
-        { { nullptr, &style }, { nullptr, &lowEnd } },                     // STYLE, LOW END
+        { { nullptr, &style }, { nullptr, &lowEnd }, { nullptr, &worksOn } }, // STYLE, LOW END, WORKS ON
     }};
 
     const std::array<std::pair<size_t, size_t>, 2> rows { { { 0, 3 }, { 3, 2 } } };   // (first panel, how many)
@@ -532,7 +538,9 @@ void EasyCompAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
                 {
                     column.choice->label.setBounds (columnArea.removeFromTop (nameHeight));
                     columnArea.removeFromTop (spacing + 6);
-                    column.choice->choices.setBounds (columnArea.withSizeKeepingCentre (juce::jmin (columnArea.getWidth() - 12, 122), 76));
+                    const int options = column.choice->choices.getNumOptions();
+                    const int height = options > 2 ? juce::jmin (columnArea.getHeight(), options * 28) : 76;
+                    column.choice->choices.setBounds (columnArea.withSizeKeepingCentre (juce::jmin (columnArea.getWidth() - 4, 122), height));
                 }
             }
         }

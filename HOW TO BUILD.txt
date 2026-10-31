@@ -147,6 +147,19 @@ YOUR FIRST FIVE MINUTES WITH EASY COMP
       Flick STYLE between MODERN and VINTAGE while the track plays
       (with AUTO-GAIN on): the amount of squeeze stays about the same,
       the feel changes.
+   8. WORKS ON, for stereo tracks and buses (mid-side):
+        STEREO     both sides together, as always (the default).
+        MID        only the middle - what's the same on both sides:
+                   vocal, kick, snare, bass. The sides (wide guitars,
+                   cymbals, room, reverb) pass untouched. Squash the
+                   middle of a drum bus while the cymbals breathe.
+        SIDE       only the sides: tame harsh wide cymbals or a big
+                   reverb tail without touching the middle.
+        MID+SIDE   both, each compressed on its own (same settings), so
+                   a loud middle never pulls the width down with it -
+                   the mastering way. Put Easy Limiter after it.
+      Changing it while playing dips the sound for a moment (no click).
+      On a mono track there are no sides, so it always works on STEREO.
    Hover over anything for a plain-English explanation.
 
    Found settings you like? Preset menu > "Save current settings as a

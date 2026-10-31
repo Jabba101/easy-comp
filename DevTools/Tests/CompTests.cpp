@@ -192,7 +192,7 @@ namespace
         std::cout << "\n[parameters, defaults and value text]\n";
         EasyCompAudioProcessor p;
 
-        check (p.getParameters().size() == 13, "13 settings visible to the DAW (7 knobs, 2 buttons, REACTS TO, STYLE, LOW END, LISTENS TO)");
+        check (p.getParameters().size() == 14, "14 settings visible to the DAW (7 knobs, 2 buttons, REACTS TO, STYLE, LOW END, LISTENS TO, WORKS ON)");
         check (p.getBypassParameter() != nullptr && p.getBypassParameter() == p.parameters.getParameter (CommonIDs::bypass),
                "the BYPASS button is also the DAW's own bypass switch");
         check (getParam (p, CommonIDs::autoGain) < 0.5f && getParam (p, CommonIDs::bypass) < 0.5f, "AUTO-GAIN and BYPASS start off");
@@ -711,7 +711,7 @@ namespace
                          && near (getParam (p, CompIDs::lowEnd), (float) pr.lowEnd, 0.01f);
             check (ok, juce::String ("preset loads exactly: ") + pr.name);
         }
-        check (std::size (compressorPresets) == p.getBuiltInPresets().size(), "every preset in the table reaches the menu");
+        check (std::size (compressorPresets) + std::size (midSidePresets) == p.getBuiltInPresets().size(), "every preset in the tables reaches the menu");
         {
             const auto [textsOk, textsReport] = th::presetTextsReport (p.getBuiltInPresets());
             check (textsOk, textsReport);
@@ -1176,6 +1176,120 @@ namespace
     #include "CompEditorTests.inc"
 }
 
+namespace
+{
+    //==========================================================================
+    void testMidSide()
+    {
+        std::cout << "\n[WORKS ON: mid-side]\n";
+        constexpr double rate = 48000.0;
+        const auto make = [] (float midAmp, float sideAmp, double seconds)
+        {
+            juce::AudioBuffer<float> b (2, (int) (rate * seconds));
+            for (int i = 0; i < b.getNumSamples(); ++i)
+            {
+                const float m = midAmp * (float) std::sin (juce::MathConstants<double>::twoPi * 200.0 * i / rate);
+                const float s = sideAmp * (float) std::sin (juce::MathConstants<double>::twoPi * 3100.0 * i / rate);
+                b.setSample (0, i, m + s);
+                b.setSample (1, i, m - s);
+            }
+            return b;
+        };
+        const auto midOf = [] (const juce::AudioBuffer<float>& b, int from, int to)
+        {
+            double e = 0.0;
+            for (int i = from; i < to; ++i) { const double m = 0.5 * (b.getSample (0, i) + b.getSample (1, i)); e += m * m; }
+            return (float) std::sqrt (e / (to - from));
+        };
+        const auto sideOf = [] (const juce::AudioBuffer<float>& b, int from, int to)
+        {
+            double e = 0.0;
+            for (int i = from; i < to; ++i) { const double s = 0.5 * (b.getSample (0, i) - b.getSample (1, i)); e += s * s; }
+            return (float) std::sqrt (e / (to - from));
+        };
+        const auto runWith = [&] (int worksOn, const juce::AudioBuffer<float>& in, bool bypass = false)
+        {
+            EasyCompAudioProcessor p;
+            setParam (p, CompIDs::threshold, -30.0f); setParam (p, CompIDs::ratio, 8.0f); setParam (p, CompIDs::worksOn, (float) worksOn);
+            if (bypass) setParam (p, CommonIDs::bypass, 1.0f);
+            prepare (p, rate, 512);
+            return th::run (p, in, 512);
+        };
+
+        {
+            EasyCompAudioProcessor p;
+            check (getParam (p, CompIDs::worksOn) == 0.0f, "WORKS ON starts at STEREO (old projects and presets sound the same)");
+        }
+
+        const int from = (int) rate, to = (int) (rate * 2.0);
+        // MID: a loud middle is compressed, the quiet sides pass untouched
+        {
+            const auto in = make (0.8f, 0.05f, 2.0);
+            const auto mid = runWith (worksOnMid, in), stereo = runWith (worksOnStereo, in);
+            const float midCut = th::toDb (midOf (mid, from, to) / midOf (in, from, to));
+            const float sideKept = th::toDb (sideOf (mid, from, to) / sideOf (in, from, to));
+            const float sideInStereo = th::toDb (sideOf (stereo, from, to) / sideOf (in, from, to));
+            check (midCut < -10.0f && std::abs (sideKept) < 0.05f && sideInStereo < -10.0f,
+                   "MID: the loud middle squeezed (" + juce::String (midCut, 1) + " dB), the sides untouched (" + juce::String (sideKept, 2)
+                   + " dB) - in STEREO they'd have gone down with it (" + juce::String (sideInStereo, 1) + " dB)");
+        }
+        // SIDE: loud sides compressed, the middle untouched
+        {
+            const auto in = make (0.05f, 0.8f, 2.0);
+            const auto side = runWith (worksOnSide, in);
+            const float sideCut = th::toDb (sideOf (side, from, to) / sideOf (in, from, to));
+            const float midKept = th::toDb (midOf (side, from, to) / midOf (in, from, to));
+            check (sideCut < -10.0f && std::abs (midKept) < 0.05f, "SIDE: the loud sides squeezed (" + juce::String (sideCut, 1) + " dB), the middle untouched ("
+                   + juce::String (midKept, 2) + " dB)");
+        }
+        // MID+SIDE: each on its own - a loud middle doesn't pull quiet sides down, loud sides are still caught
+        {
+            const auto in = make (0.8f, 0.02f, 2.0);   // (the sides well under THRESHOLD)
+            const auto both = runWith (worksOnMidSide, in);
+            const float midCut = th::toDb (midOf (both, from, to) / midOf (in, from, to));
+            const float sideKept = th::toDb (sideOf (both, from, to) / sideOf (in, from, to));
+            const auto in2 = make (0.05f, 0.8f, 2.0);
+            const auto both2 = runWith (worksOnMidSide, in2);
+            const float sideCut = th::toDb (sideOf (both2, from, to) / sideOf (in2, from, to));
+            check (midCut < -10.0f && std::abs (sideKept) < 0.05f && sideCut < -10.0f,
+                   "MID+SIDE: each compressed on its own (loud middle " + juce::String (midCut, 1) + " dB, quiet sides " + juce::String (sideKept, 2)
+                   + " dB; loud sides " + juce::String (sideCut, 1) + " dB)");
+        }
+        // A track with nothing in the sides: MID does what STEREO does
+        {
+            const auto in = make (0.8f, 0.0f, 2.0);
+            const auto a = runWith (worksOnMid, in), b = runWith (worksOnStereo, in);
+            check (th::maxDifference (a, b) < 1.0e-5f, "a centred track: MID sounds the same as STEREO");
+        }
+        // BYPASS in MID+SIDE: exactly your track
+        {
+            const auto in = make (0.8f, 0.3f, 1.0);
+            check (th::maxDifference (runWith (worksOnMidSide, in, true), in) == 0.0f, "BYPASS with MID+SIDE: exactly your track");
+        }
+        // Changing WORKS ON while playing: a quick dip, never a click
+        {
+            const auto in = make (0.8f, 0.3f, 3.0);
+            EasyCompAudioProcessor p;
+            setParam (p, CompIDs::threshold, -30.0f); setParam (p, CompIDs::ratio, 8.0f);
+            prepare (p, rate, 256);
+            int step = 0;
+            const auto out = th::run (p, in, 256, [&] (int start) { if (start > 0 && start % 24000 < 256) setParam (p, CompIDs::worksOn, (float) (++step % 4)); });
+            const auto jump = [] (const juce::AudioBuffer<float>& b)
+            {
+                float worst = 0.0f;
+                for (int c = 0; c < 2; ++c)
+                    for (int i = 4800; i < b.getNumSamples(); ++i)
+                        worst = std::max (worst, std::abs (b.getSample (c, i) - 2.0f * b.getSample (c, i - 1) + b.getSample (c, i - 2)));
+                return worst;
+            };
+            float steady = 0.0f;   // (the biggest jump any of the four makes on its own: they sound different)
+            for (int w = 0; w < 4; ++w)
+                steady = std::max (steady, jump (runWith (w, in)));
+            check (jump (out) < steady * 1.3f && th::allFinite (out), "switching WORKS ON every half second while playing: no clicks (" + juce::String (jump (out) / steady, 2) + "x)");
+        }
+    }
+}
+
 int main (int argc, char** argv)
 {
     juce::ScopedJuceInitialiser_GUI gui;
@@ -1199,6 +1313,7 @@ int main (int argc, char** argv)
     testSidechain();
     testBypass();
     testAutoGain();
+    testMidSide();
     testEfficiency();
     testEditor (outDir);
 

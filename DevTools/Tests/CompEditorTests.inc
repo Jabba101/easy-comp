@@ -8,6 +8,7 @@
         CurveGraph* graph = nullptr;
         std::vector<ChoiceSwitch*> switches;   // in the order they're added: REACTS TO, LISTENS TO, STYLE, LOW END
         ChoiceSwitch* reactsTo = nullptr;
+        ChoiceSwitch* worksOn = nullptr;
         ChoiceSwitch* listensTo = nullptr;
         ChoiceSwitch* style = nullptr;
         ChoiceSwitch* lowEnd = nullptr;
@@ -24,8 +25,9 @@
             if (auto* gr = dynamic_cast<CurveGraph*> (child)) parts.graph = gr;
             if (auto* cs = dynamic_cast<ChoiceSwitch*> (child)) parts.switches.push_back (cs);
         }
-        if (parts.switches.size() == 4)
+        if (parts.switches.size() == 5)
         {
+            parts.worksOn   = parts.switches[4];
             parts.reactsTo  = parts.switches[0];
             parts.listensTo = parts.switches[1];
             parts.style     = parts.switches[2];
@@ -82,7 +84,7 @@
 
         auto parts = findParts (*editor);
         check (parts.window != nullptr && parts.sliders.size() == 7 && parts.meter != nullptr && parts.graph != nullptr && parts.reactsTo != nullptr,
-               "7 knobs, 4 switches (REACTS TO, LISTENS TO, STYLE, LOW END), curve graph, meter and the shared header present");
+               "7 knobs, 5 switches (REACTS TO, LISTENS TO, STYLE, LOW END, WORKS ON), curve graph, meter and the shared header present");
         if (parts.window == nullptr || parts.sliders.size() != 7 || parts.meter == nullptr || parts.graph == nullptr || parts.reactsTo == nullptr)
             return;
 
@@ -323,6 +325,7 @@
         };
 
         render ("ui_default.png", "", false, false, false, false, nullptr, -1.0f, Compressor::silenceDb);
+        render ("ui_midside.png", "Mix Bus - Mid & Side Glue", false, false, false, true, [] (EditorParts& e) { return (juce::Component*) e.worksOn; }, -1.0f, Compressor::silenceDb);
         render ("ui_snare_tip.png", "Snare - Crack", false, false, false, false, nullptr, 5.3f, -9.0f);
         render ("ui_snare_attack.png", "Snare - Crack", false, false, false, false, [] (EditorParts& e) { return (juce::Component*) e.sliders[2]; }, 5.3f, -9.0f);
         render ("ui_autogain.png", "Room Mics - Crushed", true, false, false, true, [] (EditorParts& e) { return (juce::Component*) &e.window->autoGainButton; }, -1.0f, Compressor::silenceDb);

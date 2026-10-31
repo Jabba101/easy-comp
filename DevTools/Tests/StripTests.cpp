@@ -813,7 +813,7 @@ namespace
         juce::StringArray missing;
         const juce::StringArray notKnobs { CommonIDs::bypass, CommonIDs::autoGain, "quality", "view", "analyser", "link", "master",
                                            "openedby", "turnsdown", "precision", "reactsto", "character", "thrust", "listensto", "sync",
-                                           "lowshelf", "highshelf", "hpfslope", "lpfslope", "lowtarget", "lowmidtarget", "highmidtarget", "hightarget", "speed", "mode", "character", "shape", "response", "direction", "type", "releasemode", "match" };
+                                           "lowshelf", "highshelf", "hpfslope", "lpfslope", "lowtarget", "lowmidtarget", "highmidtarget", "hightarget", "speed", "mode", "character", "shape", "response", "direction", "type", "releasemode", "match", "workson" };
         for (int m = 0; m < S::numModules; ++m)
             for (auto* p : s.getModule (m).getParameters())
                 if (auto* r = dynamic_cast<juce::RangedAudioParameter*> (p))

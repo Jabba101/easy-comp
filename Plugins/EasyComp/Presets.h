@@ -21,6 +21,7 @@ namespace CompIDs
     inline constexpr const char* character = "character"; // added in version 1.6: STYLE
     inline constexpr const char* lowEnd    = "thrust";   // added in version 1.6: LOW END
     inline constexpr const char* listensTo = "listensto"; // added in version 1.6
+    inline constexpr const char* worksOn   = "workson";  // added in version 1.8: STEREO / MID / SIDE / MID+SIDE
 }
 
 /** REACTS TO: the two choices (in this order). */
@@ -34,6 +35,13 @@ enum LowEnd { normal = 0, thrust = 1 };
 
 /** LISTENS TO: the two choices (in this order). */
 enum ListensTo { listensToTrack = 0, listensToSidechain = 1 };
+
+/** WORKS ON: the four choices (in this order).
+      STEREO    both sides together (as always)
+      MID       only the middle - what's the same on both sides: vocal, kick, snare, bass
+      SIDE      only the sides - what differs: wide guitars, cymbals, room, reverb
+      MID+SIDE  both, each compressed on its own (a loud middle doesn't pull the width down) */
+enum WorksOn { worksOnStereo = 0, worksOnMid = 1, worksOnSide = 2, worksOnMidSide = 3 };
 
 //==============================================================================
 /*
@@ -238,17 +246,51 @@ inline const CompPreset compressorPresets[] =
 };
 
 //==============================================================================
+/*
+    Mid-side presets: the same columns, plus WORKS ON. (All the presets above
+    work on STEREO.)
+*/
+struct MidSidePreset
+{
+    CompPreset settings;
+    WorksOn worksOn;
+};
+
+inline const MidSidePreset midSidePresets[] =
+{
+    //  category, name                                       thresh  ratio  attack  release  make-up    mix  ignore  reacts   style    low end      works on
+    { { "Drums", "Drum Bus - Squash the Middle",             -24.0f,  6.0f, 10.0f,  120.0f,   0.0f, 100.0f,  20.0f, peaks,   modern,  normal,
+        "Only the middle - kick, snare, bass - squashed hard; the cymbals and the room at the sides keep breathing. Aim for 4-8 dB." }, worksOnMid },
+    { { "Mix Bus", "Mix Bus - Mid & Side Glue",              -18.0f,  2.0f, 30.0f,  200.0f,   0.0f, 100.0f,  60.0f, average, vintage, normal,
+        "Glue on the middle and the sides, each on its own: a loud vocal no longer pulls the width down with it. Aim for 1-3 dB." }, worksOnMidSide },
+    { { "Mix Bus", "Mix Bus - Tame Wide Cymbals & Reverb",   -26.0f,  3.0f,  5.0f,  150.0f,   0.0f, 100.0f, 150.0f, peaks,   modern,  normal,
+        "Only the sides: harsh wide cymbals and big reverb tails held in check, the middle untouched. Aim for 2-4 dB." }, worksOnSide },
+    { { "Mastering", "Master - Mid & Side (Gentle)",         -14.0f,  1.5f, 30.0f,  250.0f,   0.0f, 100.0f,  40.0f, average, vintage, normal,
+        "1-2 dB on the middle and the sides, each on its own: a cohesive master that keeps its width. Put Easy Limiter after it." }, worksOnMidSide },
+    { { "Mastering", "Master - Steady Middle",               -16.0f,  2.0f, 20.0f,  200.0f,   0.0f, 100.0f,  40.0f, average, modern,  normal,
+        "Holds the vocal, bass and kick steady in the middle without squeezing the stereo spread. Aim for 1-2 dB." }, worksOnMid },
+};
+
+//==============================================================================
 inline std::vector<Preset> makeCompressorPresets()
 {
     std::vector<Preset> presets;
 
-    for (auto& p : compressorPresets)
+    const auto add = [&presets] (const CompPreset& p, WorksOn worksOn)
+    {
         presets.push_back ({ p.category, p.name, p.tip,
                              { { CompIDs::threshold, p.thresholdDb }, { CompIDs::ratio,    p.ratio },
                                { CompIDs::attack,    p.attackMs },    { CompIDs::release,  p.releaseMs },
                                { CompIDs::makeup,    p.makeupDb },    { CompIDs::mix,      p.mixPercent },
                                { CompIDs::lowCut,    p.lowCutHz },    { CompIDs::reactsTo, (float) p.reactsTo },
-                               { CompIDs::character, (float) p.style }, { CompIDs::lowEnd,  (float) p.lowEnd } } });
+                               { CompIDs::character, (float) p.style }, { CompIDs::lowEnd,  (float) p.lowEnd },
+                               { CompIDs::worksOn,   (float) worksOn } } });
+    };
+
+    for (auto& p : compressorPresets)
+        add (p, worksOnStereo);
+    for (auto& p : midSidePresets)
+        add (p.settings, p.worksOn);
 
     return presets;
 }
@@ -258,5 +300,5 @@ inline juce::StringArray compressorPresetIDs()
 {
     return { CompIDs::threshold, CompIDs::ratio, CompIDs::attack, CompIDs::release,
              CompIDs::makeup, CompIDs::mix, CompIDs::lowCut, CompIDs::reactsTo,
-             CompIDs::character, CompIDs::lowEnd };
+             CompIDs::character, CompIDs::lowEnd, CompIDs::worksOn };
 }

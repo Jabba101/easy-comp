@@ -771,6 +771,11 @@ namespace Holo
             style = &choice (CompIDs::character, { "MODERN", "VINTAGE" }, "STYLE");
             lowEndLabel = &caption ("LOW END");
             lowEnd = &choice (CompIDs::lowEnd, { "NORMAL", "THRUST" }, "LOW END");
+            worksOnLabel = &caption ("WORKS ON");
+            worksOnLabel->setJustificationType (juce::Justification::centredRight);
+            worksOn = &choice (CompIDs::worksOn, { "STEREO", "MID", "SIDE", "MID+SIDE" }, "WORKS ON", true);
+            worksOn->segmentHeight = 24;
+            worksOn->fontSize = 13.0f;
         }
 
         void resized() override
@@ -817,6 +822,15 @@ namespace Holo
                 centreIn (*makeup, s3.removeFromLeft (w), s3.getY());
                 centreIn (*mix, s3.removeFromLeft (w), s3.getY());
                 autoGain->setBounds (s3.withSizeKeepingCentre (54, 54));
+            }
+
+            // WORKS ON along the bottom: STEREO / MID / SIDE / MID+SIDE
+            {
+                auto row = body.removeFromBottom (worksOn->getIdealHeight());
+                body.removeFromBottom (6);
+                worksOnLabel->setBounds (row.removeFromLeft (82));
+                row.removeFromLeft (8);
+                worksOn->setBounds (row);
             }
 
             auto s4 = section (body.removeFromLeft (body.getWidth() * 60 / 100), 4, "WHAT IT REACTS TO");
@@ -867,7 +881,8 @@ namespace Holo
         Ring *attack = nullptr, *release = nullptr, *makeup = nullptr, *mix = nullptr, *below = nullptr;
         Button* autoGain = nullptr;
         juce::Label *reactsLabel = nullptr, *listensLabel = nullptr, *styleLabel = nullptr, *lowEndLabel = nullptr;
-        Choice *reactsTo = nullptr, *listensTo = nullptr, *style = nullptr, *lowEnd = nullptr;
+        Choice *reactsTo = nullptr, *listensTo = nullptr, *style = nullptr, *lowEnd = nullptr, *worksOn = nullptr;
+        juce::Label* worksOnLabel = nullptr;
     };
 
     //==========================================================================

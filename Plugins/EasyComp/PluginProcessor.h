@@ -13,6 +13,12 @@
     sidechain input, hands their values to the Compressor once per block of
     audio, and reports what's happening so the meter and the curve graph can
     show it. The sound-shaping maths lives in Effects/Compressor.h.
+
+    WORKS ON: STEREO hands it your track as it is. MID, SIDE and MID+SIDE
+    split the track into its middle (L+R)/2 and sides (L-R)/2 first,
+    compress the middle, the sides, or each with its own compressor (same
+    settings), and put left and right back together. Changing it while
+    playing dips for 20 ms instead of clicking.
 */
 class EasyCompAudioProcessor : public EasyProcessor
 {
@@ -45,6 +51,9 @@ public:
     /** All the settings right now, in the form the compressor uses. */
     Compressor::Settings getCurrentSettings() const noexcept;
 
+    /** WORKS ON right now (STEREO, MID, SIDE or MID+SIDE). */
+    WorksOn getWorksOn() const noexcept   { return (WorksOn) juce::jlimit (0, 3, juce::roundToInt (worksOnValue->load())); }
+
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     void presetLoaded() override                  { autoGainRestartRequested.store (true); }
@@ -63,8 +72,17 @@ private:
     std::atomic<float>* listensToValue = nullptr;
     std::atomic<float>* autoGainValue  = nullptr;
     std::atomic<float>* bypassValue    = nullptr;
+    std::atomic<float>* worksOnValue   = nullptr;
 
-    Compressor compressor;
+    /** MID, SIDE, MID+SIDE: the track split into middle and sides, compressed, and put back together. */
+    Compressor::BlockResult processMidSide (juce::AudioBuffer<float>& track, const juce::AudioBuffer<float>* key, WorksOn) noexcept;
+
+    Compressor compressor, sideCompressor;
+    juce::AudioBuffer<float> middle, sides;
+    WorksOn playingWorksOn = worksOnStereo;
+    float changeFade = 1.0f;   // (a quick dip while WORKS ON changes: 1 = full level)
+    bool changingDown = false;
+    juce::SmoothedValue<float> midSideBypass;
     std::atomic<float> meterReductionDb { 0.0f };
     std::atomic<float> graphLevelDb { Compressor::silenceDb };
     std::atomic<float> autoGainDb { 0.0f };

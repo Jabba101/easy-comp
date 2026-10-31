@@ -1,6 +1,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "Parameters.h"
+#include <optional>
 
 juce::AudioProcessorValueTreeState::ParameterLayout EasyCompAudioProcessor::createParameterLayout()
 {
@@ -57,6 +58,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyCompAudioProcessor::crea
                                                               juce::StringArray { "Normal", "Thrust" }, (int) defaults.lowEnd));
     layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { CompIDs::listensTo, 5 }, "Listens To",
                                                               juce::StringArray { "This Track", "Sidechain" }, (int) ListensTo::listensToTrack));
+    layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { CompIDs::worksOn, 6 }, "Works On",
+                                                              juce::StringArray { "Stereo", "Mid", "Side", "Mid+Side" }, (int) worksOnStereo));
     return layout;
 }
 
@@ -77,13 +80,22 @@ EasyCompAudioProcessor::EasyCompAudioProcessor()
     listensToValue = parameters.getRawParameterValue (CompIDs::listensTo);
     autoGainValue  = parameters.getRawParameterValue (CommonIDs::autoGain);
     bypassValue    = parameters.getRawParameterValue (CommonIDs::bypass);
+    worksOnValue   = parameters.getRawParameterValue (CompIDs::worksOn);
 }
 
 //==============================================================================
-void EasyCompAudioProcessor::prepareToPlay (double sampleRate, int /*samplesPerBlock*/)
+void EasyCompAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     currentSampleRate = sampleRate;
     compressor.prepare (sampleRate, getCurrentSettings());
+    sideCompressor.prepare (sampleRate, getCurrentSettings());
+    middle.setSize (1, juce::jmax (1, samplesPerBlock));
+    sides.setSize (1, juce::jmax (1, samplesPerBlock));
+    playingWorksOn = getWorksOn();
+    changeFade = 1.0f;
+    changingDown = false;
+    midSideBypass.reset (sampleRate, 0.02);
+    midSideBypass.setCurrentAndTargetValue (bypassValue->load() > 0.5f ? 1.0f : 0.0f);
     meterReductionDb.store (0.0f);
     graphLevelDb.store (Compressor::silenceDb);
     autoGainDb.store (0.0f);
@@ -106,9 +118,13 @@ void EasyCompAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     const bool wantsSidechain = usesSidechain();
 
     compressor.setSettings (getCurrentSettings());
+    sideCompressor.setSettings (getCurrentSettings());
 
     if (autoGainRestartRequested.exchange (false))
+    {
         compressor.restartAutoGain();   // a preset was just loaded
+        sideCompressor.restartAutoGain();
+    }
 
     // LISTENS TO: SIDECHAIN with nothing coming in can't compress, so the
     // window says so (once your track has been playing for a moment without it).
@@ -128,12 +144,94 @@ void EasyCompAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         samplesSinceSidechainSound = 1 << 30;
     }
 
-    const auto result = compressor.process (track, wantsSidechain ? &sidechain : nullptr);
+    if (playingWorksOn == worksOnStereo)   // (so a switch to MID / SIDE starts from the right place)
+        midSideBypass.setCurrentAndTargetValue (bypassValue->load() > 0.5f ? 1.0f : 0.0f);
+
+    // WORKS ON: STEREO as always; the others split the track into middle and sides
+    const auto wanted = track.getNumChannels() >= 2 ? getWorksOn() : worksOnStereo;   // (a mono track has no sides)
+    if (wanted != playingWorksOn && ! changingDown)
+        changingDown = true;   // (dip, switch, come back up)
+
+    Compressor::BlockResult result;
+    if (playingWorksOn == worksOnStereo)
+        result = compressor.process (track, wantsSidechain ? &sidechain : nullptr);
+    else
+        result = processMidSide (track, wantsSidechain ? &sidechain : nullptr, playingWorksOn);
+
+    if (changingDown || changeFade < 1.0f)
+    {
+        // A 10 ms dip to silence and back, switching at the bottom (no click, however different the two sound)
+        const int n = track.getNumSamples();
+        const float step = 1.0f / (0.01f * (float) currentSampleRate);
+        for (int i = 0; i < n; ++i)
+        {
+            changeFade = juce::jlimit (0.0f, 1.0f, changeFade + (changingDown ? -step : step));
+            const float level = changeFade * changeFade * (3.0f - 2.0f * changeFade);   // (an S-curve: no corners)
+            for (int c = 0; c < track.getNumChannels(); ++c)
+                track.getWritePointer (c)[i] *= level;
+            if (changingDown && changeFade <= 0.0f)
+            {
+                playingWorksOn = wanted;
+                changingDown = false;
+            }
+        }
+    }
 
     // Keep the biggest values until the meter and graph next ask for them.
     storeIfBigger (meterReductionDb, result.maxReductionDb);
     storeIfBigger (graphLevelDb, result.maxLevelDb);
     autoGainDb.store (result.autoGainDb);
+}
+
+Compressor::BlockResult EasyCompAudioProcessor::processMidSide (juce::AudioBuffer<float>& track, const juce::AudioBuffer<float>* key, WorksOn mode) noexcept
+{
+    Compressor::BlockResult result;
+    const int total = track.getNumSamples();
+    auto settings = getCurrentSettings();
+    const bool bypassed = settings.bypassed;
+    settings.bypassed = false;   // (BYPASS is done here instead, on left and right: exactly your track when it's on)
+    compressor.setSettings (settings);
+    sideCompressor.setSettings (settings);
+    midSideBypass.setTargetValue (bypassed ? 1.0f : 0.0f);
+
+    float* left = track.getWritePointer (0);
+    float* right = track.getWritePointer (1);
+
+    for (int start = 0; start < total; start += middle.getNumSamples())
+    {
+        const int n = juce::jmin (middle.getNumSamples(), total - start);
+        float* m = middle.getWritePointer (0);
+        float* s = sides.getWritePointer (0);
+        for (int i = 0; i < n; ++i)
+        {
+            m[i] = 0.5f * (left[start + i] + right[start + i]);
+            s[i] = 0.5f * (left[start + i] - right[start + i]);
+        }
+
+        juce::AudioBuffer<float> mid (middle.getArrayOfWritePointers(), 1, 0, n);
+        juce::AudioBuffer<float> side (sides.getArrayOfWritePointers(), 1, 0, n);
+        std::optional<juce::AudioBuffer<float>> keyPart;   // (no allocation: it points into the sidechain)
+        if (key != nullptr && key->getNumChannels() > 0)
+            keyPart.emplace (const_cast<float* const*> (key->getArrayOfReadPointers()), key->getNumChannels(), start, n);
+
+        const auto merge = [&result] (const Compressor::BlockResult& r)
+        {
+            result.maxReductionDb = juce::jmax (result.maxReductionDb, r.maxReductionDb);
+            result.maxLevelDb = juce::jmax (result.maxLevelDb, r.maxLevelDb);
+            result.autoGainDb = r.autoGainDb;
+        };
+        if (mode == worksOnMid || mode == worksOnMidSide)   merge (compressor.process (mid, keyPart ? &*keyPart : nullptr));
+        if (mode == worksOnSide || mode == worksOnMidSide)  merge ((mode == worksOnSide ? compressor : sideCompressor).process (side, keyPart ? &*keyPart : nullptr));
+
+        for (int i = 0; i < n; ++i)
+        {
+            const float b = midSideBypass.getNextValue();
+            const float l = m[i] + s[i], r = m[i] - s[i];
+            left[start + i]  = b >= 1.0f ? left[start + i]  : l * (1.0f - b) + left[start + i] * b;
+            right[start + i] = b >= 1.0f ? right[start + i] : r * (1.0f - b) + right[start + i] * b;
+        }
+    }
+    return result;
 }
 
 Compressor::Settings EasyCompAudioProcessor::getCurrentSettings() const noexcept
