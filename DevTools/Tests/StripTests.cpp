@@ -429,15 +429,17 @@ namespace
         check (presets.size() >= 60, "a comprehensive set of strip presets (" + juce::String ((int) presets.size()) + ")");
         {
             juce::StringArray categories;
-            bool masterOnlyInMastering = true;
+            bool fullMixTogether = true;
             for (auto& preset : presets)
             {
                 if (preset.category.isNotEmpty()) categories.addIfNotAlreadyThere (preset.category);
-                if (preset.name.startsWith ("Master - ") != (preset.category == "Mastering")) masterOnlyInMastering = false;
+                const bool fullMix = preset.name.startsWith ("Master - ") || preset.name.startsWith ("Mix Bus - ") || preset.name.startsWith ("Lo-Fi Bus - ");
+                if (fullMix && preset.category != "Mixing & Mastering") fullMixTogether = false;
+                if (preset.name.startsWith ("Drum Bus - ") && preset.category != "Drums") fullMixTogether = false;
             }
-            bool tidy = masterOnlyInMastering && categories.contains ("Mix Bus") && categories.contains ("Mastering");
-            for (auto& c : categories) if (c.startsWith ("Mix Bus") && c != "Mix Bus") tidy = false;
-            check (tidy, "full-mix presets in two lists - Mix Bus (genres and lo-fi included) and Mastering: " + categories.joinIntoString (", "));
+            bool tidy = fullMixTogether && categories.contains ("Mixing & Mastering") && ! categories.contains ("Mix Bus")
+                        && ! categories.contains ("Mastering") && ! categories.contains ("Drum Bus");
+check (tidy, "full-mix presets in one list, Mixing & Mastering; drum bus presets with the drums: " + categories.joinIntoString (", "));
         }
 
         // Every recipe found all its module presets, and loads exactly what it says

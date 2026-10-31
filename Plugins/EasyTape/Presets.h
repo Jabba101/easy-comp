@@ -65,9 +65,9 @@ inline const TapePreset tapePresets[] =
       "Room mics pushed well into the tape: thick, compressed and dense." },
 
     // ---- Drum Bus --------------------------------------------------------------
-    { "Drum Bus", "Drum Bus - On Tape",                    ips15,     3.0f,  0.0f,  0.0f,
+    { "Drums", "Drum Bus - On Tape",                    ips15,     3.0f,  0.0f,  0.0f,
       "The whole kit printed to tape at a healthy level: weight in the lows, the edges slightly rounded." },
-    { "Drum Bus", "Drum Bus - Hit the Tape Hard",          ips15,     9.0f,  0.0f,  0.0f,
+    { "Drums", "Drum Bus - Hit the Tape Hard",          ips15,     9.0f,  0.0f,  0.0f,
       "The 70s rock trick: the kit recorded hot, so the tape squashes the peaks and everything sounds bigger and thicker." },
 
     // ---- Bass ------------------------------------------------------------------
@@ -97,23 +97,23 @@ inline const TapePreset tapePresets[] =
       "Piano or keys on a well-used cassette: the pitch drifts gently, hiss underneath. Lo-fi hip-hop and chillwave." },
 
     // ---- Mix Bus ---------------------------------------------------------------
-    { "Mix Bus", "Mix Bus - 15 ips Glue",                  ips15,     0.0f,  0.0f,  0.0f,
+    { "Mixing & Mastering", "Mix Bus - 15 ips Glue",                  ips15,     0.0f,  0.0f,  0.0f,
       "The whole mix through a 15 ips machine at the normal level: a deeper, rounder low end and gently held-in peaks." },
-    { "Mix Bus", "Mix Bus - 15 ips Pushed",                ips15,     5.0f,  0.0f,  0.0f,
+    { "Mixing & Mastering", "Mix Bus - 15 ips Pushed",                ips15,     5.0f,  0.0f,  0.0f,
       "Hit a bit harder: denser and thicker, the loudest peaks and cymbals rounded off. Rock and punk." },
-    { "Mix Bus", "Mix Bus - 30 ips Clean Warmth",          ips30,     2.0f,  0.0f,  0.0f,
+    { "Mixing & Mastering", "Mix Bus - 30 ips Clean Warmth",          ips30,     2.0f,  0.0f,  0.0f,
       "30 ips on the mix: barely there - a little extra weight around 100 Hz and slightly softer peaks." },
-    { "Mix Bus", "Lo-Fi Bus - Cassette Demo",              cassette,  4.0f, 35.0f, 25.0f,
+    { "Mixing & Mastering", "Lo-Fi Bus - Cassette Demo",              cassette,  4.0f, 35.0f, 25.0f,
       "The whole mix bounced to a decent cassette: softer top, a little wobble, a little hiss." },
-    { "Mix Bus", "Lo-Fi Bus - Worn-Out Walkman",           cassette,  8.0f, 85.0f, 55.0f,
+    { "Mixing & Mastering", "Lo-Fi Bus - Worn-Out Walkman",           cassette,  8.0f, 85.0f, 55.0f,
       "A tape that's been played a hundred times: obvious wobble, hiss, squashed highs." },
 
     // ---- Mastering -------------------------------------------------------------
-    { "Mastering", "Master - 30 ips Touch",                ips30,     0.0f,  0.0f,  0.0f,
+    { "Mixing & Mastering", "Master - 30 ips Touch",                ips30,     0.0f,  0.0f,  0.0f,
       "Mixed down to a 30 ips half-inch: the most subtle setting there is. A little weight, nothing you'd point at." },
-    { "Mastering", "Master - 30 ips Warmth",               ips30,     3.0f,  0.0f,  0.0f,
+    { "Mixing & Mastering", "Master - 30 ips Warmth",               ips30,     3.0f,  0.0f,  0.0f,
       "30 ips, a little hotter: the peaks round over slightly and the mix sounds a touch fuller." },
-    { "Mastering", "Master - 15 ips Weight",               ips15,     0.0f,  0.0f,  0.0f,
+    { "Mixing & Mastering", "Master - 15 ips Weight",               ips15,     0.0f,  0.0f,  0.0f,
       "Mixed down at 15 ips: the deeper head bump adds weight under the kick and bass." },
 };
 

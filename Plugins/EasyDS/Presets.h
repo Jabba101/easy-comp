@@ -87,7 +87,7 @@ inline const DSPreset dsPresets[] =
       "Turns down the squeak of fingers sliding along the strings between chords." },
 
     // ---- Mix -------------------------------------------------------------------
-    { "Mix Bus", "Mix Bus - Gentle",                        5000.0f, 20000.0f,  -6.0f,  3.0f, harshBand,
+    { "Mixing & Mastering", "Mix Bus - Gentle",                        5000.0f, 20000.0f,  -6.0f,  3.0f, harshBand,
       "A gentle touch on a whole mix: takes the edge off the harshest S sounds and cymbals only." },
 };
 

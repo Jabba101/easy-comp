@@ -343,7 +343,7 @@ YOUR FIRST FIVE MINUTES WITH EASY VERB
      AUX-Send slider in the mixer to send it to the bus; the bus's fader
      sets how much reverb you hear overall.
 
-   On the mix bus: start from one of the "Mix Bus" presets - "Live in a
+   On the mix bus: start from one of the "Mix Bus -" presets (in Mixing & Mastering) - "Live in a
    Room", "Live at the Club" and "Live in Concert" put the whole band in
    one space. On a whole mix everything feeds the reverb at once, so it
    comes out far louder than on a single drum - MIX around 10-20% is

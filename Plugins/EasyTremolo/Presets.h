@@ -111,7 +111,7 @@ inline const TremoloPreset tremoloPresets[] =
       "A loop or percussion pumping on the beat, the way a compressor pumps from the kick." },
 
     // ---- Mix Bus ---------------------------------------------------------------
-    { "Mix Bus", "Mix Bus - Gentle Pump",                    1,  2.0f, TremoloNotes::n4,    20.0f, 3, 0,
+    { "Mixing & Mastering", "Mix Bus - Gentle Pump",                    1,  2.0f, TremoloNotes::n4,    20.0f, 3, 0,
       "A gentle pump on the whole mix in time with the beat: synthwave, EDM and French house." },
 };
 

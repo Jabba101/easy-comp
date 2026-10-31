@@ -93,7 +93,7 @@ inline const AmpPreset ampPresets[] =
       "Gritty, distorted shouts and backing chants, blended with the clean vocal. Punk and rock." },
 
     // ---- The whole mix ---------------------------------------------------------
-    { "Mix Bus", "Mix Bus - Gentle Valve Glue",            12.0f,   0.0f, 20.0f, 100.0f,
+    { "Mixing & Mastering", "Mix Bus - Gentle Valve Glue",            12.0f,   0.0f, 20.0f, 100.0f,
       "On the whole mix: a little valve warmth that ties everything together. Keep DRIVE low - a little goes a long way here." },
 };
 

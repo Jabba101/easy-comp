@@ -397,6 +397,11 @@ LATER
      the full +18 dB, ceiling -0.1, release SET 30 ms: perfectly clean.
      It replaces Stealth Limiter.
    - DISPLAY FOCUS buttons: lit amber with black lettering (31 October 2026).
+   - Preset menus tidied (31 October 2026), in every plugin and the
+     strip: one DRUMS sub-menu for all drum presets (the Drum Bus,
+     Snare, Toms & Kick, Whole Kit and Live Spaces - Drums sub-menus
+     folded in - the names keep them together), and one MIXING &
+     MASTERING sub-menu for every Mix Bus, Lo-Fi Bus and Master preset.
    - Once the essentials are perfected: EASY FX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the

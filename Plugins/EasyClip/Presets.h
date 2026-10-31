@@ -73,11 +73,11 @@ inline const ClipPreset clipPresets[] =
       "Smashes the room mics into a dirty, exciting roar. Blend it in under the close mics. BIAS makes it warmer and nastier." },
 
     // ---- The whole kit ---------------------------------------------------------
-    { "Drum Bus", "Drum Bus - Glue the Peaks",          3.0f, -1.0f,  10.0f, 90.0f, 0.0f, 0.0f,  0.0f, 100.0f,
+    { "Drums", "Drum Bus - Glue the Peaks",          3.0f, -1.0f,  10.0f, 90.0f, 0.0f, 0.0f,  0.0f, 100.0f,
       "On the drum bus: catches the loudest hits so the kit holds together and sits louder, while the kick's low end stays clean." },
-    { "Drum Bus", "Drum Bus - Smashed (Punk)",          9.0f, -1.0f,   0.0f, 20.0f, 0.0f, 0.0f,  0.0f, 100.0f,
+    { "Drums", "Drum Bus - Smashed (Punk)",          9.0f, -1.0f,   0.0f, 20.0f, 0.0f, 0.0f,  0.0f, 100.0f,
       "Hard clipping on the whole kit: loud, raw and in your face, for punk and garage rock." },
-    { "Drum Bus", "Drum Bus - Parallel Crush",         12.0f, -1.0f,   0.0f, 20.0f, 0.0f, 0.0f,  0.0f,  50.0f,
+    { "Drums", "Drum Bus - Parallel Crush",         12.0f, -1.0f,   0.0f, 20.0f, 0.0f, 0.0f,  0.0f,  50.0f,
       "Crushes the kit and blends the original back in (BLEND 50%): the punch of the hits stays, the crushed copy adds size and energy." },
 
     // ---- Bass ------------------------------------------------------------------
@@ -97,13 +97,13 @@ inline const ClipPreset clipPresets[] =
       "Gently rounds off the odd loud word or shout. Keep PUSH low on vocals: clipping a voice hard is very easy to hear." },
 
     // ---- The whole mix ---------------------------------------------------------
-    { "Mastering", "Master - Gentle Safety Net", 0.0f, -1.0f,  20.0f, 20.0f, 0.0f, 0.0f,  0.0f, 100.0f,
+    { "Mixing & Mastering", "Master - Gentle Safety Net", 0.0f, -1.0f,  20.0f, 20.0f, 0.0f, 0.0f,  0.0f, 100.0f,
       "On the finished mix: catches the odd stray peak before it goes over -1 dB. You shouldn't hear it working." },
-    { "Mastering", "Master - Clean Loudness",    3.0f, -1.0f,  10.0f, 20.0f, 0.0f, 0.0f,  0.0f, 100.0f,
+    { "Mixing & Mastering", "Master - Clean Loudness",    3.0f, -1.0f,  10.0f, 20.0f, 0.0f, 0.0f,  0.0f, 100.0f,
       "On the finished mix: a few dB louder with the peaks shaved cleanly. If you can hear it working, lower PUSH." },
-    { "Mastering", "Master - Loud Rock & Punk",  5.0f, -1.0f,   0.0f, 20.0f, 0.0f, 0.0f,  0.0f, 100.0f,
+    { "Mixing & Mastering", "Master - Loud Rock & Punk",  5.0f, -1.0f,   0.0f, 20.0f, 0.0f, 0.0f,  0.0f, 100.0f,
       "On the finished mix: loud and aggressive, the drums' peaks shaved hard. Compare with BYPASS at the same loudness." },
-    { "Mastering", "Master - Synthwave Shine",   4.0f, -1.0f,  30.0f, 90.0f, 0.0f, 0.0f,  0.0f, 100.0f,
+    { "Mixing & Mastering", "Master - Synthwave Shine",   4.0f, -1.0f,  30.0f, 90.0f, 0.0f, 0.0f,  0.0f, 100.0f,
       "On the finished mix: louder and brighter, with the bass and kick protected so the low end stays smooth and big." },
 };
 

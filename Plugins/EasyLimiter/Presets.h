@@ -41,23 +41,23 @@ inline const LimiterPreset limiterPresets[] =
       "Overs protection only: nothing changes until a peak would go past -0.3 dB true peak. Turn up GAIN to push into it." },
 
     // ---- Mastering ---------------------------------------------------------------
-    { "Mastering", "Master - Safety Ceiling",             0.0f, -0.3f,   0, 100.0f,
+    { "Mixing & Mastering", "Master - Safety Ceiling",             0.0f, -0.3f,   0, 100.0f,
       "The last thing on the master: catches the odd over, true peak included, and leaves everything else alone." },
-    { "Mastering", "Master - Gentle Push (+2 dB)",        2.0f, -0.3f,   0, 100.0f,
+    { "Mixing & Mastering", "Master - Gentle Push (+2 dB)",        2.0f, -0.3f,   0, 100.0f,
       "Just the tallest peaks shaved: a little louder with no audible change. Check with MATCH." },
-    { "Mastering", "Master - Firm Push (+4 dB)",          4.0f, -0.3f,   0, 100.0f,
+    { "Mixing & Mastering", "Master - Firm Push (+4 dB)",          4.0f, -0.3f,   0, 100.0f,
       "Louder, still clean on most mixes. Listen to the kick and snare: if they soften, back GAIN off." },
-    { "Mastering", "Master - Loud (+6 dB)",               6.0f, -0.3f,   0, 100.0f,
+    { "Mixing & Mastering", "Master - Loud (+6 dB)",               6.0f, -0.3f,   0, 100.0f,
       "Loud rock, punk and electronic masters. Compare with MATCH on: you should hear more density, not damage." },
-    { "Mastering", "Master - Dense & Steady (slow release)", 4.0f, -0.3f, 1, 400.0f,
+    { "Mixing & Mastering", "Master - Dense & Steady (slow release)", 4.0f, -0.3f, 1, 400.0f,
       "A slow, steady release: smooth and glued for synthwave, pads and ballads - no pumping, a little less punch." },
 
     // ---- Buses and stems -----------------------------------------------------------
-    { "Buses & Stems", "Mix Bus - Overs Only",             0.0f, -1.0f,   0, 100.0f,
+    { "Mixing & Mastering", "Mix Bus - Overs Only",             0.0f, -1.0f,   0, 100.0f,
       "On the mix bus while you work: nothing ever clips, with room left for the master." },
-    { "Buses & Stems", "Drum Bus - Catch the Peaks",       3.0f, -1.0f,   1,  30.0f,
+    { "Drums", "Drum Bus - Catch the Peaks",       3.0f, -1.0f,   1,  30.0f,
       "A fast release that grabs the hits and lets straight go: more level from a drum bus without dulling it." },
-    { "Buses & Stems", "Stems & Exports - -1 dB Ceiling",  0.0f, -1.0f,   0, 100.0f,
+    { "Mixing & Mastering", "Stems & Exports - -1 dB Ceiling",  0.0f, -1.0f,   0, 100.0f,
       "A little more room under the ceiling for files that will be converted, mixed or mastered elsewhere." },
 };
 

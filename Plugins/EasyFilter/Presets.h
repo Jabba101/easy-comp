@@ -133,9 +133,9 @@ inline const FilterPreset filterPresets[] =
       "A narrow, slowly drifting radio sound." },
 
     // ---- The whole mix ------------------------------------------------------------
-    { "Mix Bus", "Mix Bus - Through the Wall",            FP::lowPass,   350.0f, 10.0f,  0.0f, FP::sine,      0, 0.5f, FP::bar1,    0.0f, 100.0f,
+    { "Mixing & Mastering", "Mix Bus - Through the Wall",            FP::lowPass,   350.0f, 10.0f,  0.0f, FP::sine,      0, 0.5f, FP::bar1,    0.0f, 100.0f,
       "No movement: the band playing in the next room. Automate MIX or CUTOFF to bring it back." },
-    { "Mix Bus", "Mix Bus - Breakdown Sweep (8 bars)",    FP::lowPass,  1200.0f, 30.0f, 80.0f, FP::rampUp,    1, 0.5f, FP::bar8,    0.0f, 100.0f,
+    { "Mixing & Mastering", "Mix Bus - Breakdown Sweep (8 bars)",    FP::lowPass,  1200.0f, 30.0f, 80.0f, FP::rampUp,    1, 0.5f, FP::bar8,    0.0f, 100.0f,
       "The whole mix opening up from muffled to full over eight bars." },
 };
 

@@ -129,9 +129,9 @@ inline const TransientPreset transientPresets[] =
       "Smooths scratchy bow attacks for a softer string sound." },
 
     // ---- Mix Bus ---------------------------------------------------------------
-    { "Mix Bus", "Mix Bus - A Little More Punch",              15.0f,   0.0f,  0.0f, 100.0f,
+    { "Mixing & Mastering", "Mix Bus - A Little More Punch",              15.0f,   0.0f,  0.0f, 100.0f,
       "A subtle lift to the hits across the whole mix. Keep it small - a little goes a long way here." },
-    { "Mix Bus", "Mix Bus - A Little Tighter",                  5.0f, -15.0f,  0.0f, 100.0f,
+    { "Mixing & Mastering", "Mix Bus - A Little Tighter",                  5.0f, -15.0f,  0.0f, 100.0f,
       "Slightly shorter tails across the whole mix, for a tighter, more modern sound." },
 };
 

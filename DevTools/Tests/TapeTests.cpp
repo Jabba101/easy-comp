@@ -267,8 +267,8 @@ namespace
 
         juce::StringArray categories;
         for (auto& preset : q.getBuiltInPresets()) if (preset.category.isNotEmpty()) categories.addIfNotAlreadyThere (preset.category);
-        check (categories.contains ("Mix Bus") && categories.contains ("Mastering") && ! categories.contains ("Lo-Fi"),
-               "full-mix presets in two lists, Mix Bus and Mastering (lo-fi ones inside Mix Bus): " + categories.joinIntoString (", "));
+        check (categories.contains ("Mixing & Mastering") && ! categories.contains ("Mix Bus") && ! categories.contains ("Lo-Fi") && ! categories.contains ("Drum Bus"),
+               "full-mix presets in one list, Mixing & Mastering (lo-fi ones too); drum bus ones with the drums: " + categories.joinIntoString (", "));
     }
 
     //==========================================================================

@@ -120,13 +120,13 @@ inline const EQPreset eqPresets[] =
       "A little less mud and a little more clarity and air for piano and keys." },
 
     // ---- The whole mix ---------------------------------------------------------
-    { "Mix Bus", "Mix Bus - Gentle Polish", { 50, 1, 0 },     true,  { 300, -1, 0 },    { 3000, 0, 0 },     { 12000, 1.5f, 0 },    true,  20, false, 20000, false, 20,
+    { "Mixing & Mastering", "Mix Bus - Gentle Polish", { 50, 1, 0 },     true,  { 300, -1, 0 },    { 3000, 0, 0 },     { 12000, 1.5f, 0 },    true,  20, false, 20000, false, 20,
       "On the whole mix: a touch more weight and air, a touch less mud." },
-    { "Mastering", "Master - Mono Bass & Air", { 100, 0, 0 },   true,  { 300, 0, 0 },     { 3000, 0, 0 },     { 12000, 1.5f, 0 },    true,  25, false, 20000, false, 120,
+    { "Mixing & Mastering", "Master - Mono Bass & Air", { 100, 0, 0 },   true,  { 300, 0, 0 },     { 3000, 0, 0 },     { 12000, 1.5f, 0 },    true,  25, false, 20000, false, 120,
       "Keeps everything below 120 Hz in the middle (tighter bass, safer for vinyl and clubs) and adds a little air." },
-    { "Mix Bus", "Mix Bus - Wider (Side Air)", { 100, 0, 0 }, true,  { 300, 0, 0 },     { 3000, 0, 0 },     { 8000, 3, 2 },        true,  20, false, 20000, false, 100,
+    { "Mixing & Mastering", "Mix Bus - Wider (Side Air)", { 100, 0, 0 }, true,  { 300, 0, 0 },     { 3000, 0, 0 },     { 8000, 3, 2 },        true,  20, false, 20000, false, 100,
       "Brightens only the sides: the mix sounds wider while the vocal, kick and bass in the middle stay as they are." },
-    { "Mix Bus", "Mix Bus - Clear the Middle", { 100, 0, 0 }, true,  { 300, -2, 1 },    { 3000, 0, 0 },     { 10000, 0, 0 },       true,  20, false, 20000, false, 20,
+    { "Mixing & Mastering", "Mix Bus - Clear the Middle", { 100, 0, 0 }, true,  { 300, -2, 1 },    { 3000, 0, 0 },     { 10000, 0, 0 },       true,  20, false, 20000, false, 20,
       "Takes a little mud out of the middle only (vocal, bass, kick, snare), leaving the wide parts untouched." },
 };
 

@@ -219,17 +219,17 @@ inline const CompPreset compressorPresets[] =
       "Light control for flute, clarinet and other woodwind. Aim for 1-3 dB." },
 
     // ---- Mix Bus ---- Mix Bus & Master --------- Mastering --------------------------------------------------
-    { "Mix Bus", "Mix Bus - Glue (Pop & Rock)", -20.5f,  2.0f, 30.0f,  200.0f,   1.5f, 100.0f, 100.0f, average, modern,  normal,
+    { "Mixing & Mastering", "Mix Bus - Glue (Pop & Rock)", -20.5f,  2.0f, 30.0f,  200.0f,   1.5f, 100.0f, 100.0f, average, modern,  normal,
       "Ties the whole mix together. Aim for 1-3 dB - if you can clearly hear it working, back off." },
-    { "Mix Bus", "Mix Bus - Hip-Hop & EDM", -28.0f,  4.0f, 30.0f,  100.0f,   2.5f, 100.0f, 120.0f, peaks,   modern,  normal,
+    { "Mixing & Mastering", "Mix Bus - Hip-Hop & EDM", -28.0f,  4.0f, 30.0f,  100.0f,   2.5f, 100.0f, 120.0f, peaks,   modern,  normal,
       "Firmer glue with punch. IGNORE BELOW stops the kick and bass making the whole mix pump. Aim for 2-4 dB." },
-    { "Mix Bus", "Mix Bus - Jazz, Folk & Classical", -21.0f,  1.5f, 30.0f,  400.0f,   1.0f, 100.0f, 100.0f, average, modern,  normal,
+    { "Mixing & Mastering", "Mix Bus - Jazz, Folk & Classical", -21.0f,  1.5f, 30.0f,  400.0f,   1.0f, 100.0f, 100.0f, average, modern,  normal,
       "Barely-there control that keeps all the natural dynamics. Aim for about 1 dB - you should hardly hear it." },
-    { "Mix Bus", "Mix Bus - Vintage Glue", -24.5f,  2.0f, 30.0f,  200.0f,   1.5f, 100.0f,  20.0f, peaks,   vintage, thrust,
+    { "Mixing & Mastering", "Mix Bus - Vintage Glue", -24.5f,  2.0f, 30.0f,  200.0f,   1.5f, 100.0f,  20.0f, peaks,   vintage, thrust,
       "Classic bus glue: VINTAGE ties the mix together and THRUST stops the kick and bass making it pump. Aim for 1-3 dB." },
-    { "Mix Bus", "Group Bus - Glue",       -21.5f,  2.0f, 20.0f,  200.0f,   2.0f, 100.0f,  80.0f, average, modern,  normal,
+    { "Mixing & Mastering", "Group Bus - Glue",       -21.5f,  2.0f, 20.0f,  200.0f,   2.0f, 100.0f,  80.0f, average, modern,  normal,
       "Ties a group of tracks together - guitars, keys or backing vocals sent to one bus. Aim for 1-3 dB." },
-    { "Mastering", "Master - Light Touch",   -16.5f,  1.5f, 30.0f,  300.0f,   1.0f, 100.0f, 100.0f, average, modern,  normal,
+    { "Mixing & Mastering", "Master - Light Touch",   -16.5f,  1.5f, 30.0f,  300.0f,   1.0f, 100.0f, 100.0f, average, modern,  normal,
       "A gentle 1-2 dB of control for a finished mix, at the very end of the chain. (For real loudness, a limiter comes "
       "after it.)" },
 
@@ -261,13 +261,13 @@ inline const MidSidePreset midSidePresets[] =
     //  category, name                                       thresh  ratio  attack  release  make-up    mix  ignore  reacts   style    low end      works on
     { { "Drums", "Drum Bus - Squash the Middle",             -24.0f,  6.0f, 10.0f,  120.0f,   0.0f, 100.0f,  20.0f, peaks,   modern,  normal,
         "Only the middle - kick, snare, bass - squashed hard; the cymbals and the room at the sides keep breathing. Aim for 4-8 dB." }, worksOnMid },
-    { { "Mix Bus", "Mix Bus - Mid & Side Glue",              -18.0f,  2.0f, 30.0f,  200.0f,   0.0f, 100.0f,  60.0f, average, vintage, normal,
+    { { "Mixing & Mastering", "Mix Bus - Mid & Side Glue",              -18.0f,  2.0f, 30.0f,  200.0f,   0.0f, 100.0f,  60.0f, average, vintage, normal,
         "Glue on the middle and the sides, each on its own: a loud vocal no longer pulls the width down with it. Aim for 1-3 dB." }, worksOnMidSide },
-    { { "Mix Bus", "Mix Bus - Tame Wide Cymbals & Reverb",   -26.0f,  3.0f,  5.0f,  150.0f,   0.0f, 100.0f, 150.0f, peaks,   modern,  normal,
+    { { "Mixing & Mastering", "Mix Bus - Tame Wide Cymbals & Reverb",   -26.0f,  3.0f,  5.0f,  150.0f,   0.0f, 100.0f, 150.0f, peaks,   modern,  normal,
         "Only the sides: harsh wide cymbals and big reverb tails held in check, the middle untouched. Aim for 2-4 dB." }, worksOnSide },
-    { { "Mastering", "Master - Mid & Side (Gentle)",         -14.0f,  1.5f, 30.0f,  250.0f,   0.0f, 100.0f,  40.0f, average, vintage, normal,
+    { { "Mixing & Mastering", "Master - Mid & Side (Gentle)",         -14.0f,  1.5f, 30.0f,  250.0f,   0.0f, 100.0f,  40.0f, average, vintage, normal,
         "1-2 dB on the middle and the sides, each on its own: a cohesive master that keeps its width. Put Easy Limiter after it." }, worksOnMidSide },
-    { { "Mastering", "Master - Steady Middle",               -16.0f,  2.0f, 20.0f,  200.0f,   0.0f, 100.0f,  40.0f, average, modern,  normal,
+    { { "Mixing & Mastering", "Master - Steady Middle",               -16.0f,  2.0f, 20.0f,  200.0f,   0.0f, 100.0f,  40.0f, average, modern,  normal,
         "Holds the vocal, bass and kick steady in the middle without squeezing the stereo spread. Aim for 1-2 dB." }, worksOnMid },
 };
 

@@ -97,33 +97,33 @@ inline const SlapPreset slapPresets[] =
       "Play your drums and turn up MIX until the burst sits where you like it. LENGTH sets how long each burst lasts before it slams shut." },
 
     // ---- Snare -------------------------------------------------------------------
-    { "Snare", "Snare - 80s Power",                        45.0f, 350.0f, 0, n8,
+    { "Drums", "Snare - 80s Power",                        45.0f, 350.0f, 0, n8,
       "The classic big 80s snare: a wide burst that stops dead. Rock ballads, arena rock, synthwave." },
-    { "Snare", "Snare - Rock Smack",                       38.0f, 220.0f, 0, n8,
+    { "Drums", "Snare - Rock Smack",                       38.0f, 220.0f, 0, n8,
       "A short, aggressive burst that makes the snare leap out of a heavy rock mix without washing it out." },
-    { "Snare", "Snare - Punk Slap",                        32.0f, 140.0f, 0, n8,
+    { "Drums", "Snare - Punk Slap",                        32.0f, 140.0f, 0, n8,
       "Very short and tight for fast punk beats: each burst is gone before the next hit, so nothing blurs." },
-    { "Snare", "Snare - Synthwave Wall",                   50.0f, 550.0f, 0, n8,
+    { "Drums", "Snare - Synthwave Wall",                   50.0f, 550.0f, 0, n8,
       "A long, wide burst for slower synthwave and retro pop: the snare fills the space between the beats." },
-    { "Snare", "Snare - Darksynth Slam",                   58.0f, 300.0f, 0, n8,
+    { "Drums", "Snare - Darksynth Slam",                   58.0f, 300.0f, 0, n8,
       "Loud and nasty: the burst is louder than the snare itself. For darksynth and cyberpunk, next to distorted synths." },
-    { "Snare", "Snare - Subtle Size",                      18.0f, 120.0f, 0, n8,
+    { "Drums", "Snare - Subtle Size",                      18.0f, 120.0f, 0, n8,
       "Adds size and excitement without sounding like an effect. Works on indie, funk and jazz snares too." },
 
     // ---- Toms and kick -----------------------------------------------------------
-    { "Toms & Kick", "Toms - Big 80s Fills",               42.0f, 400.0f, 0, n8,
+    { "Drums", "Toms - Big 80s Fills",               42.0f, 400.0f, 0, n8,
       "Huge tom fills. Every hit gets its own burst, so even fast fills stay clear instead of turning to mush." },
-    { "Toms & Kick", "Toms - Tight Rock",                  30.0f, 250.0f, 0, n8,
+    { "Drums", "Toms - Tight Rock",                  30.0f, 250.0f, 0, n8,
       "Bigger toms that still sit tight in a busy rock or metal mix." },
-    { "Toms & Kick", "Kick - Gated Thump",                 15.0f, 120.0f, 0, n8,
+    { "Drums", "Kick - Gated Thump",                 15.0f, 120.0f, 0, n8,
       "A short burst behind the kick for a bigger, rounder thump. Keep MIX low: reverb on a kick builds up fast." },
 
     // ---- The whole kit -----------------------------------------------------------
-    { "Whole Kit", "Drum Bus - 80s Kit",                   25.0f, 250.0f, 0, n8,
+    { "Drums", "Drum Bus - 80s Kit",                   25.0f, 250.0f, 0, n8,
       "On the whole kit (or the drum bus): everything gets a short burst. Lower MIX if the cymbals get too washy." },
-    { "Whole Kit", "Drum Bus - Punk Room",                 20.0f, 160.0f, 0, n8,
+    { "Drums", "Drum Bus - Punk Room",                 20.0f, 160.0f, 0, n8,
       "A short, trashy room around the whole kit, for raw punk and garage recordings." },
-    { "Whole Kit", "Jazz Kit - Just a Touch",              10.0f,  90.0f, 0, n8,
+    { "Drums", "Jazz Kit - Just a Touch",              10.0f,  90.0f, 0, n8,
       "A whisper of space around a dry jazz kit. You should miss it when you switch BYPASS on, not hear it as reverb." },
 
     // ---- Electronic --------------------------------------------------------------
@@ -141,13 +141,13 @@ inline const SlapPreset slapPresets[] =
     // ---- The whole mix ---------------------------------------------------------------
     // (Everything in a mix feeds the reverb at once, so it comes out far louder
     // than on one drum: these MIX settings were measured on real mixes.)
-    { "Mix Bus", "Mix Bus - Subtle Size",                  11.0f, 120.0f, 0, n8,
+    { "Mixing & Mastering", "Mix Bus - Subtle Size",                  11.0f, 120.0f, 0, n8,
       "On the whole mix: a touch of room that makes it sound bigger and more glued, without sounding like reverb. Jazz too." },
-    { "Mix Bus", "Mix Bus - Rock & Punk Punch",            16.0f, 150.0f, 0, n8,
+    { "Mixing & Mastering", "Mix Bus - Rock & Punk Punch",            16.0f, 150.0f, 0, n8,
       "On the whole mix: a short, tight burst behind everything - more size and excitement, still tight. A little MIX goes a long way." },
-    { "Mix Bus", "Mix Bus - 80s Space",                    17.0f, 250.0f, 0, n8,
+    { "Mixing & Mastering", "Mix Bus - 80s Space",                    17.0f, 250.0f, 0, n8,
       "On the whole mix: the glossy 80s ambience, for synthwave and retro rock. It sits behind the mix - push MIX up for more." },
-    { "Mix Bus", "Mix Bus - Synced 1/16 (Darksynth)",      19.0f, 300.0f, 1, n16,
+    { "Mixing & Mastering", "Mix Bus - Synced 1/16 (Darksynth)",      19.0f, 300.0f, 1, n16,
       "On the whole mix: every burst lasts exactly a 16th note at your song's tempo, so the space pulses in time with the beat." },
 
     // ---- FX send: reverb only ----------------------------------------------------
@@ -191,17 +191,17 @@ inline const SpacePreset spacePresets[] =
 {
     //  category, name                                    type   mix   decay  pre   tone
     // ---- Drums ------------------------------------------------------------------
-    { "Live Spaces - Drums", "Drums - Live Room",            room, 22.0f, 0.8f,  4.0f,   0.0f,
+    { "Drums", "Drums - Live Room",            room, 22.0f, 0.8f,  4.0f,   0.0f,
       "The kit played in a lively room: the walls you hear in every great live drum sound. On the drum bus, or the overheads and room mics." },
-    { "Live Spaces - Drums", "Drums - Punk Rehearsal Room",  room, 26.0f, 0.5f,  0.0f,  20.0f,
+    { "Drums", "Drums - Punk Rehearsal Room",  room, 26.0f, 0.5f,  0.0f,  20.0f,
       "A small, hard-walled rehearsal room: short, bright and trashy, for raw punk and garage." },
-    { "Live Spaces - Drums", "Drum Bus - Rock Club",         club, 18.0f, 1.4f,  8.0f,   0.0f,
+    { "Drums", "Drum Bus - Rock Club",         club, 18.0f, 1.4f,  8.0f,   0.0f,
       "The kit on a club stage: a fuller tail behind the hits, like the gig recording you always loved." },
-    { "Live Spaces - Drums", "Snare - Club Gig",             club, 25.0f, 1.3f, 10.0f,  10.0f,
+    { "Drums", "Snare - Club Gig",             club, 25.0f, 1.3f, 10.0f,  10.0f,
       "The snare cracking round a club. The short pre-delay keeps the hit itself sharp." },
-    { "Live Spaces - Drums", "Jazz Kit - Small Club",        club, 14.0f, 1.1f, 12.0f, -30.0f,
+    { "Drums", "Jazz Kit - Small Club",        club, 14.0f, 1.1f, 12.0f, -30.0f,
       "Brushes and ride in a small, warm club. Dark, so the cymbals never splash." },
-    { "Live Spaces - Drums", "Drums - Arena Rock",           hall, 20.0f, 2.2f, 20.0f,   0.0f,
+    { "Drums", "Drums - Arena Rock",           hall, 20.0f, 2.2f, 20.0f,   0.0f,
       "Big rock drums in a big hall: the live-album sound. Lower MIX on fast songs." },
 
     // ---- Vocals & instruments ----------------------------------------------------
@@ -225,11 +225,11 @@ inline const SpacePreset spacePresets[] =
       "A long, wide wash behind pads and strings, for synthwave and slow songs." },
 
     // ---- The whole mix -----------------------------------------------------------
-    { "Mix Bus", "Mix Bus - Live in a Room",    room, 10.0f, 0.7f,  5.0f,   0.0f,
+    { "Mixing & Mastering", "Mix Bus - Live in a Room",    room, 10.0f, 0.7f,  5.0f,   0.0f,
       "On the whole mix: the band in one room together. Glues a dry, close-miked recording into a performance." },
-    { "Mix Bus", "Mix Bus - Live at the Club",  club, 10.0f, 1.2f, 10.0f, -10.0f,
+    { "Mixing & Mastering", "Mix Bus - Live at the Club",  club, 10.0f, 1.2f, 10.0f, -10.0f,
       "On the whole mix: the gig sound. A little MIX goes a long way." },
-    { "Mix Bus", "Mix Bus - Live in Concert",   hall,  9.0f, 1.8f, 20.0f,   0.0f,
+    { "Mixing & Mastering", "Mix Bus - Live in Concert",   hall,  9.0f, 1.8f, 20.0f,   0.0f,
       "On the whole mix: the live album from a concert hall. Keep MIX low, or the low end will cloud." },
 
     // ---- FX send: reverb only ----------------------------------------------------
