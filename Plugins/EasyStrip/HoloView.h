@@ -20,7 +20,7 @@ namespace Holo
         values) along the bottom.
 
         WEAPON SELECT swaps GATE, AMP, the screen, EQ, DS and COMP for the
-        effects rack (seven bays; BITCH-SLAP's is the first one in use).
+        effects rack (seven bays: DELAY and BITCH-SLAP so far).
         TRANS, TAPE, CLIP, INPUT / OUTPUT and the header stay. Pressing it
         again brings the strip back.
 
@@ -81,7 +81,7 @@ namespace Holo
         bool isRackShown() const noexcept                           { return rackShown; }
         juce::Component* getRack() const noexcept                   { return rack.get(); }
 
-        static constexpr int numBays = 7, slapBay = 5;
+        static constexpr int numBays = 7, delayBay = 4, slapBay = 5;
         static constexpr const char* bayNames[numBays] { "AUTO-WAH", "CHORUS / FLANGER", "MOD FILTER", "TREMOLO", "STEREO DELAY", "BITCH-SLAP", "LIMITER" };
 
         /** A message on the ticker for a while (FIND's progress, WEAPON SELECT...). */

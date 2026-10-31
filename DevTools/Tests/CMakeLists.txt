@@ -58,6 +58,12 @@ target_include_directories(TapeTests PRIVATE ${P}/Plugins/EasyTape ${P}/Shared $
 target_compile_definitions(TapeTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Tape")
 target_link_libraries(TapeTests PRIVATE juce::juce_audio_utils juce::juce_dsp PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 
+juce_add_console_app(DelayTests PRODUCT_NAME "DelayTests")
+target_sources(DelayTests PRIVATE DelayTests.cpp ${P}/Plugins/EasyDelay/PluginProcessor.cpp ${P}/Plugins/EasyDelay/PluginEditor.cpp ${SHARED})
+target_include_directories(DelayTests PRIVATE ${P}/Plugins/EasyDelay ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(DelayTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Delay")
+target_link_libraries(DelayTests PRIVATE juce::juce_audio_utils PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
 juce_add_console_app(EQTests PRODUCT_NAME "EQTests")
 target_sources(EQTests PRIVATE EQTests.cpp ${P}/Plugins/EasyEQ/PluginProcessor.cpp ${P}/Plugins/EasyEQ/PluginEditor.cpp ${SHARED})
 target_include_directories(EQTests PRIVATE ${P}/Plugins/EasyEQ ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
@@ -65,7 +71,7 @@ target_compile_definitions(EQTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 Ju
 target_link_libraries(EQTests PRIVATE juce::juce_audio_utils juce::juce_dsp PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 
 set(STRIP_SOURCES)
-foreach(module EasyGate EasyAmp EasyEQ EasyDS EasyComp EasyTransient BitchSlap EasyClip EasyTape)
+foreach(module EasyGate EasyAmp EasyEQ EasyDS EasyComp EasyTransient BitchSlap EasyClip EasyTape EasyDelay)
     list(APPEND STRIP_SOURCES ${P}/Plugins/${module}/PluginProcessor.cpp ${P}/Plugins/${module}/PluginEditor.cpp)
 endforeach()
 juce_add_console_app(StripTests PRODUCT_NAME "StripTests")

@@ -11,6 +11,7 @@ Beginner-friendly mixing plugins (VST3) for Windows, built with [JUCE](https://j
 - **Easy Amp** – valve amp, from warmth to an overdriven growl
 - **Easy EQ** – four-band EQ with filters, mid-side and linear phase
 - **Easy Tape** – a real tape machine: 15 ips, 30 ips, or cassette for lo-fi
+- **Easy Delay** – a stereo delay, in time with your song
 - **Easy Strip** – all of them in one channel strip
 
 Every knob explains itself in a help bar, and every plugin comes with presets.

@@ -1057,6 +1057,66 @@ namespace Holo
     };
 
     //==========================================================================
+    // DELAY (its panel is in the WEAPON SELECT rack: tall and narrow)
+    //==========================================================================
+    class DelaySlab : public Slab
+    {
+    public:
+        explicit DelaySlab (View& v) : Slab (v, StripModules::delayIndex, Colours::delay, "DELAY")
+        {
+            time = &ring (DelayIDs::time, "TIME", Format::whole, "ms");
+            note = &ring (DelayIDs::note, "TIME", Format::asText, {}, Ring::small, {}, "TIME");
+            sync = &choice (DelayIDs::sync, { "OFF", "TEMPO" }, "SYNC");
+            feedback = &ring (DelayIDs::feedback, "FEEDBACK", Format::percent, "%");
+            mode = &choice (DelayIDs::mode, { "STEREO", "PING-PONG", "WIDE" }, "MODE");
+            lowCut = &ring (DelayIDs::lowCut, "LOW CUT", Format::hertz, "Hz", Ring::tiny, Colours::frequency);
+            highCut = &ring (DelayIDs::highCut, "HIGH CUT", Format::hertz, "Hz", Ring::tiny, Colours::frequency);
+            character = &choice (DelayIDs::character, { "CLEAN", "TAPE" }, "CHARACTER", true);
+            duck = &ring (DelayIDs::duck, "DUCK", Format::percent, "%", Ring::tiny);
+            mix = &ring (DelayIDs::mix, "MIX", Format::percent, "%", Ring::tiny);
+        }
+
+        void resized() override
+        {
+            clearSections();
+            auto body = placeHeader (getLocalBounds().reduced (9, 6), true, 76);
+            constexpr int gap = 8;
+
+            const auto take = [&] (int height) { auto r = body.removeFromTop (height); body.removeFromTop (gap); return r; };
+            auto s1 = section (take (27 + time->getIdealHeight() + 10 + sync->getIdealHeight() + 9), 1, "WHEN");
+            auto s2 = section (take (27 + feedback->getIdealHeight() + 10 + mode->getIdealHeight() + 9), 2, "REPEATS");
+            auto s3 = section (take (27 + lowCut->getIdealHeight() + 10 + character->getIdealHeight() + 9), 3, "TONE");
+            auto s4 = section (take (27 + duck->getIdealHeight() + 9), 4, "OUTPUT");
+
+            centreIn (*time, s1, s1.getY());
+            centreIn (*note, s1, s1.getY());
+            sync->setBounds (s1.withTop (time->getBottom() + 10).withHeight (sync->getIdealHeight()).withSizeKeepingCentre (juce::jmin (120, s1.getWidth()), sync->getIdealHeight()));
+
+            centreIn (*feedback, s2, s2.getY());
+            mode->setBounds (s2.withTop (feedback->getBottom() + 10).withHeight (mode->getIdealHeight()).withSizeKeepingCentre (juce::jmin (130, s2.getWidth()), mode->getIdealHeight()));
+
+            auto row = s3.removeFromTop (lowCut->getIdealHeight());
+            centreIn (*lowCut, row.removeFromLeft (row.getWidth() / 2), row.getY());
+            centreIn (*highCut, row, row.getY());
+            character->setBounds (s3.withTop (row.getBottom() + 10).withHeight (character->getIdealHeight()));
+
+            centreIn (*duck, s4.removeFromLeft (s4.getWidth() / 2), s4.getY());
+            centreIn (*mix, s4, s4.getY());
+        }
+
+        void refresh() override
+        {
+            const bool tempo = sync->getChosen() == 1;
+            time->setVisible (! tempo);
+            note->setVisible (tempo);
+        }
+
+    private:
+        Ring *time = nullptr, *note = nullptr, *feedback = nullptr, *lowCut = nullptr, *highCut = nullptr, *duck = nullptr, *mix = nullptr;
+        Choice *sync = nullptr, *mode = nullptr, *character = nullptr;
+    };
+
+    //==========================================================================
     // CLIP
     //==========================================================================
     class ClipSlab : public Slab
@@ -1198,6 +1258,7 @@ namespace Holo
             case 5:  return std::make_unique<TransSlab> (v);
             case 6:  return std::make_unique<SlapSlab> (v);
             case 8:  return std::make_unique<TapeSlab> (v);
+            case 9:  return std::make_unique<DelaySlab> (v);
             default: return std::make_unique<ClipSlab> (v);
         }
     }

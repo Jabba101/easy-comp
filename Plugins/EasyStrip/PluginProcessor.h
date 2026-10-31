@@ -11,6 +11,7 @@
 #include "../BitchSlap/PluginProcessor.h"
 #include "../EasyClip/PluginProcessor.h"
 #include "../EasyTape/PluginProcessor.h"
+#include "../EasyDelay/PluginProcessor.h"
 
 //==============================================================================
 /**
@@ -19,11 +20,12 @@
     Each module IS its standalone plugin - the very same code, sound,
     presets and window - running inside the strip, in this order:
 
-        INPUT > TAPE > GATE > AMP > EQ > DS > COMP > TRANS > BITCH-SLAP > CLIP > OUTPUT
+        INPUT > TAPE > GATE > AMP > EQ > DS > COMP > TRANS > DELAY > BITCH-SLAP > CLIP > OUTPUT
 
     (TAPE first: as if the track was recorded to tape and you're mixing
     from the machine. ORDER's TAPE AT THE END moves it to just before CLIP.
-    BITCH-SLAP's panel is in the WEAPON SELECT rack; TAPE has its old place.)
+    DELAY and BITCH-SLAP's panels are in the WEAPON SELECT rack - DELAY
+    before BITCH-SLAP, so the gated reverb catches the echoes.)
 
     How it fits together:
       - Settings. The strip shows your DAW one list of settings: every
@@ -67,15 +69,19 @@ struct StripModules
     Module<BitchSlapAudioProcessor>     slap  { "Bitch-Slap" };
     Module<EasyClipAudioProcessor>      clip  { "Easy Clip" };
     Module<EasyTapeAudioProcessor>      tape  { "Easy Tape" };
+    Module<EasyDelayAudioProcessor>     delay { "Easy Delay" };
 
     // (The numbers are what the strip's saved settings use: new modules go on the end.)
-    enum Index { gateIndex, ampIndex, eqIndex, dsIndex, compIndex, transIndex, slapIndex, clipIndex, tapeIndex };
-    static constexpr int numModules = 9;
-    std::array<EasyProcessor*, numModules> all { &gate, &amp, &eq, &ds, &comp, &trans, &slap, &clip, &tape };
+    enum Index { gateIndex, ampIndex, eqIndex, dsIndex, compIndex, transIndex, slapIndex, clipIndex, tapeIndex, delayIndex };
+    static constexpr int numModules = 10;
+    std::array<EasyProcessor*, numModules> all { &gate, &amp, &eq, &ds, &comp, &trans, &slap, &clip, &tape, &delay };
 
-    static constexpr const char* keys[numModules]  { "gate", "amp", "eq", "ds", "comp", "trans", "slap", "clip", "tape" };
-    static constexpr const char* names[numModules] { "Gate", "Amp", "EQ", "DS", "Comp", "Trans", "Bitch-Slap", "Clip", "Tape" };
-    static constexpr const char* tabs[numModules]  { "GATE", "AMP", "EQ", "DS", "COMP", "TRANS", "BITCH-SLAP", "CLIP", "TAPE" };
+    static constexpr const char* keys[numModules]  { "gate", "amp", "eq", "ds", "comp", "trans", "slap", "clip", "tape", "delay" };
+    static constexpr const char* names[numModules] { "Gate", "Amp", "EQ", "DS", "Comp", "Trans", "Bitch-Slap", "Clip", "Tape", "Delay" };
+    static constexpr const char* tabs[numModules]  { "GATE", "AMP", "EQ", "DS", "COMP", "TRANS", "BITCH-SLAP", "CLIP", "TAPE", "DELAY" };
+
+    /** The effects that live in the WEAPON SELECT rack (not on the main page). */
+    static bool isRackEffect (int m) noexcept       { return m == slapIndex || m == delayIndex; }
     static bool hasSidechain (int m) noexcept       { return m == 0 || m == 4; }   // GATE and COMP
 };
 
@@ -112,7 +118,7 @@ public:
     using EasyProcessor::processBlock;
     void reset() override;
     juce::AudioProcessorEditor* createEditor() override;
-    double getTailLengthSeconds() const override   { return 2.0; }   // (Bitch-Slap's tail)
+    double getTailLengthSeconds() const override;   // (Bitch-Slap's and DELAY's tails)
 
     void getStateInformation (juce::MemoryBlock&) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
@@ -129,6 +135,7 @@ public:
     BitchSlapAudioProcessor&     getSlap() noexcept     { return slap; }
     EasyClipAudioProcessor&      getClip() noexcept     { return clip; }
     EasyTapeAudioProcessor&      getTape() noexcept     { return tape; }
+    EasyDelayAudioProcessor&     getDelay() noexcept    { return delay; }
     bool isModuleOn (int m) const noexcept;
 
     /** The loudest the sound was going in / coming out since last asked (gain, not dB). */

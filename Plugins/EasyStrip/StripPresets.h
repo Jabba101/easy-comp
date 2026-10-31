@@ -17,7 +17,7 @@
 */
 namespace StripPresetRecipes
 {
-    enum Module { gate = 0, amp, eq, ds, comp, trans, slap, clip, tape };
+    enum Module { gate = 0, amp, eq, ds, comp, trans, slap, clip, tape, delay };
 
     struct Use { Module module; const char* preset; };
     struct Set { Module module; const char* id; float value; };   // one knob, in its own units

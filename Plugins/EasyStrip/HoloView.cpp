@@ -53,12 +53,12 @@ namespace Holo
             "Copies the strip you're on to the other one (A to B, or B to A) - then change one of them and compare.";
         const juce::String weaponHint =
             "Weapon select: opens the effects rack in place of GATE, AMP, the screen, EQ, DS and COMP (they keep working). "
-            "BITCH-SLAP is in there; delay, chorus, tremolo and more are coming. Press it again to go back.";
+            "DELAY and BITCH-SLAP are in there; chorus, tremolo and more are coming. Press it again to go back.";
         const juce::String rackHint =
-            "The effects rack (Easy SFX). BITCH-SLAP's bay works now; the empty bays are where the delay, chorus, tremolo "
+            "The effects rack (Easy SFX). DELAY and BITCH-SLAP work now; the empty bays are where the chorus, tremolo "
             "and the rest will go. WEAPON SELECT again takes you back to the strip.";
 
-        // The page buttons, left to right (BITCH-SLAP's panel is in the rack now: no page for it)
+        // The page buttons, left to right (DELAY's and BITCH-SLAP's panels are in the rack: no page for them)
         constexpr int pageOrder[] { 0, 1, 2, 3, 4, 5, 8, 7 };
 
         constexpr const char* bayNotes[] {
@@ -66,7 +66,7 @@ namespace Holo
             "Chorus, flanger and vibrato. Tempo-lockable.",
             "Filter pulses locked to the tempo; wide stereo sweeps.",
             "The volume pulsing, locked to the tempo.",
-            "Echoes, left and right, locked to the tempo.",
+            "",
             "",
             "A transparent final ceiling." };
         const juce::String serialHint = "Click for the version.";
@@ -290,8 +290,8 @@ namespace Holo
 
             for (int b = 0; b < View::numBays; ++b)
             {
-                if (b == View::slapBay)
-                    continue;   // (BITCH-SLAP's own panel is there)
+                if (b == View::slapBay || b == View::delayBay)
+                    continue;   // (that effect's own panel is there)
 
                 const auto bay = bays[(size_t) b].toFloat();
                 const auto bayShape = chamfered (bay, 9.0f);
@@ -438,7 +438,7 @@ namespace Holo
             auto& b = *pageButtons[(size_t) m];
             b.fontSize = m == 6 ? 13.0f : 14.5f;
             b.onClick = [this, m] { showPage (m); };
-            if (m != StripModules::slapIndex)
+            if (! StripModules::isRackEffect (m))
                 addAndMakeVisible (b);
             addHint (b, "DISPLAY FOCUS: " + juce::String (m == 6 ? "BITCH-SLAP" : StripModules::tabs[m]), pageHint);
         }
@@ -470,7 +470,8 @@ namespace Holo
             slabs.push_back (makeSlab (*this, m));
             addAndMakeVisible (*slabs.back());
         }
-        slabs[StripModules::slapIndex]->setVisible (false);   // (its panel is in the WEAPON SELECT rack)
+        for (int m : { (int) StripModules::slapIndex, (int) StripModules::delayIndex })
+            slabs[(size_t) m]->setVisible (false);   // (their panels are in the WEAPON SELECT rack)
         clipAdvanced = std::make_unique<ClipAdvanced> (*this);
         addChildComponent (*clipAdvanced);
 
@@ -1078,7 +1079,7 @@ namespace Holo
             pageButtons[(size_t) m]->setToggleState (m == module, juce::dontSendNotification);
 
         static const char* screenHints[] { "WHAT IT'S DOING", "WHAT IT'S DOING", "THE CURVE", "WHAT IT'S DOING",
-                                           "COMPRESSION CURVE", "WHAT IT'S DOING", "WHAT IT'S DOING", "WHAT IT'S DOING", "WHAT IT'S DOING" };
+                                           "COMPRESSION CURVE", "WHAT IT'S DOING", "WHAT IT'S DOING", "WHAT IT'S DOING", "WHAT IT'S DOING", "WHAT IT'S DOING" };
         for (auto& h : hints)
             if (h.component == &screen)
                 h.text = moduleHint (module, screenHints[module]);
@@ -1100,8 +1101,9 @@ namespace Holo
             inside.removeFromLeft (gap);
         }
 
-        // BITCH-SLAP: in its bay while the rack's open (its old place on the main page is TAPE's)
+        // DELAY and BITCH-SLAP: in their bays while the rack's open (BITCH-SLAP's old place on the main page is TAPE's)
         slabs[StripModules::slapIndex]->setBounds (panel->bays[(size_t) slapBay] + rack->getPosition());
+        slabs[StripModules::delayIndex]->setBounds (panel->bays[(size_t) delayBay] + rack->getPosition());
     }
 
     void View::showRack (bool show)
@@ -1110,12 +1112,15 @@ namespace Holo
         rack->setVisible (show);
         for (int m : { 0, 1, 2, 3, 4 })
             slabs[(size_t) m]->setVisible (! show);
-        slabs[StripModules::slapIndex]->setVisible (show);
         screen.setVisible (! show);
         for (int m : pageOrder)
             pageButtons[(size_t) m]->setVisible (! show);
-        if (show)
-            slabs[StripModules::slapIndex]->toFront (false);
+        for (int m : { (int) StripModules::slapIndex, (int) StripModules::delayIndex })
+        {
+            slabs[(size_t) m]->setVisible (show);
+            if (show)
+                slabs[(size_t) m]->toFront (false);
+        }
         weaponSelect.setToggleState (show, juce::dontSendNotification);
     }
 

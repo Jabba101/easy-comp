@@ -31,7 +31,10 @@ Tests/                 -> /home/claude/verify2
     Tape: the head bump and flat top measured at each speed against the
     drawn curve, distortion against level, the highs squashing only when
     pushed, DRIVE keeping the volume, wow & flutter depth, no clicks
-    changing settings, the VU meter, speed), EQTests (Easy
+    changing settings, the VU meter, speed), DelayTests (Easy Delay: echoes
+    to the sample, ping-pong / wide, SYNC, MIX 0 / 100, the filters getting
+    stronger with each repeat, DUCK, 95% feedback never running away, no
+    clicks moving TIME, speed), EQTests (Easy
     EQ: flat = untouched, each band measured against the drawn curve, the
     matched (uncramped) filters, proportional Q, the filters, mid-side and
     MONO BASS, no clicks, LISTEN, AUTO-GAIN, MASTER's linear phase and

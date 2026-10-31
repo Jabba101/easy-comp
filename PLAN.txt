@@ -277,6 +277,20 @@ LATER
      SOON. Bitch-Slap keeps its place in the chain (after TRANS). Its
      big-screen page is gone for now (the screen's hidden while the rack
      is open) - a small display of its own in its bay could come later.
+   - EASY DELAY 1.0.0 (done, 31 October 2026), the rack's first new
+     effect - a standalone plugin AND the strip's tenth module ("delay_";
+     bay 5, after TRANS, before BITCH-SLAP). Effects/StereoDelay.h: TIME
+     (1 ms - 4 s) or a note with SYNC (1/32 to a whole note, dotted and
+     triplets), FEEDBACK (to 95%), MODE STEREO / PING-PONG / WIDE (right =
+     1.5 x TIME), LOW CUT / HIGH CUT inside the loop (each repeat thinner
+     / darker), CHARACTER CLEAN (TIME changes crossfade) / TAPE (gentle
+     saturation in the loop, +-0.35 ms wobble, TIME glides = pitch bend),
+     DUCK (to -24 dB while playing; back ~150 ms after), MIX (0 dry, 50
+     both full, 100 echoes only). No added delay; ~0.5% of one core. 19
+     presets (vocal slapback / throws / dub, dotted-eighth lead, wide
+     doubler, synthwave ping-pong, darksynth tape, sends). Not yet used by
+     any strip preset - candidates: vocal slapback in the rock / punk
+     vocal presets, ping-pong on the synth leads.
    - Once the essentials are perfected: EASY SFX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the

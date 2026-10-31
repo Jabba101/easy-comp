@@ -524,7 +524,7 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 EasyStripAudioProcessor::Order EasyStripAudioProcessor::orderFor (bool eqAfterComp, bool deEssBeforeDrive,
                                                                 bool driveAfterComp, bool shapeBeforeComp, bool tapeAtEnd) noexcept
 {
-    enum { gate, amp, eq, ds, comp, trans, slap, clip, tape };
+    enum { gate, amp, eq, ds, comp, trans, slap, clip, tape, delay };
     Order o {};
     int n = 0;
     if (! tapeAtEnd)       o[(size_t) n++] = tape;   // (recorded to tape: the usual, most natural-sounding place)
@@ -544,6 +544,7 @@ EasyStripAudioProcessor::Order EasyStripAudioProcessor::orderFor (bool eqAfterCo
     if (eqAfterComp)       o[(size_t) n++] = eq;
     if (! shapeBeforeComp) o[(size_t) n++] = trans;
 
+    o[(size_t) n++] = delay;   // (before BITCH-SLAP, so the gated reverb catches the echoes)
     o[(size_t) n++] = slap;
     if (tapeAtEnd)         o[(size_t) n++] = tape;   // (mixed down to the master machine)
     o[(size_t) n++] = clip;
@@ -646,6 +647,14 @@ void EasyStripAudioProcessor::setStateInformation (const void* data, int sizeInB
 }
 
 //==============================================================================
+double EasyStripAudioProcessor::getTailLengthSeconds() const
+{
+    double tail = 2.0;   // (Bitch-Slap)
+    if (isModuleOn (delayIndex))
+        tail = juce::jmax (tail, delay.getTailLengthSeconds() + 2.0);
+    return tail;
+}
+
 juce::AudioProcessorEditor* EasyStripAudioProcessor::createEditor()
 {
     return new EasyStripAudioProcessorEditor (*this);

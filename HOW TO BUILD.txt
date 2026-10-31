@@ -14,6 +14,7 @@ Right now this project makes:
     Easy Amp     a valve amp: from warmth to an overdriven rock growl
     Easy EQ      a four-band EQ with filters, mid-side and linear phase
     Easy Tape    a real tape machine: 15 ips, 30 ips, or cassette for lo-fi
+    Easy Delay   a stereo delay (echo), in time with your song
     Easy Strip   all of the above in one channel strip (HOLOGRAM look)
 
 Every time the project changes on GitHub, GitHub builds the plugins for you
@@ -53,8 +54,9 @@ GETTING THE LATEST PLUGINS FROM GITHUB
 
  7. Open your DAW and rescan your plugins. They're listed under
     "Aardvark Easy Suite" (it used to be "Home Studio"), in effects /
-    dynamics - Bitch-Slap in effects / reverb, Easy Amp and Easy Tape in
-    effects / distortion, Easy EQ in effects / EQ.
+    dynamics - Bitch-Slap in effects / reverb, Easy Delay in effects /
+    delay, Easy Amp and Easy Tape in effects / distortion, Easy EQ in
+    effects / EQ.
 
  Your projects keep working: newer versions open older projects with
  any new features switched off, so they sound exactly as they did. That
@@ -426,6 +428,34 @@ YOUR FIRST FIVE MINUTES WITH EASY TAPE
 
 
 ====================================================================
+YOUR FIRST FIVE MINUTES WITH EASY DELAY
+====================================================================
+   Echoes - from one quick slapback to dub-style repeats - in time with
+   your song.
+
+   1. Pick a preset, or set the time and turn MIX up: 15-30% is usual on
+      a track. (On an FX send, use the "Send -" presets: echoes only.)
+   2. WHEN: SYNC on TEMPO sets TIME as a note (1/8, dotted 1/8, 1/4...)
+      that follows your song's tempo; OFF sets it in milliseconds (under
+      about 120 ms = slapback). The line underneath says what it comes to.
+   3. REPEATS: FEEDBACK is how many echoes (0 = just one). MODE: STEREO,
+      PING-PONG (the echoes bounce left and right) or WIDE (the right
+      side's echoes half as late again - 1/8 left, dotted 1/8 right).
+   4. TONE: LOW CUT and HIGH CUT thin and darken the echoes - a little
+      more with every repeat, like a vintage echo unit - so they sit
+      behind your sound. CHARACTER: CLEAN (every repeat exact) or TAPE
+      (a tape echo: warmer, a slight wobble, and moving TIME bends the
+      pitch).
+   5. OUTPUT: DUCK turns the echoes down while you play or sing and lets
+      them come up in the gaps - the trick for clear vocals with echoes.
+
+   The picture shows your sound and the echoes after it (left above the
+   line, right below), each as loud as it will be. No delay is added to
+   the track itself. The small red INIT beside the preset box goes back
+   to the defaults.
+
+
+====================================================================
 YOUR FIRST FIVE MINUTES WITH EASY EQ
 ====================================================================
    Four bands - LOW, LOW MID, HIGH MID, HIGH - plus filters, drawn on a
@@ -477,7 +507,7 @@ YOUR FIRST FIVE MINUTES WITH EASY EQ
 YOUR FIRST FIVE MINUTES WITH EASY STRIP
 ====================================================================
    Every Easy plugin in one channel strip, in this order:
-      INPUT > TAPE > GATE > AMP > EQ > DS > COMP > TRANS > BITCH-SLAP > CLIP > OUTPUT
+      INPUT > TAPE > GATE > AMP > EQ > DS > COMP > TRANS > DELAY > BITCH-SLAP > CLIP > OUTPUT
 
    TAPE comes first: as if the track had been recorded to tape and you're
    mixing from the machine (the most natural-sounding place; ORDER can
@@ -524,15 +554,16 @@ YOUR FIRST FIVE MINUTES WITH EASY STRIP
       machine - for buses, mastering and creative use). The panels never
       move; the menu (and the ticker, hovering ORDER) shows the order,
       and the button lights while it isn't the standard one. Switching
-      while playing dips the sound for a moment (no clicks). BITCH-SLAP
-      and CLIP are always last. Presets and A / B include the order.
+      while playing dips the sound for a moment (no clicks). DELAY,
+      BITCH-SLAP and CLIP are always last (DELAY before BITCH-SLAP, so the
+      gated reverb catches the echoes). Presets and A / B include the order.
    10. WEAPON SELECT (the striped button under TAPE) opens the effects
       rack in place of GATE, AMP, the big screen, EQ, DS and COMP - they
       keep working, they're just out of sight. TRANS, TAPE, CLIP, INPUT
-      / OUTPUT and the header stay. BITCH-SLAP lives in the rack now
-      (bay 6); the other bays are where the auto-wah, chorus / flanger,
-      mod filter, tremolo, stereo delay and limiter will go. Press
-      WEAPON SELECT again to go back.
+      / OUTPUT and the header stay. DELAY (bay 5) and BITCH-SLAP (bay 6)
+      live in the rack; the other bays are where the auto-wah, chorus /
+      flanger, mod filter, tremolo and limiter will go. Press WEAPON
+      SELECT again to go back.
    11. The sidechain input goes to both GATE and COMP (each one's
       OPENED BY / LISTENS TO decides whether it uses it).
 
@@ -580,6 +611,7 @@ WHAT'S IN THIS FOLDER
      Clipper.h              Easy Clip's clipper (and its oversampling)
      ValveAmp.h             Easy Amp's valve amp
      TapeMachine.h          Easy Tape's tape machine
+     StereoDelay.h          Easy Delay's delay
      Equalizer.h            Easy EQ's EQ
      LinearPhaseEQ.h        Easy EQ's MASTER (linear phase)
      LoudnessMatcher.h      AUTO-GAIN (shared by every plugin)
@@ -601,6 +633,7 @@ WHAT'S IN THIS FOLDER
    Plugins\EasyAmp\       Easy Amp's knobs, window and presets.
    Plugins\EasyEQ\        Easy EQ's knobs, screen and presets.
    Plugins\EasyTape\      Easy Tape's knobs, VU meter and presets.
+   Plugins\EasyDelay\     Easy Delay's knobs, picture of the echoes and presets.
    Plugins\EasyStrip\     Easy Strip: the plumbing that runs the plugins
                           above as its modules, and its windows (Holo* =
                           the HOLOGRAM look).
