@@ -16,6 +16,7 @@
 #include "../EasyWah/PluginProcessor.h"
 #include "../EasyFlange/PluginProcessor.h"
 #include "../EasyFilter/PluginProcessor.h"
+#include "../EasyLimiter/PluginProcessor.h"
 
 //==============================================================================
 /**
@@ -24,11 +25,11 @@
     Each module IS its standalone plugin - the very same code, sound,
     presets and window - running inside the strip, in this order:
 
-        INPUT > TAPE > GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > FILTER > TREMOLO > DELAY > VERB > CLIP > OUTPUT
+        INPUT > TAPE > GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > FILTER > TREMOLO > DELAY > VERB > CLIP > LIMITER > OUTPUT
 
     (TAPE first: as if the track was recorded to tape and you're mixing
     from the machine. ORDER's TAPE AT THE END moves it to just before CLIP.
-    WAH, FLANGE, FILTER, TREMOLO, DELAY and VERB's panels are in the WEAPON
+    WAH, FLANGE, FILTER, TREMOLO, DELAY, VERB and LIMITER's panels are in the WEAPON
     SELECT rack: WAH straight after GATE (before AMP, like a pedal into an amp,
     and before anything evens out how hard you play), FLANGE, FILTER and TREMOLO
     after COMP (or COMP would even out the pulsing), DELAY before
@@ -81,18 +82,19 @@ struct StripModules
     Module<EasyWahAudioProcessor>       wah   { "Easy Wah" };
     Module<EasyFlangeAudioProcessor>    flange { "Easy Flange" };
     Module<EasyFilterAudioProcessor>    filter { "Easy Filter" };
+    Module<EasyLimiterAudioProcessor>   limiter { "Easy Limiter" };
 
     // (The numbers are what the strip's saved settings use: new modules go on the end.)
-    enum Index { gateIndex, ampIndex, eqIndex, dsIndex, compIndex, transIndex, slapIndex, clipIndex, tapeIndex, delayIndex, tremIndex, wahIndex, flangeIndex, filterIndex };
-    static constexpr int numModules = 14;
-    std::array<EasyProcessor*, numModules> all { &gate, &amp, &eq, &ds, &comp, &trans, &slap, &clip, &tape, &delay, &trem, &wah, &flange, &filter };
+    enum Index { gateIndex, ampIndex, eqIndex, dsIndex, compIndex, transIndex, slapIndex, clipIndex, tapeIndex, delayIndex, tremIndex, wahIndex, flangeIndex, filterIndex, limiterIndex };
+    static constexpr int numModules = 15;
+    std::array<EasyProcessor*, numModules> all { &gate, &amp, &eq, &ds, &comp, &trans, &slap, &clip, &tape, &delay, &trem, &wah, &flange, &filter, &limiter };
 
-    static constexpr const char* keys[numModules]  { "gate", "amp", "eq", "ds", "comp", "trans", "slap", "clip", "tape", "delay", "tremolo", "wah", "flange", "filter" };
-    static constexpr const char* names[numModules] { "Gate", "Amp", "EQ", "DS", "Comp", "Trans", "Verb", "Clip", "Tape", "Delay", "Tremolo", "Wah", "Flange", "Filter" };
-    static constexpr const char* tabs[numModules]  { "GATE", "AMP", "EQ", "DS", "COMP", "TRANS", "VERB", "CLIP", "TAPE", "DELAY", "TREMOLO", "WAH", "FLANGE", "FILTER" };
+    static constexpr const char* keys[numModules]  { "gate", "amp", "eq", "ds", "comp", "trans", "slap", "clip", "tape", "delay", "tremolo", "wah", "flange", "filter", "limiter" };
+    static constexpr const char* names[numModules] { "Gate", "Amp", "EQ", "DS", "Comp", "Trans", "Verb", "Clip", "Tape", "Delay", "Tremolo", "Wah", "Flange", "Filter", "Limiter" };
+    static constexpr const char* tabs[numModules]  { "GATE", "AMP", "EQ", "DS", "COMP", "TRANS", "VERB", "CLIP", "TAPE", "DELAY", "TREMOLO", "WAH", "FLANGE", "FILTER", "LIMITER" };
 
     /** The effects that live in the WEAPON SELECT rack (not on the main page). */
-    static bool isRackEffect (int m) noexcept       { return m == slapIndex || m == delayIndex || m == tremIndex || m == wahIndex || m == flangeIndex || m == filterIndex; }
+    static bool isRackEffect (int m) noexcept       { return m == slapIndex || m == delayIndex || m == tremIndex || m == wahIndex || m == flangeIndex || m == filterIndex || m == limiterIndex; }
     static bool hasSidechain (int m) noexcept       { return m == 0 || m == 4; }   // GATE and COMP
 };
 
@@ -156,6 +158,7 @@ public:
     EasyWahAudioProcessor&       getWah() noexcept      { return wah; }
     EasyFlangeAudioProcessor&    getFlange() noexcept   { return flange; }
     EasyFilterAudioProcessor&    getFilter() noexcept   { return filter; }
+    EasyLimiterAudioProcessor&   getLimiter() noexcept  { return limiter; }
     bool isModuleOn (int m) const noexcept;
 
     /** The loudest the sound was going in / coming out since last asked (gain, not dB). */

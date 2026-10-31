@@ -21,6 +21,7 @@ Right now this project makes:
     Easy Wah     an automatic wah: follows your playing, or rocks in time
     Easy Flange  flanger, chorus and vibrato
     Easy Filter  a moving filter: sweeps, wobbles and pulses in time
+    Easy Limiter a clean, transparent true-peak ceiling (stops overs)
     Easy Strip   all of the above in one channel strip (HOLOGRAM look)
 
 Every time the project changes on GitHub, GitHub builds the plugins for you
@@ -579,6 +580,33 @@ YOUR FIRST FIVE MINUTES WITH EASY FILTER
 
 
 ====================================================================
+YOUR FIRST FIVE MINUTES WITH EASY LIMITER
+====================================================================
+   A clean safety ceiling - no loudness targets. On its own it does
+   nothing until a peak would go past the CEILING; then it turns down
+   just that moment, smoothly.
+
+   1. CEILING: -0.3 dBTP by default. "TP" is true peak: it also catches
+      the peaks BETWEEN the samples, the ones that clip a converter or
+      a converted file even when the waveform looks fine.
+   2. GAIN: turns the sound up into the ceiling, if you want it louder.
+      0 = overs protection only.
+   3. RELEASE: AUTO (quick after a lone peak, slower while it's holding
+      back a sustained passage - no pumping, no distortion). SET lets
+      you choose the time yourself.
+   4. MATCH: for comparing by ear. It takes GAIN back off what you hear,
+      so the limited sound is as loud as the original - then click
+      BYPASS on and off. If you can't tell them apart, it's clean.
+      (Switch MATCH off afterwards.) Good for comparing it with another
+      limiter too: match their levels the same way.
+   The display shows what goes in (after GAIN), what comes out, the
+   ceiling and how much it turned down; the readout under CEILING holds
+   the highest true peak that's come out (click to reset). It looks
+   3 ms ahead, so it delays the sound by that much - your DAW lines
+   everything up automatically.
+
+
+====================================================================
 YOUR FIRST FIVE MINUTES WITH EASY EQ
 ====================================================================
    Four bands - LOW, LOW MID, HIGH MID, HIGH - plus filters, drawn on a
@@ -630,7 +658,7 @@ YOUR FIRST FIVE MINUTES WITH EASY EQ
 YOUR FIRST FIVE MINUTES WITH EASY STRIP
 ====================================================================
    Every Easy plugin in one channel strip, in this order:
-      INPUT > TAPE > GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > FILTER > TREMOLO > DELAY > VERB > CLIP > OUTPUT
+      INPUT > TAPE > GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > FILTER > TREMOLO > DELAY > VERB > CLIP > LIMITER > OUTPUT
 
    TAPE comes first: as if the track had been recorded to tape and you're
    mixing from the machine (the most natural-sounding place; ORDER can
@@ -685,7 +713,8 @@ YOUR FIRST FIVE MINUTES WITH EASY STRIP
       keep working, they're just out of sight. TRANS, TAPE, CLIP, INPUT
       / OUTPUT and the header stay. WAH (bay 1), FLANGE (bay 2), FILTER
       (bay 3), TREMOLO (bay 4), DELAY (bay 5) and VERB (bay 6) live in
-      the rack; the last bay is where the limiter will go. WEAPON
+      the rack, and the LIMITER (bay 7) - the very last thing, after
+      CLIP. WEAPON
       SELECT lights up while any of them is switched on. WAH
       runs straight after GATE, like a pedal into an amp. Press WEAPON
       SELECT again to go back.
@@ -743,6 +772,7 @@ WHAT'S IN THIS FOLDER
      AutoWah.h              Easy Wah's automatic wah
      Flanger.h              Easy Flange's flanger / chorus / vibrato
      ModFilter.h            Easy Filter's moving filter
+     TruePeakLimiter.h      Easy Limiter's true-peak ceiling
      Equalizer.h            Easy EQ's EQ
      LinearPhaseEQ.h        Easy EQ's MASTER (linear phase)
      LoudnessMatcher.h      AUTO-GAIN (shared by every plugin)
@@ -770,6 +800,7 @@ WHAT'S IN THIS FOLDER
    Plugins\EasyWah\       Easy Wah's knobs, picture of the filter and pedal, and presets.
    Plugins\EasyFlange\    Easy Flange's knobs, picture of the swing and presets.
    Plugins\EasyFilter\    Easy Filter's knobs, picture of the filter and presets.
+   Plugins\EasyLimiter\   Easy Limiter's knobs, display and presets.
    Plugins\EasyStrip\     Easy Strip: the plumbing that runs the plugins
                           above as its modules, and its windows (Holo* =
                           the HOLOGRAM look).

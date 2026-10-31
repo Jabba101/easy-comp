@@ -25,6 +25,8 @@ Tests/                 -> /home/claude/verify2
     SlapTests (Easy Verb: the BITCH-SLAP burst against a plain, slow convolution;
     the spaces' DECAY, PRE-DELAY, TONE, width, TYPE crossfades), VerbDspProbe (the
     spaces measured on their own: decay times, level, width, speed),
+    LimiterTests (Easy Limiter: never over the true-peak ceiling, exact below
+    it, no distortion on a held bass note, AUTO release, MATCH), LimiterDspProbe,
     FilterTests (Easy Filter: the three TYPEs against their curves, DEPTH,
     SHAPEs, no ticks, WIDTH, locked to the song), ClipTests (Easy Clip: the ceiling under every setting and while knobs
     move, the delay, aliasing per OVERSAMPLING setting, PROTECT LOWS,

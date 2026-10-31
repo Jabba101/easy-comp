@@ -1349,6 +1349,71 @@ namespace Holo
     };
 
     //==========================================================================
+    // LIMITER (Easy Limiter; the very last module, its panel in the WEAPON SELECT rack)
+    //==========================================================================
+    class LimiterSlab : public Slab
+    {
+    public:
+        explicit LimiterSlab (View& v) : Slab (v, StripModules::limiterIndex, Colours::limiter, "LIMITER")
+        {
+            power.fontSize = 14.0f;
+            gain = &ring (LimiterIDs::gain, "GAIN", Format::signedDb, "dB");
+            ceiling = &ring (LimiterIDs::ceiling, "CEILING", Format::db, "dBTP", Ring::small);
+            reductionText = &caption ("0.0 dB", Colours::ink, 15.0f);
+            reductionLabel = &caption ("TURNED DOWN");
+            hint (*reductionText, "TURNED DOWN");
+            release = &choice (LimiterIDs::releaseMode, { "AUTO", "SET" }, "RELEASE", true);
+            releaseTime = &ring (LimiterIDs::release, "TIME", Format::ms, "ms", Ring::small, {}, "RELEASE");
+            match = &toggle (LimiterIDs::match, "MATCH", "MATCH");
+        }
+
+        void resized() override
+        {
+            clearSections();
+            auto body = placeHeader (getLocalBounds().reduced (9, 6), true, 84);
+            constexpr int gap = 8;
+            const auto take = [&] (int height) { auto r = body.removeFromTop (height); body.removeFromTop (gap); return r; };
+
+            auto s1 = section (take (27 + gain->getIdealHeight() + 8 + 17 + 22 + 9), 1, "HOW HARD");
+            auto s2 = section (take (27 + ceiling->getIdealHeight() + 9), 2, "CEILING");
+            auto s3 = section (take (27 + release->getIdealHeight() + 8 + releaseTime->getIdealHeight() + 9), 3, "RELEASE");
+            auto s4 = section (take (27 + 34 + 9), 4, "COMPARE");
+
+            centreIn (*gain, s1, s1.getY());
+            auto readout = s1.withTop (gain->getBottom() + 8);
+            reductionLabel->setBounds (readout.removeFromTop (17));
+            reductionText->setBounds (readout.removeFromTop (22));
+            centreIn (*ceiling, s2, s2.getY());
+            release->setBounds (s3.withHeight (release->getIdealHeight()).withSizeKeepingCentre (juce::jmin (130, s3.getWidth()), release->getIdealHeight()));
+            centreIn (*releaseTime, s3, release->getBottom() + 8);
+            match->setBounds (s4.withHeight (34).withSizeKeepingCentre (juce::jmin (110, s4.getWidth()), 34));
+        }
+
+        void refresh() override
+        {
+            const bool set = release->getChosen() == 1;
+            releaseTime->setAlpha (set ? 1.0f : 0.35f);
+
+            // How much it's turning down (from the moments the limiter notes)
+            EasyLimiterAudioProcessor::Moment moments[64];
+            for (int n; (n = strip.getLimiter().takeMoments (moments, 64)) > 0;)
+                for (int i = 0; i < n; ++i)
+                    latest = moments[i].reductionDb;
+            shown = latest > shown ? latest : shown + 0.25f * (latest - shown);
+            const auto text = juce::String (shown, 1) + " dB";
+            if (text != reductionText->getText())
+                reductionText->setText (text, juce::dontSendNotification);
+        }
+
+    private:
+        Ring *gain = nullptr, *ceiling = nullptr, *releaseTime = nullptr;
+        juce::Label *reductionText = nullptr, *reductionLabel = nullptr;
+        Choice* release = nullptr;
+        Button* match = nullptr;
+        float latest = 0.0f, shown = 0.0f;
+    };
+
+    //==========================================================================
     // CLIP
     //==========================================================================
     class ClipSlab : public Slab
@@ -1495,6 +1560,7 @@ namespace Holo
             case 11: return std::make_unique<WahSlab> (v);
             case 12: return std::make_unique<FlangeSlab> (v);
             case 13: return std::make_unique<FilterSlab> (v);
+            case 14: return std::make_unique<LimiterSlab> (v);
             default: return std::make_unique<ClipSlab> (v);
         }
     }

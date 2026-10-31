@@ -524,7 +524,7 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 EasyStripAudioProcessor::Order EasyStripAudioProcessor::orderFor (bool eqAfterComp, bool deEssBeforeDrive,
                                                                 bool driveAfterComp, bool shapeBeforeComp, bool tapeAtEnd) noexcept
 {
-    enum { gate, amp, eq, ds, comp, trans, slap, clip, tape, delay, trem, wah, flange, filter };
+    enum { gate, amp, eq, ds, comp, trans, slap, clip, tape, delay, trem, wah, flange, filter, limiter };
     Order o {};
     int n = 0;
     if (! tapeAtEnd)       o[(size_t) n++] = tape;   // (recorded to tape: the usual, most natural-sounding place)
@@ -552,6 +552,7 @@ EasyStripAudioProcessor::Order EasyStripAudioProcessor::orderFor (bool eqAfterCo
     o[(size_t) n++] = slap;
     if (tapeAtEnd)         o[(size_t) n++] = tape;   // (mixed down to the master machine)
     o[(size_t) n++] = clip;
+    o[(size_t) n++] = limiter;   // (the very last: the true-peak ceiling)
     return o;
 }
 

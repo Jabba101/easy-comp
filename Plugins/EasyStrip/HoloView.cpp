@@ -53,13 +53,13 @@ namespace Holo
             "Copies the strip you're on to the other one (A to B, or B to A) - then change one of them and compare.";
         const juce::String weaponHint =
             "Weapon select: opens the effects rack in place of GATE, AMP, the screen, EQ, DS and COMP (they keep working). "
-            "WAH, FLANGE, MOD FILTER, TREMOLO, DELAY and VERB are in there; the limiter is coming. Press it again to go back. "
+            "WAH, FLANGE, MOD FILTER, TREMOLO, DELAY, VERB and the LIMITER are in there. Press it again to go back. "
             "It lights up while any of them is switched on.";
         const juce::String trackNameHint =
             "The name of the track this strip is on, as your DAW calls it. Rename the track and it follows.";
         const juce::String rackHint =
-            "The effects rack (Easy FX). WAH, FLANGE, MOD FILTER, TREMOLO, DELAY and VERB work now; the empty bay is where the limiter "
-            "will go. WEAPON SELECT again takes you back to the strip.";
+            "The effects rack (Easy FX): WAH, FLANGE, MOD FILTER, TREMOLO, DELAY, VERB and the LIMITER (last of all, after CLIP). "
+            "WEAPON SELECT again takes you back to the strip.";
 
         // The page buttons, left to right (the rack effects' panels are in the rack: no page for them)
         constexpr int pageOrder[] { 0, 1, 2, 3, 4, 5, 8, 7 };
@@ -295,7 +295,7 @@ namespace Holo
 
             for (int b = 0; b < View::numBays; ++b)
             {
-                if (b == View::slapBay || b == View::delayBay || b == View::tremBay || b == View::wahBay || b == View::flangeBay || b == View::filterBay)
+                if (b == View::slapBay || b == View::delayBay || b == View::tremBay || b == View::wahBay || b == View::flangeBay || b == View::filterBay || b == View::limiterBay)
                     continue;   // (that effect's own panel is there)
 
                 const auto bay = bays[(size_t) b].toFloat();
@@ -485,7 +485,7 @@ namespace Holo
             slabs.push_back (makeSlab (*this, m));
             addAndMakeVisible (*slabs.back());
         }
-        for (int m : { (int) StripModules::slapIndex, (int) StripModules::delayIndex, (int) StripModules::tremIndex, (int) StripModules::wahIndex, (int) StripModules::flangeIndex, (int) StripModules::filterIndex })
+        for (int m : { (int) StripModules::slapIndex, (int) StripModules::delayIndex, (int) StripModules::tremIndex, (int) StripModules::wahIndex, (int) StripModules::flangeIndex, (int) StripModules::filterIndex, (int) StripModules::limiterIndex })
             slabs[(size_t) m]->setVisible (false);   // (their panels are in the WEAPON SELECT rack)
         clipAdvanced = std::make_unique<ClipAdvanced> (*this);
         addChildComponent (*clipAdvanced);
@@ -1179,6 +1179,7 @@ namespace Holo
         slabs[StripModules::wahIndex]->setBounds (panel->bays[(size_t) wahBay] + rack->getPosition());
         slabs[StripModules::flangeIndex]->setBounds (panel->bays[(size_t) flangeBay] + rack->getPosition());
         slabs[StripModules::filterIndex]->setBounds (panel->bays[(size_t) filterBay] + rack->getPosition());
+        slabs[StripModules::limiterIndex]->setBounds (panel->bays[(size_t) limiterBay] + rack->getPosition());
     }
 
     void View::showRack (bool show)
@@ -1190,7 +1191,7 @@ namespace Holo
         screen.setVisible (! show);
         for (int m : pageOrder)
             pageButtons[(size_t) m]->setVisible (! show);
-        for (int m : { (int) StripModules::slapIndex, (int) StripModules::delayIndex, (int) StripModules::tremIndex, (int) StripModules::wahIndex, (int) StripModules::flangeIndex, (int) StripModules::filterIndex })
+        for (int m : { (int) StripModules::slapIndex, (int) StripModules::delayIndex, (int) StripModules::tremIndex, (int) StripModules::wahIndex, (int) StripModules::flangeIndex, (int) StripModules::filterIndex, (int) StripModules::limiterIndex })
         {
             slabs[(size_t) m]->setVisible (show);
             if (show)

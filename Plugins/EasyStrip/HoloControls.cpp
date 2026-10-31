@@ -431,10 +431,10 @@ namespace Holo
                 ink  = on ? juce::Colour (0xff04101e) : Colours::offText;
                 break;
 
-            case Style::view:
-                fill = on ? Colours::selected.withAlpha (0.22f) : juce::Colour (0x80040c16);
+            case Style::view:   // (the DISPLAY FOCUS buttons: lit amber, black lettering - easy to read with the light on)
+                fill = on ? Colours::selected : juce::Colour (0x80040c16);
                 edge = on ? Colours::selected : Colours::cyan.withAlpha (0.45f);
-                ink  = on ? juce::Colour (0xffffe0b8) : juce::Colour (0xffcfeaf5);
+                ink  = on ? juce::Colour (0xff04101e) : juce::Colour (0xffcfeaf5);
                 break;
 
             case Style::plain:

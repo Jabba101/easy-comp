@@ -368,6 +368,27 @@ LATER
      WEAPON SELECT a real panel button (recessed, backlit cap, black
      painted lettering, solid hazard bezel, glow round it) that lights
      while any EASY FX is on; the rack is called EASY FX.
+   - EASY LIMITER 1.0.0 (built 31 October 2026), the LIMITER (bay 7; the
+     strip's fifteenth module, "limiter_", the very last, after CLIP).
+     The user: no LUFS targets - a proper limiter must be clean and
+     transparent as it delivers overs protection right up to -0.3.
+     Effects/TruePeakLimiter.h: 4x true-peak finder (4 phases x 12 taps,
+     Kaiser-windowed sinc), linked stereo; the needed gain held 20 ms
+     (no ripple within a bass cycle), then released (AUTO: 30 ms after a
+     lone peak up to ~350 ms when it's been holding back for a while;
+     SET: 5-1000 ms), then a 3 ms look-ahead running minimum and a 3 ms
+     moving average (the gain glides down to exactly what each peak needs,
+     arriving just in time). Aims 0.1 dB under the CEILING (the moving
+     gain reshapes intersample peaks slightly), hard stop at it. GAIN
+     0-18 dB (delayed with the sound), CEILING -3 to -0.1 dBTP (-0.3
+     default), MATCH (takes GAIN back off - for level-matched comparing).
+     Latency 3 ms + 6 samples (150 at 48 kHz). Tests: never over at any
+     ceiling pushed 0-18 dB, a 12 kHz intersample tone held, a 60 Hz
+     note pushed 6 dB: -159 dB THD once settled; exact below the ceiling.
+     STILL TO DO: the user's blind, level-matched comparison with IK
+     Stealth Limiter on their own mixes - it only replaces Stealth if it's
+     indistinguishable or better.
+   - DISPLAY FOCUS buttons: lit amber with black lettering (31 October 2026).
    - Once the essentials are perfected: EASY FX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the
@@ -385,7 +406,7 @@ LATER
      effect has its own fixed place in the strip's chain:
        INPUT > GATE > [AUTO-WAH] > AMP > EQ > DS > COMP > TRANS >
        [CHORUS / FLANGER] > [MOD FILTER] > [TREMOLO] > [DELAY] >
-       VERB > CLIP > [LIMITER] > OUTPUT
+       VERB > CLIP > LIMITER > OUTPUT
      - AUTO-WAH before any levelling (it follows how hard you play, so
        COMP mustn't flatten that first) and before AMP, like a wah pedal
        into an amp.

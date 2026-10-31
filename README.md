@@ -15,6 +15,7 @@ Beginner-friendly mixing plugins (VST3) for Windows, built with [JUCE](https://j
 - **Easy Tremolo** – the volume pulsing, or side to side, locked to the beat
 - **Easy Wah** – an automatic wah: follows your playing, or rocks in time
 - **Easy Flange** – flanger, chorus and vibrato
+- **Easy Limiter** – a clean, transparent true-peak ceiling
 - **Easy Filter** – a moving filter: sweeps, wobbles and tempo-locked pulses, wide stereo
 - **Easy Strip** – all of them in one channel strip
 

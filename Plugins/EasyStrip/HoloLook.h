@@ -48,6 +48,7 @@ namespace Holo
         inline const juce::Colour wah   { 0xff9be86a };   // (wah: lime)
         inline const juce::Colour flange { 0xff6ae8d9 };  // (flange: aqua)
         inline const juce::Colour filter { 0xffffa05a };  // (mod filter: tangerine)
+        inline const juce::Colour limiter { 0xffe8eef5 };  // (limiter: steel white)
         inline const juce::Colour clip  { 0xffff8a3d };
 
         inline const juce::Colour mid   { 0xff4fe3ff };    // the EQ's MID curve

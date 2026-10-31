@@ -106,6 +106,7 @@ namespace
         v.push_back (std::make_unique<EasyWahAudioProcessor>());
         v.push_back (std::make_unique<EasyFlangeAudioProcessor>());
         v.push_back (std::make_unique<EasyFilterAudioProcessor>());
+        v.push_back (std::make_unique<EasyLimiterAudioProcessor>());
         return v;
     }
 
@@ -194,6 +195,7 @@ namespace
         { EasyWahAudioProcessor a;       compareModule (11, a, 1); }
         { EasyFlangeAudioProcessor a;    compareModule (12, a, 2); }
         { EasyFilterAudioProcessor a;    compareModule (13, a, 3); }
+        { EasyLimiterAudioProcessor a;   compareModule (14, a, 4); }
     }
 
     void testSidechainAndChain()
@@ -227,10 +229,10 @@ namespace
                    "the sidechain reaches COMP, just as in Easy Comp (and it makes a difference)");
         }
 
-        {   // All fourteen on, against the fourteen standalones one after another
+        {   // All fifteen on, against the fifteen standalones one after another
             S s;
             auto chain = standalones();
-            const int choice[] { 2, 1, 3, 1, 3, 1, 1, 2, 2, 5, 1, 1, 2, 3 };
+            const int choice[] { 2, 1, 3, 1, 3, 1, 1, 2, 2, 5, 1, 1, 2, 3, 3 };
             for (int m = 0; m < S::numModules; ++m)
             {
                 chain[(size_t) m]->loadPreset (chain[(size_t) m]->getBuiltInPresets()[(size_t) choice[m]]);
@@ -584,30 +586,30 @@ namespace
     void testOrder()
     {
         std::cout << "\n[ORDER]\n";
-        check (S::describe (S::orderFor (false, false, false, false)) == "TAPE > GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > FILTER > TREMOLO > DELAY > VERB > CLIP",
+        check (S::describe (S::orderFor (false, false, false, false)) == "TAPE > GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > FILTER > TREMOLO > DELAY > VERB > CLIP > LIMITER",
                "standard: " + S::describe (S::orderFor (false, false, false, false)));
-        check (S::describe (S::orderFor (true, false, false, false)) == "TAPE > GATE > WAH > AMP > DS > COMP > EQ > TRANS > FLANGE > FILTER > TREMOLO > DELAY > VERB > CLIP", "EQ AFTER COMP");
-        check (S::describe (S::orderFor (false, true, false, false)) == "TAPE > GATE > WAH > DS > AMP > EQ > COMP > TRANS > FLANGE > FILTER > TREMOLO > DELAY > VERB > CLIP", "DE-ESS BEFORE DRIVE");
-        check (S::describe (S::orderFor (false, false, true, false)) == "TAPE > GATE > WAH > EQ > DS > COMP > AMP > TRANS > FLANGE > FILTER > TREMOLO > DELAY > VERB > CLIP", "DRIVE AFTER COMP");
-        check (S::describe (S::orderFor (false, false, false, true)) == "TAPE > GATE > WAH > AMP > EQ > DS > TRANS > COMP > FLANGE > FILTER > TREMOLO > DELAY > VERB > CLIP", "SHAPE BEFORE COMP");
-        check (S::describe (S::orderFor (false, false, false, false, true)) == "GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > FILTER > TREMOLO > DELAY > VERB > TAPE > CLIP", "TAPE AT THE END");
+        check (S::describe (S::orderFor (true, false, false, false)) == "TAPE > GATE > WAH > AMP > DS > COMP > EQ > TRANS > FLANGE > FILTER > TREMOLO > DELAY > VERB > CLIP > LIMITER", "EQ AFTER COMP");
+        check (S::describe (S::orderFor (false, true, false, false)) == "TAPE > GATE > WAH > DS > AMP > EQ > COMP > TRANS > FLANGE > FILTER > TREMOLO > DELAY > VERB > CLIP > LIMITER", "DE-ESS BEFORE DRIVE");
+        check (S::describe (S::orderFor (false, false, true, false)) == "TAPE > GATE > WAH > EQ > DS > COMP > AMP > TRANS > FLANGE > FILTER > TREMOLO > DELAY > VERB > CLIP > LIMITER", "DRIVE AFTER COMP");
+        check (S::describe (S::orderFor (false, false, false, true)) == "TAPE > GATE > WAH > AMP > EQ > DS > TRANS > COMP > FLANGE > FILTER > TREMOLO > DELAY > VERB > CLIP > LIMITER", "SHAPE BEFORE COMP");
+        check (S::describe (S::orderFor (false, false, false, false, true)) == "GATE > WAH > AMP > EQ > DS > COMP > TRANS > FLANGE > FILTER > TREMOLO > DELAY > VERB > TAPE > CLIP > LIMITER", "TAPE AT THE END");
         bool allValid = true;
         for (int mask = 0; mask < 32; ++mask)
         {
             auto o = S::orderFor (mask & 1, mask & 2, mask & 4, mask & 8, mask & 16);
             auto sorted = o; std::sort (sorted.begin(), sorted.end());
             for (int i = 0; i < S::numModules; ++i) allValid = allValid && sorted[(size_t) i] == i;
-            if (mask & 16) allValid = allValid && o[0] == 0 && o[1] == 11 && o[7] == 12 && o[8] == 13 && o[9] == 10 && o[10] == 9 && o[11] == 6 && o[12] == 8 && o[13] == 7;
-            else           allValid = allValid && o[0] == 8 && o[1] == 0 && o[2] == 11 && o[8] == 12 && o[9] == 13 && o[10] == 10 && o[11] == 9 && o[12] == 6 && o[13] == 7;
+            if (mask & 16) allValid = allValid && o[0] == 0 && o[1] == 11 && o[7] == 12 && o[8] == 13 && o[9] == 10 && o[10] == 9 && o[11] == 6 && o[12] == 8 && o[13] == 7 && o[14] == 14;
+            else           allValid = allValid && o[0] == 8 && o[1] == 0 && o[2] == 11 && o[8] == 12 && o[9] == 13 && o[10] == 10 && o[11] == 9 && o[12] == 6 && o[13] == 7 && o[14] == 14;
             if (mask & 2) allValid = allValid && std::find (o.begin(), o.end(), 3) < std::find (o.begin(), o.end(), 1);
         }
-        check (allValid, "all 32 combinations: every module exactly once; TAPE first (or just before CLIP), then GATE and WAH; FLANGE, FILTER, TREMOLO, DELAY, VERB and CLIP last");
+        check (allValid, "all 32 combinations: every module exactly once; TAPE first (or just before CLIP), then GATE and WAH; FLANGE, FILTER, TREMOLO, DELAY, VERB, CLIP and LIMITER last");
 
         // All five switches on: identical to the standalones run in that order
         {
             S s;
             auto alone = standalones();
-            const int choice[] { 2, 1, 3, 1, 3, 1, 1, 2, 2, 5, 1, 1, 2, 3 };
+            const int choice[] { 2, 1, 3, 1, 3, 1, 1, 2, 2, 5, 1, 1, 2, 3, 3 };
             for (int m = 0; m < S::numModules; ++m)
             {
                 alone[(size_t) m]->loadPreset (alone[(size_t) m]->getBuiltInPresets()[(size_t) choice[m]]);
@@ -811,7 +813,7 @@ namespace
         juce::StringArray missing;
         const juce::StringArray notKnobs { CommonIDs::bypass, CommonIDs::autoGain, "quality", "view", "analyser", "link", "master",
                                            "openedby", "turnsdown", "precision", "reactsto", "character", "thrust", "listensto", "sync",
-                                           "lowshelf", "highshelf", "hpfslope", "lpfslope", "lowtarget", "lowmidtarget", "highmidtarget", "hightarget", "speed", "mode", "character", "shape", "response", "direction", "type" };
+                                           "lowshelf", "highshelf", "hpfslope", "lpfslope", "lowtarget", "lowmidtarget", "highmidtarget", "hightarget", "speed", "mode", "character", "shape", "response", "direction", "type", "releasemode", "match" };
         for (int m = 0; m < S::numModules; ++m)
             for (auto* p : s.getModule (m).getParameters())
                 if (auto* r = dynamic_cast<juce::RangedAudioParameter*> (p))
@@ -949,17 +951,19 @@ namespace
             const auto& wahSlab = *view->slabs[11];
             const auto& flangeSlab = *view->slabs[12];
             const auto& filterSlab = *view->slabs[13];
+            const auto& limiterSlab = *view->slabs[14];
             bool swapped = view->isRackShown() && view->getRack()->isVisible() && ! view->getScreen().isVisible() && slapSlab.isVisible()
                            && rackArea.contains (slapSlab.getBounds()) && delaySlab.isVisible() && rackArea.contains (delaySlab.getBounds())
                            && delaySlab.getRight() < slapSlab.getX()
                            && tremSlab.isVisible() && rackArea.contains (tremSlab.getBounds()) && tremSlab.getRight() < delaySlab.getX()
                            && wahSlab.isVisible() && rackArea.contains (wahSlab.getBounds()) && wahSlab.getRight() < tremSlab.getX()
                            && flangeSlab.isVisible() && rackArea.contains (flangeSlab.getBounds()) && wahSlab.getRight() < flangeSlab.getX() && flangeSlab.getRight() < tremSlab.getX()
-                           && filterSlab.isVisible() && rackArea.contains (filterSlab.getBounds()) && flangeSlab.getRight() < filterSlab.getX() && filterSlab.getRight() < tremSlab.getX();
+                           && filterSlab.isVisible() && rackArea.contains (filterSlab.getBounds()) && flangeSlab.getRight() < filterSlab.getX() && filterSlab.getRight() < tremSlab.getX()
+                           && limiterSlab.isVisible() && rackArea.contains (limiterSlab.getBounds()) && slapSlab.getRight() < limiterSlab.getX();
             for (int m : { 0, 1, 2, 3, 4 }) swapped = swapped && ! view->slabs[(size_t) m]->isVisible();
             for (int m : { 5, 7, 8 })       swapped = swapped && view->slabs[(size_t) m]->isVisible() && ! rackArea.intersects (view->slabs[(size_t) m]->getBounds());
             for (auto& b : view->pageButtons) swapped = swapped && ! b->isVisible();
-            check (swapped, "WEAPON SELECT: the rack replaces GATE, AMP, the screen, EQ, DS and COMP; WAH, FLANGE, FILTER, TREMOLO, DELAY and VERB are in it; TRANS, TAPE, CLIP stay");
+            check (swapped, "WEAPON SELECT: the rack replaces GATE, AMP, the screen, EQ, DS and COMP; WAH, FLANGE, FILTER, TREMOLO, DELAY, VERB and LIMITER are in it; TRANS, TAPE, CLIP stay");
 
             switchOn (s, 6, true);
             switchOn (s, 9, true);
@@ -972,6 +976,8 @@ namespace
             loadPresetNamed (s.getModule (12), "Guitar - Jet Flanger");
             switchOn (s, 13, true);
             loadPresetNamed (s.getModule (13), "Synth - Sample & Hold 1/16");
+            switchOn (s, 14, true);
+            loadPresetNamed (s.getModule (14), "Master - Firm Push (+4 dB)");
             for (int i = 0; i < 10; ++i) { process (s, music (0.05)); view->updateNow(); }
             savePng (*editor, outDir.getChildFile ("strip-hologram-rack.png"));
             loadPresetNamed (s.getModule (6), "Vocal - Club Stage");
@@ -985,12 +991,12 @@ namespace
                    "in the rack, VERB's controls still explain themselves (Easy Verb's own hints)");
 
             view->weaponSelect.onClick();
-            bool back = ! view->isRackShown() && ! view->getRack()->isVisible() && view->getScreen().isVisible() && ! slapSlab.isVisible() && ! delaySlab.isVisible() && ! tremSlab.isVisible() && ! wahSlab.isVisible() && ! flangeSlab.isVisible() && ! filterSlab.isVisible();
+            bool back = ! view->isRackShown() && ! view->getRack()->isVisible() && view->getScreen().isVisible() && ! slapSlab.isVisible() && ! delaySlab.isVisible() && ! tremSlab.isVisible() && ! wahSlab.isVisible() && ! flangeSlab.isVisible() && ! filterSlab.isVisible() && ! limiterSlab.isVisible();
             for (int m : { 0, 1, 2, 3, 4, 5, 7, 8 }) back = back && view->slabs[(size_t) m]->isVisible();
             check (back && s.isModuleOn (6), "WEAPON SELECT again: back to the strip (VERB keeps playing)");
             view->updateNow();
             check (view->weaponSelect.getToggleState(), "...and WEAPON SELECT stays lit while any of the EASY FX is on");
-            for (int m : { 6, 9, 10, 11, 12, 13 }) switchOn (s, m, false);
+            for (int m : { 6, 9, 10, 11, 12, 13, 14 }) switchOn (s, m, false);
             view->updateNow();
             check (! view->weaponSelect.getToggleState(), "...and goes dark once they're all off");
         }
