@@ -89,14 +89,14 @@ jobs:
           list=""
           for bundle in *.vst3; do
             [ -d "$bundle" ] || continue
-            size=$(du -sk "$bundle" | awk '{ printf "%.1f MB", $1 / 1024 }')
-            list="${list:+$list, }$bundle ($size)"
+            list="${list:+$list, }${bundle%.vst3}"   # (names only: GitHub cuts long notes short)
           done
           if [ -z "$list" ]; then
             echo "::error title=No plugins were built::The Finished Plugins folder is empty"
             exit 1
           fi
-          echo "::notice title=Plugins built::$list"
+          count=$(ls -d *.vst3 | wc -l)
+          echo "::notice title=$count plugins built::$list"
 
       - name: Name the download after when it was built
         shell: pwsh
