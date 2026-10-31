@@ -171,11 +171,24 @@ namespace Holo
 
         void paintButton (juce::Graphics&, bool isMouseOver, bool isMouseDown) override;
 
+        /** On (lit): its light spills out onto the console around it. */
+        bool isLit() const noexcept         { return getToggleState() || flash; }
+        juce::Colour getGlowColour() const noexcept;
+
         juce::Colour tint;
         Style style;
         float fontSize = 14.0f;
-        bool flash = false;
-        bool displayFont = false;   // (Orbitron, like the strip's name: WEAPON SELECT)   // (INIT lights up briefly when pressed)
+        bool flash = false;         // (INIT lights up briefly when pressed)
+        bool displayFont = false;   // (Orbitron, like the strip's name: WEAPON SELECT)
+
+        // Its halo: how far it reaches, how strong, and how far out from the button it starts
+        // (WEAPON SELECT: from outside its hazard frame, big and bright)
+        int glowSize = 13;
+        float glowStrength = 1.0f, glowFrom = 0.0f;
+
+    private:
+        void paintPanelButton (juce::Graphics&, juce::Rectangle<float>, bool on);
+        bool wasLit = false;
     };
 
     /** Connects a Button to an on/off setting. `inverted`: on = the setting
@@ -203,7 +216,10 @@ namespace Holo
 
         /** A choice that isn't a setting of the sound (DIM, PEAK / LUFS...): set it with setChosen. */
         Choice (const juce::StringArray& names, juce::Colour tint, bool sideBySide = false);
-        void setChosen (int index)         { chosen = index; repaint(); }
+        void setChosen (int index);
+
+        /** The lit segment (empty if none), for its glow on the console. */
+        juce::Rectangle<float> getLitArea() const   { return chosen >= 0 && chosen < names.size() ? segment (chosen).reduced (0.5f) : juce::Rectangle<float>(); }
 
         void paint (juce::Graphics&) override;
         void mouseDown (const juce::MouseEvent&) override;
@@ -226,6 +242,25 @@ namespace Holo
         int chosen = 0;
         std::unique_ptr<juce::ParameterAttachment> attachment;
     };
+
+    //==========================================================================
+    /** The light of the lit buttons and choices inside `root`, spilling onto
+        the console around them: draw it over the panel, under the controls.
+        (Doesn't look inside components that draw their own - the slabs.) */
+    void paintGlows (juce::Graphics&, juce::Component& root);
+
+    /** A lit face like a real lamp: its hot and cool spots placed by `seed` (each button its own, always the same). */
+    void paintLampFace (juce::Graphics&, juce::Rectangle<float>, juce::Colour, float corner, juce::int64 seed);
+    juce::int64 lampSeed (const juce::String& text, juce::Rectangle<int> where) noexcept;
+
+    /** One soft halo around a lit area. */
+    void drawGlow (juce::Graphics&, juce::Rectangle<float> lit, juce::Colour, float corner = 4.0f, float reach = 13.0f, float strength = 1.0f);
+
+    /** How far the halo reaches beyond a control (px). */
+    inline constexpr int glowReach = 13;
+
+    /** Marks a component that draws its own children's glows (paintGlows skips it). */
+    inline void setDrawsOwnGlows (juce::Component& c)   { c.getProperties().set ("drawsOwnGlows", true); }
 
     //==========================================================================
     /** A round lamp. */

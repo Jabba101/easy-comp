@@ -53,7 +53,10 @@ namespace Holo
             "Copies the strip you're on to the other one (A to B, or B to A) - then change one of them and compare.";
         const juce::String weaponHint =
             "Weapon select: opens the effects rack in place of GATE, AMP, the screen, EQ, DS and COMP (they keep working). "
-            "WAH, FLANGE, TREMOLO, DELAY and VERB are in there; the mod filter and the limiter are coming. Press it again to go back.";
+            "WAH, FLANGE, TREMOLO, DELAY and VERB are in there; the mod filter and the limiter are coming. Press it again to go back. "
+            "It lights up while any of them is switched on.";
+        const juce::String trackNameHint =
+            "The name of the track this strip is on, as your DAW calls it. Rename the track and it follows.";
         const juce::String rackHint =
             "The effects rack (Easy FX). WAH, FLANGE, TREMOLO, DELAY and VERB work now; the empty bays are where the mod filter "
             "and the rest will go. WEAPON SELECT again takes you back to the strip.";
@@ -109,6 +112,7 @@ namespace Holo
         {
             explicit SetupPanel (View& v) : view (v)
             {
+                setDrawsOwnGlows (*this);
                 auto& s = view.getSettings();
 
                 juce::StringArray sizes;
@@ -228,6 +232,7 @@ namespace Holo
                 g.setColour (Colours::selected);
                 g.setFont (text (14.0f, 1));
                 g.drawText (shownFlow, juce::Rectangle<float> (24.0f, line + 198.0f, r.getWidth() - 48.0f, 22.0f), juce::Justification::centredLeft, false);
+                paintGlows (g, *this);
 
                 g.setColour (Colours::dim);
                 g.setFont (text (13.0f, 0));
@@ -362,6 +367,16 @@ namespace Holo
         ticker = std::make_unique<Painter> ([this] (juce::Graphics& g) { paintTicker (g); });
         addAndMakeVisible (*ticker);
 
+        // The light of lit buttons spilling onto the console (over the backdrop, under the controls)
+        glowLayer = std::make_unique<Painter> ([this] (juce::Graphics& g) { paintGlows (g, *this); paintHazardFrame (g); });
+        addAndMakeVisible (*glowLayer);
+
+        // The track's name, top left (as your DAW calls it)
+        trackName = std::make_unique<Painter> ([this] (juce::Graphics& g) { paintTrackName (g); });
+        trackName->setInterceptsMouseClicks (true, false);   // (for its hint)
+        addAndMakeVisible (*trackName);
+        addHint (*trackName, "TRACK", trackNameHint);
+
         // Header
         presetWindowComponent = std::make_unique<PresetWindow> (*this);
         addAndMakeVisible (*presetWindowComponent);
@@ -477,6 +492,9 @@ namespace Holo
 
         weaponSelect.fontSize = 14.0f;
         weaponSelect.displayFont = true;
+        weaponSelect.glowFrom = 6.0f;      // (from outside its hazard frame)
+        weaponSelect.glowSize = 34;        // (a wide, gentle bleed onto the console - it never swamps it)
+        weaponSelect.glowStrength = 2.4f;
         weaponSelect.onClick = [this] { showRack (! rackShown); };
         addAndMakeVisible (weaponSelect);
         addHint (weaponSelect, "WEAPON SELECT", weaponHint);
@@ -611,21 +629,6 @@ namespace Holo
         headerArea = { left, top, width - 2 * left, headerHeight };
         {
             auto h = headerArea.reduced (14, 6);
-            h.removeFromLeft (120);
-            presetPrevious.setBounds (h.removeFromLeft (30));
-            h.removeFromLeft (4);
-            presetWindow = h.removeFromLeft (560);
-            presetWindowComponent->setBounds (presetWindow);
-            h.removeFromLeft (4);
-            presetNext.setBounds (h.removeFromLeft (30));
-            h.removeFromLeft (16);
-            slotA.setBounds (h.removeFromLeft (32));
-            h.removeFromLeft (4);
-            slotB.setBounds (h.removeFromLeft (32));
-            h.removeFromLeft (8);
-            copySlot.setBounds (h.removeFromLeft (52));
-            h.removeFromLeft (16);
-            orderButton.setBounds (h.removeFromLeft (76));
 
             setupButton.setBounds (h.removeFromRight (96));
             h.removeFromRight (12);
@@ -634,6 +637,29 @@ namespace Holo
             initAllButton.setBounds (h.removeFromRight (54));
             h.removeFromRight (24);
             oversampling->setBounds (h.removeFromRight (230).withSizeKeepingCentre (230, 28));
+            // The OVERSAMPLING lettering (drawn ending 6 px before its buttons), and the same 6 px gap before ORDER
+            const int lettering = juce::roundToInt (std::ceil (juce::GlyphArrangement::getStringWidth (text (13.5f, 1), "OVERSAMPLING")));
+            h.removeFromRight (6 + lettering + 6);
+
+            // The presets to ORDER, right up against OVERSAMPLING
+            orderButton.setBounds (h.removeFromRight (76));
+            h.removeFromRight (16);
+            copySlot.setBounds (h.removeFromRight (52));
+            h.removeFromRight (8);
+            slotB.setBounds (h.removeFromRight (32));
+            h.removeFromRight (4);
+            slotA.setBounds (h.removeFromRight (32));
+            h.removeFromRight (16);
+            presetNext.setBounds (h.removeFromRight (30));
+            h.removeFromRight (4);
+            presetWindow = h.removeFromRight (560);
+            presetWindowComponent->setBounds (presetWindow);
+            h.removeFromRight (4);
+            presetPrevious.setBounds (h.removeFromRight (30));
+            h.removeFromRight (18);
+
+            // ...and the track's name in the space left of them
+            trackNameArea = h;
         }
 
         viewRow = { left, viewRowY, width - 2 * left, viewRowHeight };
@@ -705,6 +731,8 @@ namespace Holo
 
         tickerArea = settings.ticker ? juce::Rectangle<int> (left, bottom + 10, width - 2 * left, tickerHeight) : juce::Rectangle<int>();
         backdrop->setBounds (getLocalBounds());
+        glowLayer->setBounds (getLocalBounds());
+        trackName->setBounds (trackNameArea);
         standby->setBounds (standbyArea);
         ticker->setBounds (tickerArea);
         ticker->setVisible (! tickerArea.isEmpty());
@@ -715,6 +743,43 @@ namespace Holo
 
     //==========================================================================
     void View::paint (juce::Graphics&) {}
+
+    void View::paintHazardFrame (juce::Graphics& g)
+    {
+        // WEAPON SELECT's hazard surround: solid paint - its glow shines out around it, never through it
+        const auto b = weaponSelect.getBounds().toFloat().expanded (6.0f);
+        juce::Graphics::ScopedSaveState save (g);
+        juce::Path frame;
+        frame.addRoundedRectangle (b, 9.0f);
+        g.reduceClipRegion (frame);
+        g.setColour (juce::Colour (0xff121212));
+        g.fillRect (b);
+        g.setColour (Colours::hazard);
+        for (float x = b.getX() - b.getHeight(); x < b.getRight(); x += 18.0f)
+        {
+            juce::Path stripe;
+            stripe.addQuadrilateral (x, b.getBottom(), x + 9.0f, b.getBottom(), x + 9.0f + b.getHeight(), b.getY(), x + b.getHeight(), b.getY());
+            g.fillPath (stripe);
+        }
+    }
+
+    void View::paintTrackName (juce::Graphics& g)
+    {
+        if (shownTrackName.isEmpty())
+            return;
+
+        const auto area = trackNameArea.toFloat();
+        auto font = display (24.0f);
+        const float natural = juce::GlyphArrangement::getStringWidth (font, shownTrackName.toUpperCase());
+        if (natural > area.getWidth())   // (a long name: smaller, down to a point, then cut short with "...")
+            font = display (juce::jmax (14.0f, 24.0f * area.getWidth() / natural));
+
+        auto text = shownTrackName.toUpperCase();
+        while (text.length() > 1 && juce::GlyphArrangement::getStringWidth (font, text) > area.getWidth())
+            text = text.dropLastCharacters (2) + juce::String::fromUTF8 ("\xe2\x80\xa6");
+
+        drawGlowText (g, text, area, juce::Justification::centredLeft, font, Colours::cyan, 0.6f);
+    }
 
     void View::paintBackdrop (juce::Graphics& g)
     {
@@ -814,23 +879,7 @@ namespace Holo
             g.fillRect (centre.x - 0.5f, centre.y - 20.0f, 1.0f, 40.0f);
         }
 
-        // WEAPON SELECT's hazard surround
-        {
-            const auto b = weaponSelect.getBounds().toFloat().expanded (6.0f);
-            juce::Graphics::ScopedSaveState save (g);
-            juce::Path frame;
-            frame.addRoundedRectangle (b, 9.0f);
-            g.reduceClipRegion (frame);
-            g.setColour (juce::Colour (0xff121212));
-            g.fillRect (b);
-            g.setColour (Colours::hazard);
-            for (float x = b.getX() - b.getHeight(); x < b.getRight(); x += 18.0f)
-            {
-                juce::Path stripe;
-                stripe.addQuadrilateral (x, b.getBottom(), x + 9.0f, b.getBottom(), x + 9.0f + b.getHeight(), b.getY(), x + b.getHeight(), b.getY());
-                g.fillPath (stripe);
-            }
-        }
+        // (WEAPON SELECT's hazard surround: drawn over its glow, in paintHazardFrame)
 
     }
 
@@ -1019,7 +1068,19 @@ namespace Holo
 
         for (int m = 0; m < StripModules::numModules; ++m)
             pageButtons[(size_t) m]->setToggleState (m == screen.getPage(), juce::dontSendNotification);
-        weaponSelect.setToggleState (rackShown, juce::dontSendNotification);
+        // WEAPON SELECT lights up while any of the EASY FX are on (or the rack is open)
+        {
+            bool anyOn = false;
+            for (int m = 0; m < StripModules::numModules; ++m)
+                anyOn = anyOn || (StripModules::isRackEffect (m) && strip.isModuleOn (m));
+            weaponSelect.setToggleState (rackShown || anyOn, juce::dontSendNotification);
+        }
+
+        // The track's name (your DAW tells the strip when it changes)
+        {
+            const auto name = strip.getTrackName();
+            if (name != shownTrackName) { shownTrackName = name; trackName->repaint(); }
+        }
 
         {
             const int slot = strip.getActiveSlot();
@@ -1124,7 +1185,7 @@ namespace Holo
             if (show)
                 slabs[(size_t) m]->toFront (false);
         }
-        weaponSelect.setToggleState (show, juce::dontSendNotification);
+        weaponSelect.setToggleState (show || weaponSelect.getToggleState(), juce::dontSendNotification);   // (the timer sets it properly)
     }
 
     void View::setClipAdvancedShown (bool shown)

@@ -20,6 +20,7 @@ namespace Holo
           pr ("Pr", t),
           view (v), strip (v.getStrip()), module (m), tint (t)
     {
+        setDrawsOwnGlows (*this);
         power.fontSize = 16.0f;
         powerLink = std::make_unique<ButtonLink> (param (CommonIDs::bypass), power, true);
         addAndMakeVisible (power);
@@ -156,6 +157,7 @@ namespace Holo
         drawModule (g, getLocalBounds().toFloat(), tint, deepRed);
         for (auto& s : sections)
             drawSection (g, s.area, tint, s.number, s.title, deepRed);
+        paintGlows (g, *this);
     }
 
     //==========================================================================

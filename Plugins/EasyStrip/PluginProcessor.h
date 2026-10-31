@@ -129,6 +129,11 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
     double getTailLengthSeconds() const override;   // (VERB's and DELAY's tails)
 
+    /** Your DAW tells the plugin the track's name (and again whenever it's renamed). */
+    void updateTrackProperties (const TrackProperties&) override;
+    /** The track's name, as your DAW last said (empty if it hasn't). Message thread only. */
+    juce::String getTrackName() const   { return trackName; }
+
     void getStateInformation (juce::MemoryBlock&) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
@@ -225,6 +230,7 @@ private:
     juce::RangedAudioParameter* oversamplingParameter = nullptr;
     std::array<juce::RangedAudioParameter*, 3> qualitySettings {};   // AMP's, CLIP's and TAPE's own OVERSAMPLING
     float lastOversampling = -1.0f;
+    juce::String trackName;
 
     std::atomic<float>* trimValue = nullptr;
     std::atomic<float>* polarityValue = nullptr;

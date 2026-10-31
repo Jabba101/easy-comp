@@ -1,4 +1,5 @@
 #include "HoloControls.h"
+#include <functional>
 
 namespace Holo
 {
@@ -444,19 +445,23 @@ namespace Holo
                 break;
         }
 
-        if (on && style != Style::view)
+        // (the halo around it is drawn by the panel underneath - see paintGlows - so it can spill out)
+        if (on != wasLit)
         {
-            g.setColour (fill.withAlpha (0.18f));
-            g.fillRoundedRectangle (r.expanded (3.0f), corner + 3.0f);
-        }
-        else if (on)
-        {
-            g.setColour (Colours::selected.withAlpha (0.16f));
-            g.fillRoundedRectangle (r.expanded (3.0f), corner + 3.0f);
+            wasLit = on;
+            if (auto* parent = getParentComponent())
+                parent->repaint (getBoundsInParent().expanded (juce::roundToInt (glowFrom) + glowSize + 1));
         }
 
         g.setColour (fill);
         g.fillRoundedRectangle (r, corner);
+
+        if (on && ! displayFont)
+        {
+            paintLampFace (g, r, fill, corner, lampSeed (getButtonText(), getBoundsInParent()));
+            g.setColour (fill.darker (0.35f).withAlpha (0.8f));
+            g.drawRoundedRectangle (r.reduced (0.5f), corner, 1.0f);
+        }
         g.setColour (edge.withMultipliedAlpha (over && ! on ? 1.0f : 0.92f));
         g.drawRoundedRectangle (r, corner, over && ! on ? 1.6f : 1.0f);
 
@@ -465,17 +470,12 @@ namespace Holo
         g.setFont (displayFont ? Holo::display (size) : Holo::text (size, weight));
         if (displayFont)
         {
-            fill = juce::Colour (0xff0a0c10);
-            g.setColour (fill);
-            g.fillRoundedRectangle (r, corner);
-            if (on)   // (lit: the text glows in the tint on the dark face, e.g. WEAPON SELECT while the rack is open)
-            {
-                g.setColour (tint.withAlpha (0.22f));
-                g.fillRoundedRectangle (r, corner);
-                ink = tint.interpolatedWith (juce::Colours::white, 0.35f);
-            }
-            g.setColour (edge);
-            g.drawRoundedRectangle (r, corner, 1.0f);
+            // A real panel button (WEAPON SELECT): a dark recess, and in it a frosted cap with
+            // the lettering on it. Off: a smoky dark cap, the lettering faintly in its colour.
+            // On: lit from behind - glowing brightest in the middle, the light spilling out of
+            // the gap round its sides - with the lettering painted on in black.
+            paintPanelButton (g, r, on);
+            return;
         }
         g.setColour (ink.withMultipliedAlpha (isEnabled() ? 1.0f : 0.4f));
 
@@ -484,6 +484,188 @@ namespace Holo
         for (int i = 0; i < lines.size(); ++i)
             g.drawText (lines[i], juce::Rectangle<float> (r.getX(), top + lineHeight * (float) i, r.getWidth(), lineHeight),
                         juce::Justification::centred, false);
+    }
+
+    void Button::paintPanelButton (juce::Graphics& g, juce::Rectangle<float> r, bool on)
+    {
+        const auto amber = tint;
+        const auto hot = tint.interpolatedWith (juce::Colour (0xfffffbe6), 0.75f);   // (the middle of a lit cap)
+        const auto deep = tint.interpolatedWith (juce::Colour (0xff8a4a00), 0.45f);   // (its edges, where the light is weaker)
+
+        // The recess: near black, darkest at the top where the bezel shades it
+        g.setColour (juce::Colour (0xff050505));
+        g.fillRoundedRectangle (r, 4.0f);
+        {
+            juce::ColourGradient shade (juce::Colours::black.withAlpha (0.9f), r.getCentreX(), r.getY(),
+                                        juce::Colours::transparentBlack, r.getCentreX(), r.getY() + 7.0f, false);
+            g.setGradientFill (shade);
+            g.fillRoundedRectangle (r, 4.0f);
+        }
+
+        const auto cap = r.reduced (4.5f, 4.0f);
+
+        if (on)
+        {
+            // The light escaping round the cap's sides, into the recess
+            for (int i = 3; i >= 1; --i)
+            {
+                g.setColour (amber.withAlpha (0.22f / (float) i));
+                g.fillRoundedRectangle (cap.expanded ((float) i * 1.2f), 3.0f + (float) i);
+            }
+
+            // The cap, lit from behind: a soft hot spot, falling off towards the edges
+            juce::ColourGradient face (hot, cap.getCentreX(), cap.getCentreY() - cap.getHeight() * 0.08f,
+                                       deep, cap.getX() - cap.getWidth() * 0.02f, cap.getCentreY(), true);
+            face.addColour (0.45, amber.interpolatedWith (hot, 0.35f));
+            face.addColour (0.8, amber);
+            g.setGradientFill (face);
+            g.fillRoundedRectangle (cap, 3.0f);
+
+            // A little darker towards the bottom (the light source sits a touch high), and frosted grain
+            juce::ColourGradient lower (juce::Colours::transparentBlack, cap.getCentreX(), cap.getCentreY(),
+                                        juce::Colours::black.withAlpha (0.18f), cap.getCentreX(), cap.getBottom(), false);
+            g.setGradientFill (lower);
+            g.fillRoundedRectangle (cap, 3.0f);
+            juce::Random grain (7);
+            g.setColour (juce::Colours::white.withAlpha (0.06f));
+            for (int i = 0; i < 160; ++i)
+                g.fillRect (cap.getX() + grain.nextFloat() * cap.getWidth(), cap.getY() + grain.nextFloat() * cap.getHeight(), 1.0f, 1.0f);
+
+            // The cap's rim: a bright top edge, a darker bottom one
+            g.setColour (juce::Colours::white.withAlpha (0.55f));
+            g.drawLine (cap.getX() + 3.0f, cap.getY() + 0.6f, cap.getRight() - 3.0f, cap.getY() + 0.6f, 1.0f);
+            g.setColour (deep.darker (0.5f));
+            g.drawRoundedRectangle (cap, 3.0f, 1.0f);
+
+            // The lettering, painted on: black, the light just bleeding through its edges
+            g.setFont (Holo::display (fontSize));
+            g.setColour (juce::Colour (0xff120c02));
+            g.drawText (getButtonText(), cap.translated (0.0f, 0.5f), juce::Justification::centred, false);
+        }
+        else
+        {
+            // Off: smoky dark plastic with a faint sheen, the lettering in its colour, dimmed
+            juce::ColourGradient face (juce::Colour (0xff2a2a26), cap.getCentreX(), cap.getCentreY() - cap.getHeight() * 0.2f,
+                                       juce::Colour (0xff121210), cap.getX(), cap.getCentreY(), true);
+            g.setGradientFill (face);
+            g.fillRoundedRectangle (cap, 3.0f);
+            g.setColour (juce::Colours::white.withAlpha (0.10f));
+            g.drawLine (cap.getX() + 3.0f, cap.getY() + 0.6f, cap.getRight() - 3.0f, cap.getY() + 0.6f, 1.0f);
+            g.setColour (juce::Colours::black);
+            g.drawRoundedRectangle (cap, 3.0f, 1.0f);
+
+            g.setFont (Holo::display (fontSize));
+            g.setColour (amber.withAlpha (isEnabled() ? 0.85f : 0.35f));
+            g.drawText (getButtonText(), cap, juce::Justification::centred, false);
+        }
+    }
+
+    juce::Colour Button::getGlowColour() const noexcept
+    {
+        switch (style)
+        {
+            case Style::init: return Colours::warn;
+            case Style::view: return Colours::selected;
+            case Style::power:
+            case Style::plain:
+            case Style::square:
+            default:          return tint;
+        }
+    }
+
+    //==========================================================================
+    juce::int64 lampSeed (const juce::String& text, juce::Rectangle<int> where) noexcept
+    {
+        // (the same every time for the same button, so its light doesn't flicker or change between sessions)
+        return (juce::int64) text.hashCode64() ^ ((juce::int64) where.getX() * 73856093) ^ ((juce::int64) where.getY() * 19349663);
+    }
+
+    void paintLampFace (juce::Graphics& g, juce::Rectangle<float> r, juce::Colour colour, float corner, juce::int64 seed)
+    {
+        // Each lamp a little different, like real bulbs behind frosted plastic: the hot spot
+        // off-centre by its own amount, its own brightness and spread, and a cooler patch elsewhere
+        juce::Random random (seed);
+        juce::Graphics::ScopedSaveState save (g);
+        juce::Path face;
+        face.addRoundedRectangle (r, corner);
+        g.reduceClipRegion (face);
+
+        const float w = r.getWidth(), h = r.getHeight();
+        const juce::Point<float> hot (r.getCentreX() + (random.nextFloat() - 0.5f) * w * 0.55f,
+                                      r.getCentreY() + (random.nextFloat() - 0.6f) * h * 0.5f);
+        const float spread = juce::jmax (w, h) * (0.35f + 0.35f * random.nextFloat());
+        const float heat = 0.35f + 0.3f * random.nextFloat();
+
+        juce::ColourGradient light (colour.interpolatedWith (juce::Colours::white, heat), hot.x, hot.y,
+                                    colour.withAlpha (0.0f), hot.x + spread, hot.y, true);
+        light.addColour (0.5, colour.interpolatedWith (juce::Colours::white, heat * 0.35f).withAlpha (0.55f));
+        g.setGradientFill (light);
+        g.fillRect (r);
+
+        // A second, fainter hot spot sometimes (two filaments, an uneven diffuser)
+        if (random.nextFloat() < 0.5f)
+        {
+            const juce::Point<float> second (r.getX() + w * (0.15f + 0.7f * random.nextFloat()), r.getY() + h * (0.2f + 0.6f * random.nextFloat()));
+            juce::ColourGradient glow (colour.interpolatedWith (juce::Colours::white, heat * 0.5f).withAlpha (0.5f), second.x, second.y,
+                                       colour.withAlpha (0.0f), second.x + spread * 0.6f, second.y, true);
+            g.setGradientFill (glow);
+            g.fillRect (r);
+        }
+
+        // A cooler, dimmer patch, usually towards a corner
+        const juce::Point<float> cold (random.nextBool() ? r.getX() + w * 0.1f * random.nextFloat() : r.getRight() - w * 0.1f * random.nextFloat(),
+                                       random.nextBool() ? r.getY() + h * 0.2f * random.nextFloat() : r.getBottom() - h * 0.2f * random.nextFloat());
+        juce::ColourGradient shade (juce::Colours::black.withAlpha (0.12f + 0.16f * random.nextFloat()), cold.x, cold.y,
+                                    juce::Colours::transparentBlack, cold.x + juce::jmax (w, h) * (0.35f + 0.3f * random.nextFloat()), cold.y, true);
+        g.setGradientFill (shade);
+        g.fillRect (r);
+    }
+
+    //==========================================================================
+    void drawGlow (juce::Graphics& g, juce::Rectangle<float> lit, juce::Colour colour, float corner, float maxReach, float strength)
+    {
+        // Layers growing outwards and fading: a soft light on the glass around it
+        const int layers = juce::jmax (8, juce::roundToInt (maxReach));   // (a layer a pixel: no steps show)
+        for (int i = layers; i >= 1; --i)
+        {
+            const float reach = maxReach * (float) i / (float) layers;
+            const float t = (float) (i - 1) / (float) layers;   // (0 at the edge .. 1 far out: a soft falloff, no visible rim)
+            const float alpha = juce::jmin (1.0f, 0.15f * strength * 6.0f / (float) layers * (1.0f - t) * (1.0f - t));
+            g.setColour (colour.withAlpha (alpha));
+            g.fillRoundedRectangle (lit.expanded (reach), corner + reach);
+        }
+    }
+
+    void paintGlows (juce::Graphics& g, juce::Component& root)
+    {
+        std::function<void (juce::Component&)> visit = [&] (juce::Component& parent)
+        {
+            for (auto* c : parent.getChildren())
+            {
+                if (! c->isVisible())
+                    continue;
+
+                if (auto* b = dynamic_cast<Button*> (c))
+                {
+                    if (b->isLit() && b->isEnabled())
+                        drawGlow (g, root.getLocalArea (b, b->getLocalBounds().toFloat().reduced (0.5f).expanded (b->glowFrom)), b->getGlowColour(),
+                                  4.0f + b->glowFrom, (float) b->glowSize, b->glowStrength);
+                    continue;
+                }
+
+                if (auto* choice = dynamic_cast<Choice*> (c))
+                {
+                    const auto area = choice->getLitArea();
+                    if (! area.isEmpty())
+                        drawGlow (g, root.getLocalArea (choice, area), choice->tint, 3.0f);
+                    continue;
+                }
+
+                if (! c->getProperties().contains ("drawsOwnGlows"))
+                    visit (*c);
+            }
+        };
+        visit (root);
     }
 
     //==========================================================================
@@ -541,6 +723,16 @@ namespace Holo
         return { 0.0f, (h + gap) * (float) i, (float) getWidth(), h };
     }
 
+    void Choice::setChosen (int index)
+    {
+        if (index == chosen)
+            return;
+        chosen = index;
+        repaint();
+        if (auto* parent = getParentComponent())   // (its glow moves too)
+            parent->repaint (getBoundsInParent().expanded (glowReach));
+    }
+
     void Choice::paint (juce::Graphics& g)
     {
         for (int i = 0; i < names.size(); ++i)
@@ -550,10 +742,9 @@ namespace Holo
 
             if (on)
             {
-                g.setColour (tint.withAlpha (0.18f));
-                g.fillRoundedRectangle (r.expanded (2.5f), 5.0f);
                 g.setColour (tint);
                 g.fillRoundedRectangle (r, 3.0f);
+                paintLampFace (g, r, tint, 3.0f, lampSeed (names[i], getBoundsInParent()));
             }
 
             g.setColour (on ? tint : tint.withAlpha (0.5f));

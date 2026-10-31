@@ -84,6 +84,9 @@ namespace Holo
         static constexpr int numBays = 7, wahBay = 0, flangeBay = 1, tremBay = 3, delayBay = 4, slapBay = 5;
         static constexpr const char* bayNames[numBays] { "AUTO-WAH", "FLANGE / CHORUS", "MOD FILTER", "TREMOLO", "STEREO DELAY", "REVERB", "LIMITER" };
 
+        /** The track name shown top left (for the tests). */
+        const juce::String& getShownTrackName() const noexcept   { return shownTrackName; }
+
         /** A message on the ticker for a while (FIND's progress, WEAPON SELECT...). */
         void announce (const juce::String& title, const juce::String& text, int seconds);
 
@@ -119,6 +122,11 @@ namespace Holo
         EasyStripAudioProcessor& strip;
         StripSettings& settings;
         std::unique_ptr<juce::Component> backdrop, standby, ticker;   // (created first: behind everything)
+        std::unique_ptr<juce::Component> glowLayer, trackName;
+        juce::Rectangle<int> trackNameArea;
+        juce::String shownTrackName;
+        void paintTrackName (juce::Graphics&);
+        void paintHazardFrame (juce::Graphics&);
         Screen screen;
         juce::String shownPresetText;
 

@@ -982,8 +982,30 @@ namespace
             bool back = ! view->isRackShown() && ! view->getRack()->isVisible() && view->getScreen().isVisible() && ! slapSlab.isVisible() && ! delaySlab.isVisible() && ! tremSlab.isVisible() && ! wahSlab.isVisible() && ! flangeSlab.isVisible();
             for (int m : { 0, 1, 2, 3, 4, 5, 7, 8 }) back = back && view->slabs[(size_t) m]->isVisible();
             check (back && s.isModuleOn (6), "WEAPON SELECT again: back to the strip (VERB keeps playing)");
+            view->updateNow();
+            check (view->weaponSelect.getToggleState(), "...and WEAPON SELECT stays lit while any of the EASY FX is on");
+            for (int m : { 6, 9, 10, 11, 12 }) switchOn (s, m, false);
+            view->updateNow();
+            check (! view->weaponSelect.getToggleState(), "...and goes dark once they're all off");
+        }
+
+        // The track's name, top left, following the DAW
+        {
+            juce::AudioProcessor::TrackProperties props;
+            props.name = "Snare Top";
+            s.updateTrackProperties (props);
+            view->updateNow();
+            const bool first = view->getShownTrackName() == "Snare Top";
+            props.name = "Snare Top (Rimshot)";
+            s.updateTrackProperties (props);
+            view->updateNow();
+            check (first && view->getShownTrackName() == "Snare Top (Rimshot)", "the track's name shows top left, and follows a rename in the DAW");
+            const auto preset = view->presetPrevious.getBounds();
+            check (preset.getX() > 200 && view->orderButton.getRight() > view->oversampling->getX() - 90 && view->orderButton.getRight() < view->oversampling->getX() - 60,
+                   "the presets to ORDER sit right, ORDER as close to the OVERSAMPLING lettering as its buttons are, the name to their left");
         }
         view->pageButtons[2]->onClick();
+        switchOn (s, 11, true);   // (WAH on: WEAPON SELECT lit in the picture)
         process (s, music (0.3)); view->updateNow();
         savePng (*editor, outDir.getChildFile ("strip-hologram.png"));
         view->pageButtons[4]->onClick();

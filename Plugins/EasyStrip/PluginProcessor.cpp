@@ -660,6 +660,11 @@ double EasyStripAudioProcessor::getTailLengthSeconds() const
     return tail;
 }
 
+void EasyStripAudioProcessor::updateTrackProperties (const TrackProperties& properties)
+{
+    trackName = properties.name.value_or (juce::String());   // (JUCE calls this on the message thread)
+}
+
 juce::AudioProcessorEditor* EasyStripAudioProcessor::createEditor()
 {
     return new EasyStripAudioProcessorEditor (*this);
