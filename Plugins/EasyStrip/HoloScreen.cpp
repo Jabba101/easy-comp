@@ -31,7 +31,7 @@ namespace Holo
 
     void Screen::setPage (int module)
     {
-        page = juce::jlimit (0, 7, module);
+        page = juce::jlimit (0, StripModules::numModules - 1, module);
         analyserButton.setVisible (page == 2);
         dragging = hovering = -1;
         setMouseCursor (juce::MouseCursor::NormalCursor);
@@ -61,6 +61,9 @@ namespace Holo
     {
         if (page == 2 && strip.getEQ().parameters.getRawParameterValue (EQIDs::analyser)->load() > 0.5f)
             readAnalyser();
+
+        // The VU needle: the reading already swings like one; this smooths the steps between frames
+        tapeVu += (juce::jlimit (-22.0f, 4.0f, strip.getTape().getRecordVu()) - tapeVu) * 0.6f;
         repaint();
     }
 
@@ -101,6 +104,7 @@ namespace Holo
                 case 4: paintComp (g);  break;
                 case 5: paintTrans (g); break;
                 case 6: paintSlap (g);  break;
+                case 8: paintTape (g);  break;
                 default: paintClip (g); break;
             }
         }
@@ -639,5 +643,102 @@ namespace Holo
 
         drawFrame (g, "CLIP:  PUSHED (GREY)   COMES OUT (ORANGE)   SHAVED (RED)   CEILING (LINE)     PEAKS CUT BY UP TO "
                           + juce::String (most, 1) + " dB");
+    }
+
+    //==========================================================================
+    // TAPE
+    //==========================================================================
+    void Screen::paintTape (juce::Graphics& g)
+    {
+        auto& tape = strip.getTape();
+        const auto settings = tape.getCurrentSettings();
+        const auto plot = plotArea();
+        static const char* speedNames[] { "15 IPS", "30 IPS", "CASSETTE" };
+        drawFrame (g, "TAPE:  HOW HARD IT HITS THE TAPE (VU)   THE MACHINE AT " + juce::String (speedNames[(int) settings.speed]));
+
+        // Left: the VU meter
+        auto meter = plot.withWidth (plot.getWidth() * 0.4f).reduced (6.0f, 2.0f);
+        {
+            constexpr float lowVu = -20.0f, highVu = 3.0f, sweep = 0.8f;
+            const float radius = juce::jmin (meter.getWidth() * 0.6f, meter.getHeight() * 1.05f);
+            const juce::Point<float> pivot (meter.getCentreX(), meter.getY() + radius + 4.0f);
+            const auto angleOf = [&] (float vu)
+            {
+                const float a = juce::Decibels::decibelsToGain (juce::jlimit (lowVu, highVu, vu));
+                const float lo = juce::Decibels::decibelsToGain (lowVu), hi = juce::Decibels::decibelsToGain (highVu);
+                return -sweep + 2.0f * sweep * (a - lo) / (hi - lo);
+            };
+            const auto at = [&] (float angle, float r)   { return pivot + juce::Point<float> (std::sin (angle) * r, -std::cos (angle) * r); };
+
+            juce::Graphics::ScopedSaveState save (g);
+            g.reduceClipRegion (meter.toNearestInt());
+
+            for (int part = 0; part < 2; ++part)
+            {
+                juce::Path arc;
+                arc.addCentredArc (pivot.x, pivot.y, radius * 0.82f, radius * 0.82f, 0.0f,
+                                   angleOf (part == 0 ? lowVu : 0.0f), angleOf (part == 0 ? 0.0f : highVu), true);
+                g.setColour (part == 0 ? gridLabel : Colours::warn);
+                g.strokePath (arc, juce::PathStrokeType (part == 0 ? 1.4f : 4.0f));
+            }
+
+            g.setFont (text (12.0f, 1));
+            for (float mark : { -20.0f, -10.0f, -5.0f, -3.0f, -1.0f, 0.0f, 1.0f, 3.0f })
+            {
+                const float angle = angleOf (mark);
+                g.setColour (mark > 0.0f ? Colours::warn : gridLabel);
+                g.drawLine ({ at (angle, radius * 0.82f), at (angle, radius * 0.9f) }, 1.4f);
+                g.drawText ((mark > 0.0f ? "+" : "") + juce::String ((int) mark),
+                            juce::Rectangle<float> (28.0f, 13.0f).withCentre (at (angle, radius * 0.99f)), juce::Justification::centred, false);
+            }
+
+            const float angle = angleOf (tapeVu);
+            juce::Path needle;
+            needle.startNewSubPath (at (angle, radius * 0.2f));
+            needle.lineTo (at (angle, radius * 0.92f));
+            strokeGlow (g, needle, tapeVu > 0.0f ? Colours::warn : Colours::tape, 2.0f);
+
+            g.setColour (Colours::tape);
+            g.setFont (text (15.0f, 2));
+            const juce::String state = tapeVu < -12.0f ? "LOW LEVEL" : (tapeVu < -3.0f ? "SUBTLE" : (tapeVu < 0.5f ? "ON TAPE"
+                                     : (tapeVu < 2.5f ? "PUSHED" : "HITTING IT HARD")));
+            g.drawText (strip.isModuleOn (StripModules::tapeIndex) ? state : juce::String ("OFF"),
+                        meter.removeFromBottom (18.0f), juce::Justification::centred, false);
+        }
+
+        // Right: the response at this speed (a quiet signal; the loud highs soften on top of it)
+        auto curve = plot.withTrimmedLeft (plot.getWidth() * 0.4f + 34.0f);
+        {
+            constexpr float range = 4.0f;
+            const auto xOf = [&] (double hz)   { return curve.getX() + curve.getWidth() * (float) (std::log (hz / 20.0) / std::log (1000.0)); };
+            const auto yOf = [&] (float db)    { return curve.getCentreY() - db / range * curve.getHeight() * 0.5f; };
+
+            g.setFont (text (12.0f, 0));
+            for (double hz : { 20.0, 50.0, 100.0, 200.0, 500.0, 1000.0, 2000.0, 5000.0, 10000.0, 20000.0 })
+            {
+                g.setColour (gridFaint);
+                g.fillRect (xOf (hz), curve.getY(), 1.0f, curve.getHeight());
+                g.setColour (gridLabel.withAlpha (0.8f));
+                g.drawText (hz >= 1000.0 ? juce::String ((int) (hz / 1000.0)) + "k" : juce::String ((int) hz),
+                            juce::Rectangle<float> (30.0f, 14.0f).withCentre ({ xOf (hz), curve.getBottom() + 10.0f }), juce::Justification::centred, false);
+            }
+            for (float db : { -3.0f, 0.0f, 3.0f })
+            {
+                g.setColour (std::abs (db) < 0.01f ? juce::Colour (0xff2a6a8a) : gridFaint);
+                g.fillRect (curve.getX(), yOf (db), curve.getWidth(), 1.0f);
+                g.setColour (gridLabel);
+                g.drawText ((db > 0.0f ? "+" : "") + juce::String ((int) db),
+                            juce::Rectangle<float> (curve.getX() - 34.0f, yOf (db) - 7.0f, 29.0f, 14.0f), juce::Justification::centredRight, false);
+            }
+
+            juce::Path p;
+            for (int i = 0; i <= 200; ++i)
+            {
+                const double hz = 20.0 * std::pow (1000.0, (double) i / 200.0);
+                const juce::Point<float> pt (xOf (hz), yOf (juce::jlimit (-range, range, TapeMachine::responseDb (settings.speed, hz))));
+                if (i == 0) p.startNewSubPath (pt); else p.lineTo (pt);
+            }
+            strokeGlow (g, p, Colours::tape, 2.2f);
+        }
     }
 }

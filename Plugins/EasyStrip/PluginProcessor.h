@@ -10,6 +10,7 @@
 #include "../EasyTransient/PluginProcessor.h"
 #include "../BitchSlap/PluginProcessor.h"
 #include "../EasyClip/PluginProcessor.h"
+#include "../EasyTape/PluginProcessor.h"
 
 //==============================================================================
 /**
@@ -18,7 +19,11 @@
     Each module IS its standalone plugin - the very same code, sound,
     presets and window - running inside the strip, in this order:
 
-        INPUT > GATE > AMP > EQ > DS > COMP > TRANS > BITCH-SLAP > CLIP > OUTPUT
+        INPUT > TAPE > GATE > AMP > EQ > DS > COMP > TRANS > BITCH-SLAP > CLIP > OUTPUT
+
+    (TAPE first: as if the track was recorded to tape and you're mixing
+    from the machine. ORDER's TAPE AT THE END moves it to just before CLIP.
+    BITCH-SLAP's panel is in the WEAPON SELECT rack; TAPE has its old place.)
 
     How it fits together:
       - Settings. The strip shows your DAW one list of settings: every
@@ -32,7 +37,7 @@
         and switching never shifts the timing. Switching back on, the
         module warms up silently, then crossfades in.
       - Sidechain: one input, shared by GATE and COMP.
-      - OVERSAMPLING: one setting for AMP and CLIP.
+      - OVERSAMPLING: one setting for AMP, TAPE and CLIP.
       - The strip's delay is all the modules' delays added up (switched
         off or not), so it only changes when the EQ's MASTER is switched.
       - INPUT: TRIM and a polarity flip. OUTPUT: LEVEL, with peak and LUFS
@@ -61,13 +66,16 @@ struct StripModules
     Module<EasyTransientAudioProcessor> trans { "Easy Transient" };
     Module<BitchSlapAudioProcessor>     slap  { "Bitch-Slap" };
     Module<EasyClipAudioProcessor>      clip  { "Easy Clip" };
+    Module<EasyTapeAudioProcessor>      tape  { "Easy Tape" };
 
-    static constexpr int numModules = 8;
-    std::array<EasyProcessor*, numModules> all { &gate, &amp, &eq, &ds, &comp, &trans, &slap, &clip };
+    // (The numbers are what the strip's saved settings use: new modules go on the end.)
+    enum Index { gateIndex, ampIndex, eqIndex, dsIndex, compIndex, transIndex, slapIndex, clipIndex, tapeIndex };
+    static constexpr int numModules = 9;
+    std::array<EasyProcessor*, numModules> all { &gate, &amp, &eq, &ds, &comp, &trans, &slap, &clip, &tape };
 
-    static constexpr const char* keys[numModules]  { "gate", "amp", "eq", "ds", "comp", "trans", "slap", "clip" };
-    static constexpr const char* names[numModules] { "Gate", "Amp", "EQ", "DS", "Comp", "Trans", "Bitch-Slap", "Clip" };
-    static constexpr const char* tabs[numModules]  { "GATE", "AMP", "EQ", "DS", "COMP", "TRANS", "BITCH-SLAP", "CLIP" };
+    static constexpr const char* keys[numModules]  { "gate", "amp", "eq", "ds", "comp", "trans", "slap", "clip", "tape" };
+    static constexpr const char* names[numModules] { "Gate", "Amp", "EQ", "DS", "Comp", "Trans", "Bitch-Slap", "Clip", "Tape" };
+    static constexpr const char* tabs[numModules]  { "GATE", "AMP", "EQ", "DS", "COMP", "TRANS", "BITCH-SLAP", "CLIP", "TAPE" };
     static bool hasSidechain (int m) noexcept       { return m == 0 || m == 4; }   // GATE and COMP
 };
 
@@ -78,13 +86,15 @@ namespace StripIDs
     inline constexpr const char* level        = "level";
     inline constexpr const char* oversampling = "oversampling";
 
-    // ORDER: four swaps (the panels never move; only the order the sound goes through)
+    // ORDER: five switches (the panels never move; only the order the sound goes through)
     inline constexpr const char* eqAfterComp      = "eqaftercomp";       // COMP, then EQ
     inline constexpr const char* deEssBeforeDrive = "deessbeforedrive";  // DS before AMP
     inline constexpr const char* driveAfterComp   = "driveaftercomp";    // COMP, then AMP
     inline constexpr const char* shapeBeforeComp  = "shapebeforecomp";   // TRANS before COMP
-    inline constexpr const char* orderSwitches[] { eqAfterComp, deEssBeforeDrive, driveAfterComp, shapeBeforeComp };
-    inline constexpr const char* orderNames[]    { "EQ AFTER COMP", "DE-ESS BEFORE DRIVE", "DRIVE AFTER COMP", "SHAPE BEFORE COMP" };
+    inline constexpr const char* tapeAtEnd        = "tapeatend";         // TAPE just before CLIP, not first
+    inline constexpr const char* orderSwitches[] { eqAfterComp, deEssBeforeDrive, driveAfterComp, shapeBeforeComp, tapeAtEnd };
+    inline constexpr const char* orderNames[]    { "EQ AFTER COMP", "DE-ESS BEFORE DRIVE", "DRIVE AFTER COMP", "SHAPE BEFORE COMP", "TAPE AT THE END" };
+    inline constexpr int numOrderSwitches = 5;
     inline juce::String moduleID (int module, const juce::String& id)   { return juce::String (StripModules::keys[module]) + "_" + id; }
 }
 
@@ -118,6 +128,7 @@ public:
     EasyTransientAudioProcessor& getTrans() noexcept    { return trans; }
     BitchSlapAudioProcessor&     getSlap() noexcept     { return slap; }
     EasyClipAudioProcessor&      getClip() noexcept     { return clip; }
+    EasyTapeAudioProcessor&      getTape() noexcept     { return tape; }
     bool isModuleOn (int m) const noexcept;
 
     /** The loudest the sound was going in / coming out since last asked (gain, not dB). */
@@ -130,14 +141,15 @@ public:
     //==== ORDER ===============================================================
     using Order = std::array<int, StripModules::numModules>;
 
-    /** The order the modules run in, for a set of the four swaps (see StripIDs). GATE is
-        always first; BITCH-SLAP and CLIP always last. */
-    static Order orderFor (bool eqAfterComp, bool deEssBeforeDrive, bool driveAfterComp, bool shapeBeforeComp) noexcept;
+    /** The order the modules run in, for a set of the five switches (see StripIDs). TAPE
+        first (or, TAPE AT THE END, just before CLIP), then GATE; BITCH-SLAP and CLIP last. */
+    static Order orderFor (bool eqAfterComp, bool deEssBeforeDrive, bool driveAfterComp, bool shapeBeforeComp,
+                           bool tapeAtEnd = false) noexcept;
 
     /** The order the switches ask for right now (the sound follows within ~20 ms). */
     Order getWantedOrder() const noexcept;
 
-    /** e.g. "GATE > DS > AMP > EQ > COMP > TRANS > BITCH-SLAP > CLIP" */
+    /** e.g. "TAPE > GATE > DS > AMP > EQ > COMP > TRANS > BITCH-SLAP > CLIP" */
     static juce::String describe (const Order&);
     bool isStandardOrder() const noexcept   { return getWantedOrder() == orderFor (false, false, false, false); }
 
@@ -192,7 +204,7 @@ private:
 
     std::array<ModuleLink, numModules> links;
     juce::RangedAudioParameter* oversamplingParameter = nullptr;
-    std::array<juce::RangedAudioParameter*, 2> qualitySettings {};   // AMP's and CLIP's own OVERSAMPLING
+    std::array<juce::RangedAudioParameter*, 3> qualitySettings {};   // AMP's, CLIP's and TAPE's own OVERSAMPLING
     float lastOversampling = -1.0f;
 
     std::atomic<float>* trimValue = nullptr;
@@ -217,7 +229,7 @@ private:
     std::atomic<int> blocksProcessed { 0 };
 
     // ORDER: changing it dips the sound (~30 ms), swaps, and comes back (no clicks)
-    std::array<std::atomic<float>*, 4> orderValues {};
+    std::array<std::atomic<float>*, StripIDs::numOrderSwitches> orderValues {};
     Order order {};
     enum class OrderFade { steady, out, hold, in } orderFade = OrderFade::steady;
     float orderGain = 1.0f;

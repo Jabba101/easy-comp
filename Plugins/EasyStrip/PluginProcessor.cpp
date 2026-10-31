@@ -8,7 +8,8 @@ namespace
     // Settings the strip shares out instead of copying per module
     bool isSharedSetting (int module, const juce::String& id)
     {
-        return id == "quality" && (module == 1 || module == 7);   // AMP's and CLIP's OVERSAMPLING
+        return id == "quality" && (module == StripModules::ampIndex || module == StripModules::clipIndex
+                                    || module == StripModules::tapeIndex);   // AMP's, CLIP's and TAPE's OVERSAMPLING
     }
 
     constexpr int fadeLength = 480;          // a module switched back on crossfades in over ~10 ms
@@ -23,10 +24,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyStripAudioProcessor::cre
     layout.add (makeKnob (StripIDs::trim, 1, "Input Trim", { -24.0f, 24.0f, 0.1f }, 0.0f, Format::signedDecibels));
     layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { StripIDs::polarity, 1 }, "Input Polarity Flip", false));
     layout.add (makeKnob (StripIDs::level, 1, "Output Level", { -24.0f, 24.0f, 0.1f }, 0.0f, Format::signedDecibels));
-    for (int i = 0; i < 4; ++i)
-        layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { StripIDs::orderSwitches[i], 2 },
+    for (int i = 0; i < StripIDs::numOrderSwitches; ++i)
+        layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { StripIDs::orderSwitches[i], i < 4 ? 2 : 3 },
                                                                 "Order: " + juce::String (StripIDs::orderNames[i]).toLowerCase(), false));
-    layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { StripIDs::oversampling, 1 }, "Oversampling (Amp, Clip)",
+    layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { StripIDs::oversampling, 1 }, "Oversampling (Amp, Tape, Clip)",
                                                               juce::StringArray { "4x Mixing / 8x Export", "Off", "4x", "8x" }, 0));
 
     // Every module's settings, with the module's name in front
@@ -153,7 +154,7 @@ EasyStripAudioProcessor::EasyStripAudioProcessor()
     levelValue    = parameters.getRawParameterValue (StripIDs::level);
     bypassValue   = parameters.getRawParameterValue (CommonIDs::bypass);
     autoGainValue = parameters.getRawParameterValue (CommonIDs::autoGain);
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < StripIDs::numOrderSwitches; ++i)
         orderValues[(size_t) i] = parameters.getRawParameterValue (StripIDs::orderSwitches[i]);
     order = getWantedOrder();
     oversamplingParameter = parameters.getParameter (StripIDs::oversampling);
@@ -184,7 +185,7 @@ void EasyStripAudioProcessor::connectModules()
 
             if (isSharedSetting (m, setting->paramID))
             {
-                qualitySettings[m == 1 ? 0 : 1] = setting;
+                qualitySettings[m == ampIndex ? 0 : (m == clipIndex ? 1 : 2)] = setting;
                 continue;
             }
 
@@ -521,11 +522,12 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 
 //==============================================================================
 EasyStripAudioProcessor::Order EasyStripAudioProcessor::orderFor (bool eqAfterComp, bool deEssBeforeDrive,
-                                                                bool driveAfterComp, bool shapeBeforeComp) noexcept
+                                                                bool driveAfterComp, bool shapeBeforeComp, bool tapeAtEnd) noexcept
 {
-    enum { gate, amp, eq, ds, comp, trans, slap, clip };
+    enum { gate, amp, eq, ds, comp, trans, slap, clip, tape };
     Order o {};
     int n = 0;
+    if (! tapeAtEnd)       o[(size_t) n++] = tape;   // (recorded to tape: the usual, most natural-sounding place)
     o[(size_t) n++] = gate;
 
     // Before COMP
@@ -543,6 +545,7 @@ EasyStripAudioProcessor::Order EasyStripAudioProcessor::orderFor (bool eqAfterCo
     if (! shapeBeforeComp) o[(size_t) n++] = trans;
 
     o[(size_t) n++] = slap;
+    if (tapeAtEnd)         o[(size_t) n++] = tape;   // (mixed down to the master machine)
     o[(size_t) n++] = clip;
     return o;
 }
@@ -550,7 +553,7 @@ EasyStripAudioProcessor::Order EasyStripAudioProcessor::orderFor (bool eqAfterCo
 EasyStripAudioProcessor::Order EasyStripAudioProcessor::getWantedOrder() const noexcept
 {
     const auto on = [this] (int i) { return orderValues[(size_t) i] != nullptr && orderValues[(size_t) i]->load() > 0.5f; };
-    return orderFor (on (0), on (1), on (2), on (3));
+    return orderFor (on (0), on (1), on (2), on (3), on (4));
 }
 
 juce::String EasyStripAudioProcessor::describe (const Order& o)
@@ -578,7 +581,7 @@ void EasyStripAudioProcessor::updateAutoGain (double heardIn, double heardOut, i
     autoListenOut += rate * (heardOut / n - autoListenOut);
 
     double wanted = juce::jlimit (0.25, 4.0, std::sqrt (autoListenIn / juce::jmax (autoListenOut, 1.0e-20)));
-    if (isModuleOn (7))
+    if (isModuleOn (clipIndex))
         wanted = juce::jmin (wanted, 1.0);   // (with CLIP on it only turns down, so CLIP's CEILING still holds)
 
     const double speed = wanted < autoTrim ? rate * 3.0 : rate;

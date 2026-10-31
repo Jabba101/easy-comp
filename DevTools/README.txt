@@ -36,7 +36,8 @@ Tests/                 -> /home/claude/verify2
     matched (uncramped) filters, proportional Q, the filters, mid-side and
     MONO BASS, no clicks, LISTEN, AUTO-GAIN, MASTER's linear phase and
     delay, dragging the dots, speed), StripTests (Easy Strip: each module
-    against its standalone plugin sample for sample, all eight in a row,
+    against its standalone plugin sample for sample, all nine in a row
+    (TAPE first),
     the sidechain, switched-off modules skipped with no clicks, settings
     both ways, the delay (and the EQ's MASTER changing it), INPUT /
     OUTPUT / BYPASS, LUFS against known tones and an independent

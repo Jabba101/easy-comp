@@ -263,6 +263,20 @@ LATER
      A fifth ORDER switch, TAPE AT THE END (just before CLIP: mixing
      down to the master machine) for creative use and bus / mastering
      presets. Then the tape-flavoured strip presets use it.
+     DONE in Easy Strip 0.7.0 (31 October): TAPE is the strip's ninth
+     module (saved as "tape_..."; first in the chain), in Bitch-Slap's old
+     panel, with a TAPE page on the big screen (VU + response) and its
+     DISPLAY FOCUS button in BITCH-SLAP's place; TAPE AT THE END is the
+     fifth ORDER switch; one OVERSAMPLING for AMP, TAPE and CLIP. Midnight
+     Jazz, Synthwave, Retrowave, Cyberpunk and Lo-Fi Bus - Worn Cassette
+     use TAPE (the amp's drive eased back where tape now does the warmth).
+     WEAPON SELECT opens the rack: seven bays (AUTO-WAH, CHORUS / FLANGER,
+     MOD FILTER, TREMOLO, STEREO DELAY, BITCH-SLAP, LIMITER), from the
+     page buttons' row down to CLIP, GATE's left edge to COMP's right;
+     BITCH-SLAP's panel in bay 6 (a tall layout); the others say COMING
+     SOON. Bitch-Slap keeps its place in the chain (after TRANS). Its
+     big-screen page is gone for now (the screen's hidden while the rack
+     is open) - a small display of its own in its bay could come later.
    - Once the essentials are perfected: EASY SFX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the

@@ -29,7 +29,7 @@ namespace
     const juce::String levelHint = "The level coming out of the strip, after everything else.";
 
     const juce::String oversamplingHint =
-        "How carefully AMP and CLIP work (one setting for both). 4x / 8x: 4x while you mix, 8x when you export - "
+        "How carefully AMP, TAPE and CLIP work (one setting for all three). 4x / 8x: 4x while you mix, 8x when you export - "
         "the best of both. OFF: lightest on your computer, a little harsher.";
 
     const juce::String lufsHint =
@@ -163,7 +163,7 @@ ClassicStripWindow::ClassicStripWindow (EasyStripAudioProcessor& p)
     }
 
     oversamplingSwitch.setHorizontal (true);
-    oversamplingLabel.setText ("OVERSAMPLING (AMP, CLIP)", juce::dontSendNotification);
+    oversamplingLabel.setText ("OVERSAMPLING (AMP, TAPE, CLIP)", juce::dontSendNotification);
     oversamplingLabel.setFont (juce::Font (juce::FontOptions (12.0f, juce::Font::bold)));
     oversamplingLabel.setColour (juce::Label::textColourId, Palette::textDim);
     oversamplingLabel.setJustificationType (juce::Justification::centredRight);
@@ -266,7 +266,7 @@ void ClassicStripWindow::layoutBody (juce::Rectangle<int> area)
     auto tabRow = middle.removeFromTop (34);
     auto lampRow = middle.removeFromTop (30);
     const int tabWidth = tabRow.getWidth() / EasyStripAudioProcessor::numModules;
-    for (int m = 0; m < EasyStripAudioProcessor::numModules; ++m)
+    for (int m : { (int) StripModules::tapeIndex, 0, 1, 2, 3, 4, 5, 6, 7 })   // (in the order the sound goes)
     {
         tabs[(size_t) m].setBounds (tabRow.removeFromLeft (tabWidth).reduced (3, 0));
         onLamps[(size_t) m]->setBounds (lampRow.removeFromLeft (tabWidth).withSizeKeepingCentre (56, 24));

@@ -17,7 +17,7 @@
 */
 namespace StripPresetRecipes
 {
-    enum Module { gate = 0, amp, eq, ds, comp, trans, slap, clip };
+    enum Module { gate = 0, amp, eq, ds, comp, trans, slap, clip, tape };
 
     struct Use { Module module; const char* preset; };
     struct Set { Module module; const char* id; float value; };   // one knob, in its own units
@@ -324,10 +324,12 @@ namespace StripPresetRecipes
             //  80-100 Hz) - MONO BASS keeps it solid in the middle, PROTECT LOWS keeps CLIP off it;
             //  EQ AFTER COMP where the bass boost shouldn't make the compressor pump.)
             { "Mix Bus", "Midnight Jazz",
-              "Smoky 40s / 50s jazz club, made to sound good (not lo-fi): valve warmth, a deep round bottom, the edge just softened, an open top. Slow vintage compression keeps the playing's dynamics.",
-              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Jazz, Folk & Classical" }, { clip, "Master - Gentle Safety Net" } },
+              "Smoky 40s / 50s jazz club, made to sound good (not lo-fi): 15 ips tape and valve warmth, a deep round bottom, the edge just softened, an open top. Slow vintage compression keeps the playing's dynamics.",
+              { { tape, "Mix Bus - 15 ips Glue" }, { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" },
+                { comp, "Mix Bus - Jazz, Folk & Classical" }, { clip, "Master - Gentle Safety Net" } },
               { "eqaftercomp" },
-              { { amp, "drive", 20.0f }, { amp, "tone", 0.0f }, { amp, "tight", 100.0f },
+              { { tape, "drive", -2.0f },
+                { amp, "drive", 14.0f }, { amp, "tone", 0.0f }, { amp, "tight", 100.0f },
                 { eq, "lowfreq", 100.0f }, { eq, "lowgain", 7.0f }, { eq, "lowshelf", shelf }, { eq, "lowtarget", stereo },
                 { eq, "lowmidfreq", 250.0f }, { eq, "lowmidgain", 1.5f }, { eq, "lowmidtarget", stereo },
                 { eq, "highmidfreq", 3500.0f }, { eq, "highmidgain", -1.0f },
@@ -403,8 +405,8 @@ namespace StripPresetRecipes
                 { clip, "protectlows", 100.0f }, { clip, "push", 5.0f }, { clip, "softness", 40.0f } } },
 
             { "Mix Bus", "Cyberpunk",
-              "Synthwave, bass-heavy and crunchy: a deep sub, warm drive, wide tops, a touch of 80s space.",
-              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
+              "Synthwave, bass-heavy and crunchy: pushed 15 ips tape, a deep sub, warm drive, wide tops, a touch of 80s space.",
+              { { tape, "Mix Bus - 15 ips Pushed" }, { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
                 { slap, "Mix Bus - 80s Space" }, { clip, "Master - Synthwave Shine" } },
               { "driveaftercomp" },
               { { amp, "mix", 70.0f }, { amp, "drive", 35.0f }, { amp, "tone", 30.0f }, { amp, "tight", 90.0f },
@@ -416,11 +418,11 @@ namespace StripPresetRecipes
                 { slap, "mix", 10.0f }, { clip, "protectlows", 100.0f }, { clip, "push", 5.0f }, { clip, "softness", 50.0f } } },
 
             { "Mix Bus", "Synthwave",
-              "80s warmth - gentle saturation and glue, an open top - with a deep EDM bass running underneath it all. (Easy Tape, coming, will add the real tape character.)",
-              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
+              "80s warmth - 15 ips tape, gentle saturation and glue, an open top - with a deep EDM bass running underneath it all.",
+              { { tape, "Mix Bus - 15 ips Glue" }, { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
                 { slap, "Mix Bus - 80s Space" }, { clip, "Master - Synthwave Shine" } },
               { "eqaftercomp" },
-              { { amp, "drive", 20.0f }, { amp, "tone", 0.0f }, { amp, "tight", 120.0f },
+              { { amp, "drive", 12.0f }, { amp, "tone", 0.0f }, { amp, "tight", 120.0f },
                 { eq, "lowfreq", 80.0f }, { eq, "lowgain", 7.0f }, { eq, "lowshelf", shelf }, { eq, "lowtarget", stereo },
                 { eq, "lowmidfreq", 250.0f }, { eq, "lowmidgain", -1.5f },
                 { eq, "highmidfreq", 3000.0f }, { eq, "highmidgain", 0.0f },
@@ -429,11 +431,11 @@ namespace StripPresetRecipes
                 { clip, "protectlows", 100.0f }, { clip, "softness", 60.0f } } },
 
             { "Mix Bus", "Retrowave",
-              "The 80s sound in its purest form: a warm low end, gentle saturation, an open top, vintage glue and a touch of 80s space. (Easy Tape, coming, will add the real tape character.)",
-              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
+              "The 80s sound in its purest form: tape hit a little harder, a warm low end, gentle saturation, an open top, vintage glue and a touch of 80s space.",
+              { { tape, "Mix Bus - 15 ips Glue" }, { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" },
                 { slap, "Mix Bus - 80s Space" }, { clip, "Master - Synthwave Shine" } },
               {},
-              { { amp, "tight", 100.0f }, { amp, "drive", 22.0f }, { amp, "tone", 0.0f },
+              { { tape, "drive", 3.0f }, { amp, "tight", 100.0f }, { amp, "drive", 12.0f }, { amp, "tone", 0.0f },
                 { eq, "lowfreq", 90.0f }, { eq, "lowgain", 5.0f }, { eq, "lowshelf", shelf }, { eq, "lowtarget", stereo },
                 { eq, "lowmidfreq", 300.0f }, { eq, "lowmidgain", -1.0f },
                 { eq, "highmidfreq", 3000.0f }, { eq, "highmidgain", 0.0f },
@@ -511,17 +513,19 @@ namespace StripPresetRecipes
 
             //==== Mix bus: lo-fi ==============================================
             // (Deliberately degraded - this is where heavy roll-off, narrowing and crushing
-            //  belong. NOT tape: real tape is far more subtle - see Easy Tape in PLAN.txt.)
+            //  belong. Real reel-to-reel tape is far more subtle; Worn Cassette uses TAPE's
+            //  CASSETTE speed.)
             { "Mix Bus", "Lo-Fi Bus - Worn Cassette",
-              "A worn, chewed-up cassette: thin lows, dull top, narrowed, squashed and saturated. Lo-fi on purpose.",
-              { { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" }, { clip, "Master - Synthwave Shine" } },
+              "A worn, chewed-up cassette: TAPE on CASSETTE (wobble and hiss), thin lows, dull top, narrowed, squashed and saturated. Lo-fi on purpose.",
+              { { tape, "Lo-Fi Bus - Cassette Demo" }, { amp, "Mix Bus - Gentle Valve Glue" }, { eq, "Mix Bus - Gentle Polish" },
+                { comp, "Mix Bus - Vintage Glue" }, { clip, "Master - Synthwave Shine" } },
               {},
-              { { amp, "drive", 35.0f }, { amp, "tone", -30.0f }, { amp, "tight", 20.0f },
+              { { amp, "drive", 22.0f }, { amp, "tone", -20.0f }, { amp, "tight", 20.0f },
                 { eq, "lowfreq", 120.0f }, { eq, "lowgain", 3.0f }, { eq, "lowshelf", bell }, { eq, "lowtarget", stereo },
                 { eq, "lowmidfreq", 400.0f }, { eq, "lowmidgain", 1.5f },
                 { eq, "highmidfreq", 3000.0f }, { eq, "highmidgain", -2.0f },
                 { eq, "highfreq", 6000.0f }, { eq, "highgain", -4.0f }, { eq, "highshelf", shelf },
-                { eq, "hpf", 60.0f }, { eq, "lpf", 9000.0f }, { eq, "monobass", 250.0f },
+                { eq, "hpf", 60.0f }, { eq, "lpf", 12000.0f }, { eq, "monobass", 250.0f },
                 { comp, "ratio", 4.0f }, { comp, "attack", 10.0f }, { comp, "release", 150.0f },
                 { clip, "push", 4.0f }, { clip, "softness", 70.0f }, { clip, "protectlows", 20.0f } } },
 

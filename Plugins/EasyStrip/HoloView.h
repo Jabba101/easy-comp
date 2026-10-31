@@ -14,10 +14,15 @@ namespace Holo
         The whole Easy Strip in the HOLOGRAM skin, laid out at 100% (1800 wide);
         the window scales it to the size chosen in SETUP (or dragged).
 
-        Header: the strip's presets, OVERSAMPLING, DIM, INIT (the whole strip),
+        Header: the strip's presets, OVERSAMPLING, INIT (the whole strip),
         BYPASS, SETUP. Under it, the page buttons for the big screen. Then
-        INPUT, every module in signal order around the screen, OUTPUT, and the
-        ticker (hints and values) along the bottom.
+        INPUT, the modules around the screen, OUTPUT, and the ticker (hints and
+        values) along the bottom.
+
+        WEAPON SELECT swaps GATE, AMP, the screen, EQ, DS and COMP for the
+        effects rack (seven bays; BITCH-SLAP's is the first one in use).
+        TRANS, TAPE, CLIP, INPUT / OUTPUT and the header stay. Pressing it
+        again brings the strip back.
 
         Every module's controls are its standalone plugin's controls (same
         names, same numbered sections, the same hints word for word), and each
@@ -71,10 +76,18 @@ namespace Holo
         void updateNow()                                            { timerCallback(); }   // (tests)
         void setClipAdvancedShown (bool);
 
+        /** WEAPON SELECT: the effects rack in place of the left-hand modules (or back). */
+        void showRack (bool);
+        bool isRackShown() const noexcept                           { return rackShown; }
+        juce::Component* getRack() const noexcept                   { return rack.get(); }
+
+        static constexpr int numBays = 7, slapBay = 5;
+        static constexpr const char* bayNames[numBays] { "AUTO-WAH", "CHORUS / FLANGER", "MOD FILTER", "TREMOLO", "STEREO DELAY", "BITCH-SLAP", "LIMITER" };
+
         /** A message on the ticker for a while (FIND's progress, WEAPON SELECT...). */
         void announce (const juce::String& title, const juce::String& text, int seconds);
 
-        std::array<std::unique_ptr<Button>, 8> pageButtons;
+        std::array<std::unique_ptr<Button>, StripModules::numModules> pageButtons;   // (by module; BITCH-SLAP's isn't shown)
         Button initAllButton { "INIT", Colours::warn, Button::Style::init };
         Button bypassButton { "BYPASS", Colours::warn };
         Button setupButton { "SETUP", Colours::cyan };
@@ -111,7 +124,7 @@ namespace Holo
 
         struct Hint { juce::Component* component; juce::String title, text; };
         std::vector<Hint> hints;
-        std::array<std::map<juce::String, juce::String>, 8> standaloneHints;
+        std::array<std::map<juce::String, juce::String>, StripModules::numModules> standaloneHints;
         std::map<juce::String, ParamControl*> controls;
         juce::Component::SafePointer<juce::Component> hovered;
 
@@ -146,7 +159,12 @@ namespace Holo
         std::unique_ptr<juce::Component> setupPanel;
 
         // Per-module preset menus (each module's own list, as in its standalone)
-        std::array<std::unique_ptr<PresetBrowser>, 8> modulePresets;
+        std::array<std::unique_ptr<PresetBrowser>, StripModules::numModules> modulePresets;
+
+        // WEAPON SELECT
+        std::unique_ptr<juce::Component> rack;
+        bool rackShown = false;
+        void layoutRack();
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (View)
     };

@@ -34,7 +34,7 @@ namespace Holo
             "Loudness the way streaming services measure it. S: the last 3 seconds. I: the whole song since you last "
             "reset it - click it to start again. (Spotify and YouTube aim for about -14 LUFS.)";
         const juce::String oversamplingHint =
-            "How carefully AMP and CLIP work (one setting for both). 4x / 8x: 4x while you mix, 8x when you export - "
+            "How carefully AMP, TAPE and CLIP work (one setting for all three). 4x / 8x: 4x while you mix, 8x when you export - "
             "the best of both. OFF: lightest on your computer, a little harsher. 4x and 8x add a little delay.";
         const juce::String initAllHint =
             "Init: puts every module on the strip back to its default settings and switches them all off. "
@@ -51,7 +51,24 @@ namespace Holo
             "the track plays to hear which you prefer. B starts as a copy of A; the one you're not on is kept with your project.";
         const juce::String stripCopyHint =
             "Copies the strip you're on to the other one (A to B, or B to A) - then change one of them and compare.";
-        const juce::String weaponHint = "Weapon select: opens Easy SFX, the effects rack (coming later).";
+        const juce::String weaponHint =
+            "Weapon select: opens the effects rack in place of GATE, AMP, the screen, EQ, DS and COMP (they keep working). "
+            "BITCH-SLAP is in there; delay, chorus, tremolo and more are coming. Press it again to go back.";
+        const juce::String rackHint =
+            "The effects rack (Easy SFX). BITCH-SLAP's bay works now; the empty bays are where the delay, chorus, tremolo "
+            "and the rest will go. WEAPON SELECT again takes you back to the strip.";
+
+        // The page buttons, left to right (BITCH-SLAP's panel is in the rack now: no page for it)
+        constexpr int pageOrder[] { 0, 1, 2, 3, 4, 5, 8, 7 };
+
+        constexpr const char* bayNotes[] {
+            "Follows your playing: funk guitar, clavinet, bass.",
+            "Chorus, flanger and vibrato. Tempo-lockable.",
+            "Filter pulses locked to the tempo; wide stereo sweeps.",
+            "The volume pulsing, locked to the tempo.",
+            "Echoes, left and right, locked to the tempo.",
+            "",
+            "A transparent final ceiling." };
         const juce::String serialHint = "Click for the version.";
         const juce::String gettingStarted =
             "Hover over or drag any control to see what it does. Every module starts switched off: click its name to switch it on.";
@@ -119,8 +136,8 @@ namespace Holo
                                                             juce::StringArray { "LOW", "MEDIUM", "HIGH" }, Colours::delayMode, true);
                 addAndMakeVisible (*precisionChoice);
 
-                // ORDER (this strip): the four swaps
-                for (int i = 0; i < 4; ++i)
+                // ORDER (this strip): the five switches
+                for (int i = 0; i < StripIDs::numOrderSwitches; ++i)
                 {
                     auto& b = orderButtons[(size_t) i];
                     b = std::make_unique<Button> (StripIDs::orderNames[i], Colours::selected);
@@ -131,7 +148,7 @@ namespace Holo
 
                 close.onClick = [this] { view.showSetup (false); };
                 addAndMakeVisible (close);
-                setSize (640, 640);
+                setSize (640, 676);
                 shownFlow = EasyStripAudioProcessor::describe (view.getStrip().getWantedOrder());
                 startTimerHz (10);
             }
@@ -170,7 +187,7 @@ namespace Holo
                 }
                 precisionChoice->setBounds (24 + labelWidth, rowTop + rowHeight * 5 + 44, 290, 30);
                 const int orderTop = rowTop + rowHeight * 5 + 10 + 92;
-                for (int i = 0; i < 4; ++i)
+                for (int i = 0; i < StripIDs::numOrderSwitches; ++i)
                     orderButtons[(size_t) i]->setBounds (24 + labelWidth + (i % 2) * 196, orderTop + (i / 2) * 36, 190, 30);
                 close.setBounds (getWidth() - 24 - 100, getHeight() - 20 - 32, 100, 32);
             }
@@ -210,7 +227,7 @@ namespace Holo
                 g.drawText ("ORDER", juce::Rectangle<float> (24.0f, line + 88.0f, (float) labelWidth, 38.0f), juce::Justification::centredLeft, false);
                 g.setColour (Colours::selected);
                 g.setFont (text (14.0f, 1));
-                g.drawText (shownFlow, juce::Rectangle<float> (24.0f, line + 162.0f, r.getWidth() - 48.0f, 22.0f), juce::Justification::centredLeft, false);
+                g.drawText (shownFlow, juce::Rectangle<float> (24.0f, line + 198.0f, r.getWidth() - 48.0f, 22.0f), juce::Justification::centredLeft, false);
 
                 g.setColour (Colours::dim);
                 g.setFont (text (13.0f, 0));
@@ -218,15 +235,15 @@ namespace Holo
                                   "LOW = about 11 ms and less smear before each hit (good on drums), but bands below about 60 Hz come out broader.\n"
                                   "ORDER changes only the order the sound goes through - the panels stay where they are. Also on the ORDER button by the presets.\n"
                                   "You can also drag the window's corner. Meters: 0 dBFS suits the master; -18 dBFS (like a VU meter) suits single tracks.",
-                                  juce::Rectangle<int> (24, (int) line + 192, (int) r.getWidth() - 48, 74), juce::Justification::topLeft, 5);
+                                  juce::Rectangle<int> (24, (int) line + 228, (int) r.getWidth() - 48, 74), juce::Justification::topLeft, 5);
                 g.drawText ("Easy Strip " JucePlugin_VersionString "  -  built " __DATE__,
                             juce::Rectangle<float> (24.0f, r.getHeight() - 52.0f, 380.0f, 32.0f), juce::Justification::centredLeft, false);
             }
 
             View& view;
             std::unique_ptr<Choice> sizeChoice, skinChoice, tickerChoice, meterChoice, brightnessChoice, precisionChoice;
-            std::array<std::unique_ptr<Button>, 4> orderButtons;
-            std::array<std::unique_ptr<ButtonLink>, 4> orderLinks;
+            std::array<std::unique_ptr<Button>, StripIDs::numOrderSwitches> orderButtons;
+            std::array<std::unique_ptr<ButtonLink>, StripIDs::numOrderSwitches> orderLinks;
             juce::String shownFlow;
             Button close { "CLOSE", Colours::cyan };
         };
@@ -239,6 +256,67 @@ namespace Holo
         explicit Painter (std::function<void (juce::Graphics&)> f) : draw (std::move (f))   { setInterceptsMouseClicks (false, false); }
         void paint (juce::Graphics& g) override   { g.setOrigin (-getPosition()); draw (g); }
         std::function<void (juce::Graphics&)> draw;
+    };
+
+    //==========================================================================
+    /** WEAPON SELECT's effects rack: seven bays side by side. BITCH-SLAP's
+        panel sits in its own bay; the rest say what's coming. */
+    struct RackPanel : public juce::Component
+    {
+        RackPanel()   { setInterceptsMouseClicks (true, true); }
+
+        std::array<juce::Rectangle<int>, View::numBays> bays;
+
+        void paint (juce::Graphics& g) override
+        {
+            const auto r = getLocalBounds().toFloat();
+            const auto shape = chamfered (r.reduced (0.5f), 12.0f);
+            g.setColour (juce::Colour (0xfa040b14));
+            g.fillPath (shape);
+            {
+                juce::Graphics::ScopedSaveState save (g);
+                g.reduceClipRegion (shape);
+                g.setColour (Colours::hazard.withAlpha (0.035f));
+                for (float x = r.getX(); x < r.getRight(); x += 24.0f) g.fillRect (x, r.getY(), 1.0f, r.getHeight());
+                for (float y = r.getY(); y < r.getBottom(); y += 24.0f) g.fillRect (r.getX(), y, r.getWidth(), 1.0f);
+            }
+            strokeGlow (g, shape, Colours::hazard, 1.2f, 0.4f);
+
+            drawGlowText (g, "EASY SFX", juce::Rectangle<float> (18.0f, 6.0f, 300.0f, 30.0f), juce::Justification::centredLeft, display (22.0f), Colours::hazard, 0.7f);
+            g.setColour (Colours::dim);
+            g.setFont (text (14.0f, 1));
+            g.drawText ("THE EFFECTS RACK   -   WEAPON SELECT AGAIN: BACK TO THE STRIP", juce::Rectangle<float> (170.0f, 6.0f, r.getWidth() - 190.0f, 30.0f),
+                        juce::Justification::centredRight, false);
+
+            for (int b = 0; b < View::numBays; ++b)
+            {
+                if (b == View::slapBay)
+                    continue;   // (BITCH-SLAP's own panel is there)
+
+                const auto bay = bays[(size_t) b].toFloat();
+                const auto bayShape = chamfered (bay, 9.0f);
+                g.setColour (juce::Colour (0x80071423));
+                g.fillPath (bayShape);
+                const float dashes[] = { 6.0f, 5.0f };
+                juce::Path dashed;
+                juce::PathStrokeType (1.0f).createDashedStroke (dashed, bayShape, dashes, 2);
+                g.setColour (Colours::offEdge);
+                g.fillPath (dashed);
+
+                g.setColour (Colours::offText);
+                g.setFont (text (13.0f, 1));
+                g.drawText ("BAY " + juce::String (b + 1), bay.withHeight (30.0f), juce::Justification::centred, false);
+                drawGlowText (g, View::bayNames[b], bay.withTrimmedTop (34.0f).withHeight (24.0f), juce::Justification::centred, text (16.0f, 2),
+                              Colours::ink.withAlpha (0.55f), 0.3f);
+                g.setColour (Colours::hazard.withAlpha (0.55f));
+                g.setFont (text (14.0f, 2));
+                g.drawText ("COMING SOON", bay.withSizeKeepingCentre (bay.getWidth(), 20.0f), juce::Justification::centred, false);
+                g.setColour (Colours::dim);
+                g.setFont (text (13.0f, 0));
+                g.drawFittedText (bayNotes[b], bay.withTrimmedTop (bay.getHeight() * 0.5f + 16.0f).withHeight (60.0f).reduced (10.0f, 0.0f).toNearestInt(),
+                                  juce::Justification::centredTop, 3);
+            }
+        }
     };
 
     //==========================================================================
@@ -352,15 +430,16 @@ namespace Holo
         addAndMakeVisible (setupButton);
         addHint (setupButton, "SETUP", setupHint);
 
-        // The page buttons
-        for (int m = 0; m < 8; ++m)
+        // The page buttons (by module; BITCH-SLAP's isn't shown - its panel is in the rack)
+        for (int m = 0; m < StripModules::numModules; ++m)
         {
             pageButtons[(size_t) m] = std::make_unique<Button> (m == 6 ? juce::String ("BITCH|SLAP") : juce::String (StripModules::tabs[m]),
                                                                 Colours::selected, Button::Style::view);
             auto& b = *pageButtons[(size_t) m];
             b.fontSize = m == 6 ? 13.0f : 14.5f;
             b.onClick = [this, m] { showPage (m); };
-            addAndMakeVisible (b);
+            if (m != StripModules::slapIndex)
+                addAndMakeVisible (b);
             addHint (b, "DISPLAY FOCUS: " + juce::String (m == 6 ? "BITCH-SLAP" : StripModules::tabs[m]), pageHint);
         }
 
@@ -380,18 +459,24 @@ namespace Holo
         addAndMakeVisible (polarityButton);
         addHint (polarityButton, "POLARITY", polarityHint);
 
+        // The rack (WEAPON SELECT), behind the modules' panels
+        rack = std::make_unique<RackPanel>();
+        addChildComponent (*rack);
+        addHint (*rack, "EASY SFX", rackHint);
+
         // The modules
-        for (int m = 0; m < 8; ++m)
+        for (int m = 0; m < StripModules::numModules; ++m)
         {
             slabs.push_back (makeSlab (*this, m));
             addAndMakeVisible (*slabs.back());
         }
+        slabs[StripModules::slapIndex]->setVisible (false);   // (its panel is in the WEAPON SELECT rack)
         clipAdvanced = std::make_unique<ClipAdvanced> (*this);
         addChildComponent (*clipAdvanced);
 
         weaponSelect.fontSize = 14.0f;
         weaponSelect.displayFont = true;
-        weaponSelect.onClick = [this] { announce ("WEAPON SELECT", "Easy SFX - the effects rack (tremolo, delay and more) - is coming later.", 6); };
+        weaponSelect.onClick = [this] { showRack (! rackShown); };
         addAndMakeVisible (weaponSelect);
         addHint (weaponSelect, "WEAPON SELECT", weaponHint);
 
@@ -447,7 +532,7 @@ namespace Holo
         addChildComponent (entry);
 
         // Module preset menus
-        for (int m = 0; m < 8; ++m)
+        for (int m = 0; m < StripModules::numModules; ++m)
         {
             auto& module = strip.getModule (m);
             auto browser = std::make_unique<PresetBrowser>();
@@ -475,12 +560,12 @@ namespace Holo
     {
         // The standalone windows' own hints, word for word: each one is opened
         // (out of sight) once, and its hints copied.
-        static std::array<std::map<juce::String, juce::String>, 8> cache;
+        static std::array<std::map<juce::String, juce::String>, StripModules::numModules> cache;
         static bool collected = false;
 
         if (! collected)
         {
-            for (int m = 0; m < 8; ++m)
+            for (int m = 0; m < StripModules::numModules; ++m)
             {
                 auto& module = strip.getModule (m);
                 if (module.getActiveEditor() != nullptr)
@@ -553,11 +638,12 @@ namespace Holo
         viewRow = { left, viewRowY, width - 2 * left, viewRowHeight };
         {
             // Narrow buttons, all over the big screen
-            constexpr int buttonWidth = 64, gap = (wScreen - 8 * buttonWidth) / 7;
+            constexpr int shown = (int) std::size (pageOrder);
+            constexpr int buttonWidth = 64, gap = (wScreen - shown * buttonWidth) / (shown - 1);
             int x = colScreen;
-            for (auto& b : pageButtons)
+            for (int m : pageOrder)
             {
-                b->setBounds (x, viewRowY, buttonWidth, viewRowHeight);
+                pageButtons[(size_t) m]->setBounds (x, viewRowY, buttonWidth, viewRowHeight);
                 x += buttonWidth + gap;
             }
         }
@@ -609,10 +695,12 @@ namespace Holo
         slabs[3]->setBounds (colRight, mainY, wRight, 268);
         slabs[4]->setBounds (colRight, mainY + 278, wRight, 842 - (mainY + 278));
         slabs[5]->setBounds (colRight2, mainY, wRight2, 320);
-        slabs[6]->setBounds (colRight2, mainY + 330, wRight2, 298);
+        slabs[StripModules::tapeIndex]->setBounds (colRight2, mainY + 330, wRight2, 298);   // (BITCH-SLAP's old place)
         weaponArea = { colRight2, mainY + 638, wRight2, 842 - (mainY + 638) };
         weaponSelect.setBounds (weaponArea.withSizeKeepingCentre (212, 46));
         slabs[7]->setBounds (colRight, 852, colRight2 + wRight2 - colRight, bottom - 852);
+
+        layoutRack();
 
         tickerArea = settings.ticker ? juce::Rectangle<int> (left, bottom + 10, width - 2 * left, tickerHeight) : juce::Rectangle<int>();
         backdrop->setBounds (getLocalBounds());
@@ -830,7 +918,7 @@ namespace Holo
                     if (walk == &orderButton)
                     {
                         setTicker ("ORDER", "The sound goes " + EasyStripAudioProcessor::describe (strip.getWantedOrder())
-                                   + ". Click for the four swaps (also in SETUP). The panels never move.", Colours::selected);
+                                   + ". Click for the five switches (also in SETUP). The panels never move.", Colours::selected);
                         return;
                     }
                     if (auto* slab = walk->findParentComponentOfClass<Slab>())
@@ -890,7 +978,7 @@ namespace Holo
 
     void View::settingMoved (juce::RangedAudioParameter& p)
     {
-        for (int m = 0; m < 8; ++m)
+        for (int m = 0; m < StripModules::numModules; ++m)
         {
             auto& module = strip.getModule (m);
             if (module.parameters.getParameter (p.paramID) == &p)
@@ -928,8 +1016,9 @@ namespace Holo
         static_cast<Readout*> (lufsShortTerm.get())->set (strip.getShortTermLufs());
         static_cast<Readout*> (lufsIntegrated.get())->set (strip.getIntegratedLufs());
 
-        for (int m = 0; m < 8; ++m)
+        for (int m = 0; m < StripModules::numModules; ++m)
             pageButtons[(size_t) m]->setToggleState (m == screen.getPage(), juce::dontSendNotification);
+        weaponSelect.setToggleState (rackShown, juce::dontSendNotification);
 
         {
             const int slot = strip.getActiveSlot();
@@ -985,14 +1074,49 @@ namespace Holo
     void View::showPage (int module)
     {
         screen.setPage (module);
-        for (int m = 0; m < 8; ++m)
+        for (int m = 0; m < StripModules::numModules; ++m)
             pageButtons[(size_t) m]->setToggleState (m == module, juce::dontSendNotification);
 
         static const char* screenHints[] { "WHAT IT'S DOING", "WHAT IT'S DOING", "THE CURVE", "WHAT IT'S DOING",
-                                           "COMPRESSION CURVE", "WHAT IT'S DOING", "WHAT IT'S DOING", "WHAT IT'S DOING" };
+                                           "COMPRESSION CURVE", "WHAT IT'S DOING", "WHAT IT'S DOING", "WHAT IT'S DOING", "WHAT IT'S DOING" };
         for (auto& h : hints)
             if (h.component == &screen)
                 h.text = moduleHint (module, screenHints[module]);
+    }
+
+    void View::layoutRack()
+    {
+        // From the page buttons' row down to CLIP, from GATE's left edge to COMP's right
+        const juce::Rectangle<int> area (colGate, viewRowY, colRight + wRight - colGate, 842 - viewRowY);
+        rack->setBounds (area);
+
+        auto* panel = static_cast<RackPanel*> (rack.get());
+        auto inside = rack->getLocalBounds().reduced (10, 0).withTrimmedTop (40).withTrimmedBottom (10);
+        constexpr int gap = 10;
+        const int bayWidth = (inside.getWidth() - (numBays - 1) * gap) / numBays;
+        for (int b = 0; b < numBays; ++b)
+        {
+            panel->bays[(size_t) b] = inside.removeFromLeft (bayWidth);
+            inside.removeFromLeft (gap);
+        }
+
+        // BITCH-SLAP: in its bay while the rack's open (its old place on the main page is TAPE's)
+        slabs[StripModules::slapIndex]->setBounds (panel->bays[(size_t) slapBay] + rack->getPosition());
+    }
+
+    void View::showRack (bool show)
+    {
+        rackShown = show;
+        rack->setVisible (show);
+        for (int m : { 0, 1, 2, 3, 4 })
+            slabs[(size_t) m]->setVisible (! show);
+        slabs[StripModules::slapIndex]->setVisible (show);
+        screen.setVisible (! show);
+        for (int m : pageOrder)
+            pageButtons[(size_t) m]->setVisible (! show);
+        if (show)
+            slabs[StripModules::slapIndex]->toFront (false);
+        weaponSelect.setToggleState (show, juce::dontSendNotification);
     }
 
     void View::setClipAdvancedShown (bool shown)
@@ -1053,7 +1177,7 @@ namespace Holo
     {
         juce::PopupMenu menu;
         menu.addSectionHeader ("THE SOUND GOES: " + EasyStripAudioProcessor::describe (strip.getWantedOrder()));
-        for (int i = 0; i < 4; ++i)
+        for (int i = 0; i < StripIDs::numOrderSwitches; ++i)
             menu.addItem (i + 1, StripIDs::orderNames[i], true, strip.parameters.getRawParameterValue (StripIDs::orderSwitches[i])->load() > 0.5f);
         menu.addSeparator();
         menu.addItem (10, "STANDARD ORDER", ! strip.isStandardOrder());
@@ -1064,7 +1188,7 @@ namespace Holo
             if (safe == nullptr || result == 0)
                 return;
             auto& v = *safe;
-            for (int i = 0; i < 4; ++i)
+            for (int i = 0; i < StripIDs::numOrderSwitches; ++i)
             {
                 auto* p = v.strip.parameters.getParameter (StripIDs::orderSwitches[i]);
                 const bool now = p->getValue() > 0.5f;

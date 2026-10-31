@@ -65,7 +65,7 @@ target_compile_definitions(EQTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 Ju
 target_link_libraries(EQTests PRIVATE juce::juce_audio_utils juce::juce_dsp PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
 
 set(STRIP_SOURCES)
-foreach(module EasyGate EasyAmp EasyEQ EasyDS EasyComp EasyTransient BitchSlap EasyClip)
+foreach(module EasyGate EasyAmp EasyEQ EasyDS EasyComp EasyTransient BitchSlap EasyClip EasyTape)
     list(APPEND STRIP_SOURCES ${P}/Plugins/${module}/PluginProcessor.cpp ${P}/Plugins/${module}/PluginEditor.cpp)
 endforeach()
 juce_add_console_app(StripTests PRODUCT_NAME "StripTests")

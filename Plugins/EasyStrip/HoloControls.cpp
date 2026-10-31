@@ -459,6 +459,12 @@ namespace Holo
             fill = juce::Colour (0xff0a0c10);
             g.setColour (fill);
             g.fillRoundedRectangle (r, corner);
+            if (on)   // (lit: the text glows in the tint on the dark face, e.g. WEAPON SELECT while the rack is open)
+            {
+                g.setColour (tint.withAlpha (0.22f));
+                g.fillRoundedRectangle (r, corner);
+                ink = tint.interpolatedWith (juce::Colours::white, 0.35f);
+            }
             g.setColour (edge);
             g.drawRoundedRectangle (r, corner, 1.0f);
         }

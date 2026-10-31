@@ -76,6 +76,34 @@ namespace
 
     void switchOn (S& s, int m, bool on)   { setStrip (s, StripIDs::moduleID (m, CommonIDs::bypass), on ? 0.0f : 1.0f); }
 
+    // The delays of the modules before m and after it, in the order the sound goes
+    std::pair<int, int> latencyAround (S& s, int m, const S::Order& o = S::orderFor (false, false, false, false))
+    {
+        int before = 0, after = 0;
+        bool seen = false;
+        for (auto k : o)
+        {
+            if (k == m) { seen = true; continue; }
+            (seen ? after : before) += s.getModule (k).getLatencySamples();
+        }
+        return { before, after };
+    }
+
+    std::vector<std::unique_ptr<EasyProcessor>> standalones()
+    {
+        std::vector<std::unique_ptr<EasyProcessor>> v;
+        v.push_back (std::make_unique<EasyGateAudioProcessor>());
+        v.push_back (std::make_unique<EasyAmpAudioProcessor>());
+        v.push_back (std::make_unique<EasyEQAudioProcessor>());
+        v.push_back (std::make_unique<EasyDSAudioProcessor>());
+        v.push_back (std::make_unique<EasyCompAudioProcessor>());
+        v.push_back (std::make_unique<EasyTransientAudioProcessor>());
+        v.push_back (std::make_unique<BitchSlapAudioProcessor>());
+        v.push_back (std::make_unique<EasyClipAudioProcessor>());
+        v.push_back (std::make_unique<EasyTapeAudioProcessor>());
+        return v;
+    }
+
     int moduleLatencySum (S& s)
     {
         int t = 0;
@@ -128,9 +156,7 @@ namespace
         prepareStereo (alone, true);
 
         // (the modules before it delay what it hears; the ones after delay what it makes)
-        int before = 0, after = 0;
-        for (int k = 0; k < S::numModules; ++k)
-            (k < m ? before : after) += k == m ? 0 : s.getModule (k).getLatencySamples();
+        const auto [before, after] = latencyAround (s, m);
 
         const auto in = music (3.0);
         juce::AudioBuffer<float> heard (2, in.getNumSamples());
@@ -156,6 +182,7 @@ namespace
         { EasyTransientAudioProcessor a; compareModule (5, a, 3); }
         { BitchSlapAudioProcessor a;     compareModule (6, a, 2); }
         { EasyClipAudioProcessor a;      compareModule (7, a, 5); }
+        { EasyTapeAudioProcessor a;      compareModule (8, a, 4); }
     }
 
     void testSidechainAndChain()
@@ -176,8 +203,7 @@ namespace
             switchOn (s, 4, true);
             prepareStereo (s, true); prepareStereo (alone, true);
 
-            int before = 0, after = 0;
-            for (int k = 0; k < S::numModules; ++k) (k < 4 ? before : after) += k == 4 ? 0 : s.getModule (k).getLatencySamples();
+            const auto [before, after] = latencyAround (s, 4);
             juce::AudioBuffer<float> heard (2, in.getNumSamples()), keyHeard (2, in.getNumSamples());
             heard.clear(); keyHeard.clear();
             for (int ch = 0; ch < 2; ++ch) { heard.copyFrom (ch, before, in, ch, 0, in.getNumSamples() - before);
@@ -190,19 +216,10 @@ namespace
                    "the sidechain reaches COMP, just as in Easy Comp (and it makes a difference)");
         }
 
-        {   // All eight on, against the eight standalones one after another
+        {   // All nine on, against the nine standalones one after another
             S s;
-            std::vector<std::unique_ptr<EasyProcessor>> chain;
-            chain.push_back (std::make_unique<EasyGateAudioProcessor>());
-            chain.push_back (std::make_unique<EasyAmpAudioProcessor>());
-            chain.push_back (std::make_unique<EasyEQAudioProcessor>());
-            chain.push_back (std::make_unique<EasyDSAudioProcessor>());
-            chain.push_back (std::make_unique<EasyCompAudioProcessor>());
-            chain.push_back (std::make_unique<EasyTransientAudioProcessor>());
-            chain.push_back (std::make_unique<BitchSlapAudioProcessor>());
-            chain.push_back (std::make_unique<EasyClipAudioProcessor>());
-
-            const int choice[] { 2, 1, 3, 1, 3, 1, 1, 2 };
+            auto chain = standalones();
+            const int choice[] { 2, 1, 3, 1, 3, 1, 1, 2, 2 };
             for (int m = 0; m < S::numModules; ++m)
             {
                 chain[(size_t) m]->loadPreset (chain[(size_t) m]->getBuiltInPresets()[(size_t) choice[m]]);
@@ -213,11 +230,11 @@ namespace
             prepareStereo (s, true);
 
             auto expected = in;
-            for (auto& module : chain) expected = process (*module, expected);
+            for (auto m : S::orderFor (false, false, false, false)) expected = process (*chain[(size_t) m], expected);
             const auto out = process (s, in);
             const float diff = maxDifference (out, expected);
             check (diff < 1.0e-5f && s.getLatencySamples() == moduleLatencySum (s),
-                   "all eight on: identical to the eight plugins one after another (difference " + juce::String (toDb (diff), 1) + " dB)");
+                   "all nine on: identical to the nine plugins one after another, TAPE first (difference " + juce::String (toDb (diff), 1) + " dB)");
         }
     }
 
@@ -258,8 +275,9 @@ namespace
         // Shared OVERSAMPLING
         setStrip (s, StripIDs::oversampling, 3.0f);   // 8x
         process (s, in);
-        check ((int) getParam (s.getModule (1), "quality") == 3 && (int) getParam (s.getModule (7), "quality") == 3,
-               "OVERSAMPLING sets AMP's and CLIP's together");
+        check ((int) getParam (s.getModule (1), "quality") == 3 && (int) getParam (s.getModule (7), "quality") == 3
+                   && (int) getParam (s.getModule (8), "quality") == 3,
+               "OVERSAMPLING sets AMP's, TAPE's and CLIP's together");
         check (s.parameters.getParameter (StripIDs::moduleID (1, "quality")) == nullptr, "...and they don't have their own copies in the DAW's list");
 
         // Every module starts switched off
@@ -429,7 +447,7 @@ namespace
             prepareStereo (t, true);
             process (t, music (0.02));
 
-            std::array<bool, 8> wanted {};
+            std::array<bool, S::numModules> wanted {};
             for (auto& use : recipe.uses)
             {
                 wanted[(size_t) use.module] = true;
@@ -444,7 +462,7 @@ namespace
                     { allGood = false; problems.add (juce::String (recipe.name) + ": " + id); }
                 }
             }
-            for (int m = 0; m < 8; ++m)
+            for (int m = 0; m < S::numModules; ++m)
                 if (t.isModuleOn (m) != wanted[(size_t) m]) { allGood = false; problems.add (juce::String (recipe.name) + ": module " + juce::String (m) + " on/off"); }
 
             const auto out = process (t, music (1.0));
@@ -555,37 +573,31 @@ namespace
     void testOrder()
     {
         std::cout << "\n[ORDER]\n";
-        check (S::describe (S::orderFor (false, false, false, false)) == "GATE > AMP > EQ > DS > COMP > TRANS > BITCH-SLAP > CLIP",
+        check (S::describe (S::orderFor (false, false, false, false)) == "TAPE > GATE > AMP > EQ > DS > COMP > TRANS > BITCH-SLAP > CLIP",
                "standard: " + S::describe (S::orderFor (false, false, false, false)));
-        check (S::describe (S::orderFor (true, false, false, false)) == "GATE > AMP > DS > COMP > EQ > TRANS > BITCH-SLAP > CLIP", "EQ AFTER COMP");
-        check (S::describe (S::orderFor (false, true, false, false)) == "GATE > DS > AMP > EQ > COMP > TRANS > BITCH-SLAP > CLIP", "DE-ESS BEFORE DRIVE");
-        check (S::describe (S::orderFor (false, false, true, false)) == "GATE > EQ > DS > COMP > AMP > TRANS > BITCH-SLAP > CLIP", "DRIVE AFTER COMP");
-        check (S::describe (S::orderFor (false, false, false, true)) == "GATE > AMP > EQ > DS > TRANS > COMP > BITCH-SLAP > CLIP", "SHAPE BEFORE COMP");
+        check (S::describe (S::orderFor (true, false, false, false)) == "TAPE > GATE > AMP > DS > COMP > EQ > TRANS > BITCH-SLAP > CLIP", "EQ AFTER COMP");
+        check (S::describe (S::orderFor (false, true, false, false)) == "TAPE > GATE > DS > AMP > EQ > COMP > TRANS > BITCH-SLAP > CLIP", "DE-ESS BEFORE DRIVE");
+        check (S::describe (S::orderFor (false, false, true, false)) == "TAPE > GATE > EQ > DS > COMP > AMP > TRANS > BITCH-SLAP > CLIP", "DRIVE AFTER COMP");
+        check (S::describe (S::orderFor (false, false, false, true)) == "TAPE > GATE > AMP > EQ > DS > TRANS > COMP > BITCH-SLAP > CLIP", "SHAPE BEFORE COMP");
+        check (S::describe (S::orderFor (false, false, false, false, true)) == "GATE > AMP > EQ > DS > COMP > TRANS > BITCH-SLAP > TAPE > CLIP", "TAPE AT THE END");
         bool allValid = true;
-        for (int mask = 0; mask < 16; ++mask)
+        for (int mask = 0; mask < 32; ++mask)
         {
-            auto o = S::orderFor (mask & 1, mask & 2, mask & 4, mask & 8);
+            auto o = S::orderFor (mask & 1, mask & 2, mask & 4, mask & 8, mask & 16);
             auto sorted = o; std::sort (sorted.begin(), sorted.end());
-            for (int i = 0; i < 8; ++i) allValid = allValid && sorted[(size_t) i] == i;
-            allValid = allValid && o[0] == 0 && o[6] == 6 && o[7] == 7;
+            for (int i = 0; i < S::numModules; ++i) allValid = allValid && sorted[(size_t) i] == i;
+            if (mask & 16) allValid = allValid && o[0] == 0 && o[6] == 6 && o[7] == 8 && o[8] == 7;
+            else           allValid = allValid && o[0] == 8 && o[1] == 0 && o[7] == 6 && o[8] == 7;
             if (mask & 2) allValid = allValid && std::find (o.begin(), o.end(), 3) < std::find (o.begin(), o.end(), 1);
         }
-        check (allValid, "all 16 combinations: every module exactly once, GATE first, BITCH-SLAP and CLIP last");
+        check (allValid, "all 32 combinations: every module exactly once; TAPE first (or just before CLIP), then GATE; BITCH-SLAP and CLIP last");
 
-        // All four swaps on: identical to the standalones run in that order
+        // All five switches on: identical to the standalones run in that order
         {
             S s;
-            std::vector<std::unique_ptr<EasyProcessor>> alone;
-            alone.push_back (std::make_unique<EasyGateAudioProcessor>());
-            alone.push_back (std::make_unique<EasyAmpAudioProcessor>());
-            alone.push_back (std::make_unique<EasyEQAudioProcessor>());
-            alone.push_back (std::make_unique<EasyDSAudioProcessor>());
-            alone.push_back (std::make_unique<EasyCompAudioProcessor>());
-            alone.push_back (std::make_unique<EasyTransientAudioProcessor>());
-            alone.push_back (std::make_unique<BitchSlapAudioProcessor>());
-            alone.push_back (std::make_unique<EasyClipAudioProcessor>());
-            const int choice[] { 2, 1, 3, 1, 3, 1, 1, 2 };
-            for (int m = 0; m < 8; ++m)
+            auto alone = standalones();
+            const int choice[] { 2, 1, 3, 1, 3, 1, 1, 2, 2 };
+            for (int m = 0; m < S::numModules; ++m)
             {
                 alone[(size_t) m]->loadPreset (alone[(size_t) m]->getBuiltInPresets()[(size_t) choice[m]]);
                 s.getModule (m).loadPreset (s.getModule (m).getBuiltInPresets()[(size_t) choice[m]]);
@@ -597,11 +609,11 @@ namespace
 
             const auto in = music (3.0);
             auto expected = in;
-            for (auto m : S::orderFor (true, true, true, true))
+            for (auto m : S::orderFor (true, true, true, true, true))
                 expected = process (*alone[(size_t) m], expected);
             const auto out = process (s, in);
             const float diff = maxDifference (out, expected);
-            check (diff < 1.0e-5f, "all four swaps on: identical to the plugins run in that order (" + juce::String (toDb (diff), 1) + " dB)");
+            check (diff < 1.0e-5f, "all five switches on: identical to the plugins run in that order (" + juce::String (toDb (diff), 1) + " dB)");
         }
 
         // Changing it while playing: a short dip, no click, then the new order
@@ -788,7 +800,7 @@ namespace
         juce::StringArray missing;
         const juce::StringArray notKnobs { CommonIDs::bypass, CommonIDs::autoGain, "quality", "view", "analyser", "link", "master",
                                            "openedby", "turnsdown", "precision", "reactsto", "character", "thrust", "listensto", "sync",
-                                           "lowshelf", "highshelf", "hpfslope", "lpfslope", "lowtarget", "lowmidtarget", "highmidtarget", "hightarget" };
+                                           "lowshelf", "highshelf", "hpfslope", "lpfslope", "lowtarget", "lowmidtarget", "highmidtarget", "hightarget", "speed" };
         for (int m = 0; m < S::numModules; ++m)
             for (auto* p : s.getModule (m).getParameters())
                 if (auto* r = dynamic_cast<juce::RangedAudioParameter*> (p))
@@ -848,11 +860,11 @@ namespace
                "double-click a number to type: \"10\" on HIGH's frequency gives 10 kHz");
 
         // Power, INIT, presets
-        auto& slapPower = view->slabs[6]->power;
-        slapPower.triggerClick();
+        auto& tapePower = view->slabs[8]->power;
+        tapePower.triggerClick();
         juce::MessageManager::getInstance()->runDispatchLoopUntil (30);
         process (s, music (0.05));
-        check (s.isModuleOn (6), "a module's name button switches it on");
+        check (s.isModuleOn (8), "a module's name button switches it on (TAPE)");
 
         s.getModule (5).parameters.getParameter (TransientIDs::punch)->setValueNotifyingHost (0.9f);
         view->slabs[5]->init.onClick();
@@ -891,17 +903,54 @@ namespace
         {
             const auto screenArea = view->getScreen().getBounds();
             bool over = true;
+            int shown = 0;
             for (auto& b : view->pageButtons)
-                over = over && b->getX() >= screenArea.getX() && b->getRight() <= screenArea.getRight();
-            check (over, "the DISPLAY FOCUS buttons all sit above the big screen");
+                if (b->isVisible())
+                {
+                    ++shown;
+                    over = over && b->getX() >= screenArea.getX() && b->getRight() <= screenArea.getRight();
+                }
+            check (over && shown == 8 && ! view->pageButtons[6]->isVisible(),
+                   "the DISPLAY FOCUS buttons (8: TAPE in, BITCH-SLAP's gone to the rack) all sit above the big screen");
         }
 
         // Pages and live displays
         for (int i = 0; i < 25; ++i) { process (s, music (0.05)); view->updateNow(); }
         for (int m = 0; m < S::numModules; ++m)
         {
+            if (m == 6) continue;
             view->pageButtons[(size_t) m]->onClick();
             check (view->getScreen().getPage() == m, juce::String ("page button ") + StripModules::tabs[m] + " shows it on the big screen");
+        }
+        switchOn (s, 8, true);
+        loadPresetNamed (s.getModule (8), "Drum Bus - Hit the Tape Hard");
+        view->pageButtons[8]->onClick();
+        for (int i = 0; i < 20; ++i) { process (s, music (0.05)); view->updateNow(); }
+        savePng (*editor, outDir.getChildFile ("strip-hologram-tape.png"));
+
+        // WEAPON SELECT: the rack in place of the left-hand modules, and back
+        {
+            view->weaponSelect.onClick();
+            const auto rackArea = view->getRack()->getBounds();
+            const auto& slapSlab = *view->slabs[6];
+            bool swapped = view->isRackShown() && view->getRack()->isVisible() && ! view->getScreen().isVisible() && slapSlab.isVisible()
+                           && rackArea.contains (slapSlab.getBounds());
+            for (int m : { 0, 1, 2, 3, 4 }) swapped = swapped && ! view->slabs[(size_t) m]->isVisible();
+            for (int m : { 5, 7, 8 })       swapped = swapped && view->slabs[(size_t) m]->isVisible() && ! rackArea.intersects (view->slabs[(size_t) m]->getBounds());
+            for (auto& b : view->pageButtons) swapped = swapped && ! b->isVisible();
+            check (swapped, "WEAPON SELECT: the rack replaces GATE, AMP, the screen, EQ, DS and COMP; BITCH-SLAP is in it; TRANS, TAPE, CLIP stay");
+
+            switchOn (s, 6, true);
+            for (int i = 0; i < 10; ++i) { process (s, music (0.05)); view->updateNow(); }
+            savePng (*editor, outDir.getChildFile ("strip-hologram-rack.png"));
+            view->mouseEnter (hoverEvent (view->findControl (6, SlapIDs::mix)));
+            check (view->getTickerText() == view->moduleHint (6, "MIX") && view->getTickerText().isNotEmpty(),
+                   "in the rack, BITCH-SLAP's controls still explain themselves (Bitch-Slap's own hints)");
+
+            view->weaponSelect.onClick();
+            bool back = ! view->isRackShown() && ! view->getRack()->isVisible() && view->getScreen().isVisible() && ! slapSlab.isVisible();
+            for (int m : { 0, 1, 2, 3, 4, 5, 7, 8 }) back = back && view->slabs[(size_t) m]->isVisible();
+            check (back && s.isModuleOn (6), "WEAPON SELECT again: back to the strip (BITCH-SLAP keeps playing)");
         }
         view->pageButtons[2]->onClick();
         process (s, music (0.3)); view->updateNow();
@@ -1019,7 +1068,7 @@ int main (int argc, char** argv)
         {
             if (solo && juce::String (name) != juce::String (argv[3])) continue;
             runs.push_back ({ name, file, -1 });
-            if (solo) for (int m = 0; m < 8; ++m) runs.push_back ({ name, file, m });
+            if (solo) for (int m = 0; m < S::numModules; ++m) runs.push_back ({ name, file, m });
         }
         for (auto& [name, file, without] : runs)
         {

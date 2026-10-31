@@ -956,7 +956,28 @@ namespace Holo
         void resized() override
         {
             clearSections();
-            auto body = placeHeader (getLocalBounds().reduced (9, 6), false, 76);
+            const bool narrow = getWidth() < 220;   // (its bay in the WEAPON SELECT rack)
+            auto body = placeHeader (getLocalBounds().reduced (9, 6), narrow, 76);
+
+            if (narrow)
+            {
+                // Tall and narrow: its bay in the WEAPON SELECT rack
+                auto s1 = section (body.removeFromTop (juce::jmin (230, body.getHeight() / 2 - 4)), 1, "HOW MUCH");
+                body.removeFromTop (8);
+                auto s2 = section (body.removeFromTop (juce::jmin (body.getHeight(), 250)), 2, "HOW LONG");
+                centreIn (*mix, s1, s1.getY() + 4);
+                guide->setJustificationType (juce::Justification::centred);
+                guide->setBounds (s1.withTop (mix->getBottom() + 8).withHeight (60));
+                centreIn (*length, s2, s2.getY() + 4);
+                centreIn (*note, s2, s2.getY() + 4);
+                auto c = s2.withTop (length->getBottom() + 12).withSizeKeepingCentre (juce::jmin (110, s2.getWidth()), 17 + 6 + sync->getIdealHeight());
+                syncLabel->setBounds (c.removeFromTop (17));
+                c.removeFromTop (6);
+                sync->setBounds (c);
+                return;
+            }
+
+            guide->setJustificationType (juce::Justification::centredLeft);
             auto s1 = section (body.removeFromTop (body.getHeight() / 2 - 4), 1, "HOW MUCH");
             body.removeFromTop (8);
             auto s2 = section (body, 2, "HOW LONG");
@@ -988,6 +1009,51 @@ namespace Holo
         Ring *mix = nullptr, *length = nullptr, *note = nullptr;
         juce::Label *guide = nullptr, *syncLabel = nullptr;
         Choice* sync = nullptr;
+    };
+
+    //==========================================================================
+    // TAPE
+    //==========================================================================
+    class TapeSlab : public Slab
+    {
+    public:
+        explicit TapeSlab (View& v) : Slab (v, StripModules::tapeIndex, Colours::tape, "TAPE")
+        {
+            drive = &ring (TapeIDs::drive, "DRIVE", Format::signedDb, "dB", Ring::small, Colours::gold);
+            drive->setFromCentre (true);
+            speed = &choice (TapeIDs::speed, { "15 IPS", "30 IPS", "CASSETTE" }, "SPEED");
+            wow = &ring (TapeIDs::wow, "WOW", Format::percent, "%", Ring::small, {}, "WOW & FLUTTER");
+            hiss = &ring (TapeIDs::hiss, "HISS", Format::percent, "%");
+            autoGain = &toggle (CommonIDs::autoGain, "AUTO|GAIN", "AUTO-GAIN", Button::Style::square, Colours::gate);
+        }
+
+        void resized() override
+        {
+            clearSections();
+            auto body = placeHeader (getLocalBounds().reduced (9, 6), false, 76);
+            auto top = body.removeFromTop (body.getHeight() - 114);
+            body.removeFromTop (8);
+
+            auto s1 = section (top.removeFromLeft (top.getWidth() / 2 - 4), 1, "RECORD LEVEL");
+            top.removeFromLeft (8);
+            auto s2 = section (top, 2, "MACHINE");
+            centreIn (*drive, s1, s1.getY());
+            {
+                auto c = s2.withSizeKeepingCentre (s2.getWidth(), juce::jmin (s2.getHeight(), speed->getIdealHeight()));
+                speed->setBounds (c);
+            }
+
+            auto s3 = section (body, 3, "WEAR & TEAR");
+            const int w = s3.getWidth() / 3;
+            centreIn (*wow, s3.removeFromLeft (w), s3.getY());
+            centreIn (*hiss, s3.removeFromLeft (w), s3.getY());
+            autoGain->setBounds (s3.withSizeKeepingCentre (54, 54));
+        }
+
+    private:
+        Ring *drive = nullptr, *wow = nullptr, *hiss = nullptr;
+        Choice* speed = nullptr;
+        Button* autoGain = nullptr;
     };
 
     //==========================================================================
@@ -1131,6 +1197,7 @@ namespace Holo
             case 4:  return std::make_unique<CompSlab> (v);
             case 5:  return std::make_unique<TransSlab> (v);
             case 6:  return std::make_unique<SlapSlab> (v);
+            case 8:  return std::make_unique<TapeSlab> (v);
             default: return std::make_unique<ClipSlab> (v);
         }
     }

@@ -17,8 +17,11 @@ namespace Holo
           DS     the whole sound, the harsh band, the line, how far it turns down
           COMP   the compression curve, and gain reduction over time
           TRANS  before and after
-          SLAP   your sound and the burst
+          SLAP   your sound and the burst (not on the strip's main page now:
+                 BITCH-SLAP lives in the WEAPON SELECT rack)
           CLIP   what would have been, what comes out, the CEILING, what's shaved
+          TAPE   how hard the sound hits the tape (a VU meter), and the
+                 machine's response at this SPEED
 
         The window feeds it what the modules measured, ~30 times a second.
     */
@@ -75,6 +78,7 @@ namespace Holo
         void paintTrans (juce::Graphics&);
         void paintSlap (juce::Graphics&);
         void paintClip (juce::Graphics&);
+        void paintTape (juce::Graphics&);
 
         // EQ page
         float xForHz (float hz) const;
@@ -87,7 +91,8 @@ namespace Holo
 
         EasyStripAudioProcessor& strip;
         int page = 2;
-        std::array<Trace, 8> traces;
+        std::array<Trace, StripModules::numModules> traces;
+        float tapeVu = -40.0f;
         std::vector<std::array<float, 2>> compFrames = std::vector<std::array<float, 2>> (120, { -200.0f, 0.0f });
         int compNext = 0;
         float compLevelDb = -200.0f;
