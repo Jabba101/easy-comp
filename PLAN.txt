@@ -434,6 +434,24 @@ LATER
      dither; 4 multiband if still wanted. Most engines exist and are
      tested; the work is mainly assembly and the window.
      REVISED (1 November 2026) after the user's chains: Easy Master = the
+     user's CLEAN chain in one plugin. Their clean chain (TBT Unmask /
+     SpecCraft, TBT Cenozoix comp, TBT Kirchhoff EQ, TBT FutureMB, Pulsar
+     8200 "MS Tighten and Brighten", IK Bass One, The Audio Firm Furnace,
+     TBT TransIQ, Stealth Limiter) is the bar to beat. Order: RESONANCE
+     TAMER (Unmask-style dynamic spectral dipping - the headline, biggest
+     new job) > EQ (M/S; a Tighten & Brighten preset) > MULTIBAND (in stage
+     1 - used regularly) > COMPRESSOR (M/S) > TRANSIENT RESTORE (Easy Trans
+     engine, after the EQs) > BASS FOCUS + WIDTH > optional light
+     Inflator-style stage > LIMITER, meters, MATCH. Presets first (the
+     user starts from presets and tweaks). Furnace stays (realistic
+     saturation is the costly kind). ANALOG chain (Deres/Unmask, SPL Iron,
+     Furnace, Bettermaker/NoiseAsh Pultec, Lindell EQ825, Shadow Hills /
+     Neold Wunderlich vari-mu, Oxford Inflator, Stealth): maybe later -
+     Inflator curve cheap, Pultec-style EQ and vari-mu feasible as "sounds
+     right" designs; SPL Iron / Shadow Hills / Lurssen character not. 
+     VINTAGE chain (Neold, Fuse Audio Labs e.g. VCL-864U): not built -
+     already covered.
+     REVISED (1 November 2026) after the user's chains: Easy Master = the
      user's CLEAN chain in one plugin (to beat: TBT Unmask / SpecCraft,
      Cenozoix compressor, Kirchhoff EQ, FutureMB, Pulsar 8200 "MS Tighten
      and Brighten", IK Bass One, TBT TransIQ, Stealth Limiter - presets
