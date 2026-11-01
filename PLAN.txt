@@ -479,6 +479,14 @@ LATER
      of a vocal, the vocal shadow out of the guitars. Something UVR can't
      do (it looks at one stem at a time). Shares spectral work with Easy
      Master's resonance tamer.
+     The user often makes 2-3 copies of one stem, processed differently
+     and blended: clean the stem ONCE (Unbleed on the original stem, then
+     freeze / bounce it and copy that), and feed the sidechain from the
+     ORIGINAL other stems, never from copies of the same stem. Safety:
+     Unbleed notices a sidechain that is the same sound as its own track
+     (a copy) and ignores it, so it can never cancel the stem itself.
+     Planned first (before Easy Master): smaller, and it builds the
+     spectral engine the resonance tamer needs.
    - Once the essentials are perfected: EASY FX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the
