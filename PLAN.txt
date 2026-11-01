@@ -467,6 +467,18 @@ LATER
      Pultec-style EQ and a vari-mu, "sounds right" designs like Easy Tape;
      the character boxes stay professional. VINTAGE chain (Neold, Fuse
      Audio Labs, VCL-864U): not built - already covered.
+   - EASY UNBLEED (idea, 1 November 2026): for stems split with UVR5
+     (the user's separator - no paid tool beats it). Split in UVR5 as
+     normal (tips: Ensemble mode with a Roformer + an MDX model; vocals
+     first, then Demucs htdemucs_ft on the instrumental; de-reverb /
+     denoise models on stems), load the stems into Samplitude, and put
+     Easy Unbleed on each stem with the OTHER stems sent to its
+     sidechain. It knows what the bleed sounds like, so it turns down
+     only the moments and frequencies where another stem is louder
+     (spectral, keyed by the sidechain) - cleaning the ghost hi-hat out
+     of a vocal, the vocal shadow out of the guitars. Something UVR can't
+     do (it looks at one stem at a time). Shares spectral work with Easy
+     Master's resonance tamer.
    - Once the essentials are perfected: EASY FX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the
