@@ -433,6 +433,22 @@ LATER
      Stages: 1 chain + M/S comp + limiter + meters; 2 EQ; 3 colour, width,
      dither; 4 multiband if still wanted. Most engines exist and are
      tested; the work is mainly assembly and the window.
+     REVISED (1 November 2026) after the user's chains: Easy Master = the
+     user's CLEAN chain in one plugin (to beat: TBT Unmask / SpecCraft,
+     Cenozoix compressor, Kirchhoff EQ, FutureMB, Pulsar 8200 "MS Tighten
+     and Brighten", IK Bass One, TBT TransIQ, Stealth Limiter - presets
+     then small tweaks is how the user works). Order: RESONANCE TAMER
+     (new, the headline: dips harsh resonances only while they ring, like
+     Unmask) > EQ (M/S; a Tighten & Brighten style preset) > MULTIBAND
+     (in stage 1 - used regularly) > COMPRESSOR (M/S) > PUNCH (transient
+     restore after the EQs, from Easy Trans) > BASS FOCUS + WIDTH > optional
+     light INFLATE stage (Oxford Inflator-style curve) > LIMITER > meters,
+     MATCH, A / B. Saturation stays with Furnace (The Audio Firm) - not
+     to be matched. ANALOG chain (SPL Iron, Shadow Hills, Lurssen,
+     Bettermaker / NoiseAsh Pultec, Lindell 825, Inflator): maybe later a
+     Pultec-style EQ and a vari-mu, "sounds right" designs like Easy Tape;
+     the character boxes stay professional. VINTAGE chain (Neold, Fuse
+     Audio Labs, VCL-864U): not built - already covered.
    - Once the essentials are perfected: EASY FX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the
