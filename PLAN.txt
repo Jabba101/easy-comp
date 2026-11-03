@@ -487,6 +487,16 @@ LATER
      (a copy) and ignores it, so it can never cancel the stem itself.
      Planned first (before Easy Master): smaller, and it builds the
      spectral engine the resonance tamer needs.
+     BUILT 3 November 2026 (1.0.0, not in the strip): STFT (2048 at
+     48 kHz, 75% overlap, ~43 ms delay), 3rd-octave bands; a band is
+     turned down only when this stem is well below its usual level there
+     AND the other stems are louder. Fades down gently (SMOOTHNESS),
+     opens at once on a new note or hit. Knobs: AMOUNT, SENSITIVITY,
+     SMOOTHNESS, FROM / TO, REMOVED ONLY. On simulated UVR-style stems:
+     vocal ghost in the pauses -3 to -4 dB, drums / guitars -1.3 to
+     -2 dB, the parts themselves keep their level within 0.3 dB. That's
+     modest - the stems are all cut from the same mix. NEXT: tune on the
+     user's real UVR5 stems (with the original multitracks to compare).
    - Once the essentials are perfected: EASY FX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the

@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.25.0)
+project(EasyPlugins VERSION 1.26.0)
 
 # Link-time optimisation squeezes a few more percent of speed out of the
 # finished plugins, but makes every build much slower (each plugin is
@@ -297,6 +297,20 @@ add_easy_plugin(EasyLimiter
                 Plugins/EasyLimiter/PluginProcessor.cpp
                 Plugins/EasyLimiter/PluginEditor.h
                 Plugins/EasyLimiter/PluginEditor.cpp)
+
+add_easy_plugin(EasyUnbleed
+    NAME        "Easy Unbleed"
+    CODE        Ezub
+    VERSION     1.0.0
+    BUNDLE_ID   com.homestudio.easyunbleed
+    CATEGORIES  Fx Restoration
+    SOURCES     Effects/SpectralUnbleed.h
+                Plugins/EasyUnbleed/Presets.h
+                Plugins/EasyUnbleed/PluginProcessor.h
+                Plugins/EasyUnbleed/PluginProcessor.cpp
+                Plugins/EasyUnbleed/PluginEditor.h
+                Plugins/EasyUnbleed/PluginEditor.cpp)
+target_link_libraries(EasyUnbleed PRIVATE pffft)
 
 add_easy_plugin(EasyEQ
     NAME        "Easy EQ"

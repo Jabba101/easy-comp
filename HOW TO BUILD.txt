@@ -22,6 +22,8 @@ Right now this project makes:
     Easy Flange  flanger, chorus and vibrato
     Easy Filter  a moving filter: sweeps, wobbles and pulses in time
     Easy Limiter a clean, transparent true-peak ceiling (stops overs)
+    Easy Unbleed cleans the other instruments' ghost out of a separated
+                 stem (UVR5 and the like). Not part of Easy Strip.
     Easy Strip   all of the above in one channel strip (HOLOGRAM look)
 
 Every time the project changes on GitHub, GitHub builds the plugins for you
@@ -620,6 +622,38 @@ YOUR FIRST FIVE MINUTES WITH EASY LIMITER
 
 
 ====================================================================
+YOUR FIRST FIVE MINUTES WITH EASY UNBLEED
+====================================================================
+   For stems split out of a finished mix (UVR5 and the like). A vocal
+   stem usually still has a faint ghost of the drums and guitars in its
+   pauses; Easy Unbleed listens to the OTHER stems and turns that ghost
+   down - only where this stem itself is quiet, so its own sound stays.
+
+   0. Setting up in Samplitude: put Easy Unbleed on the stem you want to
+      clean (say, the vocal). Make a bus, send the OTHER stems (drums,
+      bass, other) to it, and send that bus to Easy Unbleed's sidechain
+      input. The window tells you if the sidechain is empty.
+   1. Pick a preset for the stem, or leave the default.
+   2. AMOUNT: how far a ghost is turned down. 15-25 dB is plenty for
+      most; 30-40 dB is near-silence in the gaps.
+   3. SENSITIVITY: how readily it decides "that's a ghost". Higher
+      catches more; too high starts nibbling breaths and word endings.
+      SMOOTHNESS: how gently it fades a ghost out (higher = softer).
+   4. FROM / TO: limit the cleaning to a range - e.g. FROM 3 kHz to clean
+      only hi-hat ghost from a vocal.
+   5. REMOVED ONLY: hear just what it takes out. It should sound like
+      the other instruments, never like this stem. If you hear the
+      singer in it, back off SENSITIVITY or AMOUNT.
+   Using two or three copies of the same stem: clean it ONCE, freeze or
+   bounce it, then copy the cleaned track. (If a copy of the stem itself
+   ends up in the sidechain, Easy Unbleed notices and leaves it alone.)
+   Honest limits: all the stems came from one mix, so this cleans the
+   ghost in the gaps; it can't take the cymbals out from UNDER a note
+   that's singing over them. It looks ~43 ms ahead, so it delays the
+   sound by that much - your DAW lines everything up automatically.
+
+
+====================================================================
 YOUR FIRST FIVE MINUTES WITH EASY EQ
 ====================================================================
    Four bands - LOW, LOW MID, HIGH MID, HIGH - plus filters, drawn on a
@@ -786,6 +820,7 @@ WHAT'S IN THIS FOLDER
      Flanger.h              Easy Flange's flanger / chorus / vibrato
      ModFilter.h            Easy Filter's moving filter
      TruePeakLimiter.h      Easy Limiter's true-peak ceiling
+     SpectralUnbleed.h      Easy Unbleed's ghost cleaner
      Equalizer.h            Easy EQ's EQ
      LinearPhaseEQ.h        Easy EQ's MASTER (linear phase)
      LoudnessMatcher.h      AUTO-GAIN (shared by every plugin)
@@ -814,6 +849,7 @@ WHAT'S IN THIS FOLDER
    Plugins\EasyFlange\    Easy Flange's knobs, picture of the swing and presets.
    Plugins\EasyFilter\    Easy Filter's knobs, picture of the filter and presets.
    Plugins\EasyLimiter\   Easy Limiter's knobs, display and presets.
+   Plugins\EasyUnbleed\   Easy Unbleed's knobs, display and presets.
    Plugins\EasyStrip\     Easy Strip: the plumbing that runs the plugins
                           above as its modules, and its windows (Holo* =
                           the HOLOGRAM look).
