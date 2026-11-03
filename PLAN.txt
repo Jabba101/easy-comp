@@ -495,8 +495,18 @@ LATER
      SMOOTHNESS, FROM / TO, REMOVED ONLY. On simulated UVR-style stems:
      vocal ghost in the pauses -3 to -4 dB, drums / guitars -1.3 to
      -2 dB, the parts themselves keep their level within 0.3 dB. That's
-     modest - the stems are all cut from the same mix. NEXT: tune on the
-     user's real UVR5 stems (with the original multitracks to compare).
+     modest - the stems are all cut from the same mix.
+     REAL TEST (3 November 2026, the user's song, 52 s at 44.1 kHz: the
+     original multitracks + UVR5 Kim Vocal 2 / htdemucs): Kim's vocal
+     stem carried a loud ghost (~8 dB under the singing, mostly 150 Hz -
+     2 kHz) through the 30 s instrumental after the vocal stops - the
+     1.5 s level follower got used to it, so v1 only took 0.3 dB off.
+     Fixed with a whole-stem "is it playing at all?" judgement (its own
+     range, levels followed over 20 s). Now: default accuracy 3.86 ->
+     5.38 dB, ghost -2.6 dB; 'Vocal - Strong Cleanup' 6.03 dB, ghost
+     -5.6 dB; the vocal keeps its level while singing (-0.6 dB). Drums,
+     bass, other never stop in this song, so they're left alone. The
+     user's ears decide next.
    - Once the essentials are perfected: EASY FX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the

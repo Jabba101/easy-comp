@@ -3,11 +3,14 @@
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <iostream>
 
+static juce::String folder = "/home/claude/presetcheck/unbleed/";
+static double fileRate = 48000.0;
 static juce::AudioBuffer<float> load (const juce::String& name)
 {
     juce::WavAudioFormat wav;
-    std::unique_ptr<juce::AudioFormatReader> r (wav.createReaderFor (juce::File ("/home/claude/presetcheck/unbleed/" + name + ".wav").createInputStream().release(), true));
+    std::unique_ptr<juce::AudioFormatReader> r (wav.createReaderFor (juce::File (folder + name + ".wav").createInputStream().release(), true));
     juce::AudioBuffer<float> b ((int) r->numChannels, (int) r->lengthInSamples);
+    fileRate = r->sampleRate;
     r->read (&b, 0, (int) r->lengthInSamples, 0, true, true);
     return b;
 }
@@ -19,6 +22,7 @@ int main (int argc, char** argv)
     if (argc > 1) s.amountDb = (float) atof (argv[1]);
     if (argc > 2) s.sensitivity = (float) atof (argv[2]);
     if (argc > 3) s.smoothness = (float) atof (argv[3]);
+    if (argc > 4) folder = juce::String (argv[4]) + "/";
     std::array<juce::AudioBuffer<float>, 4> est, tru;
     for (int k = 0; k < 4; ++k) { est[(size_t) k] = load (juce::String (names[k]) + "_est"); tru[(size_t) k] = load (juce::String (names[k]) + "_true"); }
     const int n = est[0].getNumSamples();
@@ -28,7 +32,7 @@ int main (int argc, char** argv)
         for (int j = 0; j < 4; ++j) if (j != k) for (int c = 0; c < 2; ++c) side.addFrom (c, 0, est[(size_t) j], c, 0, n);
         juce::AudioBuffer<float> buf (4, n);
         for (int c = 0; c < 2; ++c) { buf.copyFrom (c, 0, est[(size_t) k], c, 0, n); buf.copyFrom (c + 2, 0, tru[(size_t) k], c, 0, n); }
-        SpectralUnbleed u; u.prepare (48000.0, s);
+        SpectralUnbleed u; u.prepare (fileRate, s);
         for (int i = 0; i < n; i += 512)
         {
             const int len = std::min (512, n - i);
@@ -37,6 +41,23 @@ int main (int argc, char** argv)
             u.process (b, &sb);
         }
         const int L = u.getLatencySamples();
+        if (auto* dir = std::getenv ("UB_WRITE"))
+        {
+            juce::AudioBuffer<float> outB (2, n - L), gone (2, n - L);
+            for (int c = 0; c < 2; ++c)
+            {
+                outB.copyFrom (c, 0, buf, c, L, n - L);
+                gone.copyFrom (c, 0, est[(size_t) k], c, 0, n - L);
+                gone.addFrom (c, 0, outB, c, 0, n - L, -1.0f);
+            }
+            for (auto [name, b] : { std::pair<const char*, juce::AudioBuffer<float>*> { "_cleaned", &outB }, { "_removed", &gone } })
+            {
+                juce::File f (juce::String (dir) + "/" + names[k] + name + ".wav"); f.deleteFile();
+                juce::WavAudioFormat wav;
+                std::unique_ptr<juce::AudioFormatWriter> w (wav.createWriterFor (new juce::FileOutputStream (f), fileRate, 2, 24, {}, 0));
+                w->writeFromAudioSampleBuffer (*b, 0, b->getNumSamples());
+            }
+        }
         // metrics (out aligned back by the latency)
         double t2 = 0, e0 = 0, e1 = 0, dmg = 0, gapB = 0, gapA = 0, env = 0, peak = 0;
         std::vector<double> envs ((size_t) n);

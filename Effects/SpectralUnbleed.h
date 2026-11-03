@@ -38,7 +38,13 @@
     follower), and compares the stem now with that and with the sidechain.
     A band is turned down by AMOUNT x (how far the stem is below its usual
     level) x (how much louder the others are) - both eased in over 6 dB, so
-    nothing switches abruptly - then the gains are smoothed in time (fast
+    nothing switches abruptly. On top of that it judges whether the stem is
+    playing AT ALL, across its whole range (the bands it's usually within
+    20 dB of its loudest in, followed over ~20 s): when it's far below its
+    usual level everywhere and the others are far louder, the stem is
+    silent, and every band the others are about as loud in is ghost - even
+    a ghost as loud as the real part in a few bands (real UVR5 vocal stems
+    carry exactly that: guitar low mids in the long instrumental gaps). Then the gains are smoothed in time (fast
     down at SMOOTHNESS, straight back up when the stem returns) and across frequency, and the slices put back
     together. Left and right get the same gains (the stereo image stays).
 
@@ -95,7 +101,7 @@ public:
         makeBands();
         binGain.assign ((size_t) bins, 1.0f);
         bandPowerT.fill (0.0f); bandPowerS.fill (0.0f);
-        usual.fill (0.0f); bandGain.fill (1.0f); shownReduction.fill (0.0f); previousPower.fill (0.0f);
+        usual.fill (0.0f); usualLong.fill (0.0f); stemAbsent = 0.0f; bandGain.fill (1.0f); shownReduction.fill (0.0f); previousPower.fill (0.0f);
         copyEvidence = 0.0f;
         sidechainIsCopy = false;
 
@@ -282,16 +288,56 @@ private:
 
         // The gains, band by band
         const float sens = juce::jlimit (0.0f, 1.0f, settings.sensitivity);
+        const float frameSeconds = (float) hop / (float) sampleRate;
         const float dropDb = 24.0f - 16.0f * sens;          // how far below its usual level counts as quiet (24 .. 8 dB)
         const float louderDb = 12.0f - 10.0f * sens;        // how much louder the others must be (12 .. 2 dB)
         const float amount = juce::jlimit (0.0f, 40.0f, settings.amountDb);
-        const float frameSeconds = (float) hop / (float) sampleRate;
         const float usualFall = std::exp (-frameSeconds / 1.5f);
         // (turning down eases in - SMOOTHNESS - so a ghost fades out rather than being chopped; when the stem comes
         //  back it opens at once, so the start of every phrase or hit is untouched)
         const float easeDown = 1.0f - std::exp (-frameSeconds / (0.005f + 0.115f * juce::jlimit (0.0f, 1.0f, settings.smoothness)));
         const float openFast = 1.0f - std::exp (-frameSeconds / 0.003f);   // (the stem comes in: a note, a hit)
         const float openSlow = 1.0f - std::exp (-frameSeconds / 0.05f);    // (just a flicker in the gap: don't flutter)
+
+        // Is the stem playing AT ALL right now? (Judged over its whole range, so a ghost that's as loud as the
+        // real part in a few bands is still caught when the stem is plainly silent: across its range it has
+        // dropped far below its usual level, and the other stems are far louder.)
+        {
+            const float longFall = std::exp (-frameSeconds / 20.0f);
+            double sumBelow = 0.0, sumLouder = 0.0;
+            int counted = 0;
+            float loudestUsual = 0.0f;
+            for (int b = 0; b < numBands; ++b)
+            {
+                auto& ul = usualLong[(size_t) b];
+                const float pt = powerT[(size_t) b] / (float) analysed + 1.0e-20f;
+                ul = juce::jmax (pt, longFall * ul + (1.0f - longFall) * pt);
+                loudestUsual = juce::jmax (loudestUsual, ul);
+            }
+            // (the stem's own range: the bands it's usually within 20 dB of its loudest in, above the deep bass
+            //  for a vocal, the low end for a bass)
+            const float ownFloor = loudestUsual * std::pow (10.0f, -20.0f / 10.0f);
+            for (int b = 0; b < numBands; ++b)
+            {
+                const float pt = powerT[(size_t) b] / (float) analysed + 1.0e-20f, ps = powerS[(size_t) b] + 1.0e-20f;
+                const float ul = usualLong[(size_t) b];
+                if (ul < ownFloor) continue;
+                sumBelow  += juce::jlimit (0.0f, 40.0f, 10.0f * std::log10 ((ul + 1.0e-20f) / pt));
+                sumLouder += juce::jlimit (-30.0f, 40.0f, 10.0f * std::log10 (ps / pt));
+                ++counted;
+            }
+            float absent = 0.0f;
+            if (counted > 0 && settings.sensitivity > 0.0f)
+            {
+                const float below = (float) (sumBelow / counted), louder = (float) (sumLouder / counted);
+                const float needBelow  = 16.0f - 8.0f * sens;      // (the stem's top end this far under its usual level ...)
+                const float needLouder = 14.0f - 8.0f * sens;      // (... and the others this much louder there)
+                absent = juce::jlimit (0.0f, 1.0f, (below - needBelow) / 6.0f) * juce::jlimit (0.0f, 1.0f, (louder - needLouder) / 6.0f);
+            }
+            // (settles in over ~150 ms so a breath between words isn't taken for silence; drops at once when the stem returns)
+            const float settle = 1.0f - std::exp (-frameSeconds / 0.15f);
+            stemAbsent = absent < stemAbsent ? absent : stemAbsent + settle * (absent - stemAbsent);
+        }
 
         for (int b = 0; b < numBands; ++b)
         {
@@ -308,7 +354,11 @@ private:
             const float quiet = juce::jlimit (0.0f, 1.0f, (belowUsual - dropDb) / 6.0f);
             const float dominated = juce::jlimit (0.0f, 1.0f, (othersLouder - louderDb) / 6.0f);
             const bool inRange = bandCentre[(size_t) b] >= settings.fromHz * 0.89f && bandCentre[(size_t) b] <= settings.toHz * 1.12f;
-            const float reduction = (sidechainIsCopy || ! inRange) ? 0.0f : amount * quiet * dominated;
+            // (while the stem is silent, a band is ghost if the others are about as loud there or louder - how much
+            //  louder they must be follows SENSITIVITY)
+            const float notOwn = juce::jlimit (0.0f, 1.0f, (othersLouder + 12.0f * sens - 6.0f) / 6.0f);
+            const float ghost = juce::jmax (quiet * dominated, stemAbsent * notOwn);
+            const float reduction = (sidechainIsCopy || ! inRange) ? 0.0f : amount * ghost;
             const float target = juce::Decibels::decibelsToGain (-reduction);
 
             auto& g = bandGain[(size_t) b];
@@ -368,7 +418,8 @@ private:
 
     int numBands = 0;
     std::array<int, numBandsMax> bandFirst {}, bandLast {};
-    std::array<float, numBandsMax> bandCentre {}, bandPowerT {}, bandPowerS {}, usual {}, bandGain {}, shownReduction {}, previousPower {};
+    float stemAbsent = 0.0f;
+    std::array<float, numBandsMax> bandCentre {}, bandPowerT {}, bandPowerS {}, usual {}, usualLong {}, bandGain {}, shownReduction {}, previousPower {};
     float copyEvidence = 0.0f;
     bool sidechainIsCopy = false;
 
