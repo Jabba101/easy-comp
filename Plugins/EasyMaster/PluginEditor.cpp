@@ -112,6 +112,23 @@ namespace
     constexpr const char* chainHint =
         "The order the sound goes through. Click a stage to show its controls and its own display below. Dim = coming in "
         "later stages, each in its place. INPUT, LIMITER and the meters are always on screen.";
+    constexpr const char* mbOnHint = "Switches the multiband on or off (the rest of the chain keeps working). Off by default.";
+    constexpr const char* mbModeHint =
+        "STEREO: one set of settings for the whole mix (the top row). MID + SIDE: the middle (green) and the sides (blue) "
+        "each split into four bands with their own settings - e.g. the sides' low band held right down: tight, mono bass.";
+    constexpr const char* mbThresholdHint =
+        "Where this band starts to be turned down. Set it so the band's red bar moves 1-3 dB on the loud moments - a bass "
+        "note that booms, a cymbal that bites. At 0 dB nothing happens.";
+    constexpr const char* mbRatioHint = "How firmly this band is held once it passes its THRESHOLD. 1.5-3:1 for mastering.";
+    constexpr const char* mbSpeedHint =
+        "How quickly this band reacts and lets go (attack 3-60 ms with release 40-600 ms). Fast for the highs (cymbals), "
+        "slower for the lows (bass notes): too fast on the lows can distort.";
+    constexpr const char* mbGainHint = "Turns this band up or down afterwards (-12 to +12 dB) - like a broad EQ on the band.";
+    constexpr const char* mbBandOnHint = "Switches this band's compression and GAIN off: it passes untouched.";
+    constexpr const char* mbSoloHint = "Hear only this band (or the bands that are soloed) - for setting it up. Switch it off afterwards.";
+    constexpr const char* mbSplitHint =
+        "Where one band ends and the next begins. Drag the lines on the display, or fine-tune here. 120 Hz / 1 kHz / 6 kHz "
+        "to start: the lows, the body, the presence, the air.";
     constexpr const char* eqOnHint = "Switches the EQ on or off (the rest of the chain keeps working).";
     constexpr const char* eqModeHint =
         "STEREO: one EQ for the whole mix (the top row). MID + SIDE: a complete EQ for the middle (green: kick, bass, snare, "
@@ -804,6 +821,197 @@ void EQDisplay::paint (juce::Graphics& g)
 }
 
 //==============================================================================
+juce::Rectangle<float> MultibandDisplay::plotArea() const
+{
+    return getLocalBounds().toFloat().reduced (14.0f, 12.0f).withTrimmedLeft (34.0f).withTrimmedBottom (40.0f);
+}
+float MultibandDisplay::xOf (double hz) const  { const auto p = plotArea(); return p.getX() + p.getWidth() * (float) (std::log (hz / 20.0) / std::log (1000.0)); }
+double MultibandDisplay::hzAt (float x) const  { const auto p = plotArea(); return 20.0 * std::pow (1000.0, (double) ((x - p.getX()) / p.getWidth())); }
+float MultibandDisplay::splitX (int sp) const  { return xOf (settings.splitHz[(size_t) sp]); }
+
+int MultibandDisplay::splitAt (float x) const
+{
+    int best = -1; float bestDistance = 8.0f;
+    for (int sp = 0; sp < MultibandCompressor::numSplits; ++sp)
+        if (std::abs (x - splitX (sp)) <= bestDistance) { bestDistance = std::abs (x - splitX (sp)); best = sp; }
+    return best;
+}
+
+void MultibandDisplay::setState (const MultibandCompressor::Settings& s, const EasyMasterAudioProcessor::MultibandPicture& mb,
+                                 const EasyMasterAudioProcessor::TamerPicture& t, bool isOn, bool isBypassed)
+{
+    settings = s; on = isOn; bypassed = isBypassed;
+    for (int b = 0; b < 4; ++b)
+        for (int pt = 0; pt < 2; ++pt)
+        {
+            auto& c = shownCut[(size_t) b][(size_t) pt];
+            const float now = mb.cutDb[(size_t) b][(size_t) pt];
+            c = now > c ? now : c + 0.25f * (now - c);
+            auto& pk = shownPeak[(size_t) b][(size_t) pt];
+            const float p = mb.peakDb[(size_t) b][(size_t) pt];
+            pk = p > pk ? p : pk + 0.2f * (p - pk);
+        }
+    centreHz = t.centreHz;
+    for (int b = 0; b < ResonanceTamer::numBands; ++b)
+    {
+        const float now = juce::Decibels::gainToDecibels (juce::Decibels::decibelsToGain (t.levelDb[0][(size_t) b]) + juce::Decibels::decibelsToGain (t.levelDb[1][(size_t) b]), -120.0f);
+        shownLevel[(size_t) b] = now > shownLevel[(size_t) b] ? now : shownLevel[(size_t) b] + 0.2f * (now - shownLevel[(size_t) b]);
+    }
+    repaint();
+}
+
+void MultibandDisplay::mouseMove (const juce::MouseEvent& e)
+{
+    const int sp = splitAt (e.position.x);
+    if (sp != hovered) { hovered = sp; repaint(); }
+    setMouseCursor (sp >= 0 ? juce::MouseCursor::LeftRightResizeCursor : juce::MouseCursor::NormalCursor);
+}
+
+void MultibandDisplay::mouseDown (const juce::MouseEvent& e)
+{
+    dragging = splitAt (e.position.x);
+    if (dragging >= 0)
+        if (auto* p = parameters.getParameter (MasterMBIDs::split[dragging])) p->beginChangeGesture();
+}
+
+void MultibandDisplay::mouseDrag (const juce::MouseEvent& e)
+{
+    if (dragging < 0) return;
+    const auto& info = MasterMBIDs::splits[dragging];
+    if (auto* p = parameters.getParameter (MasterMBIDs::split[dragging]))
+        p->setValueNotifyingHost (p->convertTo0to1 ((float) juce::jlimit ((double) info.lowHz, (double) info.highHz, hzAt (e.position.x))));
+    if (onEdit) onEdit();
+}
+
+void MultibandDisplay::mouseUp (const juce::MouseEvent&)
+{
+    if (dragging >= 0)
+        if (auto* p = parameters.getParameter (MasterMBIDs::split[dragging])) p->endChangeGesture();
+    dragging = -1;
+    repaint();
+}
+
+void MultibandDisplay::paint (juce::Graphics& g)
+{
+    const auto area = getLocalBounds().toFloat();
+    g.setColour (Palette::background);
+    g.fillRoundedRectangle (area, 6.0f);
+    const auto plot = plotArea();
+    constexpr float cutRange = 12.0f;
+
+    // The mix (faint)
+    if (centreHz[0] > 0.0f)
+    {
+        juce::Path mix;
+        mix.startNewSubPath (xOf (centreHz[0]), plot.getBottom());
+        for (int b = 0; b < ResonanceTamer::numBands; ++b)
+            mix.lineTo (xOf (centreHz[(size_t) b]), plot.getBottom() - plot.getHeight() * juce::jlimit (0.0f, 1.0f, (shownLevel[(size_t) b] + 72.0f) / 72.0f));
+        mix.lineTo (xOf (centreHz[(size_t) ResonanceTamer::numBands - 1]), plot.getBottom());
+        mix.closeSubPath();
+        g.setColour (Palette::textDim.withAlpha (0.14f));
+        g.fillPath (mix);
+    }
+    g.setFont (juce::Font (juce::FontOptions (11.0f)));
+    for (double hz : { 50.0, 100.0, 200.0, 500.0, 1000.0, 2000.0, 5000.0, 10000.0 })
+    {
+        g.setColour (Palette::panelEdge.withAlpha (0.6f));
+        g.drawVerticalLine (juce::roundToInt (xOf (hz)), plot.getY(), plot.getBottom());
+        g.setColour (Palette::textDim);
+        g.drawText (hz >= 1000.0 ? juce::String ((int) (hz / 1000.0)) + "k" : juce::String ((int) hz),
+                    juce::Rectangle<float> (xOf (hz) - 20.0f, plot.getBottom() + 3.0f, 40.0f, 14.0f), juce::Justification::centred, false);
+    }
+    for (float db : { 0.0f, 6.0f, 12.0f })
+    {
+        const float y = plot.getY() + plot.getHeight() * 0.6f * db / cutRange;
+        g.setColour (Palette::panelEdge);
+        g.drawHorizontalLine (juce::roundToInt (y), plot.getX(), plot.getRight());
+        g.setColour (Palette::textDim);
+        g.drawText (db < 0.5f ? juce::String ("0") : "-" + juce::String ((int) db), juce::Rectangle<float> (plot.getX() - 36.0f, y - 7.0f, 32.0f, 14.0f), juce::Justification::centredRight, false);
+    }
+
+    bool anySolo = false;
+    for (bool so : settings.solo) anySolo = anySolo || so;
+    for (int b = 0; b < 4; ++b)
+    {
+        const float x0 = b == 0 ? plot.getX() : splitX (b - 1), x1 = b == 3 ? plot.getRight() : splitX (b);
+        const auto region = juce::Rectangle<float>::leftTopRightBottom (x0, plot.getY(), x1, plot.getBottom());
+        const bool heard = ! anySolo || settings.solo[(size_t) b];
+        const bool bandOn = settings.bandOn[(size_t) b];
+        if (! heard)
+        {
+            g.setColour (Palette::background.withAlpha (0.7f));
+            g.fillRect (region);
+        }
+        // How much it's turning down: hanging from the top, the middle (or both) and, in MID + SIDE, the sides beside it
+        const auto bar = region.reduced (region.getWidth() * 0.18f, 0.0f);
+        const auto cutH = [&] (float db) { return plot.getHeight() * 0.6f * juce::jlimit (0.0f, 1.0f, db / cutRange); };
+        if (on && ! bypassed && bandOn)
+        {
+            if (settings.midSide)
+            {
+                auto left = bar.withWidth (bar.getWidth() * 0.5f - 2.0f), right = left.withX (bar.getCentreX() + 2.0f);
+                g.setColour (Palette::meterHigh.withAlpha (0.85f));
+                g.fillRect (left.withHeight (cutH (shownCut[(size_t) b][0])));
+                g.setColour (sideColour.interpolatedWith (Palette::meterHigh, 0.35f));
+                g.fillRect (right.withHeight (cutH (shownCut[(size_t) b][1])));
+            }
+            else
+            {
+                g.setColour (Palette::meterHigh.withAlpha (0.85f));
+                g.fillRect (bar.withHeight (cutH (shownCut[(size_t) b][0])));
+            }
+        }
+        // The band's name and how much (bottom)
+        g.setColour (bandOn ? (heard ? Palette::textBright : Palette::textDim) : Palette::textDim.withAlpha (0.5f));
+        g.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
+        auto label = region.withTrimmedTop (region.getHeight() - 46.0f);
+        g.drawText (juce::String (b + 1) + "  " + MasterMBIDs::bandNames[b] + (bandOn ? "" : "  (off)"), label.removeFromTop (20.0f), juce::Justification::centred, false);
+        g.setFont (juce::Font (juce::FontOptions (11.5f)));
+        const auto cutText = [&] (float db) { return db < 0.05f ? juce::String ("0.0") : "-" + juce::String (db, 1); };
+        g.setColour (Palette::textDim);
+        g.drawText (settings.midSide ? "mid " + cutText (shownCut[(size_t) b][0]) + " / side " + cutText (shownCut[(size_t) b][1]) + " dB"
+                                     : cutText (shownCut[(size_t) b][0]) + " dB", label, juce::Justification::centred, false);
+    }
+    // The splits: drag them
+    for (int sp = 0; sp < MultibandCompressor::numSplits; ++sp)
+    {
+        const float x = splitX (sp);
+        const bool lit = sp == hovered || sp == dragging;
+        g.setColour (lit ? Palette::accent : Palette::accent.withAlpha (0.55f));
+        g.fillRect (juce::Rectangle<float> (x - (lit ? 1.5f : 1.0f), plot.getY(), lit ? 3.0f : 2.0f, plot.getHeight()));
+        const auto tag = juce::Rectangle<float> (64.0f, 18.0f).withCentre ({ x, plot.getY() + plot.getHeight() * 0.72f });
+        g.setColour (Palette::panel);
+        g.fillRoundedRectangle (tag, 4.0f);
+        g.setColour (Palette::accent);
+        g.drawRoundedRectangle (tag, 4.0f, 1.0f);
+        g.setFont (juce::Font (juce::FontOptions (11.0f, juce::Font::bold)));
+        g.drawText (Format::hertz (settings.splitHz[(size_t) sp]), tag, juce::Justification::centred, false);
+    }
+
+    auto key = juce::Rectangle<float> (plot.getX(), plot.getBottom() + 20.0f, plot.getWidth(), 16.0f);
+    g.setFont (juce::Font (juce::FontOptions (12.0f)));
+    const auto item = [&] (juce::Colour c, const juce::String& t, float w)
+    {
+        g.setColour (c);
+        g.fillRect (key.removeFromLeft (12.0f).withSizeKeepingCentre (12.0f, 10.0f));
+        key.removeFromLeft (6.0f);
+        g.setColour (Palette::textDim);
+        g.drawText (t, key.removeFromLeft (w), juce::Justification::centredLeft, false);
+        key.removeFromLeft (12.0f);
+    };
+    item (Palette::meterHigh.withAlpha (0.85f), settings.midSide ? "middle turned down" : "turned down", settings.midSide ? 120.0f : 80.0f);
+    if (settings.midSide) item (sideColour.interpolatedWith (Palette::meterHigh, 0.35f), "sides turned down", 120.0f);
+    g.setColour (Palette::textDim);
+    g.drawText ("drag the lines between the bands to move the splits", key, juce::Justification::centredRight, false);
+    if (! on || bypassed)
+    {
+        g.setColour (Palette::textDim);
+        g.setFont (juce::Font (juce::FontOptions (14.0f, juce::Font::bold)));
+        g.drawText (bypassed ? "BYPASSED" : "THE MULTIBAND IS OFF", plot.withHeight (24.0f).translated (0.0f, 6.0f), juce::Justification::centred, false);
+    }
+}
+
+//==============================================================================
 EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioProcessor& p)
     : EasyWindow (p, "EASY MASTER", "The mastering chain for your master bus - hover over anything for help", gettingStartedHint),
       masterProcessor (p),
@@ -812,6 +1020,7 @@ EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioP
       characterSwitch (*p.parameters.getParameter (MasterIDs::character), { "MODERN", "VINTAGE" }, Palette::accent),
       releaseSwitch (*p.parameters.getParameter (MasterIDs::releaseMode), { "AUTO", "SET" }, Palette::accent),
       listenSwitch (*p.parameters.getParameter (MasterIDs::listen), { "STEREO", "MID", "SIDE", "MONO" }, Palette::meterMid),
+      mbModeSwitch (*p.parameters.getParameter (MasterMBIDs::mode), { "STEREO", "MID + SIDE" }, Palette::accent),
       eqModeSwitch (*p.parameters.getParameter (MasterEQIDs::mode), { "STEREO", "MID + SIDE" }, Palette::accent),
       tamerModeSwitch (*p.parameters.getParameter (MasterIDs::tamerMode), { "STEREO", "MID + SIDE" }, Palette::accent),
       incoming ((size_t) MasterDisplay::numMoments)
@@ -863,6 +1072,73 @@ EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioP
             addHint (knob.slider, eqTitle, hint);
             addHint (knob.label, eqTitle, hint);
         }
+    // The MULTIBAND's controls: per part, each band's THRESHOLD, RATIO, SPEED and GAIN
+    for (int part = 0; part < 2; ++part)
+        for (int c = 0; c < 16; ++c)
+        {
+            auto& knob = mbKnobs[(size_t) part][(size_t) c];
+            const int band = c / 4, which = c % 4;
+            const char* id = which == 0 ? MasterMBIDs::threshold[part][band] : which == 1 ? MasterMBIDs::ratio[part][band]
+                           : which == 2 ? MasterMBIDs::speed[part][band] : MasterMBIDs::gain[part][band];
+            knob.slider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+            knob.slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 54, 22);
+            knob.slider.setColour (juce::Slider::rotarySliderFillColourId, part == 0 ? midColour : sideColour);
+            addAndMakeVisible (knob.slider);
+            const char* names[4] { "THRESH", "RATIO", "SPEED", "GAIN" };
+            knob.label.setText (names[which], juce::dontSendNotification);
+            knob.label.setFont (juce::Font (juce::FontOptions (11.5f, juce::Font::bold)));
+            knob.label.setJustificationType (juce::Justification::centred);
+            addAndMakeVisible (knob.label);
+            knob.attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (easyProcessor.parameters, id, knob.slider);
+            knob.slider.onValueChange = [this] { knobMoved(); };
+            const char* full[4] { "THRESHOLD", "RATIO", "SPEED", "GAIN" };
+            const char* knobHints[4] { mbThresholdHint, mbRatioHint, mbSpeedHint, mbGainHint };
+            const juce::String mbTitle = juce::String ("MULTIBAND ") + (part == 0 ? "MID " : "SIDE ") + MasterMBIDs::bandNames[band] + " " + full[which];
+            addHint (knob.slider, mbTitle, knobHints[which]);
+            addHint (knob.label, mbTitle, knobHints[which]);
+        }
+    for (int b = 0; b < 4; ++b)
+    {
+        for (auto [button, attachment, id, hint, suffix] : { std::tuple<LightButton*, std::unique_ptr<juce::ButtonParameterAttachment>*, const char*, const char*, const char*>
+                                                            { &mbBandOn[(size_t) b], &mbBandOnAttachments[(size_t) b], MasterMBIDs::bandOn[b], mbBandOnHint, " ON" },
+                                                            { &mbSolo[(size_t) b], &mbSoloAttachments[(size_t) b], MasterMBIDs::solo[b], mbSoloHint, " SOLO" } })
+        {
+            button->setClickingTogglesState (true);
+            *attachment = std::make_unique<juce::ButtonParameterAttachment> (*p.parameters.getParameter (id), *button);
+            addAndMakeVisible (*button);
+            addHint (*button, juce::String ("MULTIBAND ") + MasterMBIDs::bandNames[b] + suffix, hint);
+        }
+        mbBandOn[(size_t) b].onClick = [this] { knobMoved(); showParts(); };
+    }
+    for (int sp = 0; sp < 3; ++sp)
+    {
+        auto& sl = mbSplits[(size_t) sp];
+        sl.setSliderStyle (juce::Slider::LinearBar);
+        sl.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 0, 0);
+        sl.setColour (juce::Slider::trackColourId, Palette::accent.withAlpha (0.35f));
+        addAndMakeVisible (sl);
+        mbSplitAttachments[(size_t) sp] = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (easyProcessor.parameters, MasterMBIDs::split[sp], sl);
+        sl.onValueChange = [this] { knobMoved(); };
+        addHint (sl, "MULTIBAND SPLIT " + juce::String (sp + 1), mbSplitHint);
+    }
+    mbSplitLabel.setText ("SPLITS", juce::dontSendNotification);
+    mbSplitLabel.setFont (juce::Font (juce::FontOptions (11.5f, juce::Font::bold)));
+    mbSplitLabel.setColour (juce::Label::textColourId, Palette::textDim);
+    addAndMakeVisible (mbSplitLabel);
+    addHint (mbSplitLabel, "MULTIBAND SPLITS", mbSplitHint);
+    mbOnButton.setClickingTogglesState (true);
+    mbOnAttachment = std::make_unique<juce::ButtonParameterAttachment> (*p.parameters.getParameter (MasterMBIDs::on), mbOnButton);
+    addAndMakeVisible (mbOnButton);
+    addHint (mbOnButton, "MULTIBAND ON", mbOnHint);
+    mbModeSwitch.setHorizontal (true);
+    addAndMakeVisible (mbModeSwitch);
+    mbModeSwitch.onUserChange = [this] { knobMoved(); };
+    addHint (mbModeSwitch, "MULTIBAND - STEREO / MID + SIDE", mbModeHint);
+    addAndMakeVisible (mbDisplay);
+    addHint (mbDisplay, "THE MULTIBAND", "The four bands across the spectrum: drag the lines between them to move the splits. From the top: how much "
+             "each band is being turned down (red = the middle or both, blue = the sides). Dimmed = not heard (another band is soloed).");
+    mbDisplay.onEdit = [this] { knobMoved(); };
+
     eqOnButton.setClickingTogglesState (true);
     eqOnAttachment = std::make_unique<juce::ButtonParameterAttachment> (*p.parameters.getParameter (MasterEQIDs::on), eqOnButton);
     addAndMakeVisible (eqOnButton);
@@ -1061,12 +1337,21 @@ void EasyMasterAudioProcessorEditor::placeModuleButtons (int module, juce::Recta
 std::vector<juce::Component*> EasyMasterAudioProcessorEditor::pageComponents (int page)
 {
     std::vector<juce::Component*> list;
-    const int module = page == tamerPage ? MasterModules::tamer : (page == eqPage ? MasterModules::eq : MasterModules::comp);
+    const int module = page == tamerPage ? MasterModules::tamer : page == eqPage ? MasterModules::eq : page == mbPage ? MasterModules::multiband : MasterModules::comp;
     for (juce::Component* c : { (juce::Component*) &modulePresets[(size_t) module].pr, (juce::Component*) &modulePresets[(size_t) module].init,
                                 (juce::Component*) &modulePresets[(size_t) module].name })
         list.push_back (c);
     const auto addKnobs = [&] (int from, int to) { for (int k = from; k <= to; ++k) { list.push_back (&knobs[(size_t) k].slider); list.push_back (&knobs[(size_t) k].label); } };
-    if (page == eqPage)
+    if (page == mbPage)
+    {
+        for (auto& row : mbKnobs) for (auto& k : row) { list.push_back (&k.slider); list.push_back (&k.label); }
+        for (auto& b : mbBandOn) list.push_back (&b);
+        for (auto& b : mbSolo) list.push_back (&b);
+        for (auto& sl : mbSplits) list.push_back (&sl);
+        for (juce::Component* c : { (juce::Component*) &mbDisplay, (juce::Component*) &mbOnButton, (juce::Component*) &mbModeSwitch, (juce::Component*) &mbSplitLabel })
+            list.push_back (c);
+    }
+    else if (page == eqPage)
     {
         for (auto& row : eqKnobs) for (auto& k : row) { list.push_back (&k.slider); list.push_back (&k.label); }
         for (juce::Component* c : { (juce::Component*) &eqDisplay, (juce::Component*) &eqOnButton, (juce::Component*) &eqModeSwitch })
@@ -1105,6 +1390,7 @@ void EasyMasterAudioProcessorEditor::mouseDown (const juce::MouseEvent& e)
     const auto at = e.getEventRelativeTo (this).getPosition().toFloat();
     if (chainBoxes[1].contains (at))      showPage (tamerPage);
     else if (chainBoxes[2].contains (at)) showPage (eqPage);
+    else if (chainBoxes[3].contains (at)) showPage (mbPage);
     else if (chainBoxes[4].contains (at)) showPage (compPage);
 }
 
@@ -1127,6 +1413,18 @@ void EasyMasterAudioProcessorEditor::showParts()
     };
     dim (midThresholdKnob, ignoreKnob, sideThresholdKnob, sideMakeupKnob, ms, on);
     dim (tMidAmountKnob, tToKnob, tSideAmountKnob, tSideSharpKnob, tms, ton);
+    const bool mms = masterProcessor.isMultibandMidSide(), mon = params.getRawParameterValue (MasterMBIDs::on)->load() > 0.5f;
+    for (int part = 0; part < 2; ++part)
+        for (int c = 0; c < 16; ++c)
+        {
+            auto& k = mbKnobs[(size_t) part][(size_t) c];
+            const bool bandOn = params.getRawParameterValue (MasterMBIDs::bandOn[c / 4])->load() > 0.5f;
+            const bool usable = mon && bandOn && (part == 0 || mms);
+            k.slider.setEnabled (part == 0 || mms);
+            k.slider.setAlpha (usable ? 1.0f : 0.3f);
+            k.label.setAlpha (usable ? 1.0f : 0.3f);
+            if (part == 0) k.slider.setColour (juce::Slider::rotarySliderFillColourId, mms ? midColour : Palette::accent);
+        }
     const bool ems = masterProcessor.isEQMidSide(), eon = params.getRawParameterValue (MasterEQIDs::on)->load() > 0.5f;
     for (int part = 0; part < 2; ++part)
         for (auto& k : eqKnobs[(size_t) part])
@@ -1146,12 +1444,13 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
     // The chain: the stages in order; the two pages can be clicked, the one showing is lit
     {
         struct Stage { const char* name; bool built; int page; };
-        const Stage stages[] { { "INPUT", true, -1 }, { "RESONANCE TAMER", true, tamerPage }, { "EQ", true, eqPage }, { "MULTIBAND", false, -1 },
+        const Stage stages[] { { "INPUT", true, -1 }, { "RESONANCE TAMER", true, tamerPage }, { "EQ", true, eqPage }, { "MULTIBAND", true, mbPage },
                                { "COMPRESSOR", true, compPage }, { "PUNCH", false, -1 }, { "WIDTH", false, -1 }, { "LIMITER", true, -1 }, { "OUTPUT", true, -1 } };
         const auto& params = easyProcessor.parameters;
         const bool tamerOn = params.getRawParameterValue (MasterIDs::tamerOn)->load() > 0.5f;
         const bool compOn = params.getRawParameterValue (MasterIDs::compOn)->load() > 0.5f;
         const bool eqOn = params.getRawParameterValue (MasterEQIDs::on)->load() > 0.5f;
+        const bool mbOn = params.getRawParameterValue (MasterMBIDs::on)->load() > 0.5f;
         const int count = (int) std::size (stages);
         const float arrow = 18.0f;
         const float w = ((float) chainArea.getWidth() - arrow * (float) (count - 1)) / (float) count;
@@ -1171,7 +1470,7 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
             if (st.page >= 0)
             {
                 // (a page: its name, a lamp for on / off, and "click to show" until it's showing)
-                const bool isOn = st.page == tamerPage ? tamerOn : (st.page == eqPage ? eqOn : compOn);
+                const bool isOn = st.page == tamerPage ? tamerOn : st.page == eqPage ? eqOn : st.page == mbPage ? mbOn : compOn;
                 g.setColour (isOn ? Palette::meterLow : Palette::meterOff);
                 g.fillEllipse (juce::Rectangle<float> (9.0f, 9.0f).withCentre ({ b.getX() + 8.0f, b.getCentreY() }));
                 g.setColour (Palette::textBright);
@@ -1201,7 +1500,7 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
 
     drawPanel (g, inputPanel, "1", "INPUT");
     drawPanel (g, metersPanel, {}, "METERS");
-    drawPanel (g, limiterPanel, "5", "LIMITER");
+    drawPanel (g, limiterPanel, "6", "LIMITER");
     drawPanel (g, comparePanel, "", "COMPARE");
 
     const auto rowName = [&g] (juce::Rectangle<int> r, const juce::String& name, const juce::String& under, juce::Colour c, bool lit)
@@ -1222,10 +1521,26 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
     if (shownPage == compPage)
     {
         drawPanel (g, pageDisplayPanel, {}, "COMPRESSOR & LIMITER - WHAT THEY'RE DOING");
-        drawPanel (g, pagePanel, "4", "COMPRESSOR");
+        drawPanel (g, pagePanel, "5", "COMPRESSOR");
         const bool ms = masterProcessor.isMidSide();
         rowName (midRowName, ms ? "MID" : "STEREO", ms ? "kick, bass,\nsnare, vocal" : "the whole mix", midColour, true);
         rowName (sideRowName, "SIDE", ms ? "the width" : "only in\nMID + SIDE", sideColour, ms);
+    }
+    else if (shownPage == mbPage)
+    {
+        drawPanel (g, pageDisplayPanel, {}, "MULTIBAND - THE FOUR BANDS");
+        drawPanel (g, pagePanel, "4", "MULTIBAND");
+        const bool ms = masterProcessor.isMultibandMidSide();
+        rowName (mbMidName, ms ? "MID" : "STEREO", ms ? "kick, bass,\nsnare, vocal" : "the whole mix", ms ? midColour : Palette::accent, true);
+        rowName (mbSideName, "SIDE", ms ? "the width" : "only in\nMID + SIDE", sideColour, ms);
+        g.setFont (juce::Font (juce::FontOptions (12.0f, juce::Font::bold)));
+        for (int b = 0; b < 4; ++b)
+        {
+            g.setColour (Palette::textDim);
+            g.drawText (juce::String (b + 1) + "  " + MasterMBIDs::bandNames[b], mbBandNames[(size_t) b].withTrimmedRight (144), juce::Justification::centredLeft, false);
+            g.setColour (Palette::panelEdge);
+            g.drawHorizontalLine (mbBandNames[(size_t) b].getBottom(), (float) mbBandNames[(size_t) b].getX(), (float) mbBandNames[(size_t) b].getRight() - 8.0f);
+        }
     }
     else if (shownPage == eqPage)
     {
@@ -1359,6 +1674,51 @@ void EasyMasterAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
         placeKnob (knobs[ignoreKnob], shared, knobSizeFor (shared, 60));
     }
 
+    // The MULTIBAND page: per row, the name, then four bands (THRESHOLD, RATIO, SPEED, GAIN); each band's ON and SOLO over it
+    mbDisplay.setBounds (display.getBounds());
+    {
+        auto inside = pagePanel.reduced (14, 12).withTrimmedTop (28);
+        auto row = inside.removeFromTop (32);
+        mbOnButton.setBounds (row.removeFromLeft (64).withSizeKeepingCentre (64, 30));
+        row.removeFromLeft (12);
+        mbModeSwitch.setBounds (row.removeFromLeft (220).withSizeKeepingCentre (220, 30));
+        for (int sp = 2; sp >= 0; --sp)
+        {
+            mbSplits[(size_t) sp].setBounds (row.removeFromRight (96).withSizeKeepingCentre (96, 26));
+            row.removeFromRight (6);
+        }
+        mbSplitLabel.setBounds (row.removeFromRight (50));
+        inside.removeFromTop (6);
+        auto names = inside.removeFromTop (26);
+        names.removeFromLeft (84);
+        const int bandWidth = names.getWidth() / 4;
+        for (int b = 0; b < 4; ++b)
+        {
+            auto n = b < 3 ? names.removeFromLeft (bandWidth) : names;
+            mbBandNames[(size_t) b] = n;
+            auto buttons = n.withTrimmedRight (8).removeFromRight (136);
+            mbSolo[(size_t) b].setBounds (buttons.removeFromRight (76).withSizeKeepingCentre (76, 22));
+            buttons.removeFromRight (4);
+            mbBandOn[(size_t) b].setBounds (buttons.removeFromRight (56).withSizeKeepingCentre (56, 22));
+        }
+        const int rowHeight = inside.getHeight() / 2;
+        auto rows = std::array<juce::Rectangle<int>, 2> { inside.removeFromTop (rowHeight), inside };
+        mbMidName = rows[0].removeFromLeft (84);
+        mbSideName = rows[1].removeFromLeft (84);
+        for (int part = 0; part < 2; ++part)
+        {
+            auto r = rows[(size_t) part];
+            const int w = r.getWidth() / 16;
+            const int size = juce::jmin (42, w - 18, r.getHeight() - nameHeight - spacing - valueBoxHeight);   // (the same size for all of them)
+            for (int c = 0; c < 16; ++c)
+            {
+                auto column = c == 15 ? r : r.removeFromLeft (w);
+                if (c % 4 == 3) column = column.withTrimmedRight (6);   // (a little space between bands)
+                placeKnob (mbKnobs[(size_t) part][(size_t) c], column, size);
+            }
+        }
+    }
+
     // The EQ page: per row, the name, then five bands (FREQ + GAIN) and LOW CUT
     eqDisplay.setBounds (display.getBounds());
     {
@@ -1419,7 +1779,7 @@ void EasyMasterAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
         placeKnob (knobs[tFromKnob], fromArea, knobSizeFor (fromArea, 56));
         placeKnob (knobs[tToKnob], shared, knobSizeFor (shared, 56));
     }
-    for (int m : { (int) MasterModules::tamer, (int) MasterModules::eq, (int) MasterModules::comp })
+    for (int m : { (int) MasterModules::tamer, (int) MasterModules::eq, (int) MasterModules::comp, (int) MasterModules::multiband })
         placeModuleButtons (m, pagePanel);
     placeModuleButtons (MasterModules::limiter, limiterPanel);
     showParts();
@@ -1440,14 +1800,18 @@ void EasyMasterAudioProcessorEditor::refreshLiveDisplays()
     const auto readings = masterProcessor.getReadings();
     meters.setReadings (readings, ms, compOn, tamerOn);
     const bool ems = masterProcessor.isEQMidSide(), eon = params.getRawParameterValue (MasterEQIDs::on)->load() > 0.5f;
+    const bool mms = masterProcessor.isMultibandMidSide(), mon = params.getRawParameterValue (MasterMBIDs::on)->load() > 0.5f;
+    if (shownPage == mbPage)
+        mbDisplay.setState (masterProcessor.multibandSettings(), masterProcessor.takeMultibandPicture(), masterProcessor.getTamerPicture(), mon, bypassed);
     if (shownPage == eqPage)
         eqDisplay.setState (masterProcessor.eqSettings(), masterProcessor.getTamerPicture(), eon, bypassed, masterProcessor.getSampleRate() > 0 ? masterProcessor.getSampleRate() : 48000.0);
     if (shownPage == tamerPage)
         tamerDisplay.setPicture (masterProcessor.getTamerPicture(), tms, tamerOn, params.getRawParameterValue (MasterIDs::tFrom)->load(),
                                  params.getRawParameterValue (MasterIDs::tTo)->load(), bypassed);
 
-    if (ms != shownMidSide || compOn != shownCompOn || tms != shownTamerMidSide || tamerOn != shownTamerOn || ems != shownEQMidSide || eon != shownEQOn)
+    if (ms != shownMidSide || compOn != shownCompOn || tms != shownTamerMidSide || tamerOn != shownTamerOn || ems != shownEQMidSide || eon != shownEQOn || mms != shownMBMidSide || mon != shownMBOn)
     {
+        shownMBMidSide = mms; shownMBOn = mon;
         shownMidSide = ms; shownCompOn = compOn; shownTamerMidSide = tms; shownTamerOn = tamerOn; shownEQMidSide = ems; shownEQOn = eon;
         showParts();
     }

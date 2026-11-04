@@ -84,6 +84,38 @@ private:
 };
 
 //==============================================================================
+/** The MULTIBAND page's display: the four bands across the spectrum (drag
+    the lines between them to move the splits), each showing how much it's
+    being turned down (red = the middle or both, blue = the sides). */
+class MultibandDisplay : public juce::Component
+{
+public:
+    explicit MultibandDisplay (juce::AudioProcessorValueTreeState& p) : parameters (p) {}
+    void setState (const MultibandCompressor::Settings&, const EasyMasterAudioProcessor::MultibandPicture&,
+                   const EasyMasterAudioProcessor::TamerPicture&, bool on, bool bypassed);
+    void paint (juce::Graphics&) override;
+    void mouseMove (const juce::MouseEvent&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+    void mouseDrag (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+    float splitX (int split) const;   // (public so it can be tested)
+    std::function<void()> onEdit;
+
+private:
+    juce::Rectangle<float> plotArea() const;
+    float xOf (double hz) const;
+    double hzAt (float x) const;
+    int splitAt (float x) const;
+
+    juce::AudioProcessorValueTreeState& parameters;
+    MultibandCompressor::Settings settings;
+    std::array<std::array<float, 2>, 4> shownCut {}, shownPeak {};
+    std::array<float, ResonanceTamer::numBands> shownLevel {}, centreHz {};
+    bool on = false, bypassed = false;
+    int dragging = -1, hovered = -1;
+};
+
+//==============================================================================
 /** The readings: LUFS momentary / short-term / integrated, the highest true
     peak, PLR, stereo correlation, and how much each part turns down now.
     Click it to reset the integrated LUFS and the highest peak. */
@@ -118,7 +150,10 @@ public:
                      tSpeedKnob, tFromKnob, tToKnob, numKnobs };
 
     /** The pages the chain along the top switches between. */
-    enum Page { tamerPage = 0, eqPage, compPage, numPages };
+    enum Page { tamerPage = 0, eqPage, mbPage, compPage, numPages };
+    juce::Slider& getMBKnob (int part, int band, int which)   { return mbKnobs[(size_t) part][(size_t) (band * 4 + which)].slider; }   // which: 0 THRESHOLD, 1 RATIO, 2 SPEED, 3 GAIN
+    juce::Slider& getMBSplit (int split)                       { return mbSplits[(size_t) split]; }
+    MultibandDisplay& getMBDisplay()                           { return mbDisplay; }
     EQDisplay& getEQDisplay()                 { return eqDisplay; }
     juce::Slider& getEQKnob (int part, int column)   { return eqKnobs[(size_t) part][(size_t) column].slider; }   // column: 0..9 FREQ / GAIN per band, 10 LOW CUT
     void showPage (int page);
@@ -178,6 +213,20 @@ private:
     MasterDisplay display;
     TamerDisplay tamerDisplay;
     EQDisplay eqDisplay { easyProcessor.parameters };
+    MultibandDisplay mbDisplay { easyProcessor.parameters };
+    std::array<std::array<Knob, 16>, 2> mbKnobs;
+    std::array<juce::Slider, 3> mbSplits;
+    std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>, 3> mbSplitAttachments;
+    juce::Label mbSplitLabel;
+    std::array<LightButton, 4> mbBandOn { LightButton { "ON", Palette::meterLow }, LightButton { "ON", Palette::meterLow }, LightButton { "ON", Palette::meterLow }, LightButton { "ON", Palette::meterLow } };
+    std::array<LightButton, 4> mbSolo { LightButton { "SOLO", Palette::meterMid }, LightButton { "SOLO", Palette::meterMid }, LightButton { "SOLO", Palette::meterMid }, LightButton { "SOLO", Palette::meterMid } };
+    std::array<std::unique_ptr<juce::ButtonParameterAttachment>, 4> mbBandOnAttachments, mbSoloAttachments;
+    LightButton mbOnButton { "ON", Palette::meterLow };
+    std::unique_ptr<juce::ButtonParameterAttachment> mbOnAttachment;
+    ChoiceSwitch mbModeSwitch;
+    juce::Rectangle<int> mbMidName, mbSideName;
+    std::array<juce::Rectangle<int>, 4> mbBandNames;
+    bool shownMBMidSide = false, shownMBOn = false;
     std::array<std::array<Knob, 11>, 2> eqKnobs;
     LightButton eqOnButton { "ON", Palette::meterLow };
     std::unique_ptr<juce::ButtonParameterAttachment> eqOnAttachment;

@@ -53,6 +53,38 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyMasterAudioProcessor::cr
         }
     }
 
+    // MULTIBAND
+    {
+        layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { MasterMBIDs::on, 4 }, "Multiband On", false));
+        layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { MasterMBIDs::mode, 4 }, "Multiband Mode", juce::StringArray { "Stereo", "Mid + Side" }, 0));
+        juce::NormalisableRange<float> mbThreshold (-40.0f, 0.0f, 0.1f);
+        juce::NormalisableRange<float> mbRatio (1.0f, 10.0f, 0.1f);  mbRatio.setSkewForCentre (2.5f);
+        juce::NormalisableRange<float> mbSpeed (0.0f, 100.0f, 1.0f);
+        juce::NormalisableRange<float> mbGain (-12.0f, 12.0f, 0.1f);
+        const char* partName[2] { "Mid", "Side" };
+        for (int part = 0; part < 2; ++part)
+            for (int b = 0; b < 4; ++b)
+            {
+                const juce::String name = juce::String ("MB ") + partName[part] + " " + juce::String (MasterMBIDs::bandNames[b]).toLowerCase();
+                layout.add (makeKnob (MasterMBIDs::threshold[part][b], 4, name + " Threshold", mbThreshold, 0.0f, Format::decibels));
+                layout.add (makeKnob (MasterMBIDs::ratio[part][b],     4, name + " Ratio",     mbRatio,     2.0f, Format::ratio));
+                layout.add (makeKnob (MasterMBIDs::speed[part][b],     4, name + " Speed",     mbSpeed,     50.0f, Format::percent));
+                layout.add (makeKnob (MasterMBIDs::gain[part][b],      4, name + " Gain",      mbGain,      0.0f, Format::signedDecibels));
+            }
+        for (int b = 0; b < 4; ++b)
+        {
+            layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { MasterMBIDs::bandOn[b], 4 }, juce::String ("MB ") + MasterMBIDs::bandNames[b] + " On", true));
+            layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { MasterMBIDs::solo[b], 4 }, juce::String ("MB ") + MasterMBIDs::bandNames[b] + " Solo", false));
+        }
+        for (int sp = 0; sp < 3; ++sp)
+        {
+            const auto& info = MasterMBIDs::splits[sp];
+            juce::NormalisableRange<float> r (info.lowHz, info.highHz, 1.0f);
+            r.setSkewForCentre (std::sqrt (info.lowHz * info.highHz));
+            layout.add (makeKnob (MasterMBIDs::split[sp], 4, "MB Split " + juce::String (sp + 1), r, info.defaultHz, Format::hertz, Format::hertzFromText));
+        }
+    }
+
     // RESONANCE TAMER
     {
         juce::NormalisableRange<float> amountRange (0.0f, 12.0f, 0.1f);
@@ -114,6 +146,12 @@ EasyMasterAudioProcessor::EasyMasterAudioProcessor()
     matchValue = v (match); listenValue = v (listen); bypassValue = v (CommonIDs::bypass);
     tamerValues = { v (tamerOn), v (tamerMode), v (tMidAmount), v (tMidSens), v (tMidSharp), v (tSideAmount), v (tSideSens), v (tSideSharp),
                     v (tSpeed), v (tFrom), v (tTo), v (tListen) };
+    mbOnValue = v (MasterMBIDs::on); mbModeValue = v (MasterMBIDs::mode);
+    for (int part = 0; part < 2; ++part)
+        for (int b = 0; b < 4; ++b)
+            mbBandValues[(size_t) part][(size_t) b] = { v (MasterMBIDs::threshold[part][b]), v (MasterMBIDs::ratio[part][b]), v (MasterMBIDs::speed[part][b]), v (MasterMBIDs::gain[part][b]) };
+    for (int b = 0; b < 4; ++b) { mbBandOnValues[(size_t) b] = v (MasterMBIDs::bandOn[b]); mbSoloValues[(size_t) b] = v (MasterMBIDs::solo[b]); }
+    for (int sp = 0; sp < 3; ++sp) mbSplitValues[(size_t) sp] = v (MasterMBIDs::split[sp]);
     eqOnValue = v (MasterEQIDs::on); eqModeValue = v (MasterEQIDs::mode);
     for (int part = 0; part < 2; ++part)
     {
@@ -147,6 +185,27 @@ Compressor::Settings EasyMasterAudioProcessor::compressorSettings (bool side) co
     s.reactToAverage = reactsValue->load() > 0.5f;
     s.vintage     = characterValue->load() > 0.5f;
     s.bypassed    = compOnValue->load() < 0.5f;
+    return s;
+}
+
+MultibandCompressor::Settings EasyMasterAudioProcessor::multibandSettings() const noexcept
+{
+    MultibandCompressor::Settings s;
+    s.bypassed = mbOnValue->load() < 0.5f;
+    s.midSide = juce::roundToInt (mbModeValue->load()) == MasterMode::midSide;
+    for (int part = 0; part < 2; ++part)
+        for (int b = 0; b < 4; ++b)
+        {
+            const auto& vals = mbBandValues[(size_t) part][(size_t) b];
+            auto& band = (part == 0 ? s.mid : s.side)[(size_t) b];
+            band = { vals[0]->load(), vals[1]->load(), vals[2]->load() / 100.0f, vals[3]->load() };
+        }
+    for (int b = 0; b < 4; ++b)
+    {
+        s.bandOn[(size_t) b] = mbBandOnValues[(size_t) b]->load() > 0.5f;
+        s.solo[(size_t) b] = mbSoloValues[(size_t) b]->load() > 0.5f && ! s.bypassed;
+    }
+    for (int sp = 0; sp < 3; ++sp) s.splitHz[(size_t) sp] = mbSplitValues[(size_t) sp]->load();
     return s;
 }
 
@@ -203,6 +262,7 @@ void EasyMasterAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     limiter.prepare (sampleRate, 2, limiterSettings());
     tamer.prepare (sampleRate, tamerSettings());
     eq.prepare (sampleRate, eqSettings());
+    multiband.prepare (sampleRate, block, multibandSettings());
     loudness.prepare (sampleRate);
     originalLoudness.prepare (sampleRate);
     mid.setSize (1, block);
@@ -309,6 +369,8 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         tamer.process (buffer);
         eq.setSettings (eqSettings());
         eq.process (buffer);
+        multiband.setSettings (multibandSettings());
+        multiband.process (buffer);
         limiter.setSettings (limiterSettings());
         limiter.process (buffer, 1);
         return;
@@ -321,6 +383,7 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     limiter.setSettings (limiterSettings());
     tamer.setSettings (tamerSettings());
     eq.setSettings (eqSettings());
+    multiband.setSettings (multibandSettings());
     trimGain.setTargetValue (juce::Decibels::decibelsToGain (trimValue->load()));
     bypassFade.setTargetValue (bypassValue->load() > 0.5f ? 1.0f : 0.0f);
     const int listening = juce::roundToInt (listenValue->load());
@@ -376,6 +439,15 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
         // EQ
         eq.process (part);
+
+        // MULTIBAND
+        multiband.process (part);
+        for (int b = 0; b < 4; ++b)
+            for (int pt = 0; pt < 2; ++pt)
+            {
+                storeIfBigger (mbCut[(size_t) b][(size_t) pt], mbOnValue->load() > 0.5f ? multiband.getReductionDb (b, pt) : 0.0f);
+                storeIfBigger (mbPeak[(size_t) b][(size_t) pt], multiband.getBandPeak (b, pt));
+            }
 
         // COMPRESSOR
         compress (part, n);
@@ -460,6 +532,18 @@ EasyMasterAudioProcessor::Readings EasyMasterAudioProcessor::getReadings() const
     r.tamerMidCut = nowTamerCut[0].load();
     r.tamerSideCut = nowTamerCut[1].load();
     return r;
+}
+
+EasyMasterAudioProcessor::MultibandPicture EasyMasterAudioProcessor::takeMultibandPicture() noexcept
+{
+    MultibandPicture p;
+    for (int b = 0; b < 4; ++b)
+        for (int pt = 0; pt < 2; ++pt)
+        {
+            p.cutDb[(size_t) b][(size_t) pt] = mbCut[(size_t) b][(size_t) pt].exchange (0.0f);
+            p.peakDb[(size_t) b][(size_t) pt] = juce::Decibels::gainToDecibels (mbPeak[(size_t) b][(size_t) pt].exchange (0.0f), -100.0f);
+        }
+    return p;
 }
 
 EasyMasterAudioProcessor::TamerPicture EasyMasterAudioProcessor::getTamerPicture() const noexcept

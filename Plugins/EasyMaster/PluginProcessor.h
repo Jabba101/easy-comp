@@ -6,6 +6,7 @@
 #include "LoudnessMeter.h"
 #include "ResonanceTamer.h"
 #include "MasteringEQ.h"
+#include "MultibandCompressor.h"
 #include "Presets.h"
 
 //==============================================================================
@@ -15,11 +16,12 @@
     INPUT (trim) > RESONANCE TAMER (stereo, or MID and SIDE with their own
     settings: harsh, boxy, ringing spots turned down only while they stick
     out) > EQ (a full EQ for the middle and another for the sides, or one for
-    both) > COMPRESSOR (stereo, or MID and SIDE with their
+    both) > MULTIBAND (four bands, each compressed on its own; stereo, or mid
+    and side with their own settings) > COMPRESSOR (stereo, or MID and SIDE with their
     own settings) > LIMITER (the Easy Limiter engine: true-peak ceiling) >
     MATCH (the whole chain as loud as the original, for fair comparison) >
     LISTEN (stereo / mid / side / mono, for checking). Still to come, in
-    their places in the chain: multiband, punch and width.
+    their places in the chain: punch and width.
 
     BYPASS gives exactly the original, delayed by the same amount as the
     processed sound so nothing jumps in time. The meters read the master as
@@ -67,12 +69,16 @@ public:
         std::array<float, ResonanceTamer::numBands> centreHz {};
     };
     TamerPicture getTamerPicture() const noexcept;
+
+    /** The multiband's picture since the window last asked: per band, the most it turned down and the loudest peak (part 0 = MID or both, 1 = SIDE). */
+    struct MultibandPicture { std::array<std::array<float, 2>, 4> cutDb {}, peakDb {}; };
+    MultibandPicture takeMultibandPicture() noexcept;
     bool isTamerMidSide() const noexcept   { return juce::roundToInt (tamerValues[1]->load()) == MasterMode::midSide; }
     Readings getReadings() const noexcept;
     void resetMeters() noexcept   { loudness.resetIntegrated(); highestPeak.store (-100.0f); }
 
     int shownPage = 0;
-    std::array<juce::String, 4> modulePresetNames;   // (which module preset each module's Pr loaded last - shown beside it)   // (the window's page - kept while the window is closed; 0 = RESONANCE TAMER)
+    std::array<juce::String, MasterModules::count> modulePresetNames;   // (which module preset each module's Pr loaded last - shown beside it)   // (the window's page - kept while the window is closed; 0 = RESONANCE TAMER)
 
     bool isMidSide() const noexcept   { return juce::roundToInt (compModeValue->load()) == MasterMode::midSide; }
 
@@ -86,6 +92,8 @@ private:
     ResonanceTamer::Settings tamerSettings() const noexcept;
 public:
     MasteringEQ::Settings eqSettings() const noexcept;   // (also for the EQ page's curve)
+    MultibandCompressor::Settings multibandSettings() const noexcept;
+    bool isMultibandMidSide() const noexcept   { return juce::roundToInt (mbModeValue->load()) == MasterMode::midSide; }
     bool isEQMidSide() const noexcept   { return juce::roundToInt (eqModeValue->load()) == MasterMode::midSide; }
 private:
     void compress (juce::AudioBuffer<float>&, int numSamples) noexcept;
@@ -96,7 +104,11 @@ private:
     std::array<std::atomic<float>*, 5> midValues {}, sideValues {};
     std::array<std::atomic<float>*, 12> tamerValues {};
     std::array<std::atomic<float>, 2> nowTamerCut {};
-    std::atomic<float> *eqOnValue = nullptr, *eqModeValue = nullptr;
+    std::atomic<float> *eqOnValue = nullptr, *eqModeValue = nullptr, *mbOnValue = nullptr, *mbModeValue = nullptr;
+    std::array<std::array<std::array<std::atomic<float>*, 4>, 4>, 2> mbBandValues {};
+    std::array<std::atomic<float>*, 4> mbBandOnValues {}, mbSoloValues {};
+    std::array<std::atomic<float>*, 3> mbSplitValues {};
+    std::array<std::array<std::atomic<float>, 2>, 4> mbCut {}, mbPeak {};
     std::array<std::array<std::atomic<float>*, 5>, 2> eqFreqValues {}, eqGainValues {};
     std::array<std::atomic<float>*, 2> eqLowCutValues {};
 
@@ -105,6 +117,7 @@ private:
     TruePeakLimiter limiter;
     ResonanceTamer tamer;
     MasteringEQ eq;
+    MultibandCompressor multiband;
     LoudnessMeter loudness, originalLoudness;
     juce::AudioBuffer<float> mid, sides, original;
     juce::SmoothedValue<float> trimGain, matchGain, bypassFade;

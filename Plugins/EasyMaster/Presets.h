@@ -68,6 +68,23 @@ namespace MasterEQIDs
                                          { "HIGH SHELF", 3000.0f, 20000.0f, 10000.0f } };
 }
 
+/** The MULTIBAND: per part (0 = MID or STEREO, 1 = SIDE) each band's THRESHOLD, RATIO, SPEED and GAIN; per band ON and SOLO; the three splits. */
+namespace MasterMBIDs
+{
+    inline constexpr const char* on   = "mbon";
+    inline constexpr const char* mode = "mbmode";
+    inline constexpr const char* threshold[2][4] { { "mbm0t", "mbm1t", "mbm2t", "mbm3t" }, { "mbs0t", "mbs1t", "mbs2t", "mbs3t" } };
+    inline constexpr const char* ratio[2][4]     { { "mbm0r", "mbm1r", "mbm2r", "mbm3r" }, { "mbs0r", "mbs1r", "mbs2r", "mbs3r" } };
+    inline constexpr const char* speed[2][4]     { { "mbm0s", "mbm1s", "mbm2s", "mbm3s" }, { "mbs0s", "mbs1s", "mbs2s", "mbs3s" } };
+    inline constexpr const char* gain[2][4]      { { "mbm0g", "mbm1g", "mbm2g", "mbm3g" }, { "mbs0g", "mbs1g", "mbs2g", "mbs3g" } };
+    inline constexpr const char* bandOn[4]       { "mb0on", "mb1on", "mb2on", "mb3on" };
+    inline constexpr const char* solo[4]         { "mb0solo", "mb1solo", "mb2solo", "mb3solo" };   // (for listening: not in presets)
+    inline constexpr const char* split[3]        { "mbx0", "mbx1", "mbx2" };
+    inline constexpr const char* bandNames[4]    { "LOW", "LOW MID", "HIGH MID", "HIGH" };
+    struct SplitInfo { float lowHz, highHz, defaultHz; };
+    inline constexpr SplitInfo splits[3] { { 40.0f, 400.0f, 120.0f }, { 300.0f, 4000.0f, 1000.0f }, { 2000.0f, 14000.0f, 6000.0f } };
+}
+
 namespace MasterMode   { enum { stereo = 0, midSide }; }
 namespace MasterListen { enum { stereo = 0, mid, side, mono }; }
 
@@ -195,7 +212,9 @@ inline std::vector<Preset> makeMasterPresets()
     return presets;
 }
 
-/** The settings presets store (everything except MATCH, the LISTEN buttons and BYPASS). */
+namespace MasterModules { inline juce::StringArray ids (int module); }
+
+/** The settings presets store (everything except MATCH, the LISTEN buttons, SOLO and BYPASS). */
 inline juce::StringArray masterPresetIDs()
 {
     using namespace MasterIDs;
@@ -210,6 +229,7 @@ inline juce::StringArray masterPresetIDs()
         for (int b = 0; b < 5; ++b) { ids.add (MasterEQIDs::freq[part][b]); ids.add (MasterEQIDs::gain[part][b]); }
         ids.add (MasterEQIDs::lowCut[part]);
     }
+    for (auto& id : MasterModules::ids (4)) ids.add (id);   // (4 = the MULTIBAND)
     return ids;
 }
 
@@ -221,8 +241,8 @@ inline juce::StringArray masterPresetIDs()
 */
 namespace MasterModules
 {
-    enum { tamer = 0, eq, comp, limiter, count };
-    inline const char* names[count] { "Resonance Tamer", "EQ", "Compressor", "Limiter" };
+    enum { tamer = 0, eq, comp, limiter, multiband, count };
+    inline const char* names[count] { "Resonance Tamer", "EQ", "Compressor", "Limiter", "Multiband" };
 
     /** The settings each module's presets (and its INIT) cover. */
     inline juce::StringArray ids (int module)
@@ -232,6 +252,17 @@ namespace MasterModules
         if (module == comp)    return { compOn, compMode, midThreshold, midRatio, midAttack, midRelease, midMakeup,
                                         sideThreshold, sideRatio, sideAttack, sideRelease, sideMakeup, compMix, ignoreBelow, reactsTo, character };
         if (module == limiter) return { limitGain, ceiling, releaseMode, release };
+        if (module == multiband)
+        {
+            juce::StringArray list { MasterMBIDs::on, MasterMBIDs::mode };
+            for (int part = 0; part < 2; ++part)
+                for (int b = 0; b < 4; ++b)
+                    for (auto* id : { MasterMBIDs::threshold[part][b], MasterMBIDs::ratio[part][b], MasterMBIDs::speed[part][b], MasterMBIDs::gain[part][b] })
+                        list.add (id);
+            for (int b = 0; b < 4; ++b) list.add (MasterMBIDs::bandOn[b]);
+            for (auto* id : MasterMBIDs::split) list.add (id);
+            return list;
+        }
         juce::StringArray list { MasterEQIDs::on, MasterEQIDs::mode };
         for (int part = 0; part < 2; ++part)
         {
@@ -285,8 +316,48 @@ namespace MasterModules
         return { "", name, tip, { { limitGain, gain }, { ceiling, ceilingDb }, { releaseMode, (float) releaseModeValue }, { release, releaseMs } } };
     }
 
+    /** A band: threshold, ratio, speed (%), gain. */
+    struct MB { float t = 0.0f, r = 2.0f, s = 50.0f, g = 0.0f; };
+    inline Preset mbPreset (const char* name, const char* tip, int midSide, std::array<MB, 4> mid, std::array<MB, 4> side,
+                            std::array<float, 3> splits = { 120.0f, 1000.0f, 6000.0f })
+    {
+        Preset p { "", name, tip, { { MasterMBIDs::on, 1.0f }, { MasterMBIDs::mode, (float) midSide } } };
+        for (int part = 0; part < 2; ++part)
+            for (int b = 0; b < 4; ++b)
+            {
+                const auto& v = (part == 0 ? mid : side)[(size_t) b];
+                p.values.push_back ({ juce::String (MasterMBIDs::threshold[part][b]), v.t });
+                p.values.push_back ({ juce::String (MasterMBIDs::ratio[part][b]), v.r });
+                p.values.push_back ({ juce::String (MasterMBIDs::speed[part][b]), v.s });
+                p.values.push_back ({ juce::String (MasterMBIDs::gain[part][b]), v.g });
+            }
+        for (int b = 0; b < 4; ++b) p.values.push_back ({ juce::String (MasterMBIDs::bandOn[b]), 1.0f });
+        for (int sp = 0; sp < 3; ++sp) p.values.push_back ({ juce::String (MasterMBIDs::split[sp]), splits[(size_t) sp] });
+        return p;
+    }
+
     inline std::vector<Preset> presets (int module)
     {
+        if (module == multiband)
+        {
+            const MB off { 0.0f, 1.0f, 50.0f, 0.0f };
+            return {
+                mbPreset ("Gentle Control", "Every band held in lightly (2:1, slow): the mix evened out across the spectrum, 1-2 dB each.", 0,
+                          { MB { -20, 2, 60, 0 }, MB { -22, 2, 60, 0 }, MB { -24, 2, 55, 0 }, MB { -28, 2, 50, 0 } }, {}),
+                mbPreset ("Tame Boomy Lows", "Only the low band (under 150 Hz) held down when a bass note or kick booms; the rest untouched.", 0,
+                          { MB { -18, 3, 45, 0 }, off, off, off }, {}, { 150.0f, 1000.0f, 6000.0f }),
+                mbPreset ("Control Harsh Highs", "The top bands caught when cymbals and vocals get sharp: fast and firm, the body left alone.", 0,
+                          { off, off, MB { -26, 3, 25, 0 }, MB { -30, 3, 20, 0 } }, {}, { 120.0f, 1000.0f, 5000.0f }),
+                mbPreset ("Heavy Rock Density", "Firm on the low and low-mid bands: guitars and drums packed solid, the top kept open.", 0,
+                          { MB { -20, 3, 40, 0.5f }, MB { -22, 3, 40, 0 }, MB { -24, 2, 45, 0 }, MB { -28, 1.5f, 50, 0 } }, {}),
+                mbPreset ("Tight Mono Lows (M/S)", "The sides' low band held right down (heavy bass kept mono and tight); the middle breathes.", 1,
+                          { MB { -18, 1.5f, 60, 0 }, MB { -22, 1.5f, 60, 0 }, MB { -24, 1.5f, 55, 0 }, MB { -28, 1.5f, 50, 0 } },
+                          { MB { -36, 6, 30, -2 }, MB { -26, 2, 50, 0 }, MB { -26, 2, 50, 0 }, MB { -30, 1.5f, 50, 0 } }),
+                mbPreset ("Smooth Wide Highs (M/S)", "Harsh, wide highs at the sides smoothed; the middle's top (vocal, snare) left bright.", 1,
+                          { off, off, off, off },
+                          { off, MB { -26, 2, 50, 0 }, MB { -28, 3, 30, 0 }, MB { -32, 3, 25, 0 } }),
+            };
+        }
         if (module == tamer)
             return {
                 tamerPreset ("Gentle Polish", "Only the spots that clearly stick out, gently: a little smoother, nothing more.", 0, 3, 45, 50, 3, 45, 50, 50, 200, 16000),

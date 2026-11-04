@@ -634,7 +634,7 @@ YOUR FIRST FIVE MINUTES WITH EASY LIMITER
 YOUR FIRST FIVE MINUTES WITH EASY MASTER
 ====================================================================
    The last plugin on your master bus: INPUT > RESONANCE TAMER > EQ >
-   COMPRESSOR > LIMITER, with meters. (Multiband, punch and width
+   MULTIBAND > COMPRESSOR > LIMITER, with meters. (Punch and width
    will arrive in their places - the chain along the top shows them
    dimmed until then.) Click a stage in the chain to show its page -
    its own display and controls - in the middle. INPUT, the METERS, the
@@ -663,17 +663,26 @@ YOUR FIRST FIVE MINUTES WITH EASY MASTER
       the frequency, up or down for the gain - then fine-tune with the
       knobs; double-click a dot to put it back to 0 dB; C is the LOW CUT.
       On a master, small moves: 0.5-2 dB is a lot.
-   5. COMPRESSOR: STEREO for the whole mix, or MID + SIDE, where the
+   5. MULTIBAND (off until you switch it on): the mix split into four
+      bands - LOW, LOW MID, HIGH MID, HIGH - each compressed on its own,
+      so a booming bass note only turns the bass down, a harsh cymbal
+      only the top. Per band THRESHOLD, RATIO, SPEED (fast .. slow) and
+      GAIN, ON and SOLO; drag the lines between the bands on the display
+      (or use SPLITS) to move where they meet. With nothing compressing,
+      the bands add back up to exactly the original. STEREO, or MID +
+      SIDE with a green and a blue row (e.g. the sides' lows held right
+      down: tight, mono bass).
+   6. COMPRESSOR: STEREO for the whole mix, or MID + SIDE, where the
       middle (green row: kick, bass, snare, vocal) and the sides (blue
       row: the width) each have their own controls. IGNORE BELOW keeps
       a heavy kick and bass from making the whole mix pump.
-   6. LIMITER - GAIN: push the master up into the ceiling (-0.3 dBTP
+   7. LIMITER - GAIN: push the master up into the ceiling (-0.3 dBTP
       by default). The meters show LUFS - a reading, never a target.
-   7. COMPARE: MATCH plays the whole chain at the original's loudness;
+   8. COMPARE: MATCH plays the whole chain at the original's loudness;
       then click BYPASS on and off to judge the sound, not the volume.
       LISTEN MONO / MID / SIDE are for checking (switch back to
       STEREO). A and B hold two versions to compare.
-   Each module (TAMER, EQ, COMPRESSOR, LIMITER) also has its own Pr and
+   Each module (TAMER, EQ, MULTIBAND, COMPRESSOR, LIMITER) has its own Pr and
    INIT, top right of its panel: Pr loads a preset into that module only
    (and saves your own), INIT puts just that module back to its
    defaults - the rest of the chain stays as it is. The main preset box
@@ -885,6 +894,7 @@ WHAT'S IN THIS FOLDER
      SpectralUnbleed.h      Easy Unbleed's ghost cleaner
      ResonanceTamer.h       Easy Master's resonance tamer
      MasteringEQ.h          Easy Master's EQ (mid and side)
+     MultibandCompressor.h  Easy Master's four-band compressor
      Equalizer.h            Easy EQ's EQ
      LinearPhaseEQ.h        Easy EQ's MASTER (linear phase)
      LoudnessMatcher.h      AUTO-GAIN (shared by every plugin)

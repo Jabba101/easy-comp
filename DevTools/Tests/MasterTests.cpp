@@ -261,6 +261,46 @@ namespace
         }
     }
 
+    void testMultiband()
+    {
+        std::cout << "\n[multiband]\n";
+        const auto quiet = [] (P& p) { set (p, MasterIDs::tamerOn, 0.0f); set (p, MasterIDs::compOn, 0.0f); set (p, MasterIDs::limitGain, 0.0f); set (p, MasterIDs::ceiling, -0.1f);
+                                       set (p, MasterMBIDs::on, 1.0f); };
+        const auto levelChange = [&] (std::function<void (P&)> setUp, double hz)
+        {
+            P p; quiet (p); setUp (p); prepare (p, sr, 512);
+            const auto tone = sine (sr, hz, 0.1f, 1.5);
+            const auto out = run (p, tone, 512);
+            return toDb (rms (out, 0, (int) (sr * 0.7), out.getNumSamples()) / rms (tone, 0, (int) (sr * 0.7), tone.getNumSamples()));
+        };
+        float worst = 0.0f;
+        for (double hz : { 50.0, 120.0, 400.0, 1000.0, 3000.0, 6000.0, 12000.0 })
+            worst = std::max (worst, std::abs (levelChange ([] (P&) {}, hz)));
+        check (worst < 0.05f, "the four bands add back up to the original: within " + juce::String (worst, 3) + " dB from 50 Hz to 12 kHz (nothing compressing)");
+        const float lowUp = levelChange ([] (P& p) { set (p, MasterMBIDs::gain[0][0], 6.0f); }, 50.0), topSame = levelChange ([] (P& p) { set (p, MasterMBIDs::gain[0][0], 6.0f); }, 5000.0);
+        check (std::abs (lowUp - 6.0f) < 0.3f && std::abs (topSame) < 0.1f, "LOW band GAIN +6: a 50 Hz tone " + juce::String (lowUp, 2) + " dB, a 5 kHz tone " + juce::String (topSame, 2) + " dB");
+        const float squeezed = levelChange ([] (P& p) { set (p, MasterMBIDs::threshold[0][3], -40.0f); set (p, MasterMBIDs::ratio[0][3], 10.0f); }, 10000.0);
+        const float untouched = levelChange ([] (P& p) { set (p, MasterMBIDs::threshold[0][3], -40.0f); set (p, MasterMBIDs::ratio[0][3], 10.0f); }, 200.0);
+        check (squeezed < -6.0f && std::abs (untouched) < 0.1f, "the HIGH band compressed hard: 10 kHz " + juce::String (squeezed, 1) + " dB, while 200 Hz is untouched (" + juce::String (untouched, 2) + " dB)");
+        const float soloed = levelChange ([] (P& p) { set (p, MasterMBIDs::solo[0], 1.0f); }, 5000.0);
+        check (soloed < -40.0f, "SOLO on the LOW band: a 5 kHz tone disappears (" + juce::String (soloed, 0) + " dB)");
+        {
+            juce::AudioBuffer<float> mono (loadMix ("band", 20.0, 4.0)); mono.copyFrom (1, 0, mono, 0, 0, mono.getNumSamples());
+            P p; quiet (p); set (p, MasterMBIDs::mode, 1.0f); set (p, MasterMBIDs::threshold[1][0], -40.0f); set (p, MasterMBIDs::ratio[1][0], 10.0f); set (p, MasterMBIDs::gain[1][3], 6.0f);
+            prepare (p, sr, 512);
+            const auto out = run (p, mono, 512);
+            float diff = 0.0f;
+            for (int i = 0; i < out.getNumSamples(); ++i) diff = std::max (diff, std::abs (out.getSample (0, i) - out.getSample (1, i)));
+            check (diff < 1.0e-5f, "MULTIBAND MID + SIDE on a mono mix: the sides' settings leave it alone (left = right)");
+        }
+        {
+            P a; quiet (a); set (a, MasterMBIDs::on, 0.0f); prepare (a, sr, 512);
+            P b; quiet (b); set (b, MasterMBIDs::on, 0.0f); set (b, MasterIDs::tamerOn, 0.0f); prepare (b, sr, 512);
+            const auto mix = loadMix ("band", 20.0, 3.0);
+            check (maxDifference (run (a, mix, 512), run (b, mix, 512)) < 1.0e-6f, "MULTIBAND off (the default): the mix passes untouched");
+        }
+    }
+
     void testParts (const juce::File& outDir)
     {
         std::cout << "\n[presets, saving, A / B, window]\n";
@@ -330,6 +370,21 @@ namespace
             eqView.mouseDrag (mouseAt (&eqView, lowCut + juce::Point<float> (40.0f, 0.0f), true));
             eqView.mouseUp (mouseAt (&eqView, lowCut + juce::Point<float> (40.0f, 0.0f), false));
             check (getParam (p, MasterEQIDs::lowCut[1]) > 125.0f, "the SIDE LOW CUT's dot (C) drags across too: " + Format::hertz (getParam (p, MasterEQIDs::lowCut[1])));
+        }
+        {
+            // The MULTIBAND page, with a module preset loaded
+            window->showPage (E::mbPage);
+            window->getModulePresets (MasterModules::multiband).browser.onPresetChosen (MasterModules::presets (MasterModules::multiband)[4]);   // "Tight Mono Lows (M/S)"
+            for (int i = 0; i < 4; ++i) { run (p, loadMix ("mureka", 54.0, 0.2), 512); window->updateDisplaysNow(); }
+            check (window->getMBKnob (0, 0, 0).isVisible() && window->getMBKnob (1, 3, 3).isVisible() && window->getMBKnob (1, 3, 3).isEnabled()
+                   && fitsAndNoOverlaps(), "the MULTIBAND page: four bands for MID and for SIDE, nothing overlapping");
+            savePng (*editor, outDir.getChildFile ("master_multiband.png"));
+            auto& view = window->getMBDisplay();
+            const float x = view.splitX (1);
+            view.mouseDown (mouseAt (&view, { x, 60.0f }, true));
+            view.mouseDrag (mouseAt (&view, { x + 50.0f, 60.0f }, true));
+            view.mouseUp (mouseAt (&view, { x + 50.0f, 60.0f }, false));
+            check (getParam (p, MasterMBIDs::split[1]) > 1200.0f, "dragging the line between LOW MID and HIGH MID moves the split: " + Format::hertz (getParam (p, MasterMBIDs::split[1])));
         }
         loadPresetNamed (p, "Master - Synthwave Smooth & Wide");
         window->showPage (E::compPage);
@@ -401,7 +456,12 @@ namespace
         P p; prepare (p, 48000.0, 256);
         loadPresetNamed (p, "Master - Darksynth Dense");
         const auto song = loadMix ("mureka", 40.0, 20.0);
-        check (true, "MID + SIDE compressor + limiter + meters: " + juce::String (coreShare (p, song), 2) + "% of one core");
+        check (true, "tamer + EQ + compressor (MID + SIDE) + limiter + meters: " + juce::String (coreShare (p, song), 2) + "% of one core");
+        P q; prepare (q, 48000.0, 256);
+        loadPresetNamed (q, "Master - Darksynth Dense");
+        set (q, MasterMBIDs::on, 1.0f); set (q, MasterMBIDs::mode, 1.0f);
+        const double all = coreShare (q, song);
+        check (all < 15.0, "everything on, the multiband in MID + SIDE too: " + juce::String (all, 2) + "% of one core");
        #endif
     }
 }
@@ -415,6 +475,7 @@ int main (int argc, char** argv)
     testCompare();
     testTamer();
     testEQ();
+    testMultiband();
     testParts (outDir);
     testSpeed();
     return finish();
