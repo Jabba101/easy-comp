@@ -29,6 +29,30 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyMasterAudioProcessor::cr
 
     layout.add (makeKnob (trim, 1, "Input Trim", trimRange, d.trimDb, Format::signedDecibels));
 
+    // EQ
+    {
+        layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { MasterEQIDs::on, 3 }, "EQ On", true));
+        layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { MasterEQIDs::mode, 3 }, "EQ Mode", juce::StringArray { "Stereo", "Mid + Side" }, 0));
+        juce::NormalisableRange<float> gainEqRange (-MasteringEQ::maxGainDb, MasteringEQ::maxGainDb, 0.1f);
+        juce::NormalisableRange<float> lowCutRange (MasteringEQ::lowCutOffHz, 300.0f, 1.0f);  lowCutRange.setSkewForCentre (80.0f);
+        const auto lowCutText = [] (float hz) { return hz <= MasteringEQ::lowCutOffHz + 0.5f ? juce::String ("Off") : Format::hertz (hz); };
+        const char* partName[2] { "Mid", "Side" };
+        for (int part = 0; part < 2; ++part)
+        {
+            for (int b = 0; b < 5; ++b)
+            {
+                const auto& info = MasterEQIDs::bands[b];
+                juce::NormalisableRange<float> freqRange (info.lowHz, info.highHz, 1.0f);
+                freqRange.setSkewForCentre (std::sqrt (info.lowHz * info.highHz));
+                const juce::String name = juce::String ("EQ ") + partName[part] + " " + juce::String (info.name).toLowerCase();
+                layout.add (makeKnob (MasterEQIDs::freq[part][b], 3, name + " Freq", freqRange, info.defaultHz, Format::hertz, Format::hertzFromText));
+                layout.add (makeKnob (MasterEQIDs::gain[part][b], 3, name + " Gain", gainEqRange, 0.0f, Format::signedDecibels));
+            }
+            layout.add (makeKnob (MasterEQIDs::lowCut[part], 3, juce::String ("EQ ") + partName[part] + " Low Cut", lowCutRange, MasteringEQ::lowCutOffHz,
+                                  lowCutText, [] (const juce::String& t) { return t.trim().equalsIgnoreCase ("off") ? MasteringEQ::lowCutOffHz : Format::hertzFromText (t); }));
+        }
+    }
+
     // RESONANCE TAMER
     {
         juce::NormalisableRange<float> amountRange (0.0f, 12.0f, 0.1f);
@@ -90,6 +114,12 @@ EasyMasterAudioProcessor::EasyMasterAudioProcessor()
     matchValue = v (match); listenValue = v (listen); bypassValue = v (CommonIDs::bypass);
     tamerValues = { v (tamerOn), v (tamerMode), v (tMidAmount), v (tMidSens), v (tMidSharp), v (tSideAmount), v (tSideSens), v (tSideSharp),
                     v (tSpeed), v (tFrom), v (tTo), v (tListen) };
+    eqOnValue = v (MasterEQIDs::on); eqModeValue = v (MasterEQIDs::mode);
+    for (int part = 0; part < 2; ++part)
+    {
+        for (int b = 0; b < 5; ++b) { eqFreqValues[(size_t) part][(size_t) b] = v (MasterEQIDs::freq[part][b]); eqGainValues[(size_t) part][(size_t) b] = v (MasterEQIDs::gain[part][b]); }
+        eqLowCutValues[(size_t) part] = v (MasterEQIDs::lowCut[part]);
+    }
     midValues  = { v (midThreshold),  v (midRatio),  v (midAttack),  v (midRelease),  v (midMakeup) };
     sideValues = { v (sideThreshold), v (sideRatio), v (sideAttack), v (sideRelease), v (sideMakeup) };
 }
@@ -117,6 +147,24 @@ Compressor::Settings EasyMasterAudioProcessor::compressorSettings (bool side) co
     s.reactToAverage = reactsValue->load() > 0.5f;
     s.vintage     = characterValue->load() > 0.5f;
     s.bypassed    = compOnValue->load() < 0.5f;
+    return s;
+}
+
+MasteringEQ::Settings EasyMasterAudioProcessor::eqSettings() const noexcept
+{
+    MasteringEQ::Settings s;
+    s.bypassed = eqOnValue->load() < 0.5f;
+    s.midSide = juce::roundToInt (eqModeValue->load()) == MasterMode::midSide;
+    for (int part = 0; part < 2; ++part)
+    {
+        auto& p = part == 0 ? s.mid : s.side;
+        for (int b = 0; b < 5; ++b)
+        {
+            p.freqHz[(size_t) b] = eqFreqValues[(size_t) part][(size_t) b]->load();
+            p.gainDb[(size_t) b] = eqGainValues[(size_t) part][(size_t) b]->load();
+        }
+        p.lowCutHz = eqLowCutValues[(size_t) part]->load();
+    }
     return s;
 }
 
@@ -154,6 +202,7 @@ void EasyMasterAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     sideComp.prepare (sampleRate, compressorSettings (true));
     limiter.prepare (sampleRate, 2, limiterSettings());
     tamer.prepare (sampleRate, tamerSettings());
+    eq.prepare (sampleRate, eqSettings());
     loudness.prepare (sampleRate);
     originalLoudness.prepare (sampleRate);
     mid.setSize (1, block);
@@ -258,6 +307,8 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         // (a mono master: the tamer and the limiter's safety, no stereo parts - the same delay)
         tamer.setSettings (tamerSettings());
         tamer.process (buffer);
+        eq.setSettings (eqSettings());
+        eq.process (buffer);
         limiter.setSettings (limiterSettings());
         limiter.process (buffer, 1);
         return;
@@ -269,6 +320,7 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     sideComp.setSettings (compressorSettings (true));
     limiter.setSettings (limiterSettings());
     tamer.setSettings (tamerSettings());
+    eq.setSettings (eqSettings());
     trimGain.setTargetValue (juce::Decibels::decibelsToGain (trimValue->load()));
     bypassFade.setTargetValue (bypassValue->load() > 0.5f ? 1.0f : 0.0f);
     const int listening = juce::roundToInt (listenValue->load());
@@ -321,6 +373,9 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         tamer.process (part);
         nowTamerCut[0].store (tamerValues[0]->load() > 0.5f ? tamer.getMostCutDb (0) : 0.0f);
         nowTamerCut[1].store (tamerValues[0]->load() > 0.5f ? tamer.getMostCutDb (1) : 0.0f);
+
+        // EQ
+        eq.process (part);
 
         // COMPRESSOR
         compress (part, n);

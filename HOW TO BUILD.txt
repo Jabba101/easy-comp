@@ -633,8 +633,8 @@ YOUR FIRST FIVE MINUTES WITH EASY LIMITER
 ====================================================================
 YOUR FIRST FIVE MINUTES WITH EASY MASTER
 ====================================================================
-   The last plugin on your master bus: INPUT > RESONANCE TAMER >
-   COMPRESSOR > LIMITER, with meters. (EQ, multiband, punch and width
+   The last plugin on your master bus: INPUT > RESONANCE TAMER > EQ >
+   COMPRESSOR > LIMITER, with meters. (Multiband, punch and width
    will arrive in their places - the chain along the top shows them
    dimmed until then.) Click a stage in the chain to show its page -
    its own display and controls - in the middle. INPUT, the METERS, the
@@ -653,13 +653,20 @@ YOUR FIRST FIVE MINUTES WITH EASY MASTER
       music, not resonances). STEREO, or MID + SIDE with a green MID and
       a blue SIDE row. LISTEN: REMOVED ONLY plays what it takes out - it
       should sound thin and harsh, never like whole instruments.
-   4. COMPRESSOR: STEREO for the whole mix, or MID + SIDE, where the
+   4. EQ: gentle tone shaping - LOW SHELF, LOW MID, MID, HIGH MID, HIGH
+      SHELF (FREQ and GAIN each) and a LOW CUT. STEREO = one EQ for the
+      whole mix; MID + SIDE = a complete EQ for the middle (green row)
+      and another for the sides (blue row) - e.g. LOW CUT 120 Hz on the
+      sides only for a tight, mono low end, and air on the sides. The
+      display shows both curves over a faint picture of the mix. On a
+      master, small moves: 0.5-2 dB is a lot.
+   5. COMPRESSOR: STEREO for the whole mix, or MID + SIDE, where the
       middle (green row: kick, bass, snare, vocal) and the sides (blue
       row: the width) each have their own controls. IGNORE BELOW keeps
       a heavy kick and bass from making the whole mix pump.
-   5. LIMITER - GAIN: push the master up into the ceiling (-0.3 dBTP
+   6. LIMITER - GAIN: push the master up into the ceiling (-0.3 dBTP
       by default). The meters show LUFS - a reading, never a target.
-   6. COMPARE: MATCH plays the whole chain at the original's loudness;
+   7. COMPARE: MATCH plays the whole chain at the original's loudness;
       then click BYPASS on and off to judge the sound, not the volume.
       LISTEN MONO / MID / SIDE are for checking (switch back to
       STEREO). A and B hold two versions to compare.
@@ -869,6 +876,7 @@ WHAT'S IN THIS FOLDER
      TruePeakLimiter.h      Easy Limiter's true-peak ceiling
      SpectralUnbleed.h      Easy Unbleed's ghost cleaner
      ResonanceTamer.h       Easy Master's resonance tamer
+     MasteringEQ.h          Easy Master's EQ (mid and side)
      Equalizer.h            Easy EQ's EQ
      LinearPhaseEQ.h        Easy EQ's MASTER (linear phase)
      LoudnessMatcher.h      AUTO-GAIN (shared by every plugin)

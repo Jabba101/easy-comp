@@ -41,6 +41,24 @@ private:
 };
 
 //==============================================================================
+/** The EQ page's display: the curve for the middle (green, or amber for the
+    whole mix in STEREO) and the sides (blue), over a faint picture of the
+    mix, with a numbered dot for each band. */
+class EQDisplay : public juce::Component
+{
+public:
+    void setState (const MasteringEQ::Settings&, const EasyMasterAudioProcessor::TamerPicture&, bool on, bool bypassed, double sampleRate);
+    void paint (juce::Graphics&) override;
+
+private:
+    MasteringEQ::Settings settings;
+    std::array<float, ResonanceTamer::numBands> shownLevel {};
+    std::array<float, ResonanceTamer::numBands> centreHz {};
+    bool on = true, bypassed = false;
+    double rate = 48000.0;
+};
+
+//==============================================================================
 /** The readings: LUFS momentary / short-term / integrated, the highest true
     peak, PLR, stereo correlation, and how much each part turns down now.
     Click it to reset the integrated LUFS and the highest peak. */
@@ -75,7 +93,8 @@ public:
                      tSpeedKnob, tFromKnob, tToKnob, numKnobs };
 
     /** The pages the chain along the top switches between. */
-    enum Page { tamerPage = 0, compPage, numPages };
+    enum Page { tamerPage = 0, eqPage, compPage, numPages };
+    juce::Slider& getEQKnob (int part, int column)   { return eqKnobs[(size_t) part][(size_t) column].slider; }   // column: 0..9 FREQ / GAIN per band, 10 LOW CUT
     void showPage (int page);
     int getShownPage() const noexcept          { return shownPage; }
 
@@ -116,6 +135,14 @@ private:
     juce::Label matchInfo, inputWarning, listenLabel, abLabel;
     MasterDisplay display;
     TamerDisplay tamerDisplay;
+    EQDisplay eqDisplay;
+    std::array<std::array<Knob, 11>, 2> eqKnobs;
+    LightButton eqOnButton { "ON", Palette::meterLow };
+    std::unique_ptr<juce::ButtonParameterAttachment> eqOnAttachment;
+    ChoiceSwitch eqModeSwitch;
+    juce::Rectangle<int> eqMidName, eqSideName;
+    std::array<juce::Rectangle<int>, 6> eqBandNames;   // the captions over each band's pair of knobs (and LOW CUT)
+    bool shownEQMidSide = false, shownEQOn = true;
     LightButton tamerOnButton { "ON", Palette::meterLow }, tamerListenButton { "LISTEN: REMOVED ONLY", Palette::meterMid };
     std::unique_ptr<juce::ButtonParameterAttachment> tamerOnAttachment, tamerListenAttachment;
     ChoiceSwitch tamerModeSwitch;

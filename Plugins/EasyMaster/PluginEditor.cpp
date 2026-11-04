@@ -112,6 +112,22 @@ namespace
     constexpr const char* chainHint =
         "The order the sound goes through. Click a stage to show its controls and its own display below. Dim = coming in "
         "later stages, each in its place. INPUT, LIMITER and the meters are always on screen.";
+    constexpr const char* eqOnHint = "Switches the EQ on or off (the rest of the chain keeps working).";
+    constexpr const char* eqModeHint =
+        "STEREO: one EQ for the whole mix (the top row). MID + SIDE: a complete EQ for the middle (green: kick, bass, snare, "
+        "vocal) and another for the sides (blue: the width) - e.g. a low cut on the sides only for a tight, mono low end.";
+    constexpr const char* eqFreqHint =
+        "Where this band works. LOW SHELF lifts or lowers everything below it, HIGH SHELF everything above; the three "
+        "bells work around their frequency.";
+    constexpr const char* eqGainHint =
+        "How much this band lifts (right) or lowers (left). On a master, small moves: 0.5-2 dB is a lot. The bells get "
+        "narrower the further you go, broad and gentle for small moves.";
+    constexpr const char* eqLowCutHint =
+        "Removes the rumble below this frequency (12 dB per octave). On the SIDES (MID + SIDE), 100-150 Hz makes the "
+        "low end mono and tight - the mastering trick for heavy bass. Off on the middle unless there's real rumble.";
+    constexpr const char* eqDisplayHint =
+        "The EQ's curve: green = the middle (amber in STEREO: the whole mix), blue = the sides. The numbered dots are the "
+        "bands; the grey behind is the mix as it comes into the EQ.";
     constexpr const char* tamerOnHint = "Switches the resonance tamer on or off (the rest of the chain keeps working).";
     constexpr const char* tamerModeHint =
         "STEREO: one set of cuts for the whole mix, the same on left and right - the stereo picture can't move. MID + SIDE: "
@@ -552,6 +568,123 @@ void TamerDisplay::paint (juce::Graphics& g)
 }
 
 //==============================================================================
+void EQDisplay::setState (const MasteringEQ::Settings& s, const EasyMasterAudioProcessor::TamerPicture& p, bool isOn, bool isBypassed, double sampleRate)
+{
+    settings = s; on = isOn; bypassed = isBypassed; rate = sampleRate;
+    centreHz = p.centreHz;
+    for (int b = 0; b < ResonanceTamer::numBands; ++b)
+    {
+        const float now = juce::Decibels::gainToDecibels (juce::Decibels::decibelsToGain (p.levelDb[0][(size_t) b])
+                                                          + juce::Decibels::decibelsToGain (p.levelDb[1][(size_t) b]), -120.0f);
+        shownLevel[(size_t) b] = now > shownLevel[(size_t) b] ? now : shownLevel[(size_t) b] + 0.2f * (now - shownLevel[(size_t) b]);
+    }
+    repaint();
+}
+
+void EQDisplay::paint (juce::Graphics& g)
+{
+    const auto area = getLocalBounds().toFloat();
+    g.setColour (Palette::background);
+    g.fillRoundedRectangle (area, 6.0f);
+    const auto plot = area.reduced (14.0f, 12.0f).withTrimmedLeft (34.0f).withTrimmedBottom (40.0f);
+    // (a ±6 dB scale - mastering moves are small - widening to ±12 when a band goes past ±5.5 dB)
+    float biggest = 0.0f;
+    for (auto* part : { &settings.mid, &settings.side })
+        for (float gdb : part->gainDb) biggest = juce::jmax (biggest, std::abs (gdb));
+    const float range = biggest > 5.5f ? 12.0f : 6.0f;
+    const auto xOf = [&] (double hz) { return plot.getX() + plot.getWidth() * (float) (std::log (hz / 20.0) / std::log (1000.0)); };
+    const auto yOf = [&] (float db) { return plot.getCentreY() - plot.getHeight() * 0.5f * juce::jlimit (-1.0f, 1.0f, db / range); };
+
+    // The mix coming in (faint)
+    if (centreHz[0] > 0.0f)
+    {
+        juce::Path mix;
+        mix.startNewSubPath (xOf (centreHz[0]), plot.getBottom());
+        for (int b = 0; b < ResonanceTamer::numBands; ++b)
+            mix.lineTo (xOf (centreHz[(size_t) b]), plot.getBottom() - plot.getHeight() * juce::jlimit (0.0f, 1.0f, (shownLevel[(size_t) b] + 72.0f) / 72.0f));
+        mix.lineTo (xOf (centreHz[(size_t) ResonanceTamer::numBands - 1]), plot.getBottom());
+        mix.closeSubPath();
+        g.setColour (Palette::textDim.withAlpha (0.16f));
+        g.fillPath (mix);
+    }
+
+    g.setFont (juce::Font (juce::FontOptions (11.0f)));
+    for (float step : { 1.0f, 0.5f, 0.0f, -0.5f, -1.0f })
+    {
+        const float db = step * range;
+        g.setColour (std::abs (db) < 0.01f ? Palette::textDim.withAlpha (0.5f) : Palette::panelEdge);
+        g.drawHorizontalLine (juce::roundToInt (yOf (db)), plot.getX(), plot.getRight());
+        g.setColour (Palette::textDim);
+        g.drawText ((db > 0 ? "+" : "") + juce::String ((int) db), juce::Rectangle<float> (plot.getX() - 36.0f, yOf (db) - 7.0f, 32.0f, 14.0f), juce::Justification::centredRight, false);
+    }
+    for (double hz : { 50.0, 100.0, 200.0, 500.0, 1000.0, 2000.0, 5000.0, 10000.0 })
+    {
+        g.setColour (Palette::panelEdge);
+        g.drawVerticalLine (juce::roundToInt (xOf (hz)), plot.getY(), plot.getBottom());
+        g.setColour (Palette::textDim);
+        g.drawText (hz >= 1000.0 ? juce::String ((int) (hz / 1000.0)) + "k" : juce::String ((int) hz),
+                    juce::Rectangle<float> (xOf (hz) - 20.0f, plot.getBottom() + 3.0f, 40.0f, 14.0f), juce::Justification::centred, false);
+    }
+
+    const auto curve = [&] (const MasteringEQ::Part& part, juce::Colour colour, float thickness)
+    {
+        juce::Path path;
+        for (int i = 0; i <= 240; ++i)
+        {
+            const double hz = 20.0 * std::pow (1000.0, i / 240.0);
+            const float db = (float) juce::Decibels::gainToDecibels (MasteringEQ::responseAt (part, hz, rate), -60.0);
+            if (i == 0) path.startNewSubPath (xOf (hz), yOf (db)); else path.lineTo (xOf (hz), yOf (db));
+        }
+        g.setColour (colour.withAlpha (on && ! bypassed ? 1.0f : 0.35f));
+        g.strokePath (path, juce::PathStrokeType (thickness));
+        for (int b = 0; b < MasteringEQ::numBands; ++b)
+        {
+            const double hz = part.freqHz[(size_t) b];
+            const float db = (float) juce::Decibels::gainToDecibels (MasteringEQ::responseAt (part, hz, rate), -60.0);
+            const auto dot = juce::Rectangle<float> (15.0f, 15.0f).withCentre ({ xOf (hz), yOf (db) });
+            g.setColour (Palette::background);
+            g.fillEllipse (dot);
+            g.setColour (colour);
+            g.drawEllipse (dot, 1.5f);
+            g.setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::bold)));
+            g.drawText (juce::String (b + 1), dot, juce::Justification::centred, false);
+        }
+    };
+    {
+        juce::Graphics::ScopedSaveState save (g);
+        g.reduceClipRegion (plot.expanded (8.0f).toNearestInt());
+        if (settings.midSide)
+        {
+            curve (settings.side, sideColour, 2.0f);
+            curve (settings.mid, midColour, 2.0f);
+        }
+        else
+            curve (settings.mid, Palette::accent, 2.2f);
+    }
+
+    auto key = juce::Rectangle<float> (plot.getX(), plot.getBottom() + 20.0f, plot.getWidth(), 16.0f);
+    g.setFont (juce::Font (juce::FontOptions (12.0f)));
+    const auto item = [&] (juce::Colour c, const juce::String& t, float w)
+    {
+        g.setColour (c);
+        g.fillRect (key.removeFromLeft (12.0f).withSizeKeepingCentre (12.0f, 10.0f));
+        key.removeFromLeft (6.0f);
+        g.setColour (Palette::textDim);
+        g.drawText (t, key.removeFromLeft (w), juce::Justification::centredLeft, false);
+        key.removeFromLeft (12.0f);
+    };
+    if (settings.midSide) { item (midColour, "middle", 50.0f); item (sideColour, "sides", 40.0f); }
+    else                    item (Palette::accent, "the whole mix", 90.0f);
+    item (Palette::textDim.withAlpha (0.4f), "the mix coming in", 120.0f);
+    if (! on || bypassed)
+    {
+        g.setColour (Palette::textDim);
+        g.setFont (juce::Font (juce::FontOptions (14.0f, juce::Font::bold)));
+        g.drawText (bypassed ? "BYPASSED" : "THE EQ IS OFF", plot.withHeight (24.0f).translated (0.0f, 6.0f), juce::Justification::centred, false);
+    }
+}
+
+//==============================================================================
 EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioProcessor& p)
     : EasyWindow (p, "EASY MASTER", "The mastering chain for your master bus - hover over anything for help", gettingStartedHint),
       masterProcessor (p),
@@ -560,6 +693,7 @@ EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioP
       characterSwitch (*p.parameters.getParameter (MasterIDs::character), { "MODERN", "VINTAGE" }, Palette::accent),
       releaseSwitch (*p.parameters.getParameter (MasterIDs::releaseMode), { "AUTO", "SET" }, Palette::accent),
       listenSwitch (*p.parameters.getParameter (MasterIDs::listen), { "STEREO", "MID", "SIDE", "MONO" }, Palette::meterMid),
+      eqModeSwitch (*p.parameters.getParameter (MasterEQIDs::mode), { "STEREO", "MID + SIDE" }, Palette::accent),
       tamerModeSwitch (*p.parameters.getParameter (MasterIDs::tamerMode), { "STEREO", "MID + SIDE" }, Palette::accent),
       incoming ((size_t) MasterDisplay::numMoments)
 {
@@ -585,6 +719,41 @@ EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioP
         if (side) knob.slider.setColour (juce::Slider::rotarySliderFillColourId, sideColour);
         if (mid)  knob.slider.setColour (juce::Slider::rotarySliderFillColourId, midColour);
     }
+
+    // The EQ's knobs: per part, FREQ and GAIN for each band, then LOW CUT
+    for (int part = 0; part < 2; ++part)
+        for (int c = 0; c < 11; ++c)
+        {
+            auto& knob = eqKnobs[(size_t) part][(size_t) c];
+            const bool isLowCut = c == 10, isGain = ! isLowCut && c % 2 == 1;
+            const int band = c / 2;
+            const char* id = isLowCut ? MasterEQIDs::lowCut[part] : (isGain ? MasterEQIDs::gain[part][band] : MasterEQIDs::freq[part][band]);
+            knob.slider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+            knob.slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 76, 22);
+            knob.slider.setColour (juce::Slider::rotarySliderFillColourId, part == 0 ? midColour : sideColour);
+            addAndMakeVisible (knob.slider);
+            knob.label.setText (isLowCut ? "LOW CUT" : (isGain ? "GAIN" : "FREQ"), juce::dontSendNotification);
+            knob.label.setFont (juce::Font (juce::FontOptions (12.0f, juce::Font::bold)));
+            knob.label.setJustificationType (juce::Justification::centred);
+            addAndMakeVisible (knob.label);
+            knob.attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (easyProcessor.parameters, id, knob.slider);
+            knob.slider.onValueChange = [this] { knobMoved(); };
+            const juce::String eqTitle = juce::String ("EQ ") + (part == 0 ? "MID " : "SIDE ")
+                                       + (isLowCut ? juce::String ("LOW CUT") : juce::String (MasterEQIDs::bands[band].name) + (isGain ? " GAIN" : " FREQ"));
+            const char* hint = isLowCut ? eqLowCutHint : (isGain ? eqGainHint : eqFreqHint);
+            addHint (knob.slider, eqTitle, hint);
+            addHint (knob.label, eqTitle, hint);
+        }
+    eqOnButton.setClickingTogglesState (true);
+    eqOnAttachment = std::make_unique<juce::ButtonParameterAttachment> (*p.parameters.getParameter (MasterEQIDs::on), eqOnButton);
+    addAndMakeVisible (eqOnButton);
+    addHint (eqOnButton, "EQ ON", eqOnHint);
+    eqModeSwitch.setHorizontal (true);
+    addAndMakeVisible (eqModeSwitch);
+    eqModeSwitch.onUserChange = [this] { knobMoved(); };
+    addHint (eqModeSwitch, "EQ - STEREO / MID + SIDE", eqModeHint);
+    addAndMakeVisible (eqDisplay);
+    addHint (eqDisplay, "THE EQ'S CURVE", eqDisplayHint);
 
     initAllButton.setColour (juce::TextButton::buttonColourId, Palette::panel);
     initAllButton.setColour (juce::TextButton::textColourOffId, Palette::meterHigh);
@@ -678,7 +847,13 @@ std::vector<juce::Component*> EasyMasterAudioProcessorEditor::pageComponents (in
 {
     std::vector<juce::Component*> list;
     const auto addKnobs = [&] (int from, int to) { for (int k = from; k <= to; ++k) { list.push_back (&knobs[(size_t) k].slider); list.push_back (&knobs[(size_t) k].label); } };
-    if (page == tamerPage)
+    if (page == eqPage)
+    {
+        for (auto& row : eqKnobs) for (auto& k : row) { list.push_back (&k.slider); list.push_back (&k.label); }
+        for (juce::Component* c : { (juce::Component*) &eqDisplay, (juce::Component*) &eqOnButton, (juce::Component*) &eqModeSwitch })
+            list.push_back (c);
+    }
+    else if (page == tamerPage)
     {
         addKnobs (tMidAmountKnob, tToKnob);
         for (juce::Component* c : { (juce::Component*) &tamerDisplay, (juce::Component*) &tamerOnButton, (juce::Component*) &tamerListenButton, (juce::Component*) &tamerModeSwitch })
@@ -707,9 +882,10 @@ void EasyMasterAudioProcessorEditor::showPage (int page)
 
 void EasyMasterAudioProcessorEditor::mouseDown (const juce::MouseEvent& e)
 {
-    // The chain along the top: RESONANCE TAMER and COMPRESSOR are pages
+    // The chain along the top: RESONANCE TAMER, EQ and COMPRESSOR are pages
     const auto at = e.getEventRelativeTo (this).getPosition().toFloat();
     if (chainBoxes[1].contains (at))      showPage (tamerPage);
+    else if (chainBoxes[2].contains (at)) showPage (eqPage);
     else if (chainBoxes[4].contains (at)) showPage (compPage);
 }
 
@@ -732,6 +908,16 @@ void EasyMasterAudioProcessorEditor::showParts()
     };
     dim (midThresholdKnob, ignoreKnob, sideThresholdKnob, sideMakeupKnob, ms, on);
     dim (tMidAmountKnob, tToKnob, tSideAmountKnob, tSideSharpKnob, tms, ton);
+    const bool ems = masterProcessor.isEQMidSide(), eon = params.getRawParameterValue (MasterEQIDs::on)->load() > 0.5f;
+    for (int part = 0; part < 2; ++part)
+        for (auto& k : eqKnobs[(size_t) part])
+        {
+            const bool usable = eon && (part == 0 || ems);
+            k.slider.setEnabled (part == 0 || ems);
+            k.slider.setAlpha (usable ? 1.0f : 0.3f);
+            k.label.setAlpha (usable ? 1.0f : 0.3f);
+            if (part == 0) k.slider.setColour (juce::Slider::rotarySliderFillColourId, ems ? midColour : Palette::accent);
+        }
     repaint();
 }
 
@@ -741,11 +927,12 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
     // The chain: the stages in order; the two pages can be clicked, the one showing is lit
     {
         struct Stage { const char* name; bool built; int page; };
-        const Stage stages[] { { "INPUT", true, -1 }, { "RESONANCE TAMER", true, tamerPage }, { "EQ", false, -1 }, { "MULTIBAND", false, -1 },
+        const Stage stages[] { { "INPUT", true, -1 }, { "RESONANCE TAMER", true, tamerPage }, { "EQ", true, eqPage }, { "MULTIBAND", false, -1 },
                                { "COMPRESSOR", true, compPage }, { "PUNCH", false, -1 }, { "WIDTH", false, -1 }, { "LIMITER", true, -1 }, { "OUTPUT", true, -1 } };
         const auto& params = easyProcessor.parameters;
         const bool tamerOn = params.getRawParameterValue (MasterIDs::tamerOn)->load() > 0.5f;
         const bool compOn = params.getRawParameterValue (MasterIDs::compOn)->load() > 0.5f;
+        const bool eqOn = params.getRawParameterValue (MasterEQIDs::on)->load() > 0.5f;
         const int count = (int) std::size (stages);
         const float arrow = 18.0f;
         const float w = ((float) chainArea.getWidth() - arrow * (float) (count - 1)) / (float) count;
@@ -765,7 +952,7 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
             if (st.page >= 0)
             {
                 // (a page: its name, a lamp for on / off, and "click to show" until it's showing)
-                const bool isOn = st.page == tamerPage ? tamerOn : compOn;
+                const bool isOn = st.page == tamerPage ? tamerOn : (st.page == eqPage ? eqOn : compOn);
                 g.setColour (isOn ? Palette::meterLow : Palette::meterOff);
                 g.fillEllipse (juce::Rectangle<float> (9.0f, 9.0f).withCentre ({ b.getX() + 8.0f, b.getCentreY() }));
                 g.setColour (Palette::textBright);
@@ -816,10 +1003,26 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
     if (shownPage == compPage)
     {
         drawPanel (g, pageDisplayPanel, {}, "COMPRESSOR & LIMITER - WHAT THEY'RE DOING");
-        drawPanel (g, pagePanel, "3", "COMPRESSOR");
+        drawPanel (g, pagePanel, "4", "COMPRESSOR");
         const bool ms = masterProcessor.isMidSide();
         rowName (midRowName, ms ? "MID" : "STEREO", ms ? "kick, bass,\nsnare, vocal" : "the whole mix", midColour, true);
         rowName (sideRowName, "SIDE", ms ? "the width" : "only in\nMID + SIDE", sideColour, ms);
+    }
+    else if (shownPage == eqPage)
+    {
+        drawPanel (g, pageDisplayPanel, {}, "EQ - THE CURVE");
+        drawPanel (g, pagePanel, "3", "EQ");
+        const bool ms = masterProcessor.isEQMidSide();
+        rowName (eqMidName, ms ? "MID" : "STEREO", ms ? "kick, bass,\nsnare, vocal" : "the whole mix", ms ? midColour : Palette::accent, true);
+        rowName (eqSideName, "SIDE", ms ? "the width" : "only in\nMID + SIDE", sideColour, ms);
+        g.setFont (juce::Font (juce::FontOptions (12.0f, juce::Font::bold)));
+        for (int b = 0; b < 6; ++b)
+        {
+            g.setColour (Palette::textDim);
+            g.drawText (b < 5 ? juce::String (b + 1) + "  " + MasterEQIDs::bands[b].name : juce::String ("CLEAN UP"), eqBandNames[(size_t) b], juce::Justification::centred, false);
+            g.setColour (Palette::panelEdge);
+            g.drawHorizontalLine (eqBandNames[(size_t) b].getBottom(), (float) eqBandNames[(size_t) b].getX() + 8.0f, (float) eqBandNames[(size_t) b].getRight() - 8.0f);
+        }
     }
     else
     {
@@ -937,6 +1140,36 @@ void EasyMasterAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
         placeKnob (knobs[ignoreKnob], shared, knobSizeFor (shared, 60));
     }
 
+    // The EQ page: per row, the name, then five bands (FREQ + GAIN) and LOW CUT
+    eqDisplay.setBounds (display.getBounds());
+    {
+        auto inside = pagePanel.reduced (14, 12).withTrimmedTop (28);
+        auto row = inside.removeFromTop (32);
+        eqOnButton.setBounds (row.removeFromLeft (64).withSizeKeepingCentre (64, 30));
+        row.removeFromLeft (12);
+        eqModeSwitch.setBounds (row.removeFromLeft (220).withSizeKeepingCentre (220, 30));
+        inside.removeFromTop (4);
+        auto names = inside.removeFromTop (18);
+        names.removeFromLeft (84);
+        const int pairWidth = (names.getWidth() * 2) / 11;
+        for (int b = 0; b < 6; ++b)
+            eqBandNames[(size_t) b] = b < 5 ? names.removeFromLeft (pairWidth) : names;
+        const int rowHeight = inside.getHeight() / 2;
+        auto rows = std::array<juce::Rectangle<int>, 2> { inside.removeFromTop (rowHeight), inside };
+        eqMidName = rows[0].removeFromLeft (84);
+        eqSideName = rows[1].removeFromLeft (84);
+        for (int part = 0; part < 2; ++part)
+        {
+            auto r = rows[(size_t) part];
+            const int w = r.getWidth() / 11;
+            for (int c = 0; c < 11; ++c)
+            {
+                auto column = c == 10 ? r : r.removeFromLeft (w);
+                placeKnob (eqKnobs[(size_t) part][(size_t) c], column, knobSizeFor (column, 50));
+            }
+        }
+    }
+
     // The RESONANCE TAMER page
     {
         auto inside = pagePanel.reduced (14, 12).withTrimmedTop (28);
@@ -984,13 +1217,16 @@ void EasyMasterAudioProcessorEditor::refreshLiveDisplays()
     display.setState (params.getRawParameterValue (MasterIDs::ceiling)->load(), ms, compOn, bypassed);
     const auto readings = masterProcessor.getReadings();
     meters.setReadings (readings, ms, compOn, tamerOn);
+    const bool ems = masterProcessor.isEQMidSide(), eon = params.getRawParameterValue (MasterEQIDs::on)->load() > 0.5f;
+    if (shownPage == eqPage)
+        eqDisplay.setState (masterProcessor.eqSettings(), masterProcessor.getTamerPicture(), eon, bypassed, masterProcessor.getSampleRate() > 0 ? masterProcessor.getSampleRate() : 48000.0);
     if (shownPage == tamerPage)
         tamerDisplay.setPicture (masterProcessor.getTamerPicture(), tms, tamerOn, params.getRawParameterValue (MasterIDs::tFrom)->load(),
                                  params.getRawParameterValue (MasterIDs::tTo)->load(), bypassed);
 
-    if (ms != shownMidSide || compOn != shownCompOn || tms != shownTamerMidSide || tamerOn != shownTamerOn)
+    if (ms != shownMidSide || compOn != shownCompOn || tms != shownTamerMidSide || tamerOn != shownTamerOn || ems != shownEQMidSide || eon != shownEQOn)
     {
-        shownMidSide = ms; shownCompOn = compOn; shownTamerMidSide = tms; shownTamerOn = tamerOn;
+        shownMidSide = ms; shownCompOn = compOn; shownTamerMidSide = tms; shownTamerOn = tamerOn; shownEQMidSide = ems; shownEQOn = eon;
         showParts();
     }
 

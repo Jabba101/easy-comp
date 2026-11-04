@@ -52,6 +52,22 @@ namespace MasterIDs
     inline constexpr const char* listen       = "listen";        // STEREO / MID / SIDE / MONO (for checking only)
 }
 
+/** The EQ: per part (0 = MID or STEREO, 1 = SIDE) five bands' FREQ and GAIN and the LOW CUT. */
+namespace MasterEQIDs
+{
+    inline constexpr const char* on   = "eqon";
+    inline constexpr const char* mode = "eqmode";   // STEREO or MID + SIDE
+    inline constexpr const char* freq[2][5] { { "eqm0f", "eqm1f", "eqm2f", "eqm3f", "eqm4f" }, { "eqs0f", "eqs1f", "eqs2f", "eqs3f", "eqs4f" } };
+    inline constexpr const char* gain[2][5] { { "eqm0g", "eqm1g", "eqm2g", "eqm3g", "eqm4g" }, { "eqs0g", "eqs1g", "eqs2g", "eqs3g", "eqs4g" } };
+    inline constexpr const char* lowCut[2] { "eqmlc", "eqslc" };
+
+    /** Each band's name, range and starting frequency. */
+    struct BandInfo { const char* name; float lowHz, highHz, defaultHz; };
+    inline constexpr BandInfo bands[5] { { "LOW SHELF", 20.0f, 300.0f, 80.0f }, { "LOW MID", 80.0f, 800.0f, 250.0f },
+                                         { "MID", 300.0f, 4000.0f, 1000.0f }, { "HIGH MID", 1500.0f, 10000.0f, 3500.0f },
+                                         { "HIGH SHELF", 3000.0f, 20000.0f, 10000.0f } };
+}
+
 namespace MasterMode   { enum { stereo = 0, midSide }; }
 namespace MasterListen { enum { stereo = 0, mid, side, mono }; }
 
@@ -81,8 +97,12 @@ struct MasterPreset
     float releaseMs;
     const char* tip;
     // RESONANCE TAMER: on, MID + SIDE, MID amount / sensitivity / sharpness, SIDE amount / sensitivity / sharpness, speed (%), from, to
+    // EQ (when set = true): on, MID + SIDE, then per part the five gains (dB), five frequencies (0 = the band's own default) and LOW CUT
+    struct EQ { bool set = false; int on = 1, midSide = 0;
+                float midGain[5] {}, midFreq[5] {}, midLowCut = 20.0f, sideGain[5] {}, sideFreq[5] {}, sideLowCut = 20.0f; };
     struct Tamer { int on = 1, midSide = 0; float midAmount = 4.0f, midSens = 50.0f, midSharp = 50.0f,
                    sideAmount = 4.0f, sideSens = 50.0f, sideSharp = 50.0f, speed = 50.0f, fromHz = 200.0f, toHz = 16000.0f; } tamer {};
+    EQ eq {};
 };
 
 inline const MasterPreset masterPresets[] =
@@ -111,6 +131,17 @@ inline const MasterPreset masterPresets[] =
       "For AI-made songs (Mureka, Suno): the resonance tamer works hard on the fizzy, metallic top end, gentle glue and +3 dB.",
       { 1, 0, 6.0f, 65.0f, 55.0f, 6.0f, 65.0f, 55.0f, 30.0f, 4000.0f, 16000.0f } },
 
+    { "Mastering", "Master - Tighten & Brighten (M/S)",  0.0f, 1, 1,     -16.0f, 2.0f, 30.0f, 200.0f, 1.0f,   -18.0f, 1.5f, 30.0f, 250.0f, 0.5f,   100.0f, 80.0f, 1, 0,   3.0f, -0.3f, 0, 100.0f,
+      "A tight, mono low end (low cut on the sides), a little mud out of the middle, air and sparkle on the sides only.",
+      { 1, 0, 3.0f, 50.0f, 50.0f, 3.0f, 50.0f, 50.0f, 50.0f, 200.0f, 16000.0f },
+      { true, 1, 1, { 0.5f, -1.5f, 0.0f, 0.5f, 0.5f }, { 60.0f, 300.0f, 0.0f, 3500.0f, 12000.0f }, 20.0f,
+                    { 0.0f, -1.0f, 0.0f, 1.0f, 2.5f }, { 0.0f, 350.0f, 0.0f, 5000.0f, 11000.0f }, 120.0f } },
+    { "Mastering", "Master - Heavy Low End",            0.0f,  1, 1,     -16.0f, 2.0f, 30.0f, 150.0f, 1.0f,   -18.0f, 1.5f, 30.0f, 200.0f, 0.5f,   100.0f, 100.0f, 1, 1,  4.0f, -0.3f, 0, 100.0f,
+      "Big, heavy bass and kick weight in the middle, the lows kept mono and tight; the compressor ignores the deep end.",
+      { 1, 0, 3.0f, 50.0f, 50.0f, 3.0f, 50.0f, 50.0f, 50.0f, 250.0f, 16000.0f },
+      { true, 1, 1, { 2.0f, -1.0f, 0.0f, 0.0f, 0.5f }, { 70.0f, 280.0f, 0.0f, 0.0f, 12000.0f }, 20.0f,
+                    { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 0.0f, 11000.0f }, 150.0f } },
+
     // ---- Mid / side fixes -------------------------------------------------------------
     { "Mid / Side", "M/S - Tighten the Sides",          0.0f,  1, 1,     -14.0f, 1.5f, 30.0f, 200.0f, 0.5f,   -22.0f, 3.0f, 15.0f, 150.0f, 0.0f,   100.0f, 80.0f, 1, 0,   2.0f, -0.3f, 0, 100.0f,
       "The sides held in (wide guitars, cymbals, reverb that jump out), the middle almost untouched.", { 1, 1, 2.0f, 45.0f, 50.0f, 5.0f, 60.0f, 50.0f, 50.0f, 200.0f, 16000.0f } },
@@ -126,6 +157,7 @@ inline std::vector<Preset> makeMasterPresets()
     std::vector<Preset> presets;
 
     for (auto& p : masterPresets)
+    {
         presets.push_back ({ p.category, p.name, p.tip,
                              { { MasterIDs::trim, p.trimDb }, { MasterIDs::compOn, (float) p.compOn }, { MasterIDs::compMode, (float) p.mode },
                                { MasterIDs::midThreshold, p.midThreshold }, { MasterIDs::midRatio, p.midRatio }, { MasterIDs::midAttack, p.midAttack },
@@ -140,6 +172,25 @@ inline std::vector<Preset> makeMasterPresets()
                                { MasterIDs::tMidAmount, p.tamer.midAmount }, { MasterIDs::tMidSens, p.tamer.midSens }, { MasterIDs::tMidSharp, p.tamer.midSharp },
                                { MasterIDs::tSideAmount, p.tamer.sideAmount }, { MasterIDs::tSideSens, p.tamer.sideSens }, { MasterIDs::tSideSharp, p.tamer.sideSharp },
                                { MasterIDs::tSpeed, p.tamer.speed }, { MasterIDs::tFrom, p.tamer.fromHz }, { MasterIDs::tTo, p.tamer.toHz } } });
+        // (the EQ: flat unless the preset sets it - any setting a preset doesn't mention goes back to its default)
+        auto& values = presets.back().values;
+        if (p.eq.set)
+        {
+            values.push_back ({ juce::String (MasterEQIDs::on), (float) p.eq.on });
+            values.push_back ({ juce::String (MasterEQIDs::mode), (float) p.eq.midSide });
+            for (int part = 0; part < 2; ++part)
+            {
+                const float* gains = part == 0 ? p.eq.midGain : p.eq.sideGain;
+                const float* freqs = part == 0 ? p.eq.midFreq : p.eq.sideFreq;
+                for (int b = 0; b < 5; ++b)
+                {
+                    values.push_back ({ juce::String (MasterEQIDs::gain[part][b]), gains[b] });
+                    values.push_back ({ juce::String (MasterEQIDs::freq[part][b]), freqs[b] > 0.0f ? freqs[b] : MasterEQIDs::bands[b].defaultHz });
+                }
+                values.push_back ({ juce::String (MasterEQIDs::lowCut[part]), part == 0 ? p.eq.midLowCut : p.eq.sideLowCut });
+            }
+        }
+    }
 
     return presets;
 }
@@ -148,8 +199,16 @@ inline std::vector<Preset> makeMasterPresets()
 inline juce::StringArray masterPresetIDs()
 {
     using namespace MasterIDs;
-    return { trim, compOn, compMode, midThreshold, midRatio, midAttack, midRelease, midMakeup,
+    juce::StringArray ids { trim, compOn, compMode, midThreshold, midRatio, midAttack, midRelease, midMakeup,
              sideThreshold, sideRatio, sideAttack, sideRelease, sideMakeup, compMix, ignoreBelow, reactsTo, character,
              limitGain, ceiling, releaseMode, release,
              tamerOn, tamerMode, tMidAmount, tMidSens, tMidSharp, tSideAmount, tSideSens, tSideSharp, tSpeed, tFrom, tTo };
+    ids.add (MasterEQIDs::on);
+    ids.add (MasterEQIDs::mode);
+    for (int part = 0; part < 2; ++part)
+    {
+        for (int b = 0; b < 5; ++b) { ids.add (MasterEQIDs::freq[part][b]); ids.add (MasterEQIDs::gain[part][b]); }
+        ids.add (MasterEQIDs::lowCut[part]);
+    }
+    return ids;
 }

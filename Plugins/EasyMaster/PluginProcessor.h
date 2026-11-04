@@ -5,6 +5,7 @@
 #include "TruePeakLimiter.h"
 #include "LoudnessMeter.h"
 #include "ResonanceTamer.h"
+#include "MasteringEQ.h"
 #include "Presets.h"
 
 //==============================================================================
@@ -13,11 +14,12 @@
 
     INPUT (trim) > RESONANCE TAMER (stereo, or MID and SIDE with their own
     settings: harsh, boxy, ringing spots turned down only while they stick
-    out) > COMPRESSOR (stereo, or MID and SIDE with their
+    out) > EQ (a full EQ for the middle and another for the sides, or one for
+    both) > COMPRESSOR (stereo, or MID and SIDE with their
     own settings) > LIMITER (the Easy Limiter engine: true-peak ceiling) >
     MATCH (the whole chain as loud as the original, for fair comparison) >
     LISTEN (stereo / mid / side / mono, for checking). Still to come, in
-    their places in the chain: EQ, multiband, punch and width.
+    their places in the chain: multiband, punch and width.
 
     BYPASS gives exactly the original, delayed by the same amount as the
     processed sound so nothing jumps in time. The meters read the master as
@@ -81,6 +83,10 @@ private:
     Compressor::Settings compressorSettings (bool side) const noexcept;
     TruePeakLimiter::Settings limiterSettings() const noexcept;
     ResonanceTamer::Settings tamerSettings() const noexcept;
+public:
+    MasteringEQ::Settings eqSettings() const noexcept;   // (also for the EQ page's curve)
+    bool isEQMidSide() const noexcept   { return juce::roundToInt (eqModeValue->load()) == MasterMode::midSide; }
+private:
     void compress (juce::AudioBuffer<float>&, int numSamples) noexcept;
 
     std::atomic<float>* v (const char* id) { return parameters.getRawParameterValue (id); }
@@ -89,11 +95,15 @@ private:
     std::array<std::atomic<float>*, 5> midValues {}, sideValues {};
     std::array<std::atomic<float>*, 12> tamerValues {};
     std::array<std::atomic<float>, 2> nowTamerCut {};
+    std::atomic<float> *eqOnValue = nullptr, *eqModeValue = nullptr;
+    std::array<std::array<std::atomic<float>*, 5>, 2> eqFreqValues {}, eqGainValues {};
+    std::array<std::atomic<float>*, 2> eqLowCutValues {};
 
     double rate = 48000.0;
     Compressor midComp, sideComp;
     TruePeakLimiter limiter;
     ResonanceTamer tamer;
+    MasteringEQ eq;
     LoudnessMeter loudness, originalLoudness;
     juce::AudioBuffer<float> mid, sides, original;
     juce::SmoothedValue<float> trimGain, matchGain, bypassFade;

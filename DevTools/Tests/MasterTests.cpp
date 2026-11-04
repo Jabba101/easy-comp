@@ -199,6 +199,46 @@ namespace
         check (removed < full - 12.0 && removed > full - 60.0, "TAMER LISTEN: just what it takes out (" + juce::String (removed - full, 1) + " dB below the mix)");
     }
 
+    void testEQ()
+    {
+        std::cout << "\n[EQ]\n";
+        const auto band = loadMix ("band", 20.0, 6.0);
+        const auto quiet = [] (P& p) { set (p, MasterIDs::tamerOn, 0.0f); set (p, MasterIDs::compOn, 0.0f); set (p, MasterIDs::limitGain, 0.0f); set (p, MasterIDs::ceiling, -0.1f); };
+        {
+            // A +6 dB MID bell at 1 kHz on a quiet 1 kHz tone: +6 dB; an untouched band elsewhere changes nothing
+            P p; quiet (p); set (p, MasterEQIDs::gain[0][2], 6.0f); set (p, MasterEQIDs::freq[0][2], 1000.0f); prepare (p, sr, 512);
+            const auto tone = sine (sr, 1000.0, 0.05f, 2.0);
+            const auto out = run (p, tone, 512);
+            const float change = toDb (rms (out, 0, (int) sr, out.getNumSamples()) / rms (tone, 0, (int) sr, tone.getNumSamples()));
+            check (std::abs (change - 6.0f) < 0.2f, "a +6 dB MID band at 1 kHz lifts a 1 kHz tone by " + juce::String (change, 2) + " dB");
+        }
+        {
+            // MID + SIDE: a low cut on the sides makes the low end mono; on a mono mix it can't do anything
+            juce::AudioBuffer<float> mono (band); mono.copyFrom (1, 0, mono, 0, 0, mono.getNumSamples());
+            P p; quiet (p); set (p, MasterEQIDs::mode, 1.0f); set (p, MasterEQIDs::lowCut[1], 200.0f); set (p, MasterEQIDs::gain[1][4], 6.0f); prepare (p, sr, 512);
+            const auto out = run (p, mono, 512);
+            float worst = 0.0f;
+            for (int i = 0; i < out.getNumSamples(); ++i) worst = std::max (worst, std::abs (out.getSample (0, i) - out.getSample (1, i)));
+            check (worst < 1.0e-5f, "EQ MID + SIDE: the sides' EQ leaves a mono mix alone (left = right)");
+            // ... and in STEREO the side row does nothing at all
+            P q; quiet (q); set (q, MasterEQIDs::gain[1][2], 12.0f); prepare (q, sr, 512);
+            P r; quiet (r); prepare (r, sr, 512);
+            check (maxDifference (run (q, band, 512), run (r, band, 512)) < 1.0e-6f, "EQ in STEREO: the SIDE row is resting (no effect)");
+        }
+        {
+            // Flat EQ on: exactly the same as EQ off
+            P a; quiet (a); prepare (a, sr, 512);
+            P b; quiet (b); set (b, MasterEQIDs::on, 0.0f); prepare (b, sr, 512);
+            check (maxDifference (run (a, band, 512), run (b, band, 512)) < 1.0e-6f, "a flat EQ changes nothing (exactly the same as switched off)");
+            // Moving a gain while playing: no clicks
+            P c; quiet (c); prepare (c, sr, 256);
+            const auto tone = sine (sr, 300.0, 0.3f, 2.0);
+            const auto out = run (c, tone, 256, [&] (int start) { if (start == 256 * 100) set (c, MasterEQIDs::gain[0][1], 12.0f); });
+            const float normal = biggestJump (out, 256 * 20, 256 * 90), during = biggestJump (out, 256 * 99, 256 * 130);
+            check (during < normal * 4.5f, "turning a band up 12 dB while playing glides, no click (" + juce::String (during, 3) + " vs " + juce::String (normal, 3) + ")");
+        }
+    }
+
     void testParts (const juce::File& outDir)
     {
         std::cout << "\n[presets, saving, A / B, window]\n";
@@ -242,6 +282,13 @@ namespace
         check (window->isKnobShowing (E::tMidAmountKnob) && window->isKnobShowing (E::tSideAmountKnob) && ! window->isKnobShowing (E::midThresholdKnob)
                && window->isKnobShowing (E::gainKnob) && fitsAndNoOverlaps(), "the RESONANCE TAMER page: its MID and SIDE rows, the LIMITER still there, nothing overlapping");
         savePng (*editor, outDir.getChildFile ("master_tamer.png"));
+        window->showPage (E::eqPage);
+        loadPresetNamed (p, "Master - Tighten & Brighten (M/S)");
+        for (int i = 0; i < 4; ++i) { run (p, loadMix ("mureka", 54.0, 0.2), 512); window->updateDisplaysNow(); }
+        check (window->getEQKnob (0, 0).isVisible() && window->getEQKnob (1, 10).isVisible() && window->getEQKnob (1, 10).isEnabled()
+               && ! window->isKnobShowing (E::tMidAmountKnob) && fitsAndNoOverlaps(), "the EQ page: a full EQ for MID and for SIDE, nothing overlapping");
+        savePng (*editor, outDir.getChildFile ("master_eq.png"));
+        loadPresetNamed (p, "Master - Synthwave Smooth & Wide");
         window->showPage (E::compPage);
         window->updateDisplaysNow();
         check (window->isKnobShowing (E::midThresholdKnob) && window->isKnobShowing (E::sideThresholdKnob) && ! window->isKnobShowing (E::tMidAmountKnob)
@@ -292,6 +339,7 @@ int main (int argc, char** argv)
     testMidSide();
     testCompare();
     testTamer();
+    testEQ();
     testParts (outDir);
     testSpeed();
     return finish();

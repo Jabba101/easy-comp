@@ -301,13 +301,14 @@ add_easy_plugin(EasyLimiter
 add_easy_plugin(EasyMaster
     NAME        "Easy Master"
     CODE        Ezms
-    VERSION     1.1.0
+    VERSION     1.2.0
     BUNDLE_ID   com.homestudio.easymaster
     CATEGORIES  Fx Dynamics Mastering
     SOURCES     Effects/Compressor.h
                 Effects/TruePeakLimiter.h
                 Effects/LoudnessMeter.h
                 Effects/ResonanceTamer.h
+                Effects/MasteringEQ.h
                 Plugins/EasyMaster/Presets.h
                 Plugins/EasyMaster/PluginProcessor.h
                 Plugins/EasyMaster/PluginProcessor.cpp

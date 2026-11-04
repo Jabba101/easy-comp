@@ -504,7 +504,16 @@ LATER
      FROM 200 Hz by default. On test sounds: pink noise untouched, a +12 dB
      3 kHz ring cut ~3 dB, a saw chord barely touched; band mix: 600-800 Hz
      boxiness; Mureka song: 8-10 kHz fizz (hence the preset "Master - Tame
-     Harsh AI Fizz"). NEXT: the full M/S mastering EQ page.
+     Harsh AI Fizz"). The user: "good work".
+     EQ built (Effects/MasteringEQ.h, its own tab): per part LOW CUT
+     (12 dB/oct) + LOW SHELF, LOW MID, MID, HIGH MID bells (proportional
+     Q) + HIGH SHELF, Easy EQ's matched filters, no delay; STEREO = the MID
+     row for the whole mix, MID + SIDE = two complete EQs. Display: both
+     curves (auto ±6 / ±12 dB) over a faint picture of the mix. New
+     presets: "Master - Tighten & Brighten (M/S)" (the Pulsar 8200 idea:
+     side low cut 120, mid mud -1.5 dB at 300, side air +2.5 dB at 11k),
+     "Master - Heavy Low End". Easy Master 1.2.0. NEXT (stage 3):
+     multiband, then punch and width - and the user's ears on stage 2.
    - EASY UNBLEED (idea, 1 November 2026): for stems split with UVR5
      (the user's separator - no paid tool beats it). Split in UVR5 as
      normal (tips: Ensemble mode with a Roformer + an MDX model; vocals
