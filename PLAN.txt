@@ -818,3 +818,10 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      snare, sympathetic strings, a body for a DI'd guitar), using Easy
      Trans's hit detection; (3) plucked/struck strings (waveguides).
      Cymbals are the hard part (chaotic, non-linear) - leave till last.
+     Snare first. Reference drum: the user's workhorse, a 1990s Yamaha
+     SD296 steel-shell snare ("astonishingly versatile, fits almost any
+     style"; he sees it as Yamaha's take on the Ludwig Supraphonic).
+     Start the model at 14" x 5.5", steel. Method: textbook model first,
+     rendered as WAV hits (soft/medium/hard, centre/edge, ghost, rimshot)
+     for him to judge by ear; ideally a dry close-miked recording of the
+     SD296 to measure its modes and decays. Still to ask: heads, tuning.
