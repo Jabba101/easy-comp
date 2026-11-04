@@ -657,9 +657,12 @@ YOUR FIRST FIVE MINUTES WITH EASY MASTER
       SHELF (FREQ and GAIN each) and a LOW CUT. STEREO = one EQ for the
       whole mix; MID + SIDE = a complete EQ for the middle (green row)
       and another for the sides (blue row) - e.g. LOW CUT 120 Hz on the
-      sides only for a tight, mono low end, and air on the sides. The
-      display shows both curves over a faint picture of the mix. On a
-      master, small moves: 0.5-2 dB is a lot.
+      sides only for a tight, mono low end, and air on the sides. Broad,
+      gentle curves like a passive EQ (they don't narrow as you push).
+      Drag a numbered dot on the display to move its band - across for
+      the frequency, up or down for the gain - then fine-tune with the
+      knobs; double-click a dot to put it back to 0 dB; C is the LOW CUT.
+      On a master, small moves: 0.5-2 dB is a lot.
    5. COMPRESSOR: STEREO for the whole mix, or MID + SIDE, where the
       middle (green row: kick, bass, snare, vocal) and the sides (blue
       row: the width) each have their own controls. IGNORE BELOW keeps
@@ -670,6 +673,11 @@ YOUR FIRST FIVE MINUTES WITH EASY MASTER
       then click BYPASS on and off to judge the sound, not the volume.
       LISTEN MONO / MID / SIDE are for checking (switch back to
       STEREO). A and B hold two versions to compare.
+   Each module (TAMER, EQ, COMPRESSOR, LIMITER) also has its own Pr and
+   INIT, top right of its panel: Pr loads a preset into that module only
+   (and saves your own), INIT puts just that module back to its
+   defaults - the rest of the chain stays as it is. The main preset box
+   at the top still sets the whole chain at once.
    Click the meters to reset the INTEGRATED reading and the peak. It
    delays the sound by about 46 ms (the tamer's slice and the limiter's
    look-ahead) - your DAW lines everything up automatically.

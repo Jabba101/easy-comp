@@ -47,10 +47,35 @@ private:
 class EQDisplay : public juce::Component
 {
 public:
+    /** Dragging a dot moves its band (FREQ across, GAIN up and down); double-click puts the band back to 0 dB. */
+    explicit EQDisplay (juce::AudioProcessorValueTreeState& p) : parameters (p) {}
     void setState (const MasteringEQ::Settings&, const EasyMasterAudioProcessor::TamerPicture&, bool on, bool bypassed, double sampleRate);
     void paint (juce::Graphics&) override;
+    void mouseMove (const juce::MouseEvent&) override;
+    void mouseDown (const juce::MouseEvent&) override;
+    void mouseDrag (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+    void mouseDoubleClick (const juce::MouseEvent&) override;
+    void mouseExit (const juce::MouseEvent&) override   { hovered = {}; repaint(); }
+
+    /** A dot: part 0 = MID (or both), 1 = SIDE; band 0..4, or 5 = the LOW CUT. */
+    struct Node { int part = -1, band = -1; bool valid() const noexcept { return part >= 0; } bool operator== (const Node& o) const noexcept { return part == o.part && band == o.band; } };
+    juce::Point<float> nodePosition (Node) const;   // (public so it can be tested)
+    std::function<void()> onEdit;                    // (a band was dragged: the preset box shows "(edited)")
 
 private:
+    juce::Rectangle<float> plotArea() const;
+    float xOf (double hz) const;
+    double hzAt (float x) const;
+    float yOf (float db) const;
+    float dbAt (float y) const;
+    float scale() const;
+    Node nodeAt (juce::Point<float>) const;
+    void setParameter (const char* id, float value);
+
+    juce::AudioProcessorValueTreeState& parameters;
+    Node dragging, hovered;
+    float dragRange = 6.0f;
     MasteringEQ::Settings settings;
     std::array<float, ResonanceTamer::numBands> shownLevel {};
     std::array<float, ResonanceTamer::numBands> centreHz {};
@@ -94,6 +119,7 @@ public:
 
     /** The pages the chain along the top switches between. */
     enum Page { tamerPage = 0, eqPage, compPage, numPages };
+    EQDisplay& getEQDisplay()                 { return eqDisplay; }
     juce::Slider& getEQKnob (int part, int column)   { return eqKnobs[(size_t) part][(size_t) column].slider; }   // column: 0..9 FREQ / GAIN per band, 10 LOW CUT
     void showPage (int page);
     int getShownPage() const noexcept          { return shownPage; }
@@ -111,6 +137,22 @@ private:
     void paintBody (juce::Graphics&) override;
     void refreshLiveDisplays() override;
     void showParts();
+
+    // Each module's own presets: Pr (its menu, with saving your own) and INIT (its defaults)
+    struct ModulePresets
+    {
+        PresetBrowser browser;   // (not shown: it builds the menu and keeps your own presets for this module)
+        juce::TextButton pr { "Pr" }, init { "INIT" };
+        juce::Label name;
+        juce::StringArray ids;
+    };
+    std::array<ModulePresets, MasterModules::count> modulePresets;
+    void applyModulePreset (int module, const Preset* preset);   // nullptr = INIT
+    void showModuleMenu (int module);
+    void placeModuleButtons (int module, juce::Rectangle<int> panel);
+public:
+    ModulePresets& getModulePresets (int module)   { return modulePresets[(size_t) module]; }
+private:
     void mouseDown (const juce::MouseEvent&) override;
     std::vector<juce::Component*> pageComponents (int page);
 
@@ -135,7 +177,7 @@ private:
     juce::Label matchInfo, inputWarning, listenLabel, abLabel;
     MasterDisplay display;
     TamerDisplay tamerDisplay;
-    EQDisplay eqDisplay;
+    EQDisplay eqDisplay { easyProcessor.parameters };
     std::array<std::array<Knob, 11>, 2> eqKnobs;
     LightButton eqOnButton { "ON", Palette::meterLow };
     std::unique_ptr<juce::ButtonParameterAttachment> eqOnAttachment;

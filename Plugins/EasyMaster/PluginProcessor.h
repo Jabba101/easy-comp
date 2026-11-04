@@ -71,7 +71,8 @@ public:
     Readings getReadings() const noexcept;
     void resetMeters() noexcept   { loudness.resetIntegrated(); highestPeak.store (-100.0f); }
 
-    int shownPage = 0;   // (the window's page - kept while the window is closed; 0 = RESONANCE TAMER)
+    int shownPage = 0;
+    std::array<juce::String, 4> modulePresetNames;   // (which module preset each module's Pr loaded last - shown beside it)   // (the window's page - kept while the window is closed; 0 = RESONANCE TAMER)
 
     bool isMidSide() const noexcept   { return juce::roundToInt (compModeValue->load()) == MasterMode::midSide; }
 

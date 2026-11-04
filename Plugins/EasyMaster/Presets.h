@@ -212,3 +212,126 @@ inline juce::StringArray masterPresetIDs()
     }
     return ids;
 }
+
+//==============================================================================
+/*
+    Each module's own presets (its Pr button): they change only that module's
+    settings - anything of the module's a preset doesn't mention goes back to
+    its default, everything else in the chain stays as it is.
+*/
+namespace MasterModules
+{
+    enum { tamer = 0, eq, comp, limiter, count };
+    inline const char* names[count] { "Resonance Tamer", "EQ", "Compressor", "Limiter" };
+
+    /** The settings each module's presets (and its INIT) cover. */
+    inline juce::StringArray ids (int module)
+    {
+        using namespace MasterIDs;
+        if (module == tamer)   return { tamerOn, tamerMode, tMidAmount, tMidSens, tMidSharp, tSideAmount, tSideSens, tSideSharp, tSpeed, tFrom, tTo };
+        if (module == comp)    return { compOn, compMode, midThreshold, midRatio, midAttack, midRelease, midMakeup,
+                                        sideThreshold, sideRatio, sideAttack, sideRelease, sideMakeup, compMix, ignoreBelow, reactsTo, character };
+        if (module == limiter) return { limitGain, ceiling, releaseMode, release };
+        juce::StringArray list { MasterEQIDs::on, MasterEQIDs::mode };
+        for (int part = 0; part < 2; ++part)
+        {
+            for (int b = 0; b < 5; ++b) { list.add (MasterEQIDs::freq[part][b]); list.add (MasterEQIDs::gain[part][b]); }
+            list.add (MasterEQIDs::lowCut[part]);
+        }
+        return list;
+    }
+
+    inline Preset tamerPreset (const char* name, const char* tip, int midSide, float mAmount, float mSens, float mSharp,
+                               float sAmount, float sSens, float sSharp, float speed, float from, float to)
+    {
+        using namespace MasterIDs;
+        return { "", name, tip, { { tamerOn, 1.0f }, { tamerMode, (float) midSide }, { tMidAmount, mAmount }, { tMidSens, mSens }, { tMidSharp, mSharp },
+                                  { tSideAmount, sAmount }, { tSideSens, sSens }, { tSideSharp, sSharp }, { tSpeed, speed }, { tFrom, from }, { tTo, to } } };
+    }
+
+    /** gains / freqs: the five bands (freq 0 = the band's own default); lowCut 20 = off. */
+    inline Preset eqPreset (const char* name, const char* tip, int midSide,
+                            std::array<float, 5> midGain, std::array<float, 5> midFreq, float midLowCut,
+                            std::array<float, 5> sideGain = {}, std::array<float, 5> sideFreq = {}, float sideLowCut = 20.0f)
+    {
+        Preset p { "", name, tip, { { MasterEQIDs::on, 1.0f }, { MasterEQIDs::mode, (float) midSide } } };
+        for (int part = 0; part < 2; ++part)
+        {
+            const auto& g = part == 0 ? midGain : sideGain;
+            const auto& f = part == 0 ? midFreq : sideFreq;
+            for (int b = 0; b < 5; ++b)
+            {
+                p.values.push_back ({ juce::String (MasterEQIDs::gain[part][b]), g[(size_t) b] });
+                p.values.push_back ({ juce::String (MasterEQIDs::freq[part][b]), f[(size_t) b] > 0.0f ? f[(size_t) b] : MasterEQIDs::bands[b].defaultHz });
+            }
+            p.values.push_back ({ juce::String (MasterEQIDs::lowCut[part]), part == 0 ? midLowCut : sideLowCut });
+        }
+        return p;
+    }
+
+    inline Preset compPreset (const char* name, const char* tip, int midSide, std::array<float, 5> mid, std::array<float, 5> side,
+                              float mix, float ignore, int reactsChoice, int characterChoice)
+    {
+        using namespace MasterIDs;
+        return { "", name, tip, { { compOn, 1.0f }, { compMode, (float) midSide },
+                                  { midThreshold, mid[0] }, { midRatio, mid[1] }, { midAttack, mid[2] }, { midRelease, mid[3] }, { midMakeup, mid[4] },
+                                  { sideThreshold, side[0] }, { sideRatio, side[1] }, { sideAttack, side[2] }, { sideRelease, side[3] }, { sideMakeup, side[4] },
+                                  { compMix, mix }, { ignoreBelow, ignore }, { reactsTo, (float) reactsChoice }, { character, (float) characterChoice } } };
+    }
+
+    inline Preset limiterPreset (const char* name, const char* tip, float gain, float ceilingDb, int releaseModeValue, float releaseMs)
+    {
+        using namespace MasterIDs;
+        return { "", name, tip, { { limitGain, gain }, { ceiling, ceilingDb }, { releaseMode, (float) releaseModeValue }, { release, releaseMs } } };
+    }
+
+    inline std::vector<Preset> presets (int module)
+    {
+        if (module == tamer)
+            return {
+                tamerPreset ("Gentle Polish", "Only the spots that clearly stick out, gently: a little smoother, nothing more.", 0, 3, 45, 50, 3, 45, 50, 50, 200, 16000),
+                tamerPreset ("Harsh Top End", "Works on the 2-16 kHz harshness only: cymbals, guitars and vocal edge smoothed when they bite.", 0, 6, 60, 50, 6, 60, 50, 40, 2000, 16000),
+                tamerPreset ("Boxy Mids", "The 300 Hz - 1.5 kHz honk and box of a room or a busy mix, broad and slow.", 0, 5, 55, 35, 5, 55, 35, 60, 300, 1500),
+                tamerPreset ("Ringing Notes & Whistles", "Narrow, ringing resonances (a snare's ring, a whistling guitar), caught fast.", 0, 6, 55, 85, 6, 55, 85, 20, 200, 16000),
+                tamerPreset ("AI Fizz", "The fizzy, metallic top end of AI-made songs (Mureka, Suno), from 4 kHz up.", 0, 6, 65, 55, 6, 65, 55, 30, 4000, 16000),
+                tamerPreset ("Wide Harsh Synths (M/S)", "Harsh, wide synths and guitars at the sides tamed hard; the middle only touched lightly.", 1, 2, 45, 50, 6, 65, 45, 50, 1000, 16000),
+            };
+        if (module == eq)
+            return {
+                eqPreset ("Flat", "Every band at 0 dB, no low cut: the EQ does nothing.", 0, {}, {}, 20.0f),
+                eqPreset ("Tighten & Brighten (M/S)", "Tight, mono lows (side low cut 120 Hz), a little mud out of the middle, air on the sides.", 1,
+                          { 0.5f, -1.5f, 0.0f, 0.5f, 0.5f }, { 60.0f, 300.0f, 0.0f, 3500.0f, 12000.0f }, 20.0f,
+                          { 0.0f, -1.0f, 0.0f, 1.0f, 2.5f }, { 0.0f, 350.0f, 0.0f, 5000.0f, 11000.0f }, 120.0f),
+                eqPreset ("Heavy Low End (M/S)", "Weight for the kick and bass in the middle, the lows kept mono and tight.", 1,
+                          { 2.0f, -1.0f, 0.0f, 0.0f, 0.5f }, { 70.0f, 280.0f, 0.0f, 0.0f, 12000.0f }, 20.0f,
+                          { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 0.0f, 11000.0f }, 150.0f),
+                eqPreset ("Mono Bass Only (M/S)", "Nothing but a low cut on the sides (120 Hz): the bass and kick mono and focused.", 1,
+                          {}, {}, 20.0f, {}, {}, 120.0f),
+                eqPreset ("Clear the Mud", "A broad, gentle dip in the low mids (250 Hz): clearer, less woolly.", 0,
+                          { 0.0f, -2.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 250.0f, 0.0f, 0.0f, 0.0f }, 20.0f),
+                eqPreset ("Gentle Air", "A soft lift of the very top (12 kHz shelf): more open, never harsh.", 0,
+                          { 0.0f, 0.0f, 0.0f, 0.0f, 1.5f }, { 0.0f, 0.0f, 0.0f, 0.0f, 12000.0f }, 20.0f),
+                eqPreset ("Warm & Smooth", "A little low shelf warmth, the upper mids eased: for bright, edgy mixes.", 0,
+                          { 1.0f, 0.0f, 0.0f, -1.0f, -0.5f }, { 100.0f, 0.0f, 0.0f, 3500.0f, 10000.0f }, 20.0f),
+            };
+        if (module == comp)
+            return {
+                compPreset ("Glue 1.5:1", "Barely there: holds the mix together. Aim for 1-2 dB.", 0, { -16, 1.5f, 30, 250, 1 }, { -16, 1.5f, 30, 250, 1 }, 100, 80, 1, 0),
+                compPreset ("Glue 2:1", "The usual master glue: 2:1, slow, ignoring the deep bass. Aim for 1-3 dB.", 0, { -14, 2, 30, 200, 1 }, { -14, 2, 30, 200, 1 }, 100, 80, 1, 0),
+                compPreset ("Rock & Punk", "Firmer and faster: dense and in your face, the snare crack let through first.", 0, { -14, 3, 30, 120, 2 }, { -14, 3, 30, 120, 2 }, 100, 90, 0, 0),
+                compPreset ("Heavy & Loud", "VINTAGE weight, 85% MIX to keep some of the hits' snap.", 0, { -16, 3, 20, 100, 2 }, { -16, 3, 20, 100, 2 }, 85, 100, 0, 1),
+                compPreset ("Jazz Natural", "1.5:1, slow and gentle: the players' dynamics kept.", 0, { -20, 1.5f, 50, 300, 0.5f }, { -20, 1.5f, 50, 300, 0.5f }, 100, 60, 1, 0),
+                compPreset ("Tighten the Sides (M/S)", "The sides held in, the middle almost untouched.", 1, { -14, 1.5f, 30, 200, 0.5f }, { -22, 3, 15, 150, 0 }, 100, 80, 1, 0),
+                compPreset ("Punchy Middle (M/S)", "A slow attack on the middle so kick, snare and vocal punch through; the sides smoothed.", 1, { -14, 2.5f, 40, 120, 1.5f }, { -18, 1.5f, 30, 250, 0.5f }, 100, 90, 0, 0),
+                compPreset ("Steady Vocal & Bass (M/S)", "The centre (vocal, bass, kick) evened out; the stereo picture left alone.", 1, { -18, 2.5f, 15, 150, 1.5f }, { -20, 1.2f, 30, 250, 0 }, 100, 40, 1, 0),
+            };
+        return {
+            limiterPreset ("Safety Ceiling Only", "Nothing until a peak would pass -0.3 dBTP: overs protection only.", 0, -0.3f, 0, 100),
+            limiterPreset ("Gentle Push (+2 dB)", "Just the tallest peaks shaved: a little louder, no audible change.", 2, -0.3f, 0, 100),
+            limiterPreset ("Firm Push (+4 dB)", "Louder, still clean on most mixes. Listen to the kick and snare.", 4, -0.3f, 0, 100),
+            limiterPreset ("Loud (+6 dB)", "Loud rock, punk and electronic masters. Check with MATCH.", 6, -0.3f, 0, 100),
+            limiterPreset ("Dense & Steady (slow)", "A slow, steady release: smooth for synthwave, pads and ballads.", 4, -0.3f, 1, 400),
+            limiterPreset ("For MP3 / Streaming (-1 dBTP)", "A -1 dBTP ceiling: room for the peaks a conversion adds.", 2, -1.0f, 0, 100),
+        };
+    }
+}

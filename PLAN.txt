@@ -514,6 +514,24 @@ LATER
      side low cut 120, mid mud -1.5 dB at 300, side air +2.5 dB at 11k),
      "Master - Heavy Low End". Easy Master 1.2.0. NEXT (stage 3):
      multiband, then punch and width - and the user's ears on stage 2.
+     USER (4 November): the tamer "doing ok"; the EQ had Easy EQ's
+     narrowing (proportional) Q - wrong for mastering - and knobs only.
+     Fixed: fixed broad passive-style curves (bells Q 0.55, ~2.5 octaves,
+     the same width at any gain; shelves Q 0.5), and the dots on the
+     display drag (across = FREQ, up / down = GAIN, C = LOW CUT across),
+     double-click = 0 dB, a readout while hovering / dragging; the knobs
+     for fine-tuning.
+     USER: each module needs its own Pr and INIT as well as the main
+     presets. Done: TAMER (6), EQ (7), COMPRESSOR (8), LIMITER (6)
+     presets, each touching only its module (anything of the module not
+     mentioned back to default), your own savable per module (Documents >
+     Easy Plugins > Easy Master - <module>), INIT per module, the loaded
+     name shown beside Pr. The modules switch off with their ON buttons;
+     the LIMITER is always in (at GAIN 0 it only stops overs); the order
+     is fixed (the user's clean chain order).
+     LOOK: Easy Master will get the HOLOGRAM skin to match Easy Strip; the
+     user mainly wants to approve the look at that stage (until then
+     working layouts can be pushed without a look check).
    - EASY UNBLEED (idea, 1 November 2026): for stems split with UVR5
      (the user's separator - no paid tool beats it). Split in UVR5 as
      normal (tips: Ensemble mode with a Roformer + an MDX model; vocals

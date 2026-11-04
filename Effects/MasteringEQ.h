@@ -9,10 +9,12 @@
     complete EQ for the MIDDLE and another for the SIDES.
 
       Per part: LOW CUT (12 dB/oct, OFF at 20 Hz), LOW SHELF, LOW MID,
-      MID and HIGH MID bells, HIGH SHELF. Bells use Easy EQ's proportional
-      Q (broad for small moves, narrower for big ones); shelves are gentle
-      (Q 0.71). All of them are Easy EQ's "matched" filters, so the top end
-      is right up to 20 kHz with no oversampling, and nothing is delayed.
+      MID and HIGH MID bells, HIGH SHELF. Gentle, passive-style curves: the
+      bells keep the same broad width whatever the gain (Q 0.55 - about two
+      and a half octaves; no narrowing as you push, unlike Easy EQ), the
+      shelves slope in slowly (Q 0.5). All of them are Easy EQ's "matched"
+      filters, so the top end is right up to 20 kHz with no oversampling,
+      and nothing is delayed.
 
       STEREO: the MID settings for the whole mix (exactly the same as
       equalising left and right). MID + SIDE: the middle and the sides each
@@ -42,13 +44,31 @@ public:
         bool bypassed = false;
     };
 
+    static constexpr double bellQ = 0.55, shelfQ = 0.5;
+
+    static Equalizer::Coefficients bell (double hz, double gainDb, double sampleRate) noexcept
+    {
+        const double A = std::pow (10.0, gainDb / 40.0);
+        return Equalizer::matched (1.0, A / bellQ, 1.0, 1.0, 1.0 / (A * bellQ), 1.0, hz, sampleRate);
+    }
+    static Equalizer::Coefficients lowShelf (double hz, double gainDb, double sampleRate) noexcept
+    {
+        const double A = std::pow (10.0, gainDb / 40.0), k = std::sqrt (A) / shelfQ;
+        return Equalizer::matched (A, A * k, A * A, A, k, 1.0, hz, sampleRate);
+    }
+    static Equalizer::Coefficients highShelf (double hz, double gainDb, double sampleRate) noexcept
+    {
+        const double A = std::pow (10.0, gainDb / 40.0), k = std::sqrt (A) / shelfQ;
+        return Equalizer::matched (A * A, A * k, A, 1.0, k, A, hz, sampleRate);
+    }
+
     /** One band's (or the LOW CUT's, band = numBands) filter. */
     static Equalizer::Coefficients coefficients (const Part& p, int band, double sampleRate) noexcept
     {
         if (band == numBands)  return Equalizer::highPass (p.lowCutHz, Equalizer::q12, sampleRate);
-        if (band == 0)         return Equalizer::lowShelf (p.freqHz[0], p.gainDb[0], sampleRate);
-        if (band == numBands - 1) return Equalizer::highShelf (p.freqHz[(size_t) band], p.gainDb[(size_t) band], sampleRate);
-        return Equalizer::bell (p.freqHz[(size_t) band], p.gainDb[(size_t) band], sampleRate);
+        if (band == 0)         return lowShelf (p.freqHz[0], p.gainDb[0], sampleRate);
+        if (band == numBands - 1) return highShelf (p.freqHz[(size_t) band], p.gainDb[(size_t) band], sampleRate);
+        return bell (p.freqHz[(size_t) band], p.gainDb[(size_t) band], sampleRate);
     }
 
     /** A part's whole curve (not in dB) at a frequency - for the window. */

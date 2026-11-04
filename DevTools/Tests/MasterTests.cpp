@@ -2,6 +2,7 @@
 #include "TestHelpers.h"
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "Parameters.h"
 #include <juce_audio_formats/juce_audio_formats.h>
 
 using namespace th;
@@ -199,6 +200,15 @@ namespace
         check (removed < full - 12.0 && removed > full - 60.0, "TAMER LISTEN: just what it takes out (" + juce::String (removed - full, 1) + " dB below the mix)");
     }
 
+    juce::MouseEvent mouseAt (juce::Component* c, juce::Point<float> at, bool down)
+    {
+        auto source = juce::Desktop::getInstance().getMainMouseSource();
+        const auto now = juce::Time::getCurrentTime();
+        return juce::MouseEvent (source, at, down ? juce::ModifierKeys (juce::ModifierKeys::leftButtonModifier) : juce::ModifierKeys(),
+                                 juce::MouseInputSource::defaultPressure, juce::MouseInputSource::defaultOrientation, juce::MouseInputSource::defaultRotation,
+                                 juce::MouseInputSource::defaultTiltX, juce::MouseInputSource::defaultTiltY, c, c, now, at, now, 1, false);
+    }
+
     void testEQ()
     {
         std::cout << "\n[EQ]\n";
@@ -211,6 +221,18 @@ namespace
             const auto out = run (p, tone, 512);
             const float change = toDb (rms (out, 0, (int) sr, out.getNumSamples()) / rms (tone, 0, (int) sr, tone.getNumSamples()));
             check (std::abs (change - 6.0f) < 0.2f, "a +6 dB MID band at 1 kHz lifts a 1 kHz tone by " + juce::String (change, 2) + " dB");
+        }
+        {
+            // Gentle, passive-style curves: a bell keeps the same broad width however far it goes (no narrowing)
+            const auto widthAt = [] (float gainDb)
+            {
+                MasteringEQ::Part part; part.gainDb = { 0.0f, 0.0f, gainDb, 0.0f, 0.0f }; part.freqHz[2] = 1000.0f;
+                const double peak = juce::Decibels::gainToDecibels (MasteringEQ::responseAt (part, 1000.0, sr));
+                return juce::Decibels::gainToDecibels (MasteringEQ::responseAt (part, 500.0, sr)) / peak;   // (how much of it is left an octave away)
+            };
+            const double small = widthAt (2.0f), big = widthAt (12.0f);
+            check (small > 0.55 && big > small - 0.12, "the bells stay broad like a passive EQ: an octave away, " + juce::String (juce::roundToInt (small * 100.0)) + "% of the boost at +2 dB, "
+                   + juce::String (juce::roundToInt (big * 100.0)) + "% at +12 dB (no narrowing as you push)");
         }
         {
             // MID + SIDE: a low cut on the sides makes the low end mono; on a mono mix it can't do anything
@@ -288,6 +310,27 @@ namespace
         check (window->getEQKnob (0, 0).isVisible() && window->getEQKnob (1, 10).isVisible() && window->getEQKnob (1, 10).isEnabled()
                && ! window->isKnobShowing (E::tMidAmountKnob) && fitsAndNoOverlaps(), "the EQ page: a full EQ for MID and for SIDE, nothing overlapping");
         savePng (*editor, outDir.getChildFile ("master_eq.png"));
+        {
+            // Dragging a dot on the screen: the band follows (across = frequency, up / down = gain); double-click = 0 dB
+            auto& eqView = window->getEQDisplay();
+            const auto start = eqView.nodePosition ({ 0, 2 });
+            const auto target = start + juce::Point<float> (60.0f, -40.0f);
+            eqView.mouseDown (mouseAt (&eqView, start, true));
+            eqView.mouseDrag (mouseAt (&eqView, target, true));
+            eqView.mouseUp (mouseAt (&eqView, target, false));
+            const float freq = getParam (p, MasterEQIDs::freq[0][2]), gain = getParam (p, MasterEQIDs::gain[0][2]);
+            window->updateDisplaysNow();
+            const auto now = eqView.nodePosition ({ 0, 2 });
+            check (freq > 1100.0f && gain > 1.0f && now.getDistanceFrom (target) < 3.0f, "dragging the MID dot on the screen moves the band: now "
+                   + juce::String (freq, 0) + " Hz, " + Format::signedDecibels (gain) + ", and the dot sits under the mouse");
+            eqView.mouseDoubleClick (mouseAt (&eqView, now, false));
+            check (std::abs (getParam (p, MasterEQIDs::gain[0][2])) < 0.01f, "double-clicking the dot puts it back to 0 dB");
+            const auto lowCut = eqView.nodePosition ({ 1, MasteringEQ::numBands });
+            eqView.mouseDown (mouseAt (&eqView, lowCut, true));
+            eqView.mouseDrag (mouseAt (&eqView, lowCut + juce::Point<float> (40.0f, 0.0f), true));
+            eqView.mouseUp (mouseAt (&eqView, lowCut + juce::Point<float> (40.0f, 0.0f), false));
+            check (getParam (p, MasterEQIDs::lowCut[1]) > 125.0f, "the SIDE LOW CUT's dot (C) drags across too: " + Format::hertz (getParam (p, MasterEQIDs::lowCut[1])));
+        }
         loadPresetNamed (p, "Master - Synthwave Smooth & Wide");
         window->showPage (E::compPage);
         window->updateDisplaysNow();
@@ -297,6 +340,38 @@ namespace
         {
             std::unique_ptr<juce::AudioProcessorEditor> again (p.createEditor());
             check (dynamic_cast<E*> (again.get())->getShownPage() == E::compPage, "reopening the window comes back to the same page");
+        }
+
+        {
+            // Each module's own Pr and INIT: only that module changes
+            using M = EasyMasterAudioProcessorEditor;
+            loadPresetNamed (p, "Master - Tighten & Brighten (M/S)");
+            const float eqBefore = getParam (p, MasterEQIDs::gain[1][4]), tamerBefore = getParam (p, MasterIDs::tMidAmount), gainBefore = getParam (p, MasterIDs::limitGain);
+            auto& comp = window->getModulePresets (MasterModules::comp);
+            const auto compPresets = MasterModules::presets (MasterModules::comp);
+            comp.browser.onPresetChosen (compPresets[2]);   // "Rock & Punk"
+            const bool compChanged = std::abs (getParam (p, MasterIDs::midRatio) - 3.0f) < 0.01f && getParam (p, MasterIDs::compMode) < 0.5f;
+            check (compChanged && getParam (p, MasterEQIDs::gain[1][4]) == eqBefore && getParam (p, MasterIDs::tMidAmount) == tamerBefore
+                   && getParam (p, MasterIDs::limitGain) == gainBefore && comp.name.getText() == "Rock & Punk",
+                   "the COMPRESSOR's own Pr: 'Rock & Punk' loads into the compressor only - the EQ, tamer and limiter keep theirs");
+            check (p.isPresetEdited(), "... and the main preset box shows (edited)");
+            auto& eqm = window->getModulePresets (MasterModules::eq);
+            eqm.init.onClick();
+            check (std::abs (getParam (p, MasterEQIDs::gain[1][4])) < 0.01f && getParam (p, MasterEQIDs::lowCut[1]) < 20.5f
+                   && std::abs (getParam (p, MasterIDs::midRatio) - 3.0f) < 0.01f, "the EQ's own INIT: the EQ flat again, the compressor untouched");
+            bool allFit = true;
+            for (int m = 0; m < MasterModules::count; ++m)
+            {
+                const auto list = MasterModules::presets (m);
+                for (auto& pr : list) for (auto& [id, v] : pr.values) if (! MasterModules::ids (m).contains (id)) allFit = false;
+                if (list.size() < 5) allFit = false;
+            }
+            check (allFit, "every module has its own presets (5+ each), each touching only that module's settings");
+            window->showPage (M::compPage);
+            window->updateDisplaysNow();
+            check (comp.pr.isVisible() && comp.init.isVisible() && window->getModulePresets (MasterModules::limiter).pr.isVisible()
+                   && ! eqm.pr.isVisible() && fitsAndNoOverlaps(), "Pr and INIT on each page (and on the LIMITER), nothing overlapping");
+            savePng (*editor, outDir.getChildFile ("master_module_presets.png"));
         }
 
         window->getInitAllButton().onClick();

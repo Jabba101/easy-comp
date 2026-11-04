@@ -120,14 +120,14 @@ namespace
         "Where this band works. LOW SHELF lifts or lowers everything below it, HIGH SHELF everything above; the three "
         "bells work around their frequency.";
     constexpr const char* eqGainHint =
-        "How much this band lifts (right) or lowers (left). On a master, small moves: 0.5-2 dB is a lot. The bells get "
-        "narrower the further you go, broad and gentle for small moves.";
+        "How much this band lifts (right) or lowers (left). On a master, small moves: 0.5-2 dB is a lot. The curves are "
+        "broad and gentle, like a passive EQ: they keep the same width however far you go.";
     constexpr const char* eqLowCutHint =
         "Removes the rumble below this frequency (12 dB per octave). On the SIDES (MID + SIDE), 100-150 Hz makes the "
         "low end mono and tight - the mastering trick for heavy bass. Off on the middle unless there's real rumble.";
     constexpr const char* eqDisplayHint =
-        "The EQ's curve: green = the middle (amber in STEREO: the whole mix), blue = the sides. The numbered dots are the "
-        "bands; the grey behind is the mix as it comes into the EQ.";
+        "Drag a numbered dot to move its band: across for the frequency, up or down for the gain (then fine-tune with the "
+        "knobs). Double-click a dot: back to 0 dB. C = the LOW CUT (drag it across). Green = middle, blue = sides.";
     constexpr const char* tamerOnHint = "Switches the resonance tamer on or off (the rest of the chain keeps working).";
     constexpr const char* tamerModeHint =
         "STEREO: one set of cuts for the whole mix, the same on left and right - the stereo picture can't move. MID + SIDE: "
@@ -581,19 +581,116 @@ void EQDisplay::setState (const MasteringEQ::Settings& s, const EasyMasterAudioP
     repaint();
 }
 
+juce::Rectangle<float> EQDisplay::plotArea() const
+{
+    return getLocalBounds().toFloat().reduced (14.0f, 12.0f).withTrimmedLeft (34.0f).withTrimmedBottom (40.0f);
+}
+
+float EQDisplay::scale() const
+{
+    // (a ±6 dB scale - mastering moves are small - widening to ±12 when a band goes past ±5.5 dB; held still while dragging)
+    if (dragging.valid()) return dragRange;
+    float biggest = 0.0f;
+    for (auto* part : { &settings.mid, &settings.side })
+        for (float gdb : part->gainDb) biggest = juce::jmax (biggest, std::abs (gdb));
+    return biggest > 5.5f ? 12.0f : 6.0f;
+}
+
+float EQDisplay::xOf (double hz) const   { const auto p = plotArea(); return p.getX() + p.getWidth() * (float) (std::log (hz / 20.0) / std::log (1000.0)); }
+double EQDisplay::hzAt (float x) const   { const auto p = plotArea(); return 20.0 * std::pow (1000.0, (double) ((x - p.getX()) / p.getWidth())); }
+float EQDisplay::yOf (float db) const    { const auto p = plotArea(); return p.getCentreY() - p.getHeight() * 0.5f * juce::jlimit (-1.0f, 1.0f, db / scale()); }
+float EQDisplay::dbAt (float y) const    { const auto p = plotArea(); return (p.getCentreY() - y) / (p.getHeight() * 0.5f) * scale(); }
+
+juce::Point<float> EQDisplay::nodePosition (Node n) const
+{
+    const auto& part = n.part == 1 ? settings.side : settings.mid;
+    if (n.band == MasteringEQ::numBands)   // (the LOW CUT: on the line, where it's 3 dB down)
+        return { xOf (part.lowCutHz), yOf ((float) juce::Decibels::gainToDecibels (MasteringEQ::responseAt (part, part.lowCutHz, rate), -60.0)) };
+    return { xOf (part.freqHz[(size_t) n.band]), yOf (part.gainDb[(size_t) n.band]) };
+}
+
+EQDisplay::Node EQDisplay::nodeAt (juce::Point<float> at) const
+{
+    Node best;
+    float bestDistance = 14.0f;
+    for (int part = settings.midSide ? 1 : 0; part >= 0; --part)   // (the middle's dots are on top: they win a tie)
+        for (int b = 0; b <= MasteringEQ::numBands; ++b)
+        {
+            const float d = at.getDistanceFrom (nodePosition ({ part, b }));
+            if (d <= bestDistance) { bestDistance = d; best = { part, b }; }
+        }
+    return best;
+}
+
+void EQDisplay::setParameter (const char* id, float value)
+{
+    if (auto* p = parameters.getParameter (id))
+        p->setValueNotifyingHost (p->convertTo0to1 (value));
+}
+
+void EQDisplay::mouseMove (const juce::MouseEvent& e)
+{
+    const auto n = nodeAt (e.position);
+    if (! (n == hovered)) { hovered = n; repaint(); }
+    setMouseCursor (n.valid() ? juce::MouseCursor::DraggingHandCursor : juce::MouseCursor::NormalCursor);
+}
+
+void EQDisplay::mouseDown (const juce::MouseEvent& e)
+{
+    dragging = nodeAt (e.position);
+    if (! dragging.valid()) return;
+    dragRange = scale();
+    const bool lowCut = dragging.band == MasteringEQ::numBands;
+    for (const char* id : { lowCut ? MasterEQIDs::lowCut[dragging.part] : MasterEQIDs::freq[dragging.part][dragging.band],
+                            lowCut ? nullptr : MasterEQIDs::gain[dragging.part][dragging.band] })
+        if (id != nullptr)
+            if (auto* p = parameters.getParameter (id)) p->beginChangeGesture();
+}
+
+void EQDisplay::mouseDrag (const juce::MouseEvent& e)
+{
+    if (! dragging.valid()) return;
+    const auto at = e.position;
+    const double hz = hzAt (at.x);
+    if (dragging.band == MasteringEQ::numBands)
+        setParameter (MasterEQIDs::lowCut[dragging.part], (float) juce::jlimit ((double) MasteringEQ::lowCutOffHz, 300.0, hz));   // (across only)
+    else
+    {
+        const auto& info = MasterEQIDs::bands[dragging.band];
+        setParameter (MasterEQIDs::freq[dragging.part][dragging.band], (float) juce::jlimit ((double) info.lowHz, (double) info.highHz, hz));
+        setParameter (MasterEQIDs::gain[dragging.part][dragging.band], juce::jlimit (-MasteringEQ::maxGainDb, MasteringEQ::maxGainDb, std::round (dbAt (at.y) * 10.0f) / 10.0f));
+    }
+    if (onEdit) onEdit();
+}
+
+void EQDisplay::mouseUp (const juce::MouseEvent&)
+{
+    if (! dragging.valid()) return;
+    const bool lowCut = dragging.band == MasteringEQ::numBands;
+    for (const char* id : { lowCut ? MasterEQIDs::lowCut[dragging.part] : MasterEQIDs::freq[dragging.part][dragging.band],
+                            lowCut ? nullptr : MasterEQIDs::gain[dragging.part][dragging.band] })
+        if (id != nullptr)
+            if (auto* p = parameters.getParameter (id)) p->endChangeGesture();
+    dragging = {};
+    repaint();
+}
+
+void EQDisplay::mouseDoubleClick (const juce::MouseEvent& e)
+{
+    const auto n = nodeAt (e.position);
+    if (! n.valid()) return;
+    if (n.band == MasteringEQ::numBands) setParameter (MasterEQIDs::lowCut[n.part], MasteringEQ::lowCutOffHz);   // (LOW CUT: off)
+    else                                 setParameter (MasterEQIDs::gain[n.part][n.band], 0.0f);                  // (a band: back to 0 dB)
+    if (onEdit) onEdit();
+}
+
 void EQDisplay::paint (juce::Graphics& g)
 {
     const auto area = getLocalBounds().toFloat();
     g.setColour (Palette::background);
     g.fillRoundedRectangle (area, 6.0f);
-    const auto plot = area.reduced (14.0f, 12.0f).withTrimmedLeft (34.0f).withTrimmedBottom (40.0f);
-    // (a ±6 dB scale - mastering moves are small - widening to ±12 when a band goes past ±5.5 dB)
-    float biggest = 0.0f;
-    for (auto* part : { &settings.mid, &settings.side })
-        for (float gdb : part->gainDb) biggest = juce::jmax (biggest, std::abs (gdb));
-    const float range = biggest > 5.5f ? 12.0f : 6.0f;
-    const auto xOf = [&] (double hz) { return plot.getX() + plot.getWidth() * (float) (std::log (hz / 20.0) / std::log (1000.0)); };
-    const auto yOf = [&] (float db) { return plot.getCentreY() - plot.getHeight() * 0.5f * juce::jlimit (-1.0f, 1.0f, db / range); };
+    const auto plot = plotArea();
+    const float range = scale();
 
     // The mix coming in (faint)
     if (centreHz[0] > 0.0f)
@@ -626,8 +723,9 @@ void EQDisplay::paint (juce::Graphics& g)
                     juce::Rectangle<float> (xOf (hz) - 20.0f, plot.getBottom() + 3.0f, 40.0f, 14.0f), juce::Justification::centred, false);
     }
 
-    const auto curve = [&] (const MasteringEQ::Part& part, juce::Colour colour, float thickness)
+    const auto curve = [&] (int partIndex, juce::Colour colour, float thickness)
     {
+        const auto& part = partIndex == 1 ? settings.side : settings.mid;
         juce::Path path;
         for (int i = 0; i <= 240; ++i)
         {
@@ -637,29 +735,48 @@ void EQDisplay::paint (juce::Graphics& g)
         }
         g.setColour (colour.withAlpha (on && ! bypassed ? 1.0f : 0.35f));
         g.strokePath (path, juce::PathStrokeType (thickness));
-        for (int b = 0; b < MasteringEQ::numBands; ++b)
+        for (int b = 0; b <= MasteringEQ::numBands; ++b)
         {
-            const double hz = part.freqHz[(size_t) b];
-            const float db = (float) juce::Decibels::gainToDecibels (MasteringEQ::responseAt (part, hz, rate), -60.0);
-            const auto dot = juce::Rectangle<float> (15.0f, 15.0f).withCentre ({ xOf (hz), yOf (db) });
-            g.setColour (Palette::background);
+            const Node n { partIndex, b };
+            const bool lit = n == hovered || n == dragging;
+            const auto dot = juce::Rectangle<float> (lit ? 19.0f : 15.0f, lit ? 19.0f : 15.0f).withCentre (nodePosition (n));
+            g.setColour (lit ? colour.withAlpha (0.35f) : Palette::background);
             g.fillEllipse (dot);
             g.setColour (colour);
-            g.drawEllipse (dot, 1.5f);
+            g.drawEllipse (dot, lit ? 2.0f : 1.5f);
             g.setFont (juce::Font (juce::FontOptions (10.0f, juce::Font::bold)));
-            g.drawText (juce::String (b + 1), dot, juce::Justification::centred, false);
+            g.drawText (b == MasteringEQ::numBands ? juce::String ("C") : juce::String (b + 1), dot, juce::Justification::centred, false);
         }
     };
     {
         juce::Graphics::ScopedSaveState save (g);
-        g.reduceClipRegion (plot.expanded (8.0f).toNearestInt());
+        g.reduceClipRegion (plot.expanded (10.0f).toNearestInt());
         if (settings.midSide)
         {
-            curve (settings.side, sideColour, 2.0f);
-            curve (settings.mid, midColour, 2.0f);
+            curve (1, sideColour, 2.0f);
+            curve (0, midColour, 2.0f);
         }
         else
-            curve (settings.mid, Palette::accent, 2.2f);
+            curve (0, Palette::accent, 2.2f);
+    }
+
+    // While dragging (or hovering): what that dot is set to
+    const auto shown = dragging.valid() ? dragging : hovered;
+    if (shown.valid())
+    {
+        const auto& part = shown.part == 1 ? settings.side : settings.mid;
+        const bool lowCut = shown.band == MasteringEQ::numBands;
+        const juce::String text = juce::String (shown.part == 1 ? "SIDE " : (settings.midSide ? "MID " : "")) + (lowCut ? juce::String ("LOW CUT ") : juce::String (MasterEQIDs::bands[shown.band].name) + "  ")
+                                  + (lowCut ? (part.lowCutHz <= MasteringEQ::lowCutOffHz + 0.5f ? juce::String ("Off") : Format::hertz (part.lowCutHz))
+                                            : Format::hertz (part.freqHz[(size_t) shown.band]) + "  " + Format::signedDecibels (part.gainDb[(size_t) shown.band]));
+        const auto p = nodePosition (shown);
+        auto box = juce::Rectangle<float> ((float) text.length() * 7.0f + 16.0f, 20.0f).withCentre ({ p.x, p.y - 22.0f });
+        box = box.constrainedWithin (plot);
+        g.setColour (Palette::panel.withAlpha (0.95f));
+        g.fillRoundedRectangle (box, 4.0f);
+        g.setColour (Palette::textBright);
+        g.setFont (juce::Font (juce::FontOptions (12.0f, juce::Font::bold)));
+        g.drawText (text, box, juce::Justification::centred, false);
     }
 
     auto key = juce::Rectangle<float> (plot.getX(), plot.getBottom() + 20.0f, plot.getWidth(), 16.0f);
@@ -676,6 +793,8 @@ void EQDisplay::paint (juce::Graphics& g)
     if (settings.midSide) { item (midColour, "middle", 50.0f); item (sideColour, "sides", 40.0f); }
     else                    item (Palette::accent, "the whole mix", 90.0f);
     item (Palette::textDim.withAlpha (0.4f), "the mix coming in", 120.0f);
+    g.setColour (Palette::textDim);
+    g.drawText ("drag a dot to move it - double-click: back to 0 dB - C = LOW CUT", key, juce::Justification::centredRight, false);
     if (! on || bypassed)
     {
         g.setColour (Palette::textDim);
@@ -754,6 +873,7 @@ EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioP
     addHint (eqModeSwitch, "EQ - STEREO / MID + SIDE", eqModeHint);
     addAndMakeVisible (eqDisplay);
     addHint (eqDisplay, "THE EQ'S CURVE", eqDisplayHint);
+    eqDisplay.onEdit = [this] { knobMoved(); };
 
     initAllButton.setColour (juce::TextButton::buttonColourId, Palette::panel);
     initAllButton.setColour (juce::TextButton::textColourOffId, Palette::meterHigh);
@@ -824,6 +944,39 @@ EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioP
     addHint (copyButton, "COPY", abHint);
     addHint (abLabel, "A / B", abHint);
 
+    for (int m = 0; m < MasterModules::count; ++m)
+    {
+        auto& mp = modulePresets[(size_t) m];
+        mp.ids = MasterModules::ids (m);
+        mp.browser.setPresets (juce::String ("Easy Master - ") + MasterModules::names[m], MasterModules::presets (m));
+        mp.browser.getCurrentValues = [this, m]
+        {
+            std::vector<std::pair<juce::String, float>> values;
+            for (auto& id : modulePresets[(size_t) m].ids)
+                values.push_back ({ id, easyProcessor.parameters.getRawParameterValue (id)->load() });
+            return values;
+        };
+        mp.browser.onPresetChosen = [this, m] (const Preset& preset) { applyModulePreset (m, &preset); };
+        for (auto* b : { &mp.pr, &mp.init })
+        {
+            b->setColour (juce::TextButton::buttonColourId, Palette::panel);
+            b->setColour (juce::TextButton::textColourOffId, b == &mp.init ? Palette::meterHigh : Palette::textBright);
+            b->setColour (juce::ComboBox::outlineColourId, b == &mp.init ? Palette::meterHigh : Palette::panelEdge);
+            addAndMakeVisible (*b);
+        }
+        mp.pr.onClick = [this, m] { showModuleMenu (m); };
+        mp.init.onClick = [this, m] { applyModulePreset (m, nullptr); };
+        const juce::String moduleName = juce::String (MasterModules::names[m]).toUpperCase();
+        addHint (mp.pr, moduleName + " - Pr", "This module's own presets: they change only the " + moduleName
+                 + " and leave the rest of the chain as it is. Save your own from the same menu.");
+        addHint (mp.init, moduleName + " - INIT", "Puts only the " + moduleName + " back to its default settings; the rest of the chain stays as it is.");
+        mp.name.setFont (juce::Font (juce::FontOptions (11.5f)));
+        mp.name.setColour (juce::Label::textColourId, Palette::accent);
+        mp.name.setJustificationType (juce::Justification::centredRight);
+        mp.name.setText (masterProcessor.modulePresetNames[(size_t) m], juce::dontSendNotification);
+        addAndMakeVisible (mp.name);
+    }
+
     addAndMakeVisible (display);
     addHint (display, "WHAT IT'S DOING", displayHint);
     addAndMakeVisible (tamerDisplay);
@@ -843,9 +996,75 @@ EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioP
     refreshLiveDisplays();
 }
 
+void EasyMasterAudioProcessorEditor::applyModulePreset (int module, const Preset* preset)
+{
+    // Only this module's settings: the ones the preset gives, the rest of the module back to its defaults
+    auto& mp = modulePresets[(size_t) module];
+    for (auto& id : mp.ids)
+        if (auto* param = easyProcessor.parameters.getParameter (id))
+        {
+            float normalised = param->getDefaultValue();
+            if (preset != nullptr)
+                for (auto& [pid, value] : preset->values)
+                    if (pid == id) normalised = param->convertTo0to1 (value);
+            param->beginChangeGesture();
+            param->setValueNotifyingHost (normalised);
+            param->endChangeGesture();
+        }
+    const auto shownName = preset != nullptr ? preset->name : juce::String();
+    masterProcessor.modulePresetNames[(size_t) module] = shownName;
+    mp.name.setText (shownName, juce::dontSendNotification);
+    knobMoved();
+    showParts();
+}
+
+void EasyMasterAudioProcessorEditor::showModuleMenu (int module)
+{
+    auto& mp = modulePresets[(size_t) module];
+    auto menu = mp.browser.buildMenu();
+    juce::Component::SafePointer<EasyMasterAudioProcessorEditor> safe (this);
+    menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&mp.pr).withMinimumWidth (200), [safe, module] (int result)
+    {
+        if (safe == nullptr || result == 0) return;
+        auto& b = safe->modulePresets[(size_t) module].browser;
+        if (result != PresetBrowser::saveItem) { b.handleMenuResult (result); return; }
+
+        // Saving your own: name it
+        auto* box = new juce::AlertWindow ("Save " + juce::String (MasterModules::names[module]) + " preset", "Name your preset:", juce::MessageBoxIconType::NoIcon);
+        box->addTextEditor ("name", {});
+        box->addButton ("SAVE", 1, juce::KeyPress (juce::KeyPress::returnKey));
+        box->addButton ("CANCEL", 0, juce::KeyPress (juce::KeyPress::escapeKey));
+        box->enterModalState (true, juce::ModalCallbackFunction::create ([safe, module, box] (int button)
+        {
+            const auto name = box->getTextEditorContents ("name").trim();
+            if (safe == nullptr || button != 1 || name.isEmpty()) return;
+            auto& br = safe->modulePresets[(size_t) module].browser;
+            const auto savedAs = br.saveUserPreset (name);
+            safe->masterProcessor.modulePresetNames[(size_t) module] = savedAs;
+            safe->modulePresets[(size_t) module].name.setText (savedAs, juce::dontSendNotification);
+        }), true);
+    });
+}
+
+void EasyMasterAudioProcessorEditor::placeModuleButtons (int module, juce::Rectangle<int> panel)
+{
+    // Top right of the module's panel, on its caption line: the module preset's name, INIT, Pr
+    auto& mp = modulePresets[(size_t) module];
+    auto row = juce::Rectangle<int> (panel.getX(), panel.getY() + 6, panel.getWidth() - 10, 24);
+    mp.pr.setBounds (row.removeFromRight (34));
+    row.removeFromRight (6);
+    mp.init.setBounds (row.removeFromRight (48));
+    row.removeFromRight (8);
+    mp.name.setBounds (row.removeFromRight (juce::jmin (260, row.getWidth() / 2)));
+}
+
 std::vector<juce::Component*> EasyMasterAudioProcessorEditor::pageComponents (int page)
 {
     std::vector<juce::Component*> list;
+    const int module = page == tamerPage ? MasterModules::tamer : (page == eqPage ? MasterModules::eq : MasterModules::comp);
+    for (juce::Component* c : { (juce::Component*) &modulePresets[(size_t) module].pr, (juce::Component*) &modulePresets[(size_t) module].init,
+                                (juce::Component*) &modulePresets[(size_t) module].name })
+        list.push_back (c);
     const auto addKnobs = [&] (int from, int to) { for (int k = from; k <= to; ++k) { list.push_back (&knobs[(size_t) k].slider); list.push_back (&knobs[(size_t) k].label); } };
     if (page == eqPage)
     {
@@ -982,7 +1201,7 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
 
     drawPanel (g, inputPanel, "1", "INPUT");
     drawPanel (g, metersPanel, {}, "METERS");
-    drawPanel (g, limiterPanel, "", "LIMITER");
+    drawPanel (g, limiterPanel, "5", "LIMITER");
     drawPanel (g, comparePanel, "", "COMPARE");
 
     const auto rowName = [&g] (juce::Rectangle<int> r, const juce::String& name, const juce::String& under, juce::Colour c, bool lit)
@@ -1200,6 +1419,9 @@ void EasyMasterAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
         placeKnob (knobs[tFromKnob], fromArea, knobSizeFor (fromArea, 56));
         placeKnob (knobs[tToKnob], shared, knobSizeFor (shared, 56));
     }
+    for (int m : { (int) MasterModules::tamer, (int) MasterModules::eq, (int) MasterModules::comp })
+        placeModuleButtons (m, pagePanel);
+    placeModuleButtons (MasterModules::limiter, limiterPanel);
     showParts();
 }
 
