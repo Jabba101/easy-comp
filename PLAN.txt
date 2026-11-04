@@ -807,3 +807,14 @@ FUTURE IDEAS (brainstorm, not scheduled)
      a real drum track into tuned resonators (sympathetic strings, a
      shell or room ring, a tuned body for thin toms). Hardest: cymbals
      (dense, non-linear).
+
+FUTURE IDEAS (brainstorm, 4 November 2026)
+   - PHYSICALLY MODELLED INSTRUMENTS / RESONATORS (user's idea): sound
+     made by simulating vibrating objects, not samples - a fraction of
+     the computer power and memory. Possible first steps: (1) a modelled
+     DRUM voice (modal resonators for membrane + shell, a noise burst for
+     the stick/beater, snare wires), MIDI-played; (2) a RESONATOR EFFECT
+     that rings along with what goes in (a tuned shell under a kick or
+     snare, sympathetic strings, a body for a DI'd guitar), using Easy
+     Trans's hit detection; (3) plucked/struck strings (waveguides).
+     Cymbals are the hard part (chaotic, non-linear) - leave till last.
