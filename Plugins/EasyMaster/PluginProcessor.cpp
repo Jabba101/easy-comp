@@ -29,6 +29,27 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyMasterAudioProcessor::cr
 
     layout.add (makeKnob (trim, 1, "Input Trim", trimRange, d.trimDb, Format::signedDecibels));
 
+    // RESONANCE TAMER
+    {
+        juce::NormalisableRange<float> amountRange (0.0f, 12.0f, 0.1f);
+        juce::NormalisableRange<float> percentRange (0.0f, 100.0f, 1.0f);
+        juce::NormalisableRange<float> fromRange (40.0f, 12000.0f, 1.0f);  fromRange.setSkewForCentre (800.0f);
+        juce::NormalisableRange<float> toRange (1000.0f, 20000.0f, 1.0f);  toRange.setSkewForCentre (6000.0f);
+        const auto& t = d.tamer;
+        layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { tamerOn, 2 }, "Tamer On", t.on != 0));
+        choice (tamerMode, "Tamer Mode", { "Stereo", "Mid + Side" }, t.midSide);
+        layout.add (makeKnob (tMidAmount,  2, "Tamer Mid Amount",       amountRange,  t.midAmount,  Format::decibels));
+        layout.add (makeKnob (tMidSens,    2, "Tamer Mid Sensitivity",  percentRange, t.midSens,    Format::percent));
+        layout.add (makeKnob (tMidSharp,   2, "Tamer Mid Sharpness",    percentRange, t.midSharp,   Format::percent));
+        layout.add (makeKnob (tSideAmount, 2, "Tamer Side Amount",      amountRange,  t.sideAmount, Format::decibels));
+        layout.add (makeKnob (tSideSens,   2, "Tamer Side Sensitivity", percentRange, t.sideSens,   Format::percent));
+        layout.add (makeKnob (tSideSharp,  2, "Tamer Side Sharpness",   percentRange, t.sideSharp,  Format::percent));
+        layout.add (makeKnob (tSpeed,      2, "Tamer Speed",            percentRange, t.speed,      Format::percent));
+        layout.add (makeKnob (tFrom,       2, "Tamer From",             fromRange,    t.fromHz,     Format::hertz, Format::hertzFromText));
+        layout.add (makeKnob (tTo,         2, "Tamer To",               toRange,      t.toHz,       Format::hertz, Format::hertzFromText));
+        layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { tListen, 2 }, "Tamer Listen", false));
+    }
+
     layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { compOn, 1 }, "Compressor On", d.compOn != 0));
     choice (compMode, "Compressor Mode", { "Stereo", "Mid + Side" }, d.mode);
     layout.add (makeKnob (midThreshold, 1, "Mid Threshold", thresholdRange, d.midThreshold, Format::decibels));
@@ -67,6 +88,8 @@ EasyMasterAudioProcessor::EasyMasterAudioProcessor()
     ignoreValue = v (ignoreBelow); reactsValue = v (reactsTo); characterValue = v (character);
     limitGainValue = v (limitGain); ceilingValue = v (ceiling); releaseModeValue = v (releaseMode); releaseValue = v (release);
     matchValue = v (match); listenValue = v (listen); bypassValue = v (CommonIDs::bypass);
+    tamerValues = { v (tamerOn), v (tamerMode), v (tMidAmount), v (tMidSens), v (tMidSharp), v (tSideAmount), v (tSideSens), v (tSideSharp),
+                    v (tSpeed), v (tFrom), v (tTo), v (tListen) };
     midValues  = { v (midThreshold),  v (midRatio),  v (midAttack),  v (midRelease),  v (midMakeup) };
     sideValues = { v (sideThreshold), v (sideRatio), v (sideAttack), v (sideRelease), v (sideMakeup) };
 }
@@ -97,6 +120,21 @@ Compressor::Settings EasyMasterAudioProcessor::compressorSettings (bool side) co
     return s;
 }
 
+ResonanceTamer::Settings EasyMasterAudioProcessor::tamerSettings() const noexcept
+{
+    ResonanceTamer::Settings s;
+    const auto& t = tamerValues;
+    s.bypassed = t[0]->load() < 0.5f || bypassValue->load() > 0.5f;
+    s.midSide = juce::roundToInt (t[1]->load()) == MasterMode::midSide;
+    s.mid  = { t[2]->load(), t[3]->load() / 100.0f, t[4]->load() / 100.0f };
+    s.side = { t[5]->load(), t[6]->load() / 100.0f, t[7]->load() / 100.0f };
+    s.speed = t[8]->load() / 100.0f;
+    s.fromHz = t[9]->load();
+    s.toHz = juce::jmax (t[10]->load(), s.fromHz * 1.25f);
+    s.listen = t[11]->load() > 0.5f && ! s.bypassed;
+    return s;
+}
+
 TruePeakLimiter::Settings EasyMasterAudioProcessor::limiterSettings() const noexcept
 {
     TruePeakLimiter::Settings s;
@@ -115,6 +153,7 @@ void EasyMasterAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     midComp.prepare (sampleRate, compressorSettings (false));
     sideComp.prepare (sampleRate, compressorSettings (true));
     limiter.prepare (sampleRate, 2, limiterSettings());
+    tamer.prepare (sampleRate, tamerSettings());
     loudness.prepare (sampleRate);
     originalLoudness.prepare (sampleRate);
     mid.setSize (1, block);
@@ -137,7 +176,7 @@ void EasyMasterAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     modeChanging = false;
     modeFade = 1.0f;
 
-    latency = limiter.getLatencySamples();
+    latency = tamer.getLatencySamples() + limiter.getLatencySamples();
     setLatencySamples (latency);
     for (auto& d : dryDelay)
         d.assign ((size_t) juce::jmax (1, latency), 0.0f);
@@ -216,7 +255,9 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     const int total = buffer.getNumSamples();
     if (buffer.getNumChannels() < 2)
     {
-        // (a mono master: just the limiter's safety, no stereo parts)
+        // (a mono master: the tamer and the limiter's safety, no stereo parts - the same delay)
+        tamer.setSettings (tamerSettings());
+        tamer.process (buffer);
         limiter.setSettings (limiterSettings());
         limiter.process (buffer, 1);
         return;
@@ -227,6 +268,7 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     midComp.setSettings (compressorSettings (false));
     sideComp.setSettings (compressorSettings (true));
     limiter.setSettings (limiterSettings());
+    tamer.setSettings (tamerSettings());
     trimGain.setTargetValue (juce::Decibels::decibelsToGain (trimValue->load()));
     bypassFade.setTargetValue (bypassValue->load() > 0.5f ? 1.0f : 0.0f);
     const int listening = juce::roundToInt (listenValue->load());
@@ -274,6 +316,11 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             part.getWritePointer (0)[i] *= g;
             part.getWritePointer (1)[i] *= g;
         }
+
+        // RESONANCE TAMER (always running, so the delay never changes; switched off it passes the sound straight through)
+        tamer.process (part);
+        nowTamerCut[0].store (tamerValues[0]->load() > 0.5f ? tamer.getMostCutDb (0) : 0.0f);
+        nowTamerCut[1].store (tamerValues[0]->load() > 0.5f ? tamer.getMostCutDb (1) : 0.0f);
 
         // COMPRESSOR
         compress (part, n);
@@ -355,7 +402,23 @@ EasyMasterAudioProcessor::Readings EasyMasterAudioProcessor::getReadings() const
     r.sideCut = nowSideCut.load();
     r.limitCut = nowLimitCut.load();
     r.matchDb = matchDb.load();
+    r.tamerMidCut = nowTamerCut[0].load();
+    r.tamerSideCut = nowTamerCut[1].load();
     return r;
+}
+
+EasyMasterAudioProcessor::TamerPicture EasyMasterAudioProcessor::getTamerPicture() const noexcept
+{
+    TamerPicture p;
+    for (int part = 0; part < 2; ++part)
+        for (int b = 0; b < ResonanceTamer::numBands; ++b)
+        {
+            p.levelDb[(size_t) part][(size_t) b] = tamer.getBandLevelDb (part, b);
+            p.cutDb[(size_t) part][(size_t) b] = tamer.getBandCutDb (part, b);
+        }
+    for (int b = 0; b < ResonanceTamer::numBands; ++b)
+        p.centreHz[(size_t) b] = tamer.getBandCentreHz (b);
+    return p;
 }
 
 //==============================================================================

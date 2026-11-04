@@ -25,26 +25,43 @@ private:
 };
 
 //==============================================================================
+/** The RESONANCE TAMER page's display: the mix a sixth of an octave at a
+    time, and from the top how much each spot is turned down. */
+class TamerDisplay : public juce::Component
+{
+public:
+    void setPicture (const EasyMasterAudioProcessor::TamerPicture&, bool midSide, bool on, float fromHz, float toHz, bool bypassed);
+    void paint (juce::Graphics&) override;
+
+private:
+    EasyMasterAudioProcessor::TamerPicture picture;
+    std::array<std::array<float, ResonanceTamer::numBands>, 2> shownLevel {};
+    bool midSide = false, on = true, bypassed = false;
+    float fromHz = 200.0f, toHz = 16000.0f;
+};
+
+//==============================================================================
 /** The readings: LUFS momentary / short-term / integrated, the highest true
     peak, PLR, stereo correlation, and how much each part turns down now.
     Click it to reset the integrated LUFS and the highest peak. */
 class MasterMeters : public juce::Component
 {
 public:
-    void setReadings (const EasyMasterAudioProcessor::Readings&, bool midSide, bool compOn);
+    void setReadings (const EasyMasterAudioProcessor::Readings&, bool midSide, bool compOn, bool tamerOn);
     void paint (juce::Graphics&) override;
     std::function<void()> onReset;
     void mouseDown (const juce::MouseEvent&) override   { if (onReset) onReset(); }
 
 private:
     EasyMasterAudioProcessor::Readings r;
-    float shownMid = 0.0f, shownSide = 0.0f, shownLimit = 0.0f;
-    bool midSide = false, compOn = true;
+    float shownMid = 0.0f, shownSide = 0.0f, shownLimit = 0.0f, shownTamer = 0.0f;
+    bool midSide = false, compOn = true, tamerOn = true;
 };
 
 //==============================================================================
-/** The Easy Master window: the chain along the top, the display and the
-    meters, then INPUT, COMPRESSOR, LIMITER and COMPARE. */
+/** The Easy Master window: the chain along the top (click a stage to show
+    its page: its own display and controls), INPUT on the left, the page in
+    the middle, and the METERS, LIMITER and COMPARE always on the right. */
 class EasyMasterAudioProcessorEditor : public EasyWindow
 {
 public:
@@ -53,7 +70,14 @@ public:
     enum KnobIndex { trimKnob,
                      midThresholdKnob, midRatioKnob, midAttackKnob, midReleaseKnob, midMakeupKnob,
                      sideThresholdKnob, sideRatioKnob, sideAttackKnob, sideReleaseKnob, sideMakeupKnob,
-                     mixKnob, ignoreKnob, gainKnob, ceilingKnob, releaseKnob, numKnobs };
+                     mixKnob, ignoreKnob, gainKnob, ceilingKnob, releaseKnob,
+                     tMidAmountKnob, tMidSensKnob, tMidSharpKnob, tSideAmountKnob, tSideSensKnob, tSideSharpKnob,
+                     tSpeedKnob, tFromKnob, tToKnob, numKnobs };
+
+    /** The pages the chain along the top switches between. */
+    enum Page { tamerPage = 0, compPage, numPages };
+    void showPage (int page);
+    int getShownPage() const noexcept          { return shownPage; }
 
     juce::Slider& getKnob (int index)          { return knobs[(size_t) index].slider; }
     bool isKnobShowing (int index) const       { return knobs[(size_t) index].slider.isVisible(); }
@@ -68,6 +92,8 @@ private:
     void paintBody (juce::Graphics&) override;
     void refreshLiveDisplays() override;
     void showParts();
+    void mouseDown (const juce::MouseEvent&) override;
+    std::vector<juce::Component*> pageComponents (int page);
 
     struct Knob
     {
@@ -89,11 +115,19 @@ private:
     juce::TextButton copyButton { "COPY" };
     juce::Label matchInfo, inputWarning, listenLabel, abLabel;
     MasterDisplay display;
+    TamerDisplay tamerDisplay;
+    LightButton tamerOnButton { "ON", Palette::meterLow }, tamerListenButton { "LISTEN: REMOVED ONLY", Palette::meterMid };
+    std::unique_ptr<juce::ButtonParameterAttachment> tamerOnAttachment, tamerListenAttachment;
+    ChoiceSwitch tamerModeSwitch;
+    juce::Rectangle<int> tamerMidName, tamerSideName, pagePanel, pageDisplayPanel;
+    std::array<juce::Rectangle<float>, 9> chainBoxes;
+    int shownPage = compPage;
+    bool shownTamerMidSide = false, shownTamerOn = true;
     MasterMeters meters;
     std::vector<EasyMasterAudioProcessor::Moment> incoming;
     bool shownMidSide = false, shownCompOn = true;
 
-    juce::Rectangle<int> midRowName, sideRowName, chainArea, displayPanel, metersPanel, inputPanel, compPanel, limiterPanel, comparePanel;
+    juce::Rectangle<int> midRowName, sideRowName, chainArea, metersPanel, inputPanel, limiterPanel, comparePanel;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EasyMasterAudioProcessorEditor)
 };

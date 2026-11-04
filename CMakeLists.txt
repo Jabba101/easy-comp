@@ -301,17 +301,20 @@ add_easy_plugin(EasyLimiter
 add_easy_plugin(EasyMaster
     NAME        "Easy Master"
     CODE        Ezms
-    VERSION     1.0.0
+    VERSION     1.1.0
     BUNDLE_ID   com.homestudio.easymaster
     CATEGORIES  Fx Dynamics Mastering
     SOURCES     Effects/Compressor.h
                 Effects/TruePeakLimiter.h
                 Effects/LoudnessMeter.h
+                Effects/ResonanceTamer.h
                 Plugins/EasyMaster/Presets.h
                 Plugins/EasyMaster/PluginProcessor.h
                 Plugins/EasyMaster/PluginProcessor.cpp
                 Plugins/EasyMaster/PluginEditor.h
                 Plugins/EasyMaster/PluginEditor.cpp)
+
+target_link_libraries(EasyMaster PRIVATE pffft)
 
 add_easy_plugin(EasyUnbleed
     NAME        "Easy Unbleed"

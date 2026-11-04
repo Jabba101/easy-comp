@@ -5,6 +5,16 @@ namespace
 {
     struct KnobInfo { const char* parameterID; const char* name; const char* hint; };
 
+    constexpr const char* tamerAmountHint =
+        "The most it will turn any spot down. 2-4 dB is usually plenty on a master; 6 dB and more for harsh or boxy mixes "
+        "(and AI-made songs). It only acts where something sticks out - more AMOUNT doesn't mean more of the time.";
+    constexpr const char* tamerSensHint =
+        "How little a spot has to stick out above the sound around it before it's turned down. Higher catches more, "
+        "smaller bumps; too high starts to dull the mix. Check with LISTEN.";
+    constexpr const char* tamerSharpHint =
+        "SHARP (high): only narrow, ringing spots - a whistling resonance, a ringing snare, a honk. SOFT (low): broader "
+        "areas too - boxiness, harshness spread over a range.";
+
     constexpr const char* thresholdHint =
         "Where the compressor starts to work. For glue on a master, set it so the meter shows 1-3 dB of turning down on the "
         "loud parts - more than about 4 dB and you'll hear it squeeze.";
@@ -51,6 +61,20 @@ namespace
         { MasterIDs::release, "RELEASE",
           "With RELEASE on SET: how quickly the limiter lets go. AUTO is almost always best (quick after a lone peak, "
           "slower through a sustained passage - no pumping, no distortion)." },
+        { MasterIDs::tMidAmount,  "AMOUNT",      tamerAmountHint },
+        { MasterIDs::tMidSens,    "SENSITIVITY", tamerSensHint },
+        { MasterIDs::tMidSharp,   "SHARPNESS",   tamerSharpHint },
+        { MasterIDs::tSideAmount, "AMOUNT",      tamerAmountHint },
+        { MasterIDs::tSideSens,   "SENSITIVITY", tamerSensHint },
+        { MasterIDs::tSideSharp,  "SHARPNESS",   tamerSharpHint },
+        { MasterIDs::tSpeed, "SPEED",
+          "How quickly it reacts to a spot that rings out, and lets go after. Fast (low) catches a single note that rings; "
+          "slow (high) is smoother and acts more like a gentle, moving EQ." },
+        { MasterIDs::tFrom, "FROM",
+          "The lowest frequency it works on (soft edge). 200 Hz by default: low notes are music, not resonances. Lower it "
+          "for a boomy room or a bass note that booms." },
+        { MasterIDs::tTo, "TO",
+          "The highest frequency it works on (soft edge). Set FROM 4 kHz and TO 16 kHz to work only on harshness and fizz." },
     }};
 
     constexpr const char* gettingStartedHint =
@@ -86,8 +110,18 @@ namespace
     constexpr const char* initAllHint =
         "Puts every setting back to its default (the 'Default settings' preset). BYPASS, MATCH and LISTEN stay as they are.";
     constexpr const char* chainHint =
-        "The order the sound goes through. Lit = here now; dim = coming in later stages (resonance tamer, EQ, multiband, "
-        "punch and width), each in its place.";
+        "The order the sound goes through. Click a stage to show its controls and its own display below. Dim = coming in "
+        "later stages, each in its place. INPUT, LIMITER and the meters are always on screen.";
+    constexpr const char* tamerOnHint = "Switches the resonance tamer on or off (the rest of the chain keeps working).";
+    constexpr const char* tamerModeHint =
+        "STEREO: one set of cuts for the whole mix, the same on left and right - the stereo picture can't move. MID + SIDE: "
+        "the middle and the sides each have their own settings (green and blue rows) and their own cuts.";
+    constexpr const char* tamerListenHint =
+        "Plays only what the tamer is taking out. It should sound thin, ringing and harsh - the bits you wanted gone - "
+        "never like whole instruments. Switch it off when you're done.";
+    constexpr const char* tamerDisplayHint =
+        "The mix right now, a sixth of an octave at a time (amber = middle or both, blue = sides in MID + SIDE), and from "
+        "the top, how much each spot is being turned down. The shaded ends are outside FROM / TO.";
 
     constexpr float topDb = 2.0f, bottomDb = -30.0f, cutScaleDb = 12.0f;
     const juce::Colour midColour = Palette::meterLow;
@@ -275,14 +309,15 @@ void MasterDisplay::paint (juce::Graphics& g)
 }
 
 //==============================================================================
-void MasterMeters::setReadings (const EasyMasterAudioProcessor::Readings& readings, bool ms, bool on)
+void MasterMeters::setReadings (const EasyMasterAudioProcessor::Readings& readings, bool ms, bool on, bool tamerIsOn)
 {
     r = readings;
-    midSide = ms; compOn = on;
+    midSide = ms; compOn = on; tamerOn = tamerIsOn;
     const auto follow = [] (float& shown, float now) { shown = now > shown ? now : shown + 0.25f * (now - shown); };
     follow (shownMid, on ? r.midCut : 0.0f);
     follow (shownSide, on ? r.sideCut : 0.0f);
     follow (shownLimit, r.limitCut);
+    follow (shownTamer, tamerIsOn ? juce::jmax (r.tamerMidCut, r.tamerSideCut) : 0.0f);
     repaint();
 }
 
@@ -363,6 +398,7 @@ void MasterMeters::paint (juce::Graphics& g)
         g.setColour (active ? Palette::textBright : Palette::textDim.withAlpha (0.5f));
         g.drawText (active ? juce::String (db, 1) + " dB" : juce::String ("off"), value, juce::Justification::centredRight, false);
     };
+    cutBar ("TAMER (deepest)", shownTamer, Palette::accent, tamerOn);
     cutBar (midSide ? "COMPRESSOR MID" : "COMPRESSOR", shownMid, midColour, compOn);
     cutBar ("COMPRESSOR SIDE", shownSide, sideColour, compOn && midSide);
     cutBar ("LIMITER", shownLimit, Palette::meterHigh, true);
@@ -370,6 +406,149 @@ void MasterMeters::paint (juce::Graphics& g)
     g.setColour (Palette::textDim);
     g.setFont (juce::Font (juce::FontOptions (11.0f)));
     g.drawText ("click to reset INTEGRATED and the peak", area.removeFromBottom (14.0f), juce::Justification::centredRight, false);
+}
+
+//==============================================================================
+void TamerDisplay::setPicture (const EasyMasterAudioProcessor::TamerPicture& p, bool ms, bool isOn, float from, float to, bool isBypassed)
+{
+    picture = p;
+    midSide = ms; on = isOn; fromHz = from; toHz = to; bypassed = isBypassed;
+    for (int part = 0; part < 2; ++part)
+        for (int b = 0; b < ResonanceTamer::numBands; ++b)
+        {
+            auto& shown = shownLevel[(size_t) part][(size_t) b];
+            const float now = p.levelDb[(size_t) part][(size_t) b];
+            shown = now > shown ? now : shown + 0.25f * (now - shown);
+        }
+    repaint();
+}
+
+void TamerDisplay::paint (juce::Graphics& g)
+{
+    const auto area = getLocalBounds().toFloat();
+    g.setColour (Palette::background);
+    g.fillRoundedRectangle (area, 6.0f);
+    auto plot = area.reduced (14.0f, 12.0f).withTrimmedLeft (34.0f).withTrimmedBottom (40.0f);
+    const auto cutLane = plot.removeFromTop (plot.getHeight() * 0.32f);
+    plot.removeFromTop (8.0f);
+    const int bands = ResonanceTamer::numBands;
+    const float slot = plot.getWidth() / (float) bands;
+    constexpr float levelTop = 0.0f, levelRange = 72.0f, cutRange = 12.0f;
+    const auto levelY = [&] (float db) { return plot.getBottom() - plot.getHeight() * juce::jlimit (0.0f, 1.0f, (db - (levelTop - levelRange)) / levelRange); };
+    const auto cutH = [&] (float db) { return cutLane.getHeight() * juce::jlimit (0.0f, 1.0f, db / cutRange); };
+
+    g.setFont (juce::Font (juce::FontOptions (11.0f)));
+    for (float db : { -24.0f, -48.0f })
+    {
+        g.setColour (Palette::panelEdge);
+        g.drawHorizontalLine (juce::roundToInt (levelY (db)), plot.getX(), plot.getRight());
+        g.setColour (Palette::textDim);
+        g.drawText (juce::String ((int) db), juce::Rectangle<float> (plot.getX() - 36.0f, levelY (db) - 7.0f, 32.0f, 14.0f), juce::Justification::centredRight, false);
+    }
+    g.setColour (Palette::panel.withAlpha (0.6f));
+    g.fillRect (cutLane);
+    for (float db : { 0.0f, 6.0f, 12.0f })
+    {
+        const float y = cutLane.getY() + cutH (db);
+        g.setColour (Palette::panelEdge);
+        g.drawHorizontalLine (juce::roundToInt (y), cutLane.getX(), cutLane.getRight());
+        g.setColour (Palette::textDim);
+        g.drawText (db < 0.5f ? juce::String ("0") : "-" + juce::String ((int) db), juce::Rectangle<float> (cutLane.getX() - 36.0f, y - 7.0f, 32.0f, 14.0f),
+                    juce::Justification::centredRight, false);
+    }
+
+    for (int b = 0; b < bands; ++b)
+    {
+        const float x = plot.getX() + slot * (float) b;
+        const float hz = picture.centreHz[(size_t) b];
+        const bool inRange = hz >= fromHz * 0.89f && hz <= toHz * 1.12f;
+        const float w = juce::jmax (2.0f, slot - 2.0f);
+        // Levels: the middle (or both) in amber, the sides in blue beside it (MID + SIDE)
+        const float ym = levelY (shownLevel[0][(size_t) b]);
+        if (midSide)
+        {
+            const float ys = levelY (shownLevel[1][(size_t) b]);
+            g.setColour (Palette::accent.withAlpha (0.8f));
+            g.fillRect (juce::Rectangle<float> (x + 1.0f, ym, w * 0.5f, plot.getBottom() - ym));
+            g.setColour (sideColour.withAlpha (0.8f));
+            g.fillRect (juce::Rectangle<float> (x + 1.0f + w * 0.5f, ys, w * 0.5f, plot.getBottom() - ys));
+        }
+        else
+        {
+            g.setColour (Palette::accent.withAlpha (0.8f));
+            g.fillRect (juce::Rectangle<float> (x + 1.0f, ym, w, plot.getBottom() - ym));
+        }
+        // Cuts, hanging from the top of their lane
+        if (on && ! bypassed)
+        {
+            const float cm = cutH (picture.cutDb[0][(size_t) b]);
+            if (midSide)
+            {
+                const float cs = cutH (picture.cutDb[1][(size_t) b]);
+                g.setColour (Palette::meterHigh.withAlpha (0.8f));
+                g.fillRect (juce::Rectangle<float> (x + 1.0f, cutLane.getY(), w * 0.5f, cm));
+                g.setColour (sideColour.interpolatedWith (Palette::meterHigh, 0.35f));
+                g.fillRect (juce::Rectangle<float> (x + 1.0f + w * 0.5f, cutLane.getY(), w * 0.5f, cs));
+            }
+            else
+            {
+                g.setColour (Palette::meterHigh.withAlpha (0.8f));
+                g.fillRect (juce::Rectangle<float> (x + 1.0f, cutLane.getY(), w, cm));
+            }
+        }
+        if (! inRange)   // (outside FROM / TO: shaded over)
+        {
+            g.setColour (Palette::background.withAlpha (0.7f));
+            g.fillRect (juce::Rectangle<float> (x, cutLane.getY(), slot, plot.getBottom() - cutLane.getY()));
+        }
+    }
+
+    // Frequencies along the bottom
+    g.setColour (Palette::textDim);
+    g.setFont (juce::Font (juce::FontOptions (11.0f)));
+    for (float hz : { 100.0f, 200.0f, 500.0f, 1000.0f, 2000.0f, 5000.0f, 10000.0f })
+    {
+        const float b = 6.0f * std::log2 (hz / 50.0f);
+        const float x = plot.getX() + slot * (b + 0.5f);
+        g.drawText (hz >= 1000.0f ? juce::String ((int) (hz / 1000.0f)) + "k" : juce::String ((int) hz),
+                    juce::Rectangle<float> (x - 20.0f, plot.getBottom() + 3.0f, 40.0f, 14.0f), juce::Justification::centred, false);
+    }
+    const auto laneName = [&g] (juce::Rectangle<float> lane, const juce::String& name)
+    {
+        const auto tag = juce::Rectangle<float> (lane.getX() + 4.0f, lane.getBottom() - 18.0f, (float) name.length() * 7.2f + 12.0f, 15.0f);
+        g.setColour (Palette::background.withAlpha (0.85f));
+        g.fillRoundedRectangle (tag, 3.0f);
+        g.setColour (Palette::textDim);
+        g.setFont (juce::Font (juce::FontOptions (10.5f, juce::Font::bold)));
+        g.drawText (name, tag, juce::Justification::centred, false);
+    };
+    laneName (cutLane, "TURNING DOWN");
+    laneName (plot, "THE MIX NOW");
+
+    auto key = juce::Rectangle<float> (plot.getX(), plot.getBottom() + 20.0f, plot.getWidth(), 16.0f);
+    g.setFont (juce::Font (juce::FontOptions (12.0f)));
+    const auto item = [&] (juce::Colour c, const juce::String& t, float w)
+    {
+        g.setColour (c);
+        g.fillRect (key.removeFromLeft (12.0f).withSizeKeepingCentre (12.0f, 10.0f));
+        key.removeFromLeft (6.0f);
+        g.setColour (Palette::textDim);
+        g.drawText (t, key.removeFromLeft (w), juce::Justification::centredLeft, false);
+        key.removeFromLeft (12.0f);
+    };
+    item (Palette::accent, midSide ? "middle" : "the mix", midSide ? 50.0f : 56.0f);
+    if (midSide) item (sideColour, "sides", 40.0f);
+    item (Palette::meterHigh.withAlpha (0.8f), midSide ? "middle turned down" : "turned down", midSide ? 120.0f : 80.0f);
+    if (midSide) item (sideColour.interpolatedWith (Palette::meterHigh, 0.35f), "sides turned down", 120.0f);
+
+    if (bypassed || ! on)
+    {
+        g.setColour (Palette::background.withAlpha (0.6f));
+        g.fillRect (cutLane);
+        g.setColour (Palette::textDim);
+        g.setFont (juce::Font (juce::FontOptions (14.0f, juce::Font::bold)));
+        g.drawText (bypassed ? "BYPASSED" : "THE TAMER IS OFF", cutLane, juce::Justification::centred, false);
+    }
 }
 
 //==============================================================================
@@ -381,6 +560,7 @@ EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioP
       characterSwitch (*p.parameters.getParameter (MasterIDs::character), { "MODERN", "VINTAGE" }, Palette::accent),
       releaseSwitch (*p.parameters.getParameter (MasterIDs::releaseMode), { "AUTO", "SET" }, Palette::accent),
       listenSwitch (*p.parameters.getParameter (MasterIDs::listen), { "STEREO", "MID", "SIDE", "MONO" }, Palette::meterMid),
+      tamerModeSwitch (*p.parameters.getParameter (MasterIDs::tamerMode), { "STEREO", "MID + SIDE" }, Palette::accent),
       incoming ((size_t) MasterDisplay::numMoments)
 {
     for (size_t i = 0; i < knobs.size(); ++i)
@@ -390,14 +570,16 @@ EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioP
         knob.slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 96, 24);
         addAndMakeVisible (knob.slider);
         knob.label.setText (knobInfo[i].name, juce::dontSendNotification);
-        const bool big = i == gainKnob || i == midThresholdKnob || i == sideThresholdKnob;
+        const bool big = i == gainKnob || i == midThresholdKnob || i == sideThresholdKnob || i == tMidAmountKnob || i == tSideAmountKnob;
         knob.label.setFont (juce::Font (juce::FontOptions (big ? 15.0f : 13.0f, juce::Font::bold)));
         knob.label.setJustificationType (juce::Justification::centred);
         addAndMakeVisible (knob.label);
         knob.attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (easyProcessor.parameters, knobInfo[i].parameterID, knob.slider);
         knob.slider.onValueChange = [this] { knobMoved(); };
-        const bool side = i >= sideThresholdKnob && i <= sideMakeupKnob, mid = i >= midThresholdKnob && i <= midMakeupKnob;
-        const juce::String knobTitle = juce::String (side ? "SIDE " : (mid ? "MID " : "")) + knobInfo[i].name;
+        const bool side = (i >= sideThresholdKnob && i <= sideMakeupKnob) || (i >= tSideAmountKnob && i <= tSideSharpKnob);
+        const bool mid = (i >= midThresholdKnob && i <= midMakeupKnob) || (i >= tMidAmountKnob && i <= tMidSharpKnob);
+        const bool tamerKnob = i >= tMidAmountKnob;
+        const juce::String knobTitle = juce::String (tamerKnob ? "TAMER " : "") + (side ? "SIDE " : (mid ? "MID " : "")) + knobInfo[i].name;
         addHint (knob.slider, knobTitle, knobInfo[i].hint);
         addHint (knob.label, knobTitle, knobInfo[i].hint);
         if (side) knob.slider.setColour (juce::Slider::rotarySliderFillColourId, sideColour);
@@ -416,11 +598,21 @@ EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioP
     addAndMakeVisible (compOnButton);
     addHint (compOnButton, "COMPRESSOR ON", compOnHint);
 
-    for (auto* s : { &modeSwitch, &reactsSwitch, &characterSwitch, &listenSwitch })
+    tamerOnButton.setClickingTogglesState (true);
+    tamerOnAttachment = std::make_unique<juce::ButtonParameterAttachment> (*p.parameters.getParameter (MasterIDs::tamerOn), tamerOnButton);
+    addAndMakeVisible (tamerOnButton);
+    addHint (tamerOnButton, "TAMER ON", tamerOnHint);
+    tamerListenButton.setClickingTogglesState (true);
+    tamerListenAttachment = std::make_unique<juce::ButtonParameterAttachment> (*p.parameters.getParameter (MasterIDs::tListen), tamerListenButton);
+    addAndMakeVisible (tamerListenButton);
+    addHint (tamerListenButton, "TAMER - LISTEN", tamerListenHint);
+
+    for (auto* s : { &modeSwitch, &reactsSwitch, &characterSwitch, &listenSwitch, &tamerModeSwitch, &releaseSwitch })
         s->setHorizontal (true);
     for (auto [s, switchTitle, hint] : { std::tuple<ChoiceSwitch*, const char*, const char*> { &modeSwitch, "STEREO / MID + SIDE", modeHint },
                                    { &reactsSwitch, "REACTS TO", reactsHint }, { &characterSwitch, "CHARACTER", characterHint },
-                                   { &releaseSwitch, "LIMITER RELEASE", limitReleaseHint }, { &listenSwitch, "LISTEN", listenHint } })
+                                   { &releaseSwitch, "LIMITER RELEASE", limitReleaseHint }, { &listenSwitch, "LISTEN", listenHint },
+                                   { &tamerModeSwitch, "TAMER - STEREO / MID + SIDE", tamerModeHint } })
     {
         addAndMakeVisible (*s);
         s->onUserChange = [this] { knobMoved(); };
@@ -441,7 +633,7 @@ EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioP
     }
     listenLabel.setText ("LISTEN (for checking)", juce::dontSendNotification);
     listenLabel.setFont (juce::Font (juce::FontOptions (11.5f, juce::Font::bold)));
-    abLabel.setText ("COMPARE SETTINGS", juce::dontSendNotification);
+    abLabel.setText ("A / B", juce::dontSendNotification);
     abLabel.setFont (juce::Font (juce::FontOptions (11.5f, juce::Font::bold)));
     addHint (matchInfo, "MATCH", matchHint);
     addHint (listenLabel, "LISTEN", listenHint);
@@ -465,64 +657,130 @@ EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioP
 
     addAndMakeVisible (display);
     addHint (display, "WHAT IT'S DOING", displayHint);
+    addAndMakeVisible (tamerDisplay);
+    addHint (tamerDisplay, "WHAT THE TAMER IS DOING", tamerDisplayHint);
     addAndMakeVisible (meters);
     addHint (meters, "METERS", metersHint);
     meters.onReset = [this] { masterProcessor.resetMeters(); };
 
+    shownPage = juce::jlimit (0, numPages - 1, masterProcessor.shownPage);
     finishSetup (1680, 900);
 
     for (auto& knob : knobs)
         for (auto* child : knob.slider.getChildren())
             if (auto* box = dynamic_cast<juce::Label*> (child))
                 box->setEditable (false, true, false);
+    showPage (shownPage);
     refreshLiveDisplays();
+}
+
+std::vector<juce::Component*> EasyMasterAudioProcessorEditor::pageComponents (int page)
+{
+    std::vector<juce::Component*> list;
+    const auto addKnobs = [&] (int from, int to) { for (int k = from; k <= to; ++k) { list.push_back (&knobs[(size_t) k].slider); list.push_back (&knobs[(size_t) k].label); } };
+    if (page == tamerPage)
+    {
+        addKnobs (tMidAmountKnob, tToKnob);
+        for (juce::Component* c : { (juce::Component*) &tamerDisplay, (juce::Component*) &tamerOnButton, (juce::Component*) &tamerListenButton, (juce::Component*) &tamerModeSwitch })
+            list.push_back (c);
+    }
+    else
+    {
+        addKnobs (midThresholdKnob, ignoreKnob);
+        for (juce::Component* c : { (juce::Component*) &display, (juce::Component*) &compOnButton, (juce::Component*) &modeSwitch,
+                                    (juce::Component*) &reactsSwitch, (juce::Component*) &characterSwitch })
+            list.push_back (c);
+    }
+    return list;
+}
+
+void EasyMasterAudioProcessorEditor::showPage (int page)
+{
+    shownPage = juce::jlimit (0, numPages - 1, page);
+    masterProcessor.shownPage = shownPage;
+    for (int other = 0; other < numPages; ++other)
+        for (auto* c : pageComponents (other))
+            c->setVisible (other == shownPage);
+    showParts();
+    repaint();
+}
+
+void EasyMasterAudioProcessorEditor::mouseDown (const juce::MouseEvent& e)
+{
+    // The chain along the top: RESONANCE TAMER and COMPRESSOR are pages
+    const auto at = e.getEventRelativeTo (this).getPosition().toFloat();
+    if (chainBoxes[1].contains (at))      showPage (tamerPage);
+    else if (chainBoxes[4].contains (at)) showPage (compPage);
 }
 
 void EasyMasterAudioProcessorEditor::showParts()
 {
     // Both rows always showing; the SIDE row only works in MID + SIDE (in STEREO the top row does both)
-    const bool ms = masterProcessor.isMidSide();
-    const bool on = easyProcessor.parameters.getRawParameterValue (MasterIDs::compOn)->load() > 0.5f;
-    for (int k = midThresholdKnob; k <= ignoreKnob; ++k)
+    const auto& params = easyProcessor.parameters;
+    const bool ms = masterProcessor.isMidSide(), on = params.getRawParameterValue (MasterIDs::compOn)->load() > 0.5f;
+    const bool tms = masterProcessor.isTamerMidSide(), ton = params.getRawParameterValue (MasterIDs::tamerOn)->load() > 0.5f;
+    const auto dim = [&] (int from, int to, int sideFrom, int sideTo, bool isMs, bool isOn)
     {
-        const bool sideKnob = k >= sideThresholdKnob && k <= sideMakeupKnob;
-        const bool usable = on && (! sideKnob || ms);
-        knobs[(size_t) k].slider.setEnabled (! sideKnob || ms);
-        knobs[(size_t) k].slider.setAlpha (usable ? 1.0f : 0.3f);
-        knobs[(size_t) k].label.setAlpha (usable ? 1.0f : 0.3f);
-    }
-    repaint (compPanel);
+        for (int k = from; k <= to; ++k)
+        {
+            const bool sideKnob = k >= sideFrom && k <= sideTo;
+            const bool usable = isOn && (! sideKnob || isMs);
+            knobs[(size_t) k].slider.setEnabled (! sideKnob || isMs);
+            knobs[(size_t) k].slider.setAlpha (usable ? 1.0f : 0.3f);
+            knobs[(size_t) k].label.setAlpha (usable ? 1.0f : 0.3f);
+        }
+    };
+    dim (midThresholdKnob, ignoreKnob, sideThresholdKnob, sideMakeupKnob, ms, on);
+    dim (tMidAmountKnob, tToKnob, tSideAmountKnob, tSideSharpKnob, tms, ton);
+    repaint();
 }
 
 //==============================================================================
 void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
 {
-    // The chain
+    // The chain: the stages in order; the two pages can be clicked, the one showing is lit
     {
-        struct Stage { const char* name; bool built; };
-        const Stage stages[] { { "INPUT", true }, { "RESONANCE TAMER", false }, { "EQ", false }, { "MULTIBAND", false },
-                               { "COMPRESSOR", true }, { "PUNCH", false }, { "WIDTH", false }, { "LIMITER", true }, { "OUTPUT", true } };
+        struct Stage { const char* name; bool built; int page; };
+        const Stage stages[] { { "INPUT", true, -1 }, { "RESONANCE TAMER", true, tamerPage }, { "EQ", false, -1 }, { "MULTIBAND", false, -1 },
+                               { "COMPRESSOR", true, compPage }, { "PUNCH", false, -1 }, { "WIDTH", false, -1 }, { "LIMITER", true, -1 }, { "OUTPUT", true, -1 } };
+        const auto& params = easyProcessor.parameters;
+        const bool tamerOn = params.getRawParameterValue (MasterIDs::tamerOn)->load() > 0.5f;
+        const bool compOn = params.getRawParameterValue (MasterIDs::compOn)->load() > 0.5f;
         const int count = (int) std::size (stages);
         const float arrow = 18.0f;
         const float w = ((float) chainArea.getWidth() - arrow * (float) (count - 1)) / (float) count;
-        g.setFont (juce::Font (juce::FontOptions (12.0f, juce::Font::bold)));
         for (int i = 0; i < count; ++i)
         {
+            const auto& st = stages[i];
             const auto box = juce::Rectangle<float> ((float) chainArea.getX() + (float) i * (w + arrow), (float) chainArea.getY(), w, (float) chainArea.getHeight());
-            g.setColour (stages[i].built ? Palette::panel : Palette::background);
+            chainBoxes[(size_t) i] = box;
+            const bool showing = st.page >= 0 && st.page == shownPage;
+            g.setColour (showing ? Palette::accent.withAlpha (0.25f) : (st.built ? Palette::panel : Palette::background));
             g.fillRoundedRectangle (box, 6.0f);
-            g.setColour (stages[i].built ? Palette::accent.withAlpha (0.8f) : Palette::panelEdge);
-            g.drawRoundedRectangle (box.reduced (0.75f), 6.0f, 1.2f);
-            g.setColour (stages[i].built ? Palette::textBright : Palette::textDim.withAlpha (0.55f));
-            if (stages[i].built)
-                g.drawText (stages[i].name, box, juce::Justification::centred, false);
+            g.setColour (showing ? Palette::accent : (st.built ? Palette::accent.withAlpha (0.55f) : Palette::panelEdge));
+            g.drawRoundedRectangle (box.reduced (0.75f), 6.0f, showing ? 2.0f : 1.2f);
+            g.setColour (st.built ? Palette::textBright : Palette::textDim.withAlpha (0.55f));
+            g.setFont (juce::Font (juce::FontOptions (12.0f, juce::Font::bold)));
+            auto b = box.reduced (4.0f, 4.0f);
+            if (st.page >= 0)
+            {
+                // (a page: its name, a lamp for on / off, and "click to show" until it's showing)
+                const bool isOn = st.page == tamerPage ? tamerOn : compOn;
+                g.setColour (isOn ? Palette::meterLow : Palette::meterOff);
+                g.fillEllipse (juce::Rectangle<float> (9.0f, 9.0f).withCentre ({ b.getX() + 8.0f, b.getCentreY() }));
+                g.setColour (Palette::textBright);
+                g.drawText (st.name, b.withTrimmedLeft (14.0f).removeFromTop (b.getHeight() * 0.6f), juce::Justification::centredBottom, false);
+                g.setColour (showing ? Palette::accent : Palette::textDim);
+                g.setFont (juce::Font (juce::FontOptions (10.0f)));
+                g.drawText (showing ? "showing below" : "click to show", b.withTrimmedLeft (14.0f).withTrimmedTop (b.getHeight() * 0.6f), juce::Justification::centredTop, false);
+            }
+            else if (st.built)
+                g.drawText (st.name, box, juce::Justification::centred, false);
             else
             {
-                auto b = box.reduced (2.0f, 4.0f);
-                g.drawText (stages[i].name, b.removeFromTop (b.getHeight() * 0.58f), juce::Justification::centredBottom, false);
+                g.drawText (st.name, b.removeFromTop (b.getHeight() * 0.58f), juce::Justification::centredBottom, false);
                 g.setFont (juce::Font (juce::FontOptions (10.0f)));
                 g.drawText ("coming", b, juce::Justification::centredTop, false);
-                g.setFont (juce::Font (juce::FontOptions (12.0f, juce::Font::bold)));
             }
             if (i < count - 1)
             {
@@ -535,32 +793,42 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
         }
     }
 
-    drawPanel (g, displayPanel, {}, "WHAT IT'S DOING");
-    drawPanel (g, metersPanel, {}, "METERS");
     drawPanel (g, inputPanel, "1", "INPUT");
-    const bool ms = masterProcessor.isMidSide();
-    drawPanel (g, compPanel, "2", "COMPRESSOR");
+    drawPanel (g, metersPanel, {}, "METERS");
+    drawPanel (g, limiterPanel, "", "LIMITER");
+    drawPanel (g, comparePanel, "", "COMPARE");
+
+    const auto rowName = [&g] (juce::Rectangle<int> r, const juce::String& name, const juce::String& under, juce::Colour c, bool lit)
     {
-        // The row names: MID (green) and SIDE (blue) - or STEREO, with the SIDE row resting
-        const auto rowName = [&g] (juce::Rectangle<int> r, const juce::String& name, const juce::String& under, juce::Colour c, bool lit)
-        {
-            const auto box = r.toFloat().reduced (2.0f, 6.0f);
-            g.setColour (lit ? c.withAlpha (0.16f) : Palette::background);
-            g.fillRoundedRectangle (box, 6.0f);
-            g.setColour (lit ? c : Palette::panelEdge);
-            g.drawRoundedRectangle (box.reduced (0.75f), 6.0f, 1.3f);
-            g.setColour (lit ? c : Palette::textDim.withAlpha (0.5f));
-            g.setFont (juce::Font (juce::FontOptions (15.0f, juce::Font::bold)));
-            auto text = box.reduced (2.0f, 0.0f);
-            g.drawText (name, text.removeFromTop (text.getHeight() * 0.55f), juce::Justification::centredBottom, false);
-            g.setFont (juce::Font (juce::FontOptions (10.0f)));
-            g.drawFittedText (under, text.toNearestInt(), juce::Justification::centredTop, 2);
-        };
+        const auto box = r.toFloat().reduced (2.0f, 6.0f);
+        g.setColour (lit ? c.withAlpha (0.16f) : Palette::background);
+        g.fillRoundedRectangle (box, 6.0f);
+        g.setColour (lit ? c : Palette::panelEdge);
+        g.drawRoundedRectangle (box.reduced (0.75f), 6.0f, 1.3f);
+        g.setColour (lit ? c : Palette::textDim.withAlpha (0.5f));
+        g.setFont (juce::Font (juce::FontOptions (15.0f, juce::Font::bold)));
+        auto text = box.reduced (2.0f, 0.0f);
+        g.drawText (name, text.removeFromTop (text.getHeight() * 0.55f), juce::Justification::centredBottom, false);
+        g.setFont (juce::Font (juce::FontOptions (10.0f)));
+        g.drawFittedText (under, text.toNearestInt(), juce::Justification::centredTop, 2);
+    };
+
+    if (shownPage == compPage)
+    {
+        drawPanel (g, pageDisplayPanel, {}, "COMPRESSOR & LIMITER - WHAT THEY'RE DOING");
+        drawPanel (g, pagePanel, "3", "COMPRESSOR");
+        const bool ms = masterProcessor.isMidSide();
         rowName (midRowName, ms ? "MID" : "STEREO", ms ? "kick, bass,\nsnare, vocal" : "the whole mix", midColour, true);
         rowName (sideRowName, "SIDE", ms ? "the width" : "only in\nMID + SIDE", sideColour, ms);
     }
-    drawPanel (g, limiterPanel, "3", "LIMITER");
-    drawPanel (g, comparePanel, "4", "COMPARE");
+    else
+    {
+        drawPanel (g, pageDisplayPanel, {}, "RESONANCE TAMER - WHAT IT'S DOING");
+        drawPanel (g, pagePanel, "2", "RESONANCE TAMER");
+        const bool ms = masterProcessor.isTamerMidSide();
+        rowName (tamerMidName, ms ? "MID" : "STEREO", ms ? "the middle" : "the whole mix", midColour, true);
+        rowName (tamerSideName, "SIDE", ms ? "the width" : "only in\nMID + SIDE", sideColour, ms);
+    }
 }
 
 void EasyMasterAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
@@ -586,30 +854,62 @@ void EasyMasterAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
     chainArea = area.removeFromTop (40);
     area.removeFromTop (gap);
 
-    auto top = area.removeFromTop ((area.getHeight() - gap) * 42 / 100);
-    area.removeFromTop (gap);
-    metersPanel = top.removeFromRight (400);
-    top.removeFromRight (gap);
-    displayPanel = top;
-    display.setBounds (displayPanel.reduced (12, 12).withTrimmedTop (22));
-    meters.setBounds (metersPanel.reduced (14, 8).withTrimmedTop (22));
-
-    // Bottom row: INPUT, COMPRESSOR, LIMITER, COMPARE
-    inputPanel = area.removeFromLeft (160);
+    // Left: INPUT. Right: METERS, LIMITER, COMPARE (always). Middle: the page.
+    inputPanel = area.removeFromLeft (150);
     area.removeFromLeft (gap);
-    comparePanel = area.removeFromRight (250);
+    auto right = area.removeFromRight (400);
     area.removeFromRight (gap);
-    limiterPanel = area.removeFromRight (420);
-    area.removeFromRight (gap);
-    compPanel = area;
+    metersPanel = right.removeFromTop (290);
+    right.removeFromTop (gap);
+    limiterPanel = right.removeFromTop (184);
+    right.removeFromTop (gap);
+    comparePanel = right;
+
+    pageDisplayPanel = area.removeFromTop ((area.getHeight() - gap) * 46 / 100);
+    area.removeFromTop (gap);
+    pagePanel = area;
+
+    meters.setBounds (metersPanel.reduced (14, 8).withTrimmedTop (22));
+    display.setBounds (pageDisplayPanel.reduced (12, 12).withTrimmedTop (22));
+    tamerDisplay.setBounds (display.getBounds());
 
     {
         auto inside = inputPanel.reduced (10, 12).withTrimmedTop (26);
-        inputWarning.setBounds (inside.removeFromBottom (40));
+        inputWarning.setBounds (inside.removeFromBottom (48));
         placeKnob (knobs[trimKnob], inside, knobSizeFor (inside, 90));
     }
     {
-        auto inside = compPanel.reduced (14, 12).withTrimmedTop (28);
+        // LIMITER: GAIN, CEILING, RELEASE (AUTO / SET and its time)
+        auto inside = limiterPanel.reduced (12, 10).withTrimmedTop (24);
+        const int w = inside.getWidth() / 3;
+        auto gainColumn = inside.removeFromLeft (w), ceilingColumn = inside.removeFromLeft (w), releaseColumn = inside;
+        placeKnob (knobs[gainKnob], gainColumn, knobSizeFor (gainColumn, 84));
+        placeKnob (knobs[ceilingKnob], ceilingColumn, knobSizeFor (ceilingColumn, 64));
+        releaseSwitch.setBounds (releaseColumn.removeFromTop (28).withSizeKeepingCentre (juce::jmin (releaseColumn.getWidth(), 120), 26));
+        placeKnob (knobs[releaseKnob], releaseColumn, knobSizeFor (releaseColumn, 52));
+    }
+    {
+        auto inside = comparePanel.reduced (14, 10).withTrimmedTop (26);
+        auto top = inside.removeFromTop (32);
+        matchButton.setBounds (top.removeFromLeft (110).withSizeKeepingCentre (110, 30));
+        top.removeFromLeft (8);
+        matchInfo.setBounds (top);
+        inside.removeFromTop (8);
+        listenLabel.setBounds (inside.removeFromTop (16));
+        listenSwitch.setBounds (inside.removeFromTop (28));
+        inside.removeFromTop (8);
+        auto ab = inside.removeFromTop (28);
+        abLabel.setBounds (ab.removeFromLeft (40));
+        slotA.setBounds (ab.removeFromLeft (56));
+        ab.removeFromLeft (8);
+        slotB.setBounds (ab.removeFromLeft (56));
+        ab.removeFromLeft (8);
+        copyButton.setBounds (ab);
+    }
+
+    // The COMPRESSOR page
+    {
+        auto inside = pagePanel.reduced (14, 12).withTrimmedTop (28);
         auto row = inside.removeFromTop (32);
         compOnButton.setBounds (row.removeFromLeft (64).withSizeKeepingCentre (64, 30));
         row.removeFromLeft (12);
@@ -620,7 +920,6 @@ void EasyMasterAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
         reactsSwitch.setBounds (row.removeFromRight (196).withSizeKeepingCentre (196, 30));
         inside.removeFromTop (6);
 
-        // Two rows of five: MID (or STEREO) on top, SIDE underneath; MIX and IGNORE BELOW (for both) on the right
         auto shared = inside.removeFromRight (inside.getWidth() / 7);
         const int rowHeight = inside.getHeight() / 2;
         auto midRow = inside.removeFromTop (rowHeight), sideRow = inside;
@@ -637,31 +936,36 @@ void EasyMasterAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
         placeKnob (knobs[mixKnob], shared.removeFromTop (rowHeight), knobSizeFor (juce::Rectangle<int> (0, 0, shared.getWidth(), rowHeight), 60));
         placeKnob (knobs[ignoreKnob], shared, knobSizeFor (shared, 60));
     }
+
+    // The RESONANCE TAMER page
     {
-        auto inside = limiterPanel.reduced (12, 12).withTrimmedTop (26);
-        auto gainColumn = inside.removeFromLeft (150);
-        placeKnob (knobs[gainKnob], gainColumn, knobSizeFor (gainColumn, 100));
-        auto ceilingColumn = inside.removeFromLeft (120);
-        placeKnob (knobs[ceilingKnob], ceilingColumn, knobSizeFor (ceilingColumn, 72));
-        auto releaseColumn = inside;
-        releaseSwitch.setBounds (releaseColumn.removeFromTop (64).withSizeKeepingCentre (90, 60));
-        placeKnob (knobs[releaseKnob], releaseColumn, knobSizeFor (releaseColumn, 60));
-    }
-    {
-        auto inside = comparePanel.reduced (14, 12).withTrimmedTop (28);
-        matchButton.setBounds (inside.removeFromTop (32).withSizeKeepingCentre (120, 32));
-        matchInfo.setBounds (inside.removeFromTop (34));
+        auto inside = pagePanel.reduced (14, 12).withTrimmedTop (28);
+        auto row = inside.removeFromTop (32);
+        tamerOnButton.setBounds (row.removeFromLeft (64).withSizeKeepingCentre (64, 30));
+        row.removeFromLeft (12);
+        tamerModeSwitch.setBounds (row.removeFromLeft (220).withSizeKeepingCentre (220, 30));
+        tamerListenButton.setBounds (row.removeFromRight (210).withSizeKeepingCentre (210, 30));
         inside.removeFromTop (6);
-        listenLabel.setBounds (inside.removeFromTop (18));
-        listenSwitch.setBounds (inside.removeFromTop (30));
-        inside.removeFromTop (12);
-        abLabel.setBounds (inside.removeFromTop (18));
-        auto ab = inside.removeFromTop (30);
-        slotA.setBounds (ab.removeFromLeft (60));
-        ab.removeFromLeft (8);
-        slotB.setBounds (ab.removeFromLeft (60));
-        ab.removeFromLeft (8);
-        copyButton.setBounds (ab);
+
+        auto shared = inside.removeFromRight (inside.getWidth() * 3 / 10);
+        const int rowHeight = inside.getHeight() / 2;
+        auto midRow = inside.removeFromTop (rowHeight), sideRow = inside;
+        tamerMidName = midRow.removeFromLeft (84);
+        tamerSideName = sideRow.removeFromLeft (84);
+        const int w = midRow.getWidth() / 3;
+        for (int c = 0; c < 3; ++c)
+        {
+            placeKnob (knobs[(size_t) (tMidAmountKnob + c)], juce::Rectangle<int> (midRow.getX() + c * w, midRow.getY(), w, midRow.getHeight()),
+                       knobSizeFor (juce::Rectangle<int> (0, 0, w, midRow.getHeight()), 66));
+            placeKnob (knobs[(size_t) (tSideAmountKnob + c)], juce::Rectangle<int> (sideRow.getX() + c * w, sideRow.getY(), w, sideRow.getHeight()),
+                       knobSizeFor (juce::Rectangle<int> (0, 0, w, sideRow.getHeight()), 66));
+        }
+        // SPEED (for both) on top; FROM and TO under it
+        auto speedArea = shared.removeFromTop (rowHeight);
+        placeKnob (knobs[tSpeedKnob], speedArea, knobSizeFor (speedArea, 60));
+        auto fromArea = shared.removeFromLeft (shared.getWidth() / 2);
+        placeKnob (knobs[tFromKnob], fromArea, knobSizeFor (fromArea, 56));
+        placeKnob (knobs[tToKnob], shared, knobSizeFor (shared, 56));
     }
     showParts();
 }
@@ -674,19 +978,22 @@ void EasyMasterAudioProcessorEditor::refreshLiveDisplays()
     const auto& params = easyProcessor.parameters;
     const bool ms = masterProcessor.isMidSide();
     const bool compOn = params.getRawParameterValue (MasterIDs::compOn)->load() > 0.5f;
+    const bool tms = masterProcessor.isTamerMidSide();
+    const bool tamerOn = params.getRawParameterValue (MasterIDs::tamerOn)->load() > 0.5f;
     const bool bypassed = params.getRawParameterValue (CommonIDs::bypass)->load() > 0.5f;
     display.setState (params.getRawParameterValue (MasterIDs::ceiling)->load(), ms, compOn, bypassed);
     const auto readings = masterProcessor.getReadings();
-    meters.setReadings (readings, ms, compOn);
+    meters.setReadings (readings, ms, compOn, tamerOn);
+    if (shownPage == tamerPage)
+        tamerDisplay.setPicture (masterProcessor.getTamerPicture(), tms, tamerOn, params.getRawParameterValue (MasterIDs::tFrom)->load(),
+                                 params.getRawParameterValue (MasterIDs::tTo)->load(), bypassed);
 
-    if (ms != shownMidSide || compOn != shownCompOn)
+    if (ms != shownMidSide || compOn != shownCompOn || tms != shownTamerMidSide || tamerOn != shownTamerOn)
     {
-        shownMidSide = ms;
-        shownCompOn = compOn;
+        shownMidSide = ms; shownCompOn = compOn; shownTamerMidSide = tms; shownTamerOn = tamerOn;
         showParts();
     }
 
-    // The limiter's RELEASE dims while it's on AUTO (the compressor's knobs: see showParts)
     const bool set = juce::roundToInt (params.getRawParameterValue (MasterIDs::releaseMode)->load()) == 1;
     knobs[releaseKnob].slider.setEnabled (set);
     knobs[releaseKnob].slider.setAlpha (set ? 1.0f : 0.4f);

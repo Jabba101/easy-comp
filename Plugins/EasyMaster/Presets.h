@@ -12,6 +12,19 @@ namespace MasterIDs
 {
     // INPUT
     inline constexpr const char* trim         = "trim";          // dB
+    // RESONANCE TAMER (MID settings are also the STEREO settings)
+    inline constexpr const char* tamerOn      = "tameron";
+    inline constexpr const char* tamerMode    = "tamermode";     // STEREO or MID + SIDE
+    inline constexpr const char* tMidAmount   = "tmamount";      // dB (the most it turns a spot down)
+    inline constexpr const char* tMidSens     = "tmsens";        // %
+    inline constexpr const char* tMidSharp    = "tmsharp";       // %
+    inline constexpr const char* tSideAmount  = "tsamount";
+    inline constexpr const char* tSideSens    = "tssens";
+    inline constexpr const char* tSideSharp   = "tssharp";
+    inline constexpr const char* tSpeed       = "tspeed";        // %: fast .. slow
+    inline constexpr const char* tFrom        = "tfrom";         // Hz
+    inline constexpr const char* tTo          = "tto";           // Hz
+    inline constexpr const char* tListen      = "tlisten";       // hear only what it takes out (not in presets)
     // COMPRESSOR (MID settings are also the STEREO settings)
     inline constexpr const char* compOn       = "compon";        // on / off
     inline constexpr const char* compMode     = "compmode";      // STEREO or MID + SIDE
@@ -67,37 +80,44 @@ struct MasterPreset
     int   releaseMode;
     float releaseMs;
     const char* tip;
+    // RESONANCE TAMER: on, MID + SIDE, MID amount / sensitivity / sharpness, SIDE amount / sensitivity / sharpness, speed (%), from, to
+    struct Tamer { int on = 1, midSide = 0; float midAmount = 4.0f, midSens = 50.0f, midSharp = 50.0f,
+                   sideAmount = 4.0f, sideSens = 50.0f, sideSharp = 50.0f, speed = 50.0f, fromHz = 200.0f, toHz = 16000.0f; } tamer {};
 };
 
 inline const MasterPreset masterPresets[] =
 {
     //                                                  trim  comp mode | MID: thr  ratio att  rel  makeup | SIDE: thr ratio att  rel  makeup | mix  ignore react char | gain ceil  rel  ms
     { "", "Default settings",                           0.0f,  1, 0,     -12.0f, 2.0f, 30.0f, 200.0f, 1.0f,   -12.0f, 2.0f, 30.0f, 200.0f, 1.0f,   100.0f, 80.0f, 1, 0,   2.0f, -0.3f, 0, 100.0f,
-      "Gentle glue (2:1, slow, ignoring the deep bass) into a clean -0.3 dBTP ceiling, 2 dB pushed. Use MATCH to hear it fairly." },
+      "Gentle glue (2:1, slow, ignoring the deep bass) into a clean -0.3 dBTP ceiling, 2 dB pushed. Use MATCH to hear it fairly.", { 1, 0, 3.0f, 50.0f, 50.0f, 3.0f, 50.0f, 50.0f, 50.0f, 200.0f, 16000.0f } },
 
     // ---- Mastering --------------------------------------------------------------------
     { "Mastering", "Master - Transparent (ceiling only)", 0.0f, 0, 0,    -14.0f, 2.0f, 30.0f, 200.0f, 0.0f,   -14.0f, 2.0f, 30.0f, 200.0f, 0.0f,   100.0f, 80.0f, 1, 0,   0.0f, -0.3f, 0, 100.0f,
-      "Nothing but the overs protection: for a mix that's already finished." },
+      "Nothing but the overs protection: for a mix that's already finished.", { 0, 0, 3.0f, 50.0f, 50.0f, 3.0f, 50.0f, 50.0f, 50.0f, 200.0f, 16000.0f } },
     { "Mastering", "Master - Gentle Glue (+3 dB)",      0.0f,  1, 0,     -16.0f, 1.5f, 30.0f, 250.0f, 1.0f,   -16.0f, 1.5f, 30.0f, 250.0f, 1.0f,   100.0f, 80.0f, 1, 0,   3.0f, -0.3f, 0, 100.0f,
-      "1.5:1 holding the mix together, a little louder. Should be hard to hear with MATCH on - just more 'finished'." },
+      "1.5:1 holding the mix together, a little louder. Should be hard to hear with MATCH on - just more 'finished'.", { 1, 0, 3.0f, 40.0f, 50.0f, 3.0f, 40.0f, 50.0f, 50.0f, 200.0f, 16000.0f } },
     { "Mastering", "Master - Rock & Punk (+5 dB)",      0.0f,  1, 0,     -14.0f, 3.0f, 30.0f, 120.0f, 2.0f,   -14.0f, 3.0f, 30.0f, 120.0f, 2.0f,   100.0f, 90.0f, 0, 0,   5.0f, -0.3f, 0, 100.0f,
-      "Firmer and faster: guitars and drums dense and in your face. 30 ms lets the snare crack through first." },
+      "Firmer and faster: guitars and drums dense and in your face. 30 ms lets the snare crack through first.", { 1, 0, 4.0f, 50.0f, 50.0f, 4.0f, 50.0f, 50.0f, 40.0f, 250.0f, 16000.0f } },
     { "Mastering", "Master - Heavy & Loud (+7 dB)",     0.0f,  1, 0,     -16.0f, 3.0f, 20.0f, 100.0f, 2.0f,   -16.0f, 3.0f, 20.0f, 100.0f, 2.0f,    85.0f, 100.0f, 0, 1,  7.0f, -0.3f, 0, 100.0f,
-      "Loud metal and heavy rock. VINTAGE for weight, 85% MIX keeps some of the hits' snap. Listen to the kick." },
+      "Loud metal and heavy rock. VINTAGE for weight, 85% MIX keeps some of the hits' snap. Listen to the kick.", { 1, 0, 5.0f, 55.0f, 50.0f, 5.0f, 55.0f, 50.0f, 40.0f, 250.0f, 16000.0f } },
     { "Mastering", "Master - Synthwave Smooth & Wide",  0.0f,  1, 1,     -16.0f, 2.0f, 40.0f, 300.0f, 1.0f,   -20.0f, 1.5f, 40.0f, 300.0f, 1.0f,   100.0f, 80.0f, 1, 0,   4.0f, -0.3f, 1, 300.0f,
-      "Mid glued, the wide pads and synths left breathing; a slow, steady limiter release with no pumping." },
+      "Mid glued, the wide pads and synths left breathing; a slow, steady limiter release with no pumping.", { 1, 1, 3.0f, 50.0f, 50.0f, 5.0f, 60.0f, 40.0f, 60.0f, 200.0f, 16000.0f } },
     { "Mastering", "Master - Darksynth Dense",          0.0f,  1, 1,     -18.0f, 3.0f, 25.0f, 150.0f, 2.0f,   -18.0f, 2.0f, 30.0f, 200.0f, 1.0f,   100.0f, 90.0f, 1, 1,   6.0f, -0.3f, 0, 100.0f,
-      "A thick, heavy middle (bass, kick, lead) with controlled sides. Big, dark and loud." },
+      "A thick, heavy middle (bass, kick, lead) with controlled sides. Big, dark and loud.", { 1, 1, 4.0f, 55.0f, 50.0f, 5.0f, 55.0f, 50.0f, 50.0f, 200.0f, 16000.0f } },
     { "Mastering", "Master - Jazz Natural",             0.0f,  1, 0,     -20.0f, 1.5f, 50.0f, 300.0f, 0.5f,   -20.0f, 1.5f, 50.0f, 300.0f, 0.5f,   100.0f, 60.0f, 1, 0,   1.5f, -0.3f, 0, 100.0f,
-      "Barely there: the dynamics of real players kept, just the peaks caught. The room and the ride stay open." },
+      "Barely there: the dynamics of real players kept, just the peaks caught. The room and the ride stay open.", { 1, 0, 2.0f, 35.0f, 70.0f, 2.0f, 35.0f, 70.0f, 60.0f, 200.0f, 16000.0f } },
+
+    { "Mastering", "Master - Tame Harsh AI Fizz",       0.0f,  1, 0,     -16.0f, 1.5f, 30.0f, 250.0f, 1.0f,   -16.0f, 1.5f, 30.0f, 250.0f, 1.0f,   100.0f, 80.0f, 1, 0,   3.0f, -0.3f, 0, 100.0f,
+      "For AI-made songs (Mureka, Suno): the resonance tamer works hard on the fizzy, metallic top end, gentle glue and +3 dB.",
+      { 1, 0, 6.0f, 65.0f, 55.0f, 6.0f, 65.0f, 55.0f, 30.0f, 4000.0f, 16000.0f } },
 
     // ---- Mid / side fixes -------------------------------------------------------------
     { "Mid / Side", "M/S - Tighten the Sides",          0.0f,  1, 1,     -14.0f, 1.5f, 30.0f, 200.0f, 0.5f,   -22.0f, 3.0f, 15.0f, 150.0f, 0.0f,   100.0f, 80.0f, 1, 0,   2.0f, -0.3f, 0, 100.0f,
-      "The sides held in (wide guitars, cymbals, reverb that jump out), the middle almost untouched." },
+      "The sides held in (wide guitars, cymbals, reverb that jump out), the middle almost untouched.", { 1, 1, 2.0f, 45.0f, 50.0f, 5.0f, 60.0f, 50.0f, 50.0f, 200.0f, 16000.0f } },
     { "Mid / Side", "M/S - Punchy Middle",              0.0f,  1, 1,     -14.0f, 2.5f, 40.0f, 120.0f, 1.5f,   -18.0f, 1.5f, 30.0f, 250.0f, 0.5f,   100.0f, 90.0f, 0, 0,   3.0f, -0.3f, 0, 100.0f,
-      "A slow attack on the middle so kick, snare and vocal punch through; the sides just smoothed." },
+      "A slow attack on the middle so kick, snare and vocal punch through; the sides just smoothed.", { 1, 0, 3.0f, 50.0f, 50.0f, 3.0f, 50.0f, 50.0f, 50.0f, 250.0f, 16000.0f } },
     { "Mid / Side", "M/S - Steady Vocal & Bass",        0.0f,  1, 1,     -18.0f, 2.5f, 15.0f, 150.0f, 1.5f,   -20.0f, 1.2f, 30.0f, 250.0f, 0.0f,   100.0f, 40.0f, 1, 0,   3.0f, -0.3f, 0, 100.0f,
-      "Evens out what's in the centre (vocal, bass, kick) and leaves the stereo picture alone." },
+      "Evens out what's in the centre (vocal, bass, kick) and leaves the stereo picture alone.", { 1, 1, 4.0f, 55.0f, 55.0f, 3.0f, 45.0f, 50.0f, 50.0f, 300.0f, 16000.0f } },
 };
 
 //==============================================================================
@@ -115,16 +135,21 @@ inline std::vector<Preset> makeMasterPresets()
                                { MasterIDs::compMix, p.mixPercent }, { MasterIDs::ignoreBelow, p.ignoreBelowHz },
                                { MasterIDs::reactsTo, (float) p.reactsTo }, { MasterIDs::character, (float) p.character },
                                { MasterIDs::limitGain, p.limitGainDb }, { MasterIDs::ceiling, p.ceilingDb },
-                               { MasterIDs::releaseMode, (float) p.releaseMode }, { MasterIDs::release, p.releaseMs } } });
+                               { MasterIDs::releaseMode, (float) p.releaseMode }, { MasterIDs::release, p.releaseMs },
+                               { MasterIDs::tamerOn, (float) p.tamer.on }, { MasterIDs::tamerMode, (float) p.tamer.midSide },
+                               { MasterIDs::tMidAmount, p.tamer.midAmount }, { MasterIDs::tMidSens, p.tamer.midSens }, { MasterIDs::tMidSharp, p.tamer.midSharp },
+                               { MasterIDs::tSideAmount, p.tamer.sideAmount }, { MasterIDs::tSideSens, p.tamer.sideSens }, { MasterIDs::tSideSharp, p.tamer.sideSharp },
+                               { MasterIDs::tSpeed, p.tamer.speed }, { MasterIDs::tFrom, p.tamer.fromHz }, { MasterIDs::tTo, p.tamer.toHz } } });
 
     return presets;
 }
 
-/** The settings presets store (everything except MATCH, LISTEN and BYPASS). */
+/** The settings presets store (everything except MATCH, the LISTEN buttons and BYPASS). */
 inline juce::StringArray masterPresetIDs()
 {
     using namespace MasterIDs;
     return { trim, compOn, compMode, midThreshold, midRatio, midAttack, midRelease, midMakeup,
              sideThreshold, sideRatio, sideAttack, sideRelease, sideMakeup, compMix, ignoreBelow, reactsTo, character,
-             limitGain, ceiling, releaseMode, release };
+             limitGain, ceiling, releaseMode, release,
+             tamerOn, tamerMode, tMidAmount, tMidSens, tMidSharp, tSideAmount, tSideSens, tSideSharp, tSpeed, tFrom, tTo };
 }

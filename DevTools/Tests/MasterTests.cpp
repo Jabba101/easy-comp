@@ -49,7 +49,7 @@ namespace
         const auto band = loadMix ("band", 0.0, 20.0);
         {
             P p; prepare (p, sr, 512);
-            check (p.getLatencySamples() > 0 && p.getLatencySamples() < (int) (sr * 0.01), "tells your DAW its delay (the limiter's look-ahead): "
+            check (p.getLatencySamples() > (int) (sr * 0.04) && p.getLatencySamples() < (int) (sr * 0.06), "tells your DAW its delay (the tamer's slice + the limiter's look-ahead): "
                    + juce::String (p.getLatencySamples()) + " samples, " + juce::String (p.getLatencySamples() / sr * 1000.0, 1) + " ms");
             set (p, CommonIDs::bypass, 1.0f);
             P q; set (q, CommonIDs::bypass, 1.0f); prepare (q, sr, 512);
@@ -99,7 +99,7 @@ namespace
         }
         {
             // Squeezing the sides only: the middle's level hardly changes, the sides' does
-            P a; set (a, MasterIDs::compMode, 1.0f); set (a, MasterIDs::midRatio, 1.0f); set (a, MasterIDs::midMakeup, 0.0f); set (a, MasterIDs::limitGain, 0.0f);
+            P a; set (a, MasterIDs::tamerOn, 0.0f); set (a, MasterIDs::compMode, 1.0f); set (a, MasterIDs::midRatio, 1.0f); set (a, MasterIDs::midMakeup, 0.0f); set (a, MasterIDs::limitGain, 0.0f);
             set (a, MasterIDs::sideThreshold, -40.0f); set (a, MasterIDs::sideRatio, 6.0f); set (a, MasterIDs::sideMakeup, 0.0f);
             prepare (a, sr, 512);
             const auto out = run (a, band, 512);
@@ -160,6 +160,45 @@ namespace
         }
     }
 
+    void testTamer()
+    {
+        std::cout << "\n[resonance tamer]\n";
+        const auto band = loadMix ("band", 20.0, 12.0);
+        const auto runP = [&] (std::function<void (P&)> setUp)
+        {
+            P p; set (p, MasterIDs::compOn, 0.0f); set (p, MasterIDs::limitGain, 0.0f); set (p, MasterIDs::ceiling, -0.1f); setUp (p);
+            prepare (p, sr, 512);
+            float most = 0.0f;
+            auto out = run (p, band, 512, [&] (int start) { if (start > (int) sr * 2) most = std::max (most, p.getReadings().tamerMidCut); });
+            return std::make_pair (out, most);
+        };
+        const auto off = runP ([] (P& p) { set (p, MasterIDs::tamerOn, 0.0f); });
+        const auto on = runP ([] (P& p) { set (p, MasterIDs::tamerOn, 1.0f); set (p, MasterIDs::tMidAmount, 6.0f); });
+        P q; prepare (q, sr, 512);
+        const int d = q.getLatencySamples();
+        // (off: exactly the mix, delayed - apart from the limiter catching the odd over at -0.1)
+        double diff = 0, ref = 0;
+        for (int c = 0; c < 2; ++c) for (int i = d; i < band.getNumSamples(); ++i) { const double x = off.first.getSample (c, i) - band.getSample (c, i - d); diff += x * x; ref += band.getSample (c, i - d) * band.getSample (c, i - d); }
+        check (10.0 * std::log10 (diff / ref + 1e-30) < -40.0, "TAMER off: the mix passes untouched (the same delay either way, so nothing jumps when you switch it)");
+        const double change = loudnessDb (on.first, (int) sr * 2, on.first.getNumSamples()) - loudnessDb (off.first, (int) sr * 2, off.first.getNumSamples());
+        check (on.second > 1.0f && on.second <= 6.05f && change < 0.0 && change > -2.0,
+               "TAMER on your band's mix: the deepest cut " + juce::String (on.second, 1) + " dB (AMOUNT 6), overall " + juce::String (change, 2) + " dB - spots, not the whole mix");
+        // MID + SIDE: a mono mix has no sides - the SIDE settings can't touch it
+        juce::AudioBuffer<float> mono (band); mono.copyFrom (1, 0, mono, 0, 0, mono.getNumSamples());
+        P m; set (m, MasterIDs::tamerMode, 1.0f); set (m, MasterIDs::tSideAmount, 12.0f); set (m, MasterIDs::tSideSens, 100.0f); set (m, MasterIDs::compOn, 0.0f);
+        prepare (m, sr, 512);
+        const auto mo = run (m, mono, 512);
+        float worst = 0.0f;
+        for (int i = 0; i < mo.getNumSamples(); ++i) worst = std::max (worst, std::abs (mo.getSample (0, i) - mo.getSample (1, i)));
+        check (worst < 1.0e-4f, "TAMER MID + SIDE on a mono mix: left = right (the sides' settings have nothing to work on)");
+        // LISTEN: only what it takes out
+        P l; set (l, MasterIDs::tListen, 1.0f); set (l, MasterIDs::tMidAmount, 6.0f); set (l, MasterIDs::compOn, 0.0f); set (l, MasterIDs::limitGain, 0.0f);
+        prepare (l, sr, 512);
+        const auto lo = run (l, band, 512);
+        const double removed = loudnessDb (lo, (int) sr * 2, lo.getNumSamples()), full = loudnessDb (band, (int) sr * 2, band.getNumSamples());
+        check (removed < full - 12.0 && removed > full - 60.0, "TAMER LISTEN: just what it takes out (" + juce::String (removed - full, 1) + " dB below the mix)");
+    }
+
     void testParts (const juce::File& outDir)
     {
         std::cout << "\n[presets, saving, A / B, window]\n";
@@ -184,7 +223,6 @@ namespace
         auto* window = dynamic_cast<EasyMasterAudioProcessorEditor*> (editor.get());
         check (window != nullptr && editor->getWidth() == 1680 && editor->getHeight() == 900, "window is 1680 x 900 (fits a 1080p screen)");
         if (window == nullptr) return;
-        for (int i = 0; i < 4; ++i) window->updateDisplaysNow();
 
         const auto fitsAndNoOverlaps = [&]
         {
@@ -198,23 +236,40 @@ namespace
             }
             return true;
         };
-        check (fitsAndNoOverlaps(), "MID + SIDE: everything fits without overlapping");
-        check (window->isKnobShowing (EasyMasterAudioProcessorEditor::midThresholdKnob) && window->isKnobShowing (EasyMasterAudioProcessorEditor::sideThresholdKnob)
-               && window->isKnobUsable (EasyMasterAudioProcessorEditor::sideThresholdKnob), "MID and SIDE each have their own row of knobs, both showing and working");
+        using E = EasyMasterAudioProcessorEditor;
+        window->showPage (E::tamerPage);
+        for (int i = 0; i < 4; ++i) { run (p, loadMix ("mureka", 54.0, 0.2), 512); window->updateDisplaysNow(); }
+        check (window->isKnobShowing (E::tMidAmountKnob) && window->isKnobShowing (E::tSideAmountKnob) && ! window->isKnobShowing (E::midThresholdKnob)
+               && window->isKnobShowing (E::gainKnob) && fitsAndNoOverlaps(), "the RESONANCE TAMER page: its MID and SIDE rows, the LIMITER still there, nothing overlapping");
+        savePng (*editor, outDir.getChildFile ("master_tamer.png"));
+        window->showPage (E::compPage);
+        window->updateDisplaysNow();
+        check (window->isKnobShowing (E::midThresholdKnob) && window->isKnobShowing (E::sideThresholdKnob) && ! window->isKnobShowing (E::tMidAmountKnob)
+               && window->isKnobUsable (E::sideThresholdKnob) && fitsAndNoOverlaps(), "the COMPRESSOR page: MID and SIDE rows, nothing overlapping");
         savePng (*editor, outDir.getChildFile ("master.png"));
+        {
+            std::unique_ptr<juce::AudioProcessorEditor> again (p.createEditor());
+            check (dynamic_cast<E*> (again.get())->getShownPage() == E::compPage, "reopening the window comes back to the same page");
+        }
+
         window->getInitAllButton().onClick();
         check (p.getPresetName() == "Default settings", "INIT: back to 'Default settings'");
         window->updateDisplaysNow();
-        check (! window->isKnobUsable (EasyMasterAudioProcessorEditor::sideThresholdKnob) && window->isKnobUsable (EasyMasterAudioProcessorEditor::midThresholdKnob)
-               && fitsAndNoOverlaps(), "STEREO: the top row does the whole mix, the SIDE row rests (dimmed)");
+        check (! window->isKnobUsable (E::sideThresholdKnob) && window->isKnobUsable (E::midThresholdKnob) && fitsAndNoOverlaps(),
+               "STEREO: the top row does the whole mix, the SIDE row rests (dimmed)");
         savePng (*editor, outDir.getChildFile ("master_stereo.png"));
         bool hints = true;
-        for (int k = 0; k < EasyMasterAudioProcessorEditor::numKnobs; ++k)
+        for (int page = 0; page < E::numPages; ++page)
         {
-            window->mouseEnter (hoverEvent (&window->getKnob (k)));
-            if (window->hintBar.getText().length() < 40) hints = false;
+            window->showPage (page);
+            for (int k = 0; k < E::numKnobs; ++k)
+            {
+                if (! window->isKnobShowing (k)) continue;
+                window->mouseEnter (hoverEvent (&window->getKnob (k)));
+                if (window->hintBar.getText().length() < 40) hints = false;
+            }
         }
-        check (hints, "every knob explains itself in the help bar");
+        check (hints, "every knob on both pages explains itself in the help bar");
     }
 
     void testSpeed()
@@ -236,6 +291,7 @@ int main (int argc, char** argv)
     testChain();
     testMidSide();
     testCompare();
+    testTamer();
     testParts (outDir);
     testSpeed();
     return finish();

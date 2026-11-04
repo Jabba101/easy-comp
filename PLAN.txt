@@ -488,9 +488,23 @@ LATER
      separate rows; MIX, IGNORE BELOW, PEAKS / AVERAGE, MODERN / VINTAGE),
      LIMITER (Easy Limiter engine), COMPARE (MATCH = whole chain at the
      original's loudness, LISTEN STEREO / MID / SIDE / MONO, A / B).
-     11 presets. 1.6% of a core. NEXT: stage 2 - the resonance tamer
-     (the Unbleed learnings: typical-not-peak levels, measure first) and
-     the full M/S mastering EQ.
+     11 presets. 1.6% of a core. The user (4 November): "sounds pretty
+     good, the mid-side compression is working as intended" - the base
+     to build on.
+     STAGE 2 (in progress): the window became TABS (the user chose):
+     click a stage in the chain to show its page (its own display and
+     controls); INPUT, METERS, LIMITER and COMPARE always on screen.
+     RESONANCE TAMER built (Effects/ResonanceTamer.h): STFT 2048 @ 48 kHz,
+     the spectrum blurred 1/12 - 1/4 octave (never narrower than ~100 Hz,
+     so low notes' harmonics aren't "resonances") and compared with its
+     own outline (2 octaves, worked out twice with the bumps clipped off);
+     spots sticking out more than SENSITIVITY allows (6 .. 1.5 dB) are cut
+     by 0.8 x the excess, never more than AMOUNT; attack 4-50 ms / release
+     40-400 ms (SPEED); always MID / SIDE inside (STEREO = one linked set).
+     FROM 200 Hz by default. On test sounds: pink noise untouched, a +12 dB
+     3 kHz ring cut ~3 dB, a saw chord barely touched; band mix: 600-800 Hz
+     boxiness; Mureka song: 8-10 kHz fizz (hence the preset "Master - Tame
+     Harsh AI Fizz"). NEXT: the full M/S mastering EQ page.
    - EASY UNBLEED (idea, 1 November 2026): for stems split with UVR5
      (the user's separator - no paid tool beats it). Split in UVR5 as
      normal (tips: Ensemble mode with a Roformer + an MDX model; vocals

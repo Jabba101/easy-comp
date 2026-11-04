@@ -633,29 +633,39 @@ YOUR FIRST FIVE MINUTES WITH EASY LIMITER
 ====================================================================
 YOUR FIRST FIVE MINUTES WITH EASY MASTER
 ====================================================================
-   The last plugin on your master bus. Stage 1: INPUT > COMPRESSOR >
-   LIMITER, with meters. (The resonance tamer, EQ, multiband, punch and
-   width will arrive in their places - the chain along the top shows
-   them dimmed until then.)
+   The last plugin on your master bus: INPUT > RESONANCE TAMER >
+   COMPRESSOR > LIMITER, with meters. (EQ, multiband, punch and width
+   will arrive in their places - the chain along the top shows them
+   dimmed until then.) Click a stage in the chain to show its page -
+   its own display and controls - in the middle. INPUT, the METERS, the
+   LIMITER and COMPARE are always on screen.
 
    1. Pick a preset for the song (Rock & Punk, Synthwave, Jazz...).
    2. INPUT - TRIM: set it so the compressor turns down 1-3 dB on the
       loud parts (TURNING DOWN NOW, in the meters). A red warning
       means the mix is already clipping on the way in: turn it down in
       Samplitude instead.
-   3. COMPRESSOR: STEREO for the whole mix, or MID + SIDE, where the
+   3. RESONANCE TAMER: turns down harsh, boxy, ringing spots only while
+      they stick out above the sound around them (like Unmask / soothe).
+      AMOUNT = the most any spot goes down; SENSITIVITY = how small a
+      bump counts; SHARPNESS = narrow rings only (high) or broader areas
+      too (low); SPEED, FROM / TO (200 Hz up by default: low notes are
+      music, not resonances). STEREO, or MID + SIDE with a green MID and
+      a blue SIDE row. LISTEN: REMOVED ONLY plays what it takes out - it
+      should sound thin and harsh, never like whole instruments.
+   4. COMPRESSOR: STEREO for the whole mix, or MID + SIDE, where the
       middle (green row: kick, bass, snare, vocal) and the sides (blue
       row: the width) each have their own controls. IGNORE BELOW keeps
       a heavy kick and bass from making the whole mix pump.
-   4. LIMITER - GAIN: push the master up into the ceiling (-0.3 dBTP
+   5. LIMITER - GAIN: push the master up into the ceiling (-0.3 dBTP
       by default). The meters show LUFS - a reading, never a target.
-   5. COMPARE: MATCH plays the whole chain at the original's loudness;
+   6. COMPARE: MATCH plays the whole chain at the original's loudness;
       then click BYPASS on and off to judge the sound, not the volume.
       LISTEN MONO / MID / SIDE are for checking (switch back to
       STEREO). A and B hold two versions to compare.
    Click the meters to reset the INTEGRATED reading and the peak. It
-   delays the sound by 3 ms (the limiter's look-ahead) - your DAW lines
-   everything up automatically.
+   delays the sound by about 46 ms (the tamer's slice and the limiter's
+   look-ahead) - your DAW lines everything up automatically.
 
 
 ====================================================================
@@ -858,6 +868,7 @@ WHAT'S IN THIS FOLDER
      ModFilter.h            Easy Filter's moving filter
      TruePeakLimiter.h      Easy Limiter's true-peak ceiling
      SpectralUnbleed.h      Easy Unbleed's ghost cleaner
+     ResonanceTamer.h       Easy Master's resonance tamer
      Equalizer.h            Easy EQ's EQ
      LinearPhaseEQ.h        Easy EQ's MASTER (linear phase)
      LoudnessMatcher.h      AUTO-GAIN (shared by every plugin)

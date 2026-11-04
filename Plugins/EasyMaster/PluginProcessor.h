@@ -4,18 +4,20 @@
 #include "Compressor.h"
 #include "TruePeakLimiter.h"
 #include "LoudnessMeter.h"
+#include "ResonanceTamer.h"
 #include "Presets.h"
 
 //==============================================================================
 /**
     Easy Master as your DAW sees it: the mastering chain for the master bus.
 
-    Stage 1: INPUT (trim) > COMPRESSOR (stereo, or MID and SIDE with their
+    INPUT (trim) > RESONANCE TAMER (stereo, or MID and SIDE with their own
+    settings: harsh, boxy, ringing spots turned down only while they stick
+    out) > COMPRESSOR (stereo, or MID and SIDE with their
     own settings) > LIMITER (the Easy Limiter engine: true-peak ceiling) >
     MATCH (the whole chain as loud as the original, for fair comparison) >
     LISTEN (stereo / mid / side / mono, for checking). Still to come, in
-    their places in the chain: the resonance tamer, EQ, multiband, punch
-    and width.
+    their places in the chain: EQ, multiband, punch and width.
 
     BYPASS gives exactly the original, delayed by the same amount as the
     processed sound so nothing jumps in time. The meters read the master as
@@ -52,9 +54,22 @@ public:
         float correlation = 1.0f;                                                // -1 .. +1
         float midCut = 0.0f, sideCut = 0.0f, limitCut = 0.0f;                    // dB, right now
         float matchDb = 0.0f;                                                    // what MATCH is doing
+        float tamerMidCut = 0.0f, tamerSideCut = 0.0f;                           // the tamer's deepest cut now (dB)
     };
+
+    /** The resonance tamer's picture for its page: level and cut, a sixth of an octave at a time (part 0 = MID or both, 1 = SIDE).
+        (Read straight from the audio thread's numbers: a frame may be half-updated, which only shows as a flicker.) */
+    struct TamerPicture
+    {
+        std::array<std::array<float, ResonanceTamer::numBands>, 2> levelDb {}, cutDb {};
+        std::array<float, ResonanceTamer::numBands> centreHz {};
+    };
+    TamerPicture getTamerPicture() const noexcept;
+    bool isTamerMidSide() const noexcept   { return juce::roundToInt (tamerValues[1]->load()) == MasterMode::midSide; }
     Readings getReadings() const noexcept;
     void resetMeters() noexcept   { loudness.resetIntegrated(); highestPeak.store (-100.0f); }
+
+    int shownPage = 0;   // (the window's page - kept while the window is closed; 0 = RESONANCE TAMER)
 
     bool isMidSide() const noexcept   { return juce::roundToInt (compModeValue->load()) == MasterMode::midSide; }
 
@@ -65,16 +80,20 @@ private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     Compressor::Settings compressorSettings (bool side) const noexcept;
     TruePeakLimiter::Settings limiterSettings() const noexcept;
+    ResonanceTamer::Settings tamerSettings() const noexcept;
     void compress (juce::AudioBuffer<float>&, int numSamples) noexcept;
 
     std::atomic<float>* v (const char* id) { return parameters.getRawParameterValue (id); }
     std::atomic<float> *trimValue, *compOnValue, *compModeValue, *mixValue, *ignoreValue, *reactsValue, *characterValue,
                        *limitGainValue, *ceilingValue, *releaseModeValue, *releaseValue, *matchValue, *listenValue, *bypassValue;
     std::array<std::atomic<float>*, 5> midValues {}, sideValues {};
+    std::array<std::atomic<float>*, 12> tamerValues {};
+    std::array<std::atomic<float>, 2> nowTamerCut {};
 
     double rate = 48000.0;
     Compressor midComp, sideComp;
     TruePeakLimiter limiter;
+    ResonanceTamer tamer;
     LoudnessMeter loudness, originalLoudness;
     juce::AudioBuffer<float> mid, sides, original;
     juce::SmoothedValue<float> trimGain, matchGain, bypassFade;
