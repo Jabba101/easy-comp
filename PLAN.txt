@@ -542,6 +542,16 @@ LATER
      (M/S), Smooth Wide Highs (M/S)). Everything on: ~4.9% of a core.
      Easy Master 1.3.0. NEXT: PUNCH (transient restore, Easy Trans engine)
      and WIDTH, then the HOLOGRAM skin.
+     DESIGN RULE (user, 4 November - from the bx_console AMEK 9099 look):
+     every cluster of controls that works together (one EQ band, one
+     multiband band, a compressor's HOW MUCH / HOW FAST / OUTPUT, the
+     tamer's per-part knobs vs its shared ones) sits on a panel of its
+     own tone, alternating, so you see at a glance which knobs and
+     switches belong to the same node - no reading every label. Done in
+     the plain layout now (alternating tiles); the HOLOGRAM skin must
+     keep it (alternating tinted glass panels per node, not rows of
+     identical buttons). The user forgets to repeat requirements after
+     the chat is summarised - keep them here.
      LOOK: Easy Master will get the HOLOGRAM skin to match Easy Strip; the
      user mainly wants to approve the look at that stage (until then
      working layouts can be pushed without a look check).

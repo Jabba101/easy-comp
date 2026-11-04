@@ -1503,6 +1503,21 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
     drawPanel (g, limiterPanel, "6", "LIMITER");
     drawPanel (g, comparePanel, "", "COMPARE");
 
+    // The groups on the page showing: alternating tones, so the knobs that work together read as one
+    const auto drawTiles = [&]
+    {
+        const juce::Colour tones[2] { juce::Colour (0xff272c34), juce::Colour (0xff1b1e23) };
+        int i = 0;
+        for (auto& t : groupTiles[(size_t) shownPage])
+        {
+            g.setColour (tones[i % 2]);
+            g.fillRoundedRectangle (t.toFloat(), 6.0f);
+            g.setColour (i % 2 == 0 ? juce::Colour (0xff353b45) : juce::Colour (0xff262a31));
+            g.drawRoundedRectangle (t.toFloat().reduced (0.5f), 6.0f, 1.0f);
+            ++i;
+        }
+    };
+
     const auto rowName = [&g] (juce::Rectangle<int> r, const juce::String& name, const juce::String& under, juce::Colour c, bool lit)
     {
         const auto box = r.toFloat().reduced (2.0f, 6.0f);
@@ -1522,6 +1537,7 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
     {
         drawPanel (g, pageDisplayPanel, {}, "COMPRESSOR & LIMITER - WHAT THEY'RE DOING");
         drawPanel (g, pagePanel, "5", "COMPRESSOR");
+        drawTiles();
         const bool ms = masterProcessor.isMidSide();
         rowName (midRowName, ms ? "MID" : "STEREO", ms ? "kick, bass,\nsnare, vocal" : "the whole mix", midColour, true);
         rowName (sideRowName, "SIDE", ms ? "the width" : "only in\nMID + SIDE", sideColour, ms);
@@ -1530,6 +1546,7 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
     {
         drawPanel (g, pageDisplayPanel, {}, "MULTIBAND - THE FOUR BANDS");
         drawPanel (g, pagePanel, "4", "MULTIBAND");
+        drawTiles();
         const bool ms = masterProcessor.isMultibandMidSide();
         rowName (mbMidName, ms ? "MID" : "STEREO", ms ? "kick, bass,\nsnare, vocal" : "the whole mix", ms ? midColour : Palette::accent, true);
         rowName (mbSideName, "SIDE", ms ? "the width" : "only in\nMID + SIDE", sideColour, ms);
@@ -1537,7 +1554,7 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
         for (int b = 0; b < 4; ++b)
         {
             g.setColour (Palette::textDim);
-            g.drawText (juce::String (b + 1) + "  " + MasterMBIDs::bandNames[b], mbBandNames[(size_t) b].withTrimmedRight (144), juce::Justification::centredLeft, false);
+            g.drawText (juce::String (b + 1) + "  " + MasterMBIDs::bandNames[b], mbBandNames[(size_t) b].withTrimmedRight (144).withTrimmedLeft (12), juce::Justification::centredLeft, false);
             g.setColour (Palette::panelEdge);
             g.drawHorizontalLine (mbBandNames[(size_t) b].getBottom(), (float) mbBandNames[(size_t) b].getX(), (float) mbBandNames[(size_t) b].getRight() - 8.0f);
         }
@@ -1546,6 +1563,7 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
     {
         drawPanel (g, pageDisplayPanel, {}, "EQ - THE CURVE");
         drawPanel (g, pagePanel, "3", "EQ");
+        drawTiles();
         const bool ms = masterProcessor.isEQMidSide();
         rowName (eqMidName, ms ? "MID" : "STEREO", ms ? "kick, bass,\nsnare, vocal" : "the whole mix", ms ? midColour : Palette::accent, true);
         rowName (eqSideName, "SIDE", ms ? "the width" : "only in\nMID + SIDE", sideColour, ms);
@@ -1562,6 +1580,7 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
     {
         drawPanel (g, pageDisplayPanel, {}, "RESONANCE TAMER - WHAT IT'S DOING");
         drawPanel (g, pagePanel, "2", "RESONANCE TAMER");
+        drawTiles();
         const bool ms = masterProcessor.isTamerMidSide();
         rowName (tamerMidName, ms ? "MID" : "STEREO", ms ? "the middle" : "the whole mix", midColour, true);
         rowName (tamerSideName, "SIDE", ms ? "the width" : "only in\nMID + SIDE", sideColour, ms);
@@ -1670,6 +1689,15 @@ void EasyMasterAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
             placeKnob (knobs[(size_t) (sideThresholdKnob + c)], juce::Rectangle<int> (sideRow.getX() + c * w, sideRow.getY(), w, sideRow.getHeight()),
                        knobSizeFor (juce::Rectangle<int> (0, 0, w, sideRow.getHeight()), 64));
         }
+        {
+            // (the groups: THRESHOLD + RATIO, ATTACK + RELEASE, MAKE-UP, and MIX / IGNORE BELOW for both)
+            auto& tiles = groupTiles[compPage];
+            tiles.clear();
+            const int top = midRow.getY(), bottom = sideRow.getBottom();
+            for (auto [first, count] : { std::pair<int, int> { 0, 2 }, { 2, 2 }, { 4, 1 } })
+                tiles.push_back (juce::Rectangle<int> (midRow.getX() + first * w, top, w * count, bottom - top).reduced (3, 0));
+            tiles.push_back (juce::Rectangle<int> (shared.getX(), top, shared.getWidth(), bottom - top).reduced (3, 0));
+        }
         placeKnob (knobs[mixKnob], shared.removeFromTop (rowHeight), knobSizeFor (juce::Rectangle<int> (0, 0, shared.getWidth(), rowHeight), 60));
         placeKnob (knobs[ignoreKnob], shared, knobSizeFor (shared, 60));
     }
@@ -1701,6 +1729,12 @@ void EasyMasterAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
             buttons.removeFromRight (4);
             mbBandOn[(size_t) b].setBounds (buttons.removeFromRight (56).withSizeKeepingCentre (56, 22));
         }
+        {
+            auto& tiles = groupTiles[mbPage];
+            tiles.clear();
+            for (auto& n : mbBandNames)
+                tiles.push_back (juce::Rectangle<int> (n.getX(), n.getY() - 2, n.getWidth(), inside.getBottom() - n.getY() + 2).reduced (3, 0));
+        }
         const int rowHeight = inside.getHeight() / 2;
         auto rows = std::array<juce::Rectangle<int>, 2> { inside.removeFromTop (rowHeight), inside };
         mbMidName = rows[0].removeFromLeft (84);
@@ -1713,7 +1747,6 @@ void EasyMasterAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
             for (int c = 0; c < 16; ++c)
             {
                 auto column = c == 15 ? r : r.removeFromLeft (w);
-                if (c % 4 == 3) column = column.withTrimmedRight (6);   // (a little space between bands)
                 placeKnob (mbKnobs[(size_t) part][(size_t) c], column, size);
             }
         }
@@ -1733,6 +1766,12 @@ void EasyMasterAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
         const int pairWidth = (names.getWidth() * 2) / 11;
         for (int b = 0; b < 6; ++b)
             eqBandNames[(size_t) b] = b < 5 ? names.removeFromLeft (pairWidth) : names;
+        {
+            auto& tiles = groupTiles[eqPage];
+            tiles.clear();
+            for (auto& n : eqBandNames)
+                tiles.push_back (juce::Rectangle<int> (n.getX(), n.getY() - 2, n.getWidth(), inside.getBottom() - n.getY() + 2).reduced (3, 0));
+        }
         const int rowHeight = inside.getHeight() / 2;
         auto rows = std::array<juce::Rectangle<int>, 2> { inside.removeFromTop (rowHeight), inside };
         eqMidName = rows[0].removeFromLeft (84);
@@ -1771,6 +1810,13 @@ void EasyMasterAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
                        knobSizeFor (juce::Rectangle<int> (0, 0, w, midRow.getHeight()), 66));
             placeKnob (knobs[(size_t) (tSideAmountKnob + c)], juce::Rectangle<int> (sideRow.getX() + c * w, sideRow.getY(), w, sideRow.getHeight()),
                        knobSizeFor (juce::Rectangle<int> (0, 0, w, sideRow.getHeight()), 66));
+        }
+        {
+            auto& tiles = groupTiles[tamerPage];
+            tiles.clear();
+            const int top = midRow.getY(), bottom = sideRow.getBottom();
+            tiles.push_back (juce::Rectangle<int> (midRow.getX(), top, w * 3, bottom - top).reduced (3, 0));
+            tiles.push_back (juce::Rectangle<int> (shared.getX(), top, shared.getWidth(), bottom - top).reduced (3, 0));
         }
         // SPEED (for both) on top; FROM and TO under it
         auto speedArea = shared.removeFromTop (rowHeight);

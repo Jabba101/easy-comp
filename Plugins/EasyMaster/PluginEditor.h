@@ -227,6 +227,8 @@ private:
     juce::Rectangle<int> mbMidName, mbSideName;
     std::array<juce::Rectangle<int>, 4> mbBandNames;
     bool shownMBMidSide = false, shownMBOn = false;
+    // Each page's groups: the knobs that work together share a panel of their own tone, alternating (like a console's modules)
+    std::array<std::vector<juce::Rectangle<int>>, numPages> groupTiles;
     std::array<std::array<Knob, 11>, 2> eqKnobs;
     LightButton eqOnButton { "ON", Palette::meterLow };
     std::unique_ptr<juce::ButtonParameterAttachment> eqOnAttachment;
