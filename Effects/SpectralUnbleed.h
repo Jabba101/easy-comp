@@ -36,12 +36,13 @@
 
     How: the sound is analysed in short, overlapping slices (FFT, 2048
     points at 48 kHz, every 512 samples), grouped into third-octave bands.
-    For each band it follows how loud the stem usually is (over ~20 s).
+    For each band it follows how loud the stem typically is (rising over
+    ~1 s, falling over ~20 s - not its single loudest moment).
     Across the stem's own range (the bands it's usually within 20 dB of its
     loudest in) it judges whether the stem is playing at all: when it's far
     below its usual level there and the other stems are far louder, it has
-    stopped (eased in over 6 dB and ~150 ms, so a breath between words
-    doesn't count). Then every band the others are about as loud in or
+    stopped (and the stem as a whole well under its usual loudness; eased in
+    over 6 dB and ~300 ms, so a breath or a reverb tail doesn't count). Then every band the others are about as loud in or
     louder is turned down by AMOUNT - even a ghost as loud as the real part
     in a few bands (real UVR5 vocal stems carry exactly that: guitar low
     mids through a long instrumental). The gains fade down at SMOOTHNESS,
@@ -51,7 +52,8 @@
 
     A sidechain that is the same sound as the stem itself (a copy sent by
     mistake) is noticed and ignored, so it can never cancel the stem.
-    Delay: one FFT (2048 samples at 48 kHz, ~43 ms) - your DAW lines it up.
+    Delay: one FFT plus one slice of look-ahead (2560 samples at 48 kHz,
+    ~53 ms) - your DAW lines it up.
 */
 class SpectralUnbleed
 {
@@ -95,6 +97,9 @@ public:
         }
         for (auto& k : kept)
             k.assign ((size_t) fftSize, 0.0f);
+        for (auto& k : waiting)
+            k.assign ((size_t) fftSize, 0.0f);
+        waitingGain.assign ((size_t) (fftSize / 2 + 1), 1.0f);
         inPos = 0;
         outRead = 0;
         sinceFrame = 0;
@@ -127,7 +132,7 @@ public:
         }
     }
 
-    int getLatencySamples() const noexcept   { return fftSize - 1; }
+    int getLatencySamples() const noexcept   { return fftSize - 1 + hop; }   // (one FFT, plus one slice of look-ahead)
 
     /** track: the stem (in place). side: the other stems (any channels), or nullptr / no channels for none. */
     void process (juce::AudioBuffer<float>& track, const juce::AudioBuffer<float>* side) noexcept
@@ -151,7 +156,7 @@ public:
                 auto& ch = chans[(size_t) c];
                 ch.in[(size_t) inPos] = track.getSample (c, i);
                 ch.side[(size_t) inPos] = sideSample;
-                ch.dry[(size_t) ((outRead + size - 1) % outSize)] = track.getSample (c, i);   // (delayed exactly as the processed sound)
+                ch.dry[(size_t) ((outRead + size - 1 + hop) % outSize)] = track.getSample (c, i);   // (delayed exactly as the processed sound)
             }
             inPos = (inPos + 1) % size;
 
@@ -187,6 +192,7 @@ public:
         const float calibrationDb = 46.8f + 20.0f * std::log10 ((float) fftSize / 2048.0f);
         return 10.0f * std::log10 ((sidechain ? bandPowerS : bandPowerT)[(size_t) b] + 1.0e-20f) - calibrationDb;
     }
+    float getStemAbsent() const noexcept { return stemAbsent; }
     bool isSidechainACopy() const noexcept                 { return sidechainIsCopy; }
 
 private:
@@ -302,14 +308,17 @@ private:
         // dropped far below its usual level, and the other stems are far louder.)
         {
             const float longFall = std::exp (-frameSeconds / 20.0f);
-            double sumBelow = 0.0, sumLouder = 0.0;
+            double sumBelow = 0.0, sumLouder = 0.0, ownNow = 0.0, ownUsual = 0.0;
             int counted = 0;
             float loudestUsual = 0.0f;
             for (int b = 0; b < numBands; ++b)
             {
                 auto& ul = usualLong[(size_t) b];
                 const float pt = powerT[(size_t) b] / (float) analysed + 1.0e-20f;
-                ul = juce::jmax (pt, longFall * ul + (1.0f - longFall) * pt);
+                // (its usual level: rises over ~1 s, falls over ~20 s - so it's how loud the stem typically
+                //  gets there, not its single loudest 's' or hit)
+                const float rise = 1.0f - std::exp (-frameSeconds / 1.0f);
+                ul = pt > ul ? ul + rise * (pt - ul) : longFall * ul + (1.0f - longFall) * pt;
                 loudestUsual = juce::jmax (loudestUsual, ul);
             }
             // (the stem's own range: the bands it's usually within 20 dB of its loudest in, above the deep bass
@@ -321,6 +330,7 @@ private:
                 const float ul = usualLong[(size_t) b];
                 if (ul < ownFloor) continue;
                 sumBelow  += juce::jlimit (0.0f, 40.0f, 10.0f * std::log10 ((ul + 1.0e-20f) / pt));
+                ownNow += pt; ownUsual += ul;
                 sumLouder += juce::jlimit (-30.0f, 40.0f, 10.0f * std::log10 (ps / pt));
                 ++counted;
             }
@@ -328,12 +338,17 @@ private:
             if (counted > 0 && settings.sensitivity > 0.0f)
             {
                 const float below = (float) (sumBelow / counted), louder = (float) (sumLouder / counted);
-                const float needBelow  = 16.0f - 8.0f * sens;      // (the stem's top end this far under its usual level ...)
+                const float needBelow  = 10.0f - 8.0f * sens;      // (the stem this far under its usual level, band by band ...)
                 const float needLouder = 14.0f - 8.0f * sens;      // (... and the others this much louder there)
                 absent = juce::jlimit (0.0f, 1.0f, (below - needBelow) / 6.0f) * juce::jlimit (0.0f, 1.0f, (louder - needLouder) / 6.0f);
+                // (and the stem as a whole well under its usual loudness - a voice singing in a different
+                //  register can look "quiet" band by band while it's plainly there)
+                const float wholeBelow = (float) (10.0 * std::log10 ((ownUsual + 1.0e-20) / (ownNow + 1.0e-20)));
+                absent *= juce::jlimit (0.0f, 1.0f, (wholeBelow - (14.0f - 8.0f * sens)) / 6.0f);
             }
-            // (settles in over ~150 ms so a breath between words isn't taken for silence; drops at once when the stem returns)
-            const float settle = 1.0f - std::exp (-frameSeconds / 0.15f);
+            // (settles in over ~300 ms, so a breath between words or the stem's own reverb tail isn't taken for silence;
+            //  drops at once when the stem returns)
+            const float settle = 1.0f - std::exp (-frameSeconds / 0.3f);
             stemReturning = absent < stemAbsent - 0.2f;
             stemAbsent = absent < stemAbsent ? absent : stemAbsent + settle * (absent - stemAbsent);
         }
@@ -381,11 +396,20 @@ private:
             binGain[(size_t) k] = g;
         }
 
-        // Apply, back to sound, overlap-add
+        // Back to sound, one slice late: the slice before this one, with the gains it got OR this slice's,
+        // whichever is higher - so when the stem comes back in THIS slice, the slice before is already open
+        // and the first consonant or attack is never clipped
+        for (int k = 0; k < bins; ++k)
+        {
+            const float now = binGain[(size_t) k];
+            binGain[(size_t) k] = juce::jmax (now, waitingGain[(size_t) k]);
+            waitingGain[(size_t) k] = now;
+        }
         for (int c = 0; c < channels; ++c)
         {
             float* s = spectrum.get();
-            std::copy (kept[(size_t) c].begin(), kept[(size_t) c].end(), s);
+            std::copy (waiting[(size_t) c].begin(), waiting[(size_t) c].end(), s);
+            std::copy (kept[(size_t) c].begin(), kept[(size_t) c].end(), waiting[(size_t) c].begin());
             s[0] *= binGain[0];
             s[1] *= binGain[(size_t) (bins - 1)];
             for (int k = 1; k < bins - 1; ++k)
@@ -407,7 +431,9 @@ private:
     Aligned frame, spectrum, work, sideSpectrum;
     std::vector<float> window, binGain;
     std::array<Channel, 4> chans;
-    std::array<std::vector<float>, 4> kept;   // (each channel's spectrum, between analysis and resynthesis)
+    std::array<std::vector<float>, 4> kept;      // (each channel's spectrum, between analysis and resynthesis)
+    std::array<std::vector<float>, 4> waiting;   // (the slice before, held back one slice for the look-ahead)
+    std::vector<float> waitingGain;
     int inPos = 0, outRead = 0, sinceFrame = 0;
 
     int numBands = 0;

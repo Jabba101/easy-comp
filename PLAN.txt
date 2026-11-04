@@ -519,7 +519,20 @@ LATER
      stem returns. Default: band song 3.86 -> 5.35 dB, Mureka vocal ghost
      -13 dB at -0.3 dB accuracy (that's the singing UVR5 already got
      wrong, which Unbleed can't fix). 'Strong Cleanup' goes further but
-     starts nibbling the voice on the Mureka song (-1.5 dB). Ears next.
+     starts nibbling the voice on the Mureka song (-1.5 dB).
+     USER'S EARS (4 November 2026): REMOVED ONLY on the Mureka vocal had
+     "partial voice and a bit of reverb here and there". Measured: more
+     real voice than ghost was being taken out. Causes: the usual level
+     was a PEAK follower (an 's' or a big note set it, so ordinary singing
+     looked "quiet" across the top bands), and phrase ends / reverb tails
+     counted as "stopped" after 150 ms. Fixed: usual level rises over 1 s
+     (typical, not peak), the stem as a whole must also be well under its
+     usual loudness, ~300 ms before a stop counts, one slice of look-ahead
+     (phrase starts never clipped; delay now ~53 ms). Default is now SAFE:
+     voice removed well under ghost removed on both songs; Mureka vocal
+     ghost -10 dB; the band song's loud ghost only -0.5 dB at default,
+     'Vocal - Strong Cleanup' -1.4 dB there (that ghost is only ~8 dB
+     under the singing - too close to separate safely). Ears again.
    - Once the essentials are perfected: EASY FX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the

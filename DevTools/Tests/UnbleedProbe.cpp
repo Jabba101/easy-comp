@@ -39,6 +39,7 @@ int main (int argc, char** argv)
             juce::AudioBuffer<float> b (buf.getArrayOfWritePointers(), 4, i, len);
             juce::AudioBuffer<float> sb (side.getArrayOfWritePointers(), 2, i, len);
             u.process (b, &sb);
+            if (k == 0 && std::getenv ("UB_LOG") != nullptr) std::fprintf (stderr, "%.3f %.3f\n", (i + len) / fileRate, u.getStemAbsent());
         }
         const int L = u.getLatencySamples();
         if (auto* dir = std::getenv ("UB_WRITE"))

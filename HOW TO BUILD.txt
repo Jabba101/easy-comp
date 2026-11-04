@@ -649,7 +649,7 @@ YOUR FIRST FIVE MINUTES WITH EASY UNBLEED
    ends up in the sidechain, Easy Unbleed notices and leaves it alone.)
    Honest limits: all the stems came from one mix, so this cleans the
    ghost in the gaps; it can't take the cymbals out from UNDER a note
-   that's singing over them. It looks ~43 ms ahead, so it delays the
+   that's singing over them. It looks ~53 ms ahead, so it delays the
    sound by that much - your DAW lines everything up automatically.
 
 
