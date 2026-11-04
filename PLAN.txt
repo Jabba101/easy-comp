@@ -824,4 +824,10 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      Start the model at 14" x 5.5", steel. Method: textbook model first,
      rendered as WAV hits (soft/medium/hard, centre/edge, ghost, rimshot)
      for him to judge by ear; ideally a dry close-miked recording of the
-     SD296 to measure its modes and decays. Still to ask: heads, tuning.
+     SD296 to measure its modes and decays. Heads: coated single-ply
+     batter (Evans or Aquarian). Tuning: medium / medium-high (best stick
+     response without choking the ring) - the default. Damping in the
+     studio, so a DAMPING control: OPEN / GEL PAD / DAMPENING RING (he may
+     record all three). Second voice later: his Sonor Designer maple
+     14" x 3.5" (vintage tone, for styles before the steel-snare crack) -
+     maple shell, shallow depth.
