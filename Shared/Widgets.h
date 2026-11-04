@@ -26,6 +26,7 @@ public:
     LightButton (const juce::String& buttonText, juce::Colour colourWhenOn);
 
     void paintButton (juce::Graphics&, bool isMouseOver, bool isMouseDown) override;
+    juce::Colour getLightColour() const noexcept   { return lightColour; }
 
 private:
     juce::Colour lightColour;

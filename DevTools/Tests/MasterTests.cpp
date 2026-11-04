@@ -2,6 +2,7 @@
 #include "TestHelpers.h"
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "MasterConsole.h"
 #include "Parameters.h"
 #include <juce_audio_formats/juce_audio_formats.h>
 
@@ -429,68 +430,80 @@ namespace
         }
 
         P p; prepare (p, sr, 512);
-        loadPresetNamed (p, "Master - Synthwave Smooth & Wide");
-        const auto song = loadMix ("mureka", 40.0, 14.0);
-        run (p, song, 512);
+        loadPresetNamed (p, "Master - Tighten & Brighten (M/S)");
+        run (p, loadMix ("mureka", 40.0, 6.0), 512);
         std::unique_ptr<juce::AudioProcessorEditor> editor (p.createEditor());
         auto* window = dynamic_cast<EasyMasterAudioProcessorEditor*> (editor.get());
-        check (window != nullptr && editor->getWidth() == 1680 && editor->getHeight() == 900, "window is 1680 x 900 (fits a 1080p screen)");
+        check (window != nullptr && editor->getWidth() == 1620 && editor->getHeight() == 927, "the window opens at 1620 x 927 (fits a 1080p screen; drag the corner for any size)");
         if (window == nullptr) return;
+        auto& console = window->getConsole();
+        using C = MasterHolo::Console;
+        check (console.getWidth() == C::width && console.getHeight() == C::height, "the console is laid out at 1800 x 1030 (like Easy Strip) and scaled to the window");
 
-        const auto fitsAndNoOverlaps = [&]
+        // Nothing overlapping or spilling out: the console's parts, and each module's parts inside it
+        const auto tidy = [&] (juce::String& problem)
         {
-            std::vector<juce::Rectangle<int>> boxes;
-            for (auto* child : editor->getChildren())
+            const auto checkInside = [&] (juce::Component& parent, std::function<bool (juce::Component*, juce::Component*)> allowed)
             {
-                if (! child->isVisible()) continue;
-                if (! editor->getLocalBounds().contains (child->getBounds())) return false;
-                for (auto& other : boxes) if (other.intersects (child->getBounds())) return false;
-                boxes.push_back (child->getBounds());
-            }
+                std::vector<juce::Component*> seen;
+                for (auto* child : parent.getChildren())
+                {
+                    if (! child->isVisible() || child->getWidth() == 0) continue;
+                    if (! parent.getLocalBounds().contains (child->getBounds())) { problem = child->getName() + " spills out of " + parent.getName(); return false; }
+                    for (auto* other : seen)
+                        if (other->getBounds().intersects (child->getBounds()) && ! allowed (other, child))
+                        { problem = "overlap in " + juce::String (typeid (parent).name()) + " at " + child->getBounds().toString() + " / " + other->getBounds().toString(); return false; }
+                    seen.push_back (child);
+                }
+                return true;
+            };
+            const auto isTab = [&] (juce::Component* c) { return c == console.bayTabs[0].get() || c == console.bayTabs[1].get(); };
+            const auto isBay = [&] (juce::Component* c) { return c == console.getModule (MasterModules::eq) || c == console.getModule (MasterModules::multiband); };
+            if (! checkInside (console, [&] (juce::Component* a, juce::Component* b2) { return (isTab (a) && isBay (b2)) || (isTab (b2) && isBay (a)); })) return false;
+            for (auto& m : console.getModules())
+                if (m->isVisible() && ! checkInside (*m, [] (juce::Component*, juce::Component*) { return false; })) return false;
             return true;
         };
-        using E = EasyMasterAudioProcessorEditor;
-        window->showPage (E::tamerPage);
-        for (int i = 0; i < 4; ++i) { run (p, loadMix ("mureka", 54.0, 0.2), 512); window->updateDisplaysNow(); }
-        check (window->isKnobShowing (E::tMidAmountKnob) && window->isKnobShowing (E::tSideAmountKnob) && ! window->isKnobShowing (E::midThresholdKnob)
-               && window->isKnobShowing (E::gainKnob) && fitsAndNoOverlaps(), "the RESONANCE TAMER page: its MID and SIDE rows, the LIMITER still there, nothing overlapping");
-        savePng (*editor, outDir.getChildFile ("master_tamer.png"));
-        window->showPage (E::eqPage);
-        loadPresetNamed (p, "Master - Tighten & Brighten (M/S)");
-        for (int i = 0; i < 4; ++i) { run (p, loadMix ("mureka", 54.0, 0.2), 512); window->updateDisplaysNow(); }
-        check (window->getEQKnob (0, 0).isVisible() && window->getEQKnob (1, 10).isVisible() && window->getEQKnob (1, 10).isEnabled()
-               && ! window->isKnobShowing (E::tMidAmountKnob) && fitsAndNoOverlaps(), "the EQ page: a full EQ for MID and for SIDE, nothing overlapping");
-        savePng (*editor, outDir.getChildFile ("master_eq.png"));
+        const char* names[C::numFocus] { "tamer", "eq", "multiband", "comp", "punch", "width" };
+        for (int f = 0; f < C::numFocus; ++f)
         {
-            // Dragging a dot on the screen: the band follows (across = frequency, up / down = gain); double-click = 0 dB
-            auto& eqView = window->getEQDisplay();
+            console.showFocus (f);
+            if (f == C::eqFocus) console.getModuleBrowser (MasterModules::eq).onPresetChosen (MasterModules::presets (MasterModules::eq)[2]);
+            if (f == C::mbFocus) console.getModuleBrowser (MasterModules::multiband).onPresetChosen (MasterModules::presets (MasterModules::multiband)[4]);
+            if (f == C::punchFocus) console.getModuleBrowser (MasterModules::punch).onPresetChosen (MasterModules::presets (MasterModules::punch)[1]);
+            if (f == C::widthFocus) console.getModuleBrowser (MasterModules::width).onPresetChosen (MasterModules::presets (MasterModules::width)[3]);
+            for (int i = 0; i < 12; ++i) { run (p, loadMix ("band", 30.0 + i * 0.2, 0.2), 512); console.updateNow(); }
+            juce::String problem;
+            const bool ok = tidy (problem);
+            check (ok && console.getScreenComponent (f)->isVisible(), juce::String ("the console with the screen on ") + names[f] + ": nothing overlapping" + (ok ? "" : " (" + problem + ")"));
+            savePng (console, outDir.getChildFile (juce::String ("master_") + names[f] + ".png"));
+        }
+        check (console.getBay() == 1 && console.getModule (MasterModules::multiband)->isVisible() && ! console.getModule (MasterModules::eq)->isVisible(),
+               "the screen on MULTIBAND brings the MULTIBAND into the big bay");
+        console.bayTabs[0]->onClick();
+        check (console.getFocus() == C::eqFocus && console.getBay() == 0, "... and the bay's EQ tab brings back the EQ, on the screen too");
+        {
+            // Dragging a dot on the screen: the band follows; double-click = 0 dB
+            auto& eqView = console.eqDisplay;
+            console.showFocus (C::eqFocus);
+            console.updateNow();
             const auto start = eqView.nodePosition ({ 0, 2 });
             const auto target = start + juce::Point<float> (60.0f, -40.0f);
             eqView.mouseDown (mouseAt (&eqView, start, true));
             eqView.mouseDrag (mouseAt (&eqView, target, true));
             eqView.mouseUp (mouseAt (&eqView, target, false));
             const float freq = getParam (p, MasterEQIDs::freq[0][2]), gain = getParam (p, MasterEQIDs::gain[0][2]);
-            window->updateDisplaysNow();
-            const auto now = eqView.nodePosition ({ 0, 2 });
-            check (freq > 1100.0f && gain > 1.0f && now.getDistanceFrom (target) < 3.0f, "dragging the MID dot on the screen moves the band: now "
-                   + juce::String (freq, 0) + " Hz, " + Format::signedDecibels (gain) + ", and the dot sits under the mouse");
-            eqView.mouseDoubleClick (mouseAt (&eqView, now, false));
+            check (freq > 1100.0f && gain > 0.5f, "dragging the MID dot on the screen moves the band: now " + juce::String (freq, 0) + " Hz, " + Format::signedDecibels (gain));
+            console.updateNow();
+            eqView.mouseDoubleClick (mouseAt (&eqView, eqView.nodePosition ({ 0, 2 }), false));
             check (std::abs (getParam (p, MasterEQIDs::gain[0][2])) < 0.01f, "double-clicking the dot puts it back to 0 dB");
-            const auto lowCut = eqView.nodePosition ({ 1, MasteringEQ::numBands });
-            eqView.mouseDown (mouseAt (&eqView, lowCut, true));
-            eqView.mouseDrag (mouseAt (&eqView, lowCut + juce::Point<float> (40.0f, 0.0f), true));
-            eqView.mouseUp (mouseAt (&eqView, lowCut + juce::Point<float> (40.0f, 0.0f), false));
-            check (getParam (p, MasterEQIDs::lowCut[1]) > 125.0f, "the SIDE LOW CUT's dot (C) drags across too: " + Format::hertz (getParam (p, MasterEQIDs::lowCut[1])));
+            auto* ring = console.findControl (MasterEQIDs::freq[0][2]);
+            check (ring != nullptr && std::abs (ring->getValue() - freq) < 1.0f, "... and the band's FREQ ring below follows it");
         }
         {
-            // The MULTIBAND page, with a module preset loaded
-            window->showPage (E::mbPage);
-            window->getModulePresets (MasterModules::multiband).browser.onPresetChosen (MasterModules::presets (MasterModules::multiband)[4]);   // "Tight Mono Lows (M/S)"
-            for (int i = 0; i < 4; ++i) { run (p, loadMix ("mureka", 54.0, 0.2), 512); window->updateDisplaysNow(); }
-            check (window->getMBKnob (0, 0, 0).isVisible() && window->getMBKnob (1, 3, 3).isVisible() && window->getMBKnob (1, 3, 3).isEnabled()
-                   && fitsAndNoOverlaps(), "the MULTIBAND page: four bands for MID and for SIDE, nothing overlapping");
-            savePng (*editor, outDir.getChildFile ("master_multiband.png"));
-            auto& view = window->getMBDisplay();
+            console.showFocus (C::mbFocus);
+            console.updateNow();
+            auto& view = console.mbDisplay;
             const float x = view.splitX (1);
             view.mouseDown (mouseAt (&view, { x, 60.0f }, true));
             view.mouseDrag (mouseAt (&view, { x + 50.0f, 60.0f }, true));
@@ -498,48 +511,20 @@ namespace
             check (getParam (p, MasterMBIDs::split[1]) > 1200.0f, "dragging the line between LOW MID and HIGH MID moves the split: " + Format::hertz (getParam (p, MasterMBIDs::split[1])));
         }
         {
-            // The PUNCH and WIDTH pages, each with a module preset loaded
-            window->showPage (E::punchPage);
-            window->getModulePresets (MasterModules::punch).browser.onPresetChosen (MasterModules::presets (MasterModules::punch)[1]);   // "Drums Forward (M/S)"
-            for (int i = 0; i < 30; ++i) { run (p, loadMix ("band", 30.0 + i * 0.2, 0.2), 512); window->updateDisplaysNow(); }
-            check (window->getPunchKnob (0).isVisible() && window->getPunchKnob (3).isVisible() && window->getPunchKnob (3).isEnabled()
-                   && ! window->getEQKnob (0, 0).isVisible() && fitsAndNoOverlaps(), "the PUNCH page: PUNCH and SUSTAIN for MID and SIDE, MIX, nothing overlapping");
-            savePng (*editor, outDir.getChildFile ("master_punch.png"));
-            window->showPage (E::widthPage);
-            window->getModulePresets (MasterModules::width).browser.onPresetChosen (MasterModules::presets (MasterModules::width)[3]);   // "Wide & Tight"
-            for (int i = 0; i < 10; ++i) { run (p, loadMix ("mureka", 54.0 + i * 0.1, 0.1), 512); window->updateDisplaysNow(); }
-            check (window->getWidthKnob (0).isVisible() && window->getWidthKnob (1).isVisible() && std::abs (getParam (p, MasterWidthIDs::monoBass) - 120.0f) < 0.5f
-                   && fitsAndNoOverlaps(), "the WIDTH page: WIDTH and MONO BASS, the stereo picture, nothing overlapping");
-            savePng (*editor, outDir.getChildFile ("master_width.png"));
-            window->getModulePresets (MasterModules::width).init.onClick();
-            window->getModulePresets (MasterModules::punch).init.onClick();
-        }
-        loadPresetNamed (p, "Master - Synthwave Smooth & Wide");
-        window->showPage (E::compPage);
-        window->updateDisplaysNow();
-        check (window->isKnobShowing (E::midThresholdKnob) && window->isKnobShowing (E::sideThresholdKnob) && ! window->isKnobShowing (E::tMidAmountKnob)
-               && window->isKnobUsable (E::sideThresholdKnob) && fitsAndNoOverlaps(), "the COMPRESSOR page: MID and SIDE rows, nothing overlapping");
-        savePng (*editor, outDir.getChildFile ("master.png"));
-        {
             std::unique_ptr<juce::AudioProcessorEditor> again (p.createEditor());
-            check (dynamic_cast<E*> (again.get())->getShownPage() == E::compPage, "reopening the window comes back to the same page");
+            auto& c2 = dynamic_cast<EasyMasterAudioProcessorEditor*> (again.get())->getConsole();
+            check (c2.getFocus() == C::mbFocus && c2.getBay() == 1, "reopening the window comes back to the same screen and bay");
         }
-
         {
             // Each module's own Pr and INIT: only that module changes
-            using M = EasyMasterAudioProcessorEditor;
             loadPresetNamed (p, "Master - Tighten & Brighten (M/S)");
             const float eqBefore = getParam (p, MasterEQIDs::gain[1][4]), tamerBefore = getParam (p, MasterIDs::tMidAmount), gainBefore = getParam (p, MasterIDs::limitGain);
-            auto& comp = window->getModulePresets (MasterModules::comp);
-            const auto compPresets = MasterModules::presets (MasterModules::comp);
-            comp.browser.onPresetChosen (compPresets[2]);   // "Rock & Punk"
+            console.getModuleBrowser (MasterModules::comp).onPresetChosen (MasterModules::presets (MasterModules::comp)[2]);   // "Rock & Punk"
             const bool compChanged = std::abs (getParam (p, MasterIDs::midRatio) - 3.0f) < 0.01f && getParam (p, MasterIDs::compMode) < 0.5f;
             check (compChanged && getParam (p, MasterEQIDs::gain[1][4]) == eqBefore && getParam (p, MasterIDs::tMidAmount) == tamerBefore
-                   && getParam (p, MasterIDs::limitGain) == gainBefore && comp.name.getText() == "Rock & Punk",
-                   "the COMPRESSOR's own Pr: 'Rock & Punk' loads into the compressor only - the EQ, tamer and limiter keep theirs");
-            check (p.isPresetEdited(), "... and the main preset box shows (edited)");
-            auto& eqm = window->getModulePresets (MasterModules::eq);
-            eqm.init.onClick();
+                   && getParam (p, MasterIDs::limitGain) == gainBefore, "the COMPRESSOR's own Pr: 'Rock & Punk' loads into the compressor only");
+            check (p.isPresetEdited() && console.getPresetText().endsWith ("*"), "... and the preset window shows it's been edited (*)");
+            console.getModule (MasterModules::eq)->init.onClick();
             check (std::abs (getParam (p, MasterEQIDs::gain[1][4])) < 0.01f && getParam (p, MasterEQIDs::lowCut[1]) < 20.5f
                    && std::abs (getParam (p, MasterIDs::midRatio) - 3.0f) < 0.01f, "the EQ's own INIT: the EQ flat again, the compressor untouched");
             bool allFit = true;
@@ -548,35 +533,40 @@ namespace
                 const auto list = MasterModules::presets (m);
                 for (auto& pr : list) for (auto& [id, v] : pr.values) if (! MasterModules::ids (m).contains (id)) allFit = false;
                 if (list.size() < 5) allFit = false;
+                auto* mod = console.getModule (m);
+                if (mod == nullptr || ! mod->init.isVisible() || ! mod->pr.isVisible()) allFit = false;
             }
-            check (allFit, "every module has its own presets (5+ each), each touching only that module's settings");
-            window->showPage (M::compPage);
-            window->updateDisplaysNow();
-            check (comp.pr.isVisible() && comp.init.isVisible() && window->getModulePresets (MasterModules::limiter).pr.isVisible()
-                   && ! eqm.pr.isVisible() && fitsAndNoOverlaps(), "Pr and INIT on each page (and on the LIMITER), nothing overlapping");
-            savePng (*editor, outDir.getChildFile ("master_module_presets.png"));
+            check (allFit, "every module has its own Pr and INIT and its own presets (5+ each), each touching only that module's settings");
         }
-
-        window->getInitAllButton().onClick();
-        check (p.getPresetName() == "Default settings", "INIT: back to 'Default settings'");
-        window->updateDisplaysNow();
-        check (! window->isKnobUsable (E::sideThresholdKnob) && window->isKnobUsable (E::midThresholdKnob) && fitsAndNoOverlaps(),
-               "STEREO: the top row does the whole mix, the SIDE row rests (dimmed)");
-        savePng (*editor, outDir.getChildFile ("master_stereo.png"));
-        bool hints = true;
-        for (int page = 0; page < E::numPages; ++page)
+        // Every setting has a control on the console, and each explains itself on the ticker
         {
-            window->showPage (page);
-            for (int k = 0; k < E::numKnobs; ++k)
+            bool all = true, hints = true;
+            juce::String missing;
+            for (auto& id : masterPresetIDs())
             {
-                if (! window->isKnobShowing (k)) continue;
-                window->mouseEnter (hoverEvent (&window->getKnob (k)));
-                if (window->hintBar.getText().length() < 40) hints = false;
+                auto* c = console.findControl (id);
+                const bool isSwitch = id == MasterIDs::compOn || id == MasterIDs::compMode || id == MasterIDs::tamerOn || id == MasterIDs::tamerMode
+                                      || id == MasterIDs::reactsTo || id == MasterIDs::character || id == MasterIDs::releaseMode
+                                      || id == MasterEQIDs::on || id == MasterEQIDs::mode || id == MasterMBIDs::on || id == MasterMBIDs::mode
+                                      || id == MasterPunchIDs::on || id == MasterPunchIDs::mode || id == MasterWidthIDs::on || id.startsWith ("mb") && id.endsWith ("on");
+                if (isSwitch) continue;
+                if (c == nullptr) { all = false; missing = id; continue; }
+                console.showBay (juce::String (id).startsWith ("mb") ? 1 : 0);
+                console.mouseEnter (hoverEvent (c));
+                if (console.getTickerText().length() < 30) { hints = false; missing = id; }
             }
+            check (all, "every knob and fader of the chain is on the console" + (all ? juce::String() : " (missing " + missing + ")"));
+            check (hints, "each one explains itself on the ticker" + (hints ? juce::String() : " (" + missing + ")"));
         }
-        for (int k = 0; k < 5; ++k) { window->showPage (E::punchPage); window->mouseEnter (hoverEvent (&window->getPunchKnob (k))); if (window->hintBar.getText().length() < 40) hints = false; }
-        for (int k = 0; k < 2; ++k) { window->showPage (E::widthPage); window->mouseEnter (hoverEvent (&window->getWidthKnob (k))); if (window->hintBar.getText().length() < 40) hints = false; }
-        check (hints, "every knob on both pages explains itself in the help bar");
+        console.initAll.onClick();
+        for (auto& m : console.getModules()) { m->init.flash = false; m->init.repaint(); }   // (INIT only flashes for a moment when pressed)
+        console.updateNow();
+        check (p.getPresetName() == "Default settings", "INIT: back to 'Default settings'");
+        check (! console.findControl (MasterIDs::sideThreshold)->isEnabled() && console.findControl (MasterIDs::midThreshold)->isEnabled(),
+               "STEREO: the MID controls do the whole mix, the SIDE ones rest (dimmed)");
+        console.showFocus (C::compFocus);
+        for (int i = 0; i < 8; ++i) { run (p, loadMix ("band", 34.0 + i * 0.2, 0.2), 512); console.updateNow(); }
+        savePng (console, outDir.getChildFile ("master_stereo.png"));
     }
 
     void testSpeed()

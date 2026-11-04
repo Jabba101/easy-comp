@@ -37,6 +37,18 @@ public:
 };
 
 //==============================================================================
+/** An optional skin. A window whose LookAndFeel is also an EasySkin gets the
+    shared parts (light-up buttons, the help bar, the preset box) drawn its
+    way - Easy Master's HOLOGRAM. Every other window keeps the standard look. */
+struct EasySkin
+{
+    virtual ~EasySkin() = default;
+    virtual void paintLightButton (juce::Graphics&, juce::Button&, juce::Colour lightColour, bool isMouseOver, bool isMouseDown) = 0;
+    virtual void paintHintBar (juce::Graphics&, juce::Component&, const juce::String& title, const juce::String& text) = 0;
+    virtual void paintPresetBox (juce::Graphics&, juce::Component&, const juce::String& shownText, bool isEmpty, bool isNaming, bool isMouseOver) = 0;
+};
+
+//==============================================================================
 /** Draws one of the rounded panels with its caption: a number in amber and a
     name ("1  HOW MUCH"), or with no number, a centred name. */
 void drawPanel (juce::Graphics&, juce::Rectangle<int> area, const juce::String& number, const juce::String& caption);

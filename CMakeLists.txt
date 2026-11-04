@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.28.0)
+project(EasyPlugins VERSION 1.29.0)
 
 # Link-time optimisation squeezes a few more percent of speed out of the
 # finished plugins, but makes every build much slower (each plugin is
@@ -301,7 +301,7 @@ add_easy_plugin(EasyLimiter
 add_easy_plugin(EasyMaster
     NAME        "Easy Master"
     CODE        Ezms
-    VERSION     1.4.0
+    VERSION     1.5.0
     BUNDLE_ID   com.homestudio.easymaster
     CATEGORIES  Fx Dynamics Mastering
     SOURCES     Effects/Compressor.h
@@ -316,9 +316,19 @@ add_easy_plugin(EasyMaster
                 Plugins/EasyMaster/PluginProcessor.h
                 Plugins/EasyMaster/PluginProcessor.cpp
                 Plugins/EasyMaster/PluginEditor.h
-                Plugins/EasyMaster/PluginEditor.cpp)
+                Plugins/EasyMaster/PluginEditor.cpp
+                Plugins/EasyMaster/MasterLook.h
+                Plugins/EasyMaster/MasterLook.cpp
+                Plugins/EasyMaster/MasterConsole.h
+                Plugins/EasyMaster/MasterConsole.cpp
+                Plugins/EasyMaster/MasterHints.h
+                Plugins/EasyStrip/HoloLook.h
+                Plugins/EasyStrip/HoloLook.cpp
+                Plugins/EasyStrip/HoloControls.h
+                Plugins/EasyStrip/HoloControls.cpp)
 
 target_link_libraries(EasyMaster PRIVATE pffft)
+target_include_directories(EasyMaster PRIVATE Plugins/EasyStrip)
 
 add_easy_plugin(EasyUnbleed
     NAME        "Easy Unbleed"
@@ -396,3 +406,4 @@ juce_add_binary_data(StripFonts
                 ThirdParty/Fonts/Orbitron-Bold.ttf)
 set_target_properties(StripFonts PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(EasyStrip PRIVATE juce::juce_dsp pffft StripFonts)
+target_link_libraries(EasyMaster PRIVATE StripFonts)   # (Easy Master's HOLOGRAM skin uses the same fonts)

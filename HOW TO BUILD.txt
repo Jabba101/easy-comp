@@ -635,10 +635,14 @@ YOUR FIRST FIVE MINUTES WITH EASY LIMITER
 YOUR FIRST FIVE MINUTES WITH EASY MASTER
 ====================================================================
    The last plugin on your master bus: INPUT > RESONANCE TAMER > EQ >
-   MULTIBAND > COMPRESSOR > PUNCH > WIDTH > LIMITER, with meters.
-   Click a stage in the chain to show its page -
-   its own display and controls - in the middle. INPUT, the METERS, the
-   LIMITER and COMPARE are always on screen.
+   MULTIBAND > COMPRESSOR > PUNCH > WIDTH > LIMITER, with meters -
+   laid out like Easy Strip: every module on screen at once in its own
+   tinted panel (click its lit name to switch it on or off; INIT and Pr
+   beside it), the big screen in the middle (DISPLAY FOCUS picks what it
+   shows), and the EQ and MULTIBAND sharing the big bay (the tabs in its
+   top left). The ticker along the bottom explains whatever the mouse is
+   over. Double-click a control for its default, double-click its number
+   to type a value. Drag the window's corner for any size.
 
    1. Pick a preset for the song (Rock & Punk, Synthwave, Jazz...).
    2. INPUT - TRIM: set it so the compressor turns down 1-3 dB on the
@@ -937,7 +941,9 @@ WHAT'S IN THIS FOLDER
    Plugins\EasyFlange\    Easy Flange's knobs, picture of the swing and presets.
    Plugins\EasyFilter\    Easy Filter's knobs, picture of the filter and presets.
    Plugins\EasyLimiter\   Easy Limiter's knobs, display and presets.
-   Plugins\EasyMaster\    Easy Master's chain, window, meters and presets.
+   Plugins\EasyMaster\    Easy Master's chain, presets, the console (MasterConsole), its
+                          displays and meters (PluginEditor) and the ticker's words
+                          (MasterHints). It uses Easy Strip's hologram parts.
    Plugins\EasyUnbleed\   Easy Unbleed's knobs, display and presets.
    Plugins\EasyStrip\     Easy Strip: the plumbing that runs the plugins
                           above as its modules, and its windows (Holo* =

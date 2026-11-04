@@ -87,7 +87,12 @@ public:
     Readings getReadings() const noexcept;
     void resetMeters() noexcept   { loudness.resetIntegrated(); highestPeak.store (-100.0f); }
 
-    int shownPage = 0;
+    int shownPage = 0;     // the big screen's DISPLAY FOCUS (kept while the window is closed)
+    int shownBay = 0;      // the big bay: 0 = EQ, 1 = MULTIBAND
+    float windowScale = 0.9f;
+
+    /** The loudest sample going into the chain (after TRIM) since the window last asked (not in dB). */
+    float takeInputPeak() noexcept   { return inputMeterPeak.exchange (0.0f); }
     std::array<juce::String, MasterModules::count> modulePresetNames;   // (which module preset each module's Pr loaded last - shown beside it)   // (the window's page - kept while the window is closed; 0 = RESONANCE TAMER)
 
     bool isMidSide() const noexcept   { return juce::roundToInt (compModeValue->load()) == MasterMode::midSide; }
@@ -153,7 +158,7 @@ private:
 
     // Correlation (over ~300 ms)
     double sumLR = 0.0, sumLL = 0.0, sumRR = 0.0, sumMM = 0.0, sumSS = 0.0;
-    std::atomic<float> sideToMid { -100.0f };
+    std::atomic<float> sideToMid { -100.0f }, inputMeterPeak { 0.0f };
     juce::AbstractFifo scopeFifo { scopeSize };
     std::array<float, scopeSize> scopeL {}, scopeR {};
     bool scopeSkip = false;

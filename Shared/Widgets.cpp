@@ -15,6 +15,7 @@ void HintBar::setHint (const juce::String& newTitle, const juce::String& newText
 
 void HintBar::paint (juce::Graphics& g)
 {
+    if (auto* skin = dynamic_cast<EasySkin*> (&getLookAndFeel())) { skin->paintHintBar (g, *this, title, text); return; }
     auto area = getLocalBounds().toFloat();
 
     g.setColour (Palette::panel);
@@ -49,6 +50,7 @@ LightButton::LightButton (const juce::String& buttonText, juce::Colour colourWhe
 
 void LightButton::paintButton (juce::Graphics& g, bool isMouseOver, bool isMouseDown)
 {
+    if (auto* skin = dynamic_cast<EasySkin*> (&getLookAndFeel())) { skin->paintLightButton (g, *this, lightColour, isMouseOver, isMouseDown); return; }
     const bool on = getToggleState();
     const auto bounds = getLocalBounds().toFloat().reduced (0.5f);
 

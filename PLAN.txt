@@ -566,6 +566,33 @@ LATER
      of a core. NEXT: the HOLOGRAM skin (with the per-node panel tones).
      USER (4 November, after listening): PUNCH and WIDTH sound "perfectly
      good for professional sound" as they are; refine over time.
+   - EASY MASTER HOLOGRAM CONSOLE (4 November 2026, 1.5.0): first try was a
+     re-paint of the old evenly spaced grid - the user rejected it ("boring,
+     no sex appeal; placement ignores local function, everything
+     equidistant"), pointing at Easy Strip. Rebuilt as a Strip-style
+     console with the Strip's own parts (Holo rings, bars, choice stacks,
+     buttons, GainBars, BigMeter, ticker, typing box), at 1800 x 1030,
+     scaled (opens at 90% = 1620 x 927, drag the corner; scale, DISPLAY
+     FOCUS and the bay remembered). User choice: CONSOLE layout - INPUT
+     left; TAMER beside the big screen (DISPLAY FOCUS: TAMER / EQ /
+     MULTIBAND / COMP / PUNCH / WIDTH); the big bay under them holds EQ or
+     MULTIBAND (tabs; focusing EQ/MB switches the bay and back); right:
+     COMP, PUNCH, WIDTH; then OUTPUT (meters), LIMITER, COMPARE. Each
+     module: tinted panel, lit name = its ON (click), INIT + Pr beside it,
+     STEREO / MID+SIDE top left, numbered sections sized to their
+     contents (Comp: 1 HOW MUCH faders + GR, 2 HOW FAST, 3 OUTPUT,
+     4 REACTS TO, 5 STYLE; EQ bands: FREQ ring + GAIN fader, MID row over
+     SIDE row; MB bands: THRESH fader + GR, RATIO / SPEED rings, GAIN
+     fader, ON / SOLO in the heading, 5 SPLITS). Faders for levels /
+     thresholds / ratios, rings for times / frequencies, stacks for
+     choices. MID green, SIDE blue; in STEREO the top row takes the
+     module's colour and the SIDE row rests dimmed. Files:
+     Plugins/EasyMaster/MasterConsole.h/.cpp (console + modules),
+     MasterHints.h (the ticker's words), MasterLook (menus, displays'
+     look); compiles Easy Strip's HoloLook / HoloControls and fonts.
+     Shared widgets got an opt-in EasySkin hook (no change elsewhere).
+     USER: "really impressive... match Easy Strip's vibe very well".
+     INIT is a momentary flash (not a toggle) - as in the Strip.
      DESIGN RULE (user, 4 November - from the bx_console AMEK 9099 look):
      every cluster of controls that works together (one EQ band, one
      multiband band, a compressor's HOW MUCH / HOW FAST / OUTPUT, the

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "EasyWindow.h"
 #include "PluginProcessor.h"
+#include "MasterLook.h"
 
 //==============================================================================
 /** "WHAT IT'S DOING": the last six seconds - into the limiter (grey), out
@@ -174,142 +174,23 @@ private:
 };
 
 //==============================================================================
-/** The Easy Master window: the chain along the top (click a stage to show
-    its page: its own display and controls), INPUT on the left, the page in
-    the middle, and the METERS, LIMITER and COMPARE always on the right. */
-class EasyMasterAudioProcessorEditor : public EasyWindow
+namespace MasterHolo { class Console; }
+
+/** The Easy Master window: the console (laid out at 1800 x 1030) at any size -
+    drag the corner; the shape stays the same, and the size is remembered. */
+class EasyMasterAudioProcessorEditor : public juce::AudioProcessorEditor
 {
 public:
     explicit EasyMasterAudioProcessorEditor (EasyMasterAudioProcessor&);
+    ~EasyMasterAudioProcessorEditor() override;
 
-    enum KnobIndex { trimKnob,
-                     midThresholdKnob, midRatioKnob, midAttackKnob, midReleaseKnob, midMakeupKnob,
-                     sideThresholdKnob, sideRatioKnob, sideAttackKnob, sideReleaseKnob, sideMakeupKnob,
-                     mixKnob, ignoreKnob, gainKnob, ceilingKnob, releaseKnob,
-                     tMidAmountKnob, tMidSensKnob, tMidSharpKnob, tSideAmountKnob, tSideSensKnob, tSideSharpKnob,
-                     tSpeedKnob, tFromKnob, tToKnob, numKnobs };
-
-    /** The pages the chain along the top switches between. */
-    enum Page { tamerPage = 0, eqPage, mbPage, compPage, punchPage, widthPage, numPages };
-    juce::Slider& getPunchKnob (int index)    { return punchKnobs[(size_t) index].slider; }   // 0 MID PUNCH, 1 MID SUSTAIN, 2 SIDE PUNCH, 3 SIDE SUSTAIN, 4 MIX
-    juce::Slider& getWidthKnob (int index)    { return widthKnobs[(size_t) index].slider; }   // 0 WIDTH, 1 MONO BASS
-    juce::Slider& getMBKnob (int part, int band, int which)   { return mbKnobs[(size_t) part][(size_t) (band * 4 + which)].slider; }   // which: 0 THRESHOLD, 1 RATIO, 2 SPEED, 3 GAIN
-    juce::Slider& getMBSplit (int split)                       { return mbSplits[(size_t) split]; }
-    MultibandDisplay& getMBDisplay()                           { return mbDisplay; }
-    EQDisplay& getEQDisplay()                 { return eqDisplay; }
-    juce::Slider& getEQKnob (int part, int column)   { return eqKnobs[(size_t) part][(size_t) column].slider; }   // column: 0..9 FREQ / GAIN per band, 10 LOW CUT
-    void showPage (int page);
-    int getShownPage() const noexcept          { return shownPage; }
-
-    juce::Slider& getKnob (int index)          { return knobs[(size_t) index].slider; }
-    bool isKnobShowing (int index) const       { return knobs[(size_t) index].slider.isVisible(); }
-    bool isKnobUsable (int index) const        { return knobs[(size_t) index].slider.isEnabled(); }
-    juce::Button& getInitAllButton()           { return initAllButton; }
-    juce::Button& getSlotButton (int slot)     { return slot == 0 ? slotA : slotB; }
-    juce::Button& getCopyButton()              { return copyButton; }
-    void updateDisplaysNow()                   { refreshLiveDisplays(); }
+    void resized() override;
+    MasterHolo::Console& getConsole() noexcept   { return *console; }
 
 private:
-    void layoutBody (juce::Rectangle<int> area) override;
-    void paintBody (juce::Graphics&) override;
-    void refreshLiveDisplays() override;
-    void showParts();
-
-    // Each module's own presets: Pr (its menu, with saving your own) and INIT (its defaults)
-    struct ModulePresets
-    {
-        PresetBrowser browser;   // (not shown: it builds the menu and keeps your own presets for this module)
-        juce::TextButton pr { "Pr" }, init { "INIT" };
-        juce::Label name;
-        juce::StringArray ids;
-    };
-    std::array<ModulePresets, MasterModules::count> modulePresets;
-    void applyModulePreset (int module, const Preset* preset);   // nullptr = INIT
-    void showModuleMenu (int module);
-    void placeModuleButtons (int module, juce::Rectangle<int> panel);
-public:
-    ModulePresets& getModulePresets (int module)   { return modulePresets[(size_t) module]; }
-private:
-    void mouseDown (const juce::MouseEvent&) override;
-    std::vector<juce::Component*> pageComponents (int page);
-
-    struct Knob
-    {
-        juce::Slider slider;
-        juce::Label  label;
-        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attachment;
-    };
-
     EasyMasterAudioProcessor& masterProcessor;
-
-    std::array<Knob, numKnobs> knobs;
-    juce::TextButton initAllButton { "INIT" };
-    LightButton compOnButton { "ON", Palette::meterLow };
-    std::unique_ptr<juce::ButtonParameterAttachment> compOnAttachment;
-    ChoiceSwitch modeSwitch, reactsSwitch, characterSwitch, releaseSwitch, listenSwitch;
-    LightButton matchButton { "MATCH", Palette::accent };
-    std::unique_ptr<juce::ButtonParameterAttachment> matchAttachment;
-    LightButton slotA { "A", Palette::accent }, slotB { "B", Palette::accent };
-    juce::TextButton copyButton { "COPY" };
-    juce::Label matchInfo, inputWarning, listenLabel, abLabel;
-    MasterDisplay display;
-    TamerDisplay tamerDisplay;
-    EQDisplay eqDisplay { easyProcessor.parameters };
-    MultibandDisplay mbDisplay { easyProcessor.parameters };
-    std::array<std::array<Knob, 16>, 2> mbKnobs;
-    std::array<juce::Slider, 3> mbSplits;
-    std::array<std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>, 3> mbSplitAttachments;
-    juce::Label mbSplitLabel;
-    std::array<LightButton, 4> mbBandOn { LightButton { "ON", Palette::meterLow }, LightButton { "ON", Palette::meterLow }, LightButton { "ON", Palette::meterLow }, LightButton { "ON", Palette::meterLow } };
-    std::array<LightButton, 4> mbSolo { LightButton { "SOLO", Palette::meterMid }, LightButton { "SOLO", Palette::meterMid }, LightButton { "SOLO", Palette::meterMid }, LightButton { "SOLO", Palette::meterMid } };
-    std::array<std::unique_ptr<juce::ButtonParameterAttachment>, 4> mbBandOnAttachments, mbSoloAttachments;
-    LightButton mbOnButton { "ON", Palette::meterLow };
-    std::unique_ptr<juce::ButtonParameterAttachment> mbOnAttachment;
-    ChoiceSwitch mbModeSwitch;
-    juce::Rectangle<int> mbMidName, mbSideName;
-    std::array<juce::Rectangle<int>, 4> mbBandNames;
-    bool shownMBMidSide = false, shownMBOn = false;
-
-    // The back-panel tones: each cluster of controls that works together on its own tone, alternating (like a console)
-    struct Group { juce::Rectangle<int> area; int tone; };
-    std::array<std::vector<Group>, numPages> pageGroups;   // (per page)
-    std::vector<Group> limiterGroups;
-    void layoutGroups();
-    // Each page's groups: the knobs that work together share a panel of their own tone, alternating (like a console's modules)
-    std::array<std::vector<juce::Rectangle<int>>, numPages> groupTiles;
-    std::array<std::array<Knob, 11>, 2> eqKnobs;
-    LightButton eqOnButton { "ON", Palette::meterLow };
-    std::unique_ptr<juce::ButtonParameterAttachment> eqOnAttachment;
-    ChoiceSwitch eqModeSwitch;
-    juce::Rectangle<int> eqMidName, eqSideName;
-    std::array<juce::Rectangle<int>, 6> eqBandNames;   // the captions over each band's pair of knobs (and LOW CUT)
-    bool shownEQMidSide = false, shownEQOn = true;
-    LightButton tamerOnButton { "ON", Palette::meterLow }, tamerListenButton { "LISTEN: REMOVED ONLY", Palette::meterMid };
-    std::unique_ptr<juce::ButtonParameterAttachment> tamerOnAttachment, tamerListenAttachment;
-    ChoiceSwitch tamerModeSwitch;
-    juce::Rectangle<int> tamerMidName, tamerSideName, pagePanel, pageDisplayPanel;
-    std::array<juce::Rectangle<float>, 9> chainBoxes;
-    int shownPage = compPage;
-    bool shownTamerMidSide = false, shownTamerOn = true;
-    // PUNCH and WIDTH
-    void setUpKnob (Knob&, const char* id, const juce::String& name, const juce::String& hintTitle, const char* hint, juce::Colour colour, float fontSize);
-    std::array<Knob, 5> punchKnobs;
-    std::array<Knob, 2> widthKnobs;
-    LightButton punchOnButton { "ON", Palette::meterLow }, widthOnButton { "ON", Palette::meterLow };
-    std::unique_ptr<juce::ButtonParameterAttachment> punchOnAttachment, widthOnAttachment;
-    ChoiceSwitch punchModeSwitch;
-    juce::Label widthTip;
-    PunchDisplay punchDisplay;
-    WidthDisplay widthDisplay;
-    std::vector<float> scopeLeft, scopeRight;
-    juce::Rectangle<int> punchMidName, punchSideName;
-    bool shownPunchMidSide = false, shownPunchOn = false, shownWidthOn = false;
-
-    MasterMeters meters;
-    std::vector<EasyMasterAudioProcessor::Moment> incoming;
-    bool shownMidSide = false, shownCompOn = true;
-
-    juce::Rectangle<int> midRowName, sideRowName, chainArea, metersPanel, inputPanel, limiterPanel, comparePanel;
+    MasterLook look;   // (the menus, typing boxes and the displays' parts)
+    std::unique_ptr<MasterHolo::Console> console;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EasyMasterAudioProcessorEditor)
 };

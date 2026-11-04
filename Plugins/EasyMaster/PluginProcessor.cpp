@@ -558,6 +558,7 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             part.getWritePointer (0)[i] *= g;
             part.getWritePointer (1)[i] *= g;
         }
+        storeIfBigger (inputMeterPeak, juce::jmax (part.getMagnitude (0, 0, n), part.getMagnitude (1, 0, n)));
 
         // RESONANCE TAMER (always running, so the delay never changes; switched off it passes the sound straight through)
         tamer.process (part);

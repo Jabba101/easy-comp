@@ -263,6 +263,11 @@ void PresetBrowser::resized()
 
 void PresetBrowser::paint (juce::Graphics& g)
 {
+    if (auto* skin = dynamic_cast<EasySkin*> (&getLookAndFeel()))
+    {
+        skin->paintPresetBox (g, *this, getDisplayedText(), shownName.isEmpty(), isNaming(), isMouseOver (true));
+        return;
+    }
     const auto bounds = getLocalBounds().toFloat().reduced (0.5f);
 
     g.setColour (Palette::panel);
