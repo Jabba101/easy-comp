@@ -253,27 +253,52 @@ inline const CompPreset compressorPresets[] =
 
 //==============================================================================
 /*
-    Mid-side presets: the same columns, plus WORKS ON. (All the presets above
-    work on STEREO.)
+    Mid-side presets: the same columns, plus WORKS ON - and for MID+SIDE, the
+    sides' own THRESHOLD, RATIO, ATTACK, RELEASE and MAKE-UP (the columns
+    above are then the middle's). Without them the sides start the same as
+    the middle. (All the presets above work on STEREO.)
 */
+struct SideSettings
+{
+    float thresholdDb = 0.0f, ratio = 0.0f, attackMs = 0.0f, releaseMs = 0.0f, makeupDb = 0.0f;   // (ratio 0 = "same as the middle")
+};
+
 struct MidSidePreset
 {
     CompPreset settings;
     WorksOn worksOn;
+    SideSettings sides {};
 };
 
 inline const MidSidePreset midSidePresets[] =
 {
-    //  category, name                                       thresh  ratio  attack  release  make-up    mix  ignore  reacts   style    low end      works on
+    //  category, name                                       thresh  ratio  attack  release  make-up    mix  ignore  reacts   style    low end      works on       SIDES: thresh ratio attack release make-up
     { { "Drums", "Drum Bus - Squash the Middle",             -24.0f,  6.0f, 10.0f,  120.0f,   0.0f, 100.0f,  20.0f, peaks,   modern,  normal,
         "Only the middle - kick, snare, bass - squashed hard; the cymbals and the room at the sides keep breathing. Aim for 4-8 dB." }, worksOnMid },
-    { { "Mixing & Mastering", "Mix Bus - Mid & Side Glue",              -18.0f,  2.0f, 30.0f,  200.0f,   0.0f, 100.0f,  60.0f, average, vintage, normal,
-        "Glue on the middle and the sides, each on its own: a loud vocal no longer pulls the width down with it. Aim for 1-3 dB." }, worksOnMidSide },
+    { { "Drums", "Drum Bus - Punchy Middle, Open Sides (M/S)", -24.0f, 4.0f, 25.0f, 100.0f,  2.0f, 100.0f,  80.0f, peaks,   modern,  normal,
+        "Kick and snare held firm and punchy in the middle; the cymbals and room at the sides only lightly touched, so they stay open." },
+      worksOnMidSide, { -20.0f, 1.5f, 30.0f, 200.0f, 0.5f } },
+    { { "Guitars", "Guitars - Tame the Wide Doubles (M/S)",  -18.0f,  1.5f, 20.0f,  150.0f,   0.0f, 100.0f, 100.0f, average, modern,  normal,
+        "Hard-panned double-tracked guitars held steady at the sides; whatever's in the middle is barely touched. Aim for 3-5 dB on the sides." },
+      worksOnMidSide, { -26.0f, 4.0f, 10.0f, 120.0f, 2.5f } },
+    { { "Keys", "Synth Pads - Steady Width (M/S)",           -20.0f,  2.0f, 50.0f,  400.0f,   1.0f, 100.0f,  20.0f, average, modern,  normal,
+        "Wide pads and stereo synths stop swelling and receding: the width held steady, the centre just smoothed. Synthwave and ambient." },
+      worksOnMidSide, { -24.0f, 3.0f, 40.0f, 400.0f, 2.0f } },
+    { { "Vocals", "Vocal Bus - Centre Focus (M/S)",          -22.0f,  3.0f, 10.0f,  120.0f,   2.5f, 100.0f, 100.0f, average, modern,  normal,
+        "The lead vocal in the middle held steady and upfront; the backing vocals and doubles spread at the sides left almost alone." },
+      worksOnMidSide, { -18.0f, 1.5f, 30.0f, 250.0f, 0.0f } },
+    { { "Mixing & Mastering", "Mix Bus - Mid & Side Glue",   -18.0f,  2.0f, 30.0f,  200.0f,   0.0f, 100.0f,  60.0f, average, vintage, normal,
+        "Glue on the middle and gentler glue on the sides, each on its own: a loud vocal no longer pulls the width down with it. Aim for 1-3 dB." },
+      worksOnMidSide, { -20.0f, 1.5f, 30.0f, 250.0f, 0.5f } },
+    { { "Mixing & Mastering", "Mix Bus - Heavy & Wide (M/S)", -22.0f, 3.0f, 30.0f,  120.0f,   2.0f, 100.0f,  20.0f, peaks,   vintage, thrust,
+        "Rock, metal and darksynth: a heavy, solid middle (kick, bass, snare, vocal) with the wide guitars and synths kept big but controlled." },
+      worksOnMidSide, { -20.0f, 2.0f, 30.0f, 200.0f, 1.0f } },
     { { "Mixing & Mastering", "Mix Bus - Tame Wide Cymbals & Reverb",   -26.0f,  3.0f,  5.0f,  150.0f,   0.0f, 100.0f, 150.0f, peaks,   modern,  normal,
         "Only the sides: harsh wide cymbals and big reverb tails held in check, the middle untouched. Aim for 2-4 dB." }, worksOnSide },
-    { { "Mixing & Mastering", "Master - Mid & Side (Gentle)",         -14.0f,  1.5f, 30.0f,  250.0f,   0.0f, 100.0f,  40.0f, average, vintage, normal,
-        "1-2 dB on the middle and the sides, each on its own: a cohesive master that keeps its width. Put Easy Limiter after it." }, worksOnMidSide },
-    { { "Mixing & Mastering", "Master - Steady Middle",               -16.0f,  2.0f, 20.0f,  200.0f,   0.0f, 100.0f,  40.0f, average, modern,  normal,
+    { { "Mixing & Mastering", "Master - Mid & Side (Gentle)", -14.0f, 1.5f, 30.0f,  250.0f,   0.0f, 100.0f,  40.0f, average, vintage, normal,
+        "1-2 dB on the middle, a touch less on the sides, each on its own: a cohesive master that keeps its width. Put Easy Limiter after it." },
+      worksOnMidSide, { -16.0f, 1.3f, 40.0f, 300.0f, 0.0f } },
+    { { "Mixing & Mastering", "Master - Steady Middle",      -16.0f,  2.0f, 20.0f,  200.0f,   0.0f, 100.0f,  40.0f, average, modern,  normal,
         "Holds the vocal, bass and kick steady in the middle without squeezing the stereo spread. Aim for 1-2 dB." }, worksOnMid },
 };
 
@@ -282,8 +307,10 @@ inline std::vector<Preset> makeCompressorPresets()
 {
     std::vector<Preset> presets;
 
-    const auto add = [&presets] (const CompPreset& p, WorksOn worksOn)
+    const auto add = [&presets] (const CompPreset& p, WorksOn worksOn, SideSettings sides = {})
     {
+        if (sides.ratio <= 0.0f)   // (no sides of their own: they start the same as the middle)
+            sides = { p.thresholdDb, p.ratio, p.attackMs, p.releaseMs, p.makeupDb };
         presets.push_back ({ p.category, p.name, p.tip,
                              { { CompIDs::threshold, p.thresholdDb }, { CompIDs::ratio,    p.ratio },
                                { CompIDs::attack,    p.attackMs },    { CompIDs::release,  p.releaseMs },
@@ -291,15 +318,15 @@ inline std::vector<Preset> makeCompressorPresets()
                                { CompIDs::lowCut,    p.lowCutHz },    { CompIDs::reactsTo, (float) p.reactsTo },
                                { CompIDs::character, (float) p.style }, { CompIDs::lowEnd,  (float) p.lowEnd },
                                { CompIDs::worksOn,   (float) worksOn },
-                               // (the sides start the same as the middle; tweak them apart from there)
-                               { CompIDs::sideThreshold, p.thresholdDb }, { CompIDs::sideRatio, p.ratio },
-                               { CompIDs::sideAttack, p.attackMs }, { CompIDs::sideRelease, p.releaseMs }, { CompIDs::sideMakeup, p.makeupDb } } });
+                               // (MID+SIDE presets give the sides their own; the rest start them the same as the middle)
+                               { CompIDs::sideThreshold, sides.thresholdDb }, { CompIDs::sideRatio, sides.ratio },
+                               { CompIDs::sideAttack, sides.attackMs }, { CompIDs::sideRelease, sides.releaseMs }, { CompIDs::sideMakeup, sides.makeupDb } } });
     };
 
     for (auto& p : compressorPresets)
         add (p, worksOnStereo);
     for (auto& p : midSidePresets)
-        add (p.settings, p.worksOn);
+        add (p.settings, p.worksOn, p.sides);
 
     return presets;
 }

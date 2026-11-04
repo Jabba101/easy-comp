@@ -472,7 +472,11 @@ LATER
      EDIT MID / EDIT SIDE switch). Done: Easy Master's compressor (green
      MID row, blue SIDE row), Easy Comp 1.9.0 (MID+SIDE: the top knobs
      are the middle, a SIDES row underneath; in Easy Strip the COMP panel
-     shows MID and SIDE side by side). EQ: Easy Master's mastering EQ
+     shows MID and SIDE side by side). Easy Comp's MID+SIDE presets now
+     set the sides apart (7: Drum Bus - Punchy Middle, Open Sides; Guitars -
+     Tame the Wide Doubles; Synth Pads - Steady Width; Vocal Bus - Centre
+     Focus; Mix Bus - Mid & Side Glue; Mix Bus - Heavy & Wide; Master - Mid &
+     Side (Gentle)). EQ: Easy Master's mastering EQ
      (stage 2) will be FULL mid and side - two complete sets of bands;
      Easy EQ / the Strip's EQ stay as they are (each band picks ST / MID
      / SIDE).

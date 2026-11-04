@@ -1256,6 +1256,21 @@ namespace
                    "MID+SIDE: each compressed on its own (loud middle " + juce::String (midCut, 1) + " dB, quiet sides " + juce::String (sideKept, 2)
                    + " dB; loud sides " + juce::String (sideCut, 1) + " dB)");
         }
+        // The MID+SIDE presets give the sides settings of their own
+        {
+            EasyCompAudioProcessor p;
+            int midSidePresets = 0, ownSides = 0;
+            for (auto& preset : p.getBuiltInPresets())
+            {
+                p.loadPreset (preset);
+                if (juce::roundToInt (getParam (p, CompIDs::worksOn)) != worksOnMidSide) continue;
+                ++midSidePresets;
+                if (std::abs (getParam (p, CompIDs::sideThreshold) - getParam (p, CompIDs::threshold)) > 0.5f
+                    || std::abs (getParam (p, CompIDs::sideRatio) - getParam (p, CompIDs::ratio)) > 0.05f)
+                    ++ownSides;
+            }
+            check (midSidePresets >= 6 && ownSides == midSidePresets, juce::String (midSidePresets) + " MID+SIDE presets, every one with the sides set apart from the middle");
+        }
         // MID+SIDE: the sides have their own settings
         {
             const auto in = make (0.4f, 0.4f, 2.0);
