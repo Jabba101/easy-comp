@@ -227,6 +227,12 @@ private:
     juce::Rectangle<int> mbMidName, mbSideName;
     std::array<juce::Rectangle<int>, 4> mbBandNames;
     bool shownMBMidSide = false, shownMBOn = false;
+
+    // The back-panel tones: each cluster of controls that works together on its own tone, alternating (like a console)
+    struct Group { juce::Rectangle<int> area; int tone; };
+    std::array<std::vector<Group>, 4> pageGroups;   // (per page)
+    std::vector<Group> limiterGroups;
+    void layoutGroups();
     // Each page's groups: the knobs that work together share a panel of their own tone, alternating (like a console's modules)
     std::array<std::vector<juce::Rectangle<int>>, numPages> groupTiles;
     std::array<std::array<Knob, 11>, 2> eqKnobs;

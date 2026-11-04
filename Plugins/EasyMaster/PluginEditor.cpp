@@ -1498,9 +1498,25 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
         }
     }
 
+    // The clusters' back-panel tones (drawn over the panel, under the controls)
+    const auto paintGroups = [&g] (const std::vector<Group>& groups)
+    {
+        // (light grey, dark, blue-tinted: neighbours always differ, like a console's panels)
+        const juce::Colour tones[3] { juce::Colour (0xff363b45), juce::Colour (0xff17191e), juce::Colour (0xff1f3446) };
+        for (auto& grp : groups)
+        {
+            const auto r = grp.area.toFloat().reduced (3.0f, 0.0f);
+            g.setColour (tones[grp.tone % 3]);
+            g.fillRoundedRectangle (r, 7.0f);
+            g.setColour (tones[grp.tone % 3].brighter (0.25f));
+            g.drawRoundedRectangle (r.reduced (0.5f), 7.0f, 1.0f);
+        }
+    };
+
     drawPanel (g, inputPanel, "1", "INPUT");
     drawPanel (g, metersPanel, {}, "METERS");
     drawPanel (g, limiterPanel, "6", "LIMITER");
+    paintGroups (limiterGroups);
     drawPanel (g, comparePanel, "", "COMPARE");
 
     // The groups on the page showing: alternating tones, so the knobs that work together read as one
@@ -1537,6 +1553,7 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
     {
         drawPanel (g, pageDisplayPanel, {}, "COMPRESSOR & LIMITER - WHAT THEY'RE DOING");
         drawPanel (g, pagePanel, "5", "COMPRESSOR");
+        paintGroups (pageGroups[(size_t) shownPage]);
         drawTiles();
         const bool ms = masterProcessor.isMidSide();
         rowName (midRowName, ms ? "MID" : "STEREO", ms ? "kick, bass,\nsnare, vocal" : "the whole mix", midColour, true);
@@ -1546,6 +1563,7 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
     {
         drawPanel (g, pageDisplayPanel, {}, "MULTIBAND - THE FOUR BANDS");
         drawPanel (g, pagePanel, "4", "MULTIBAND");
+        paintGroups (pageGroups[(size_t) shownPage]);
         drawTiles();
         const bool ms = masterProcessor.isMultibandMidSide();
         rowName (mbMidName, ms ? "MID" : "STEREO", ms ? "kick, bass,\nsnare, vocal" : "the whole mix", ms ? midColour : Palette::accent, true);
@@ -1563,6 +1581,7 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
     {
         drawPanel (g, pageDisplayPanel, {}, "EQ - THE CURVE");
         drawPanel (g, pagePanel, "3", "EQ");
+        paintGroups (pageGroups[(size_t) shownPage]);
         drawTiles();
         const bool ms = masterProcessor.isEQMidSide();
         rowName (eqMidName, ms ? "MID" : "STEREO", ms ? "kick, bass,\nsnare, vocal" : "the whole mix", ms ? midColour : Palette::accent, true);
@@ -1580,6 +1599,7 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
     {
         drawPanel (g, pageDisplayPanel, {}, "RESONANCE TAMER - WHAT IT'S DOING");
         drawPanel (g, pagePanel, "2", "RESONANCE TAMER");
+        paintGroups (pageGroups[(size_t) shownPage]);
         drawTiles();
         const bool ms = masterProcessor.isTamerMidSide();
         rowName (tamerMidName, ms ? "MID" : "STEREO", ms ? "the middle" : "the whole mix", midColour, true);
@@ -1827,8 +1847,50 @@ void EasyMasterAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
     }
     for (int m : { (int) MasterModules::tamer, (int) MasterModules::eq, (int) MasterModules::comp, (int) MasterModules::multiband })
         placeModuleButtons (m, pagePanel);
+    layoutGroups();
     placeModuleButtons (MasterModules::limiter, limiterPanel);
     showParts();
+}
+
+void EasyMasterAudioProcessorEditor::layoutGroups()
+{
+    // Each group: the controls that work together, with a little room around them
+    const auto around = [] (std::initializer_list<juce::Component*> parts, juce::Rectangle<int> extra = {})
+    {
+        juce::Rectangle<int> r = extra;
+        for (auto* c : parts) r = r.isEmpty() ? c->getBounds() : r.getUnion (c->getBounds());
+        return r.expanded (1, 4);   // (neighbouring groups stay apart: a gap shows between them)
+    };
+    for (auto& g : pageGroups) g.clear();
+    limiterGroups.clear();
+
+    // EQ: each band's FREQ + GAIN, MID and SIDE, under its name; then CLEAN UP (LOW CUT)
+    for (int b = 0; b < 6; ++b)
+    {
+        auto* f0 = &eqKnobs[0][(size_t) (b < 5 ? b * 2 : 10)].slider;
+        auto* f1 = &eqKnobs[1][(size_t) (b < 5 ? b * 2 + 1 : 10)].slider;
+        auto r = around ({ f0, &eqKnobs[0][(size_t) (b < 5 ? b * 2 : 10)].label, f1, &eqKnobs[1][(size_t) (b < 5 ? b * 2 + 1 : 10)].slider,
+                           &eqKnobs[0][(size_t) (b < 5 ? b * 2 + 1 : 10)].slider, &eqKnobs[1][(size_t) (b < 5 ? b * 2 : 10)].slider }, eqBandNames[(size_t) b]);
+        pageGroups[eqPage].push_back ({ r, b == 5 ? 2 : b % 2 });
+    }
+    // MULTIBAND: each band's four knobs (MID and SIDE) with its name, ON and SOLO
+    for (int b = 0; b < 4; ++b)
+    {
+        auto r = around ({ &mbKnobs[0][(size_t) (b * 4)].label, &mbKnobs[1][(size_t) (b * 4 + 3)].slider, &mbSolo[(size_t) b] }, mbBandNames[(size_t) b]);
+        pageGroups[mbPage].push_back ({ r, b % 2 });
+    }
+    // TAMER: how much it does (AMOUNT, SENSITIVITY, SHARPNESS, both rows) | when and where (SPEED, FROM, TO)
+    pageGroups[tamerPage].push_back ({ around ({ &knobs[tMidAmountKnob].label, &knobs[tSideSharpKnob].slider }), 0 });
+    pageGroups[tamerPage].push_back ({ around ({ &knobs[tSpeedKnob].label, &knobs[tFromKnob].slider, &knobs[tToKnob].slider }), 2 });
+    // COMPRESSOR: THRESHOLD + RATIO | ATTACK + RELEASE | MAKE-UP | MIX + IGNORE BELOW (both)
+    pageGroups[compPage].push_back ({ around ({ &knobs[midThresholdKnob].label, &knobs[sideRatioKnob].slider }), 0 });
+    pageGroups[compPage].push_back ({ around ({ &knobs[midAttackKnob].label, &knobs[sideReleaseKnob].slider }), 1 });
+    pageGroups[compPage].push_back ({ around ({ &knobs[midMakeupKnob].label, &knobs[sideMakeupKnob].slider }), 0 });
+    pageGroups[compPage].push_back ({ around ({ &knobs[mixKnob].label, &knobs[ignoreKnob].slider }), 2 });
+    // LIMITER: GAIN | CEILING | RELEASE
+    limiterGroups.push_back ({ around ({ &knobs[gainKnob].label, &knobs[gainKnob].slider }), 0 });
+    limiterGroups.push_back ({ around ({ &knobs[ceilingKnob].label, &knobs[ceilingKnob].slider }), 1 });
+    limiterGroups.push_back ({ around ({ &releaseSwitch, &knobs[releaseKnob].slider }), 0 });
 }
 
 void EasyMasterAudioProcessorEditor::refreshLiveDisplays()
