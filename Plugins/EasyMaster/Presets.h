@@ -85,6 +85,22 @@ namespace MasterMBIDs
     inline constexpr SplitInfo splits[3] { { 40.0f, 400.0f, 120.0f }, { 300.0f, 4000.0f, 1000.0f }, { 2000.0f, 14000.0f, 6000.0f } };
 }
 
+/** PUNCH (the Easy Trans engine: the start of each hit louder, the tails longer or shorter) and WIDTH. */
+namespace MasterPunchIDs
+{
+    inline constexpr const char* on      = "punchon";
+    inline constexpr const char* mode    = "punchmode";   // STEREO or MID + SIDE
+    inline constexpr const char* punch[2]   { "pmpunch", "pspunch" };     // % (-100 .. +100)
+    inline constexpr const char* sustain[2] { "pmsustain", "pssustain" }; // %
+    inline constexpr const char* mix     = "punchmix";    // %
+}
+namespace MasterWidthIDs
+{
+    inline constexpr const char* on       = "widthon";
+    inline constexpr const char* width    = "width";      // % of the sides (100 = as it is)
+    inline constexpr const char* monoBass = "monobass";   // Hz: the sides below it removed (20 = off)
+}
+
 namespace MasterMode   { enum { stereo = 0, midSide }; }
 namespace MasterListen { enum { stereo = 0, mid, side, mono }; }
 
@@ -229,7 +245,8 @@ inline juce::StringArray masterPresetIDs()
         for (int b = 0; b < 5; ++b) { ids.add (MasterEQIDs::freq[part][b]); ids.add (MasterEQIDs::gain[part][b]); }
         ids.add (MasterEQIDs::lowCut[part]);
     }
-    for (auto& id : MasterModules::ids (4)) ids.add (id);   // (4 = the MULTIBAND)
+    for (int m : { 4, 5, 6 })   // (the MULTIBAND, PUNCH and WIDTH)
+        for (auto& id : MasterModules::ids (m)) ids.add (id);
     return ids;
 }
 
@@ -241,8 +258,8 @@ inline juce::StringArray masterPresetIDs()
 */
 namespace MasterModules
 {
-    enum { tamer = 0, eq, comp, limiter, multiband, count };
-    inline const char* names[count] { "Resonance Tamer", "EQ", "Compressor", "Limiter", "Multiband" };
+    enum { tamer = 0, eq, comp, limiter, multiband, punch, width, count };
+    inline const char* names[count] { "Resonance Tamer", "EQ", "Compressor", "Limiter", "Multiband", "Punch", "Width" };
 
     /** The settings each module's presets (and its INIT) cover. */
     inline juce::StringArray ids (int module)
@@ -252,6 +269,9 @@ namespace MasterModules
         if (module == comp)    return { compOn, compMode, midThreshold, midRatio, midAttack, midRelease, midMakeup,
                                         sideThreshold, sideRatio, sideAttack, sideRelease, sideMakeup, compMix, ignoreBelow, reactsTo, character };
         if (module == limiter) return { limitGain, ceiling, releaseMode, release };
+        if (module == punch)   return { MasterPunchIDs::on, MasterPunchIDs::mode, MasterPunchIDs::punch[0], MasterPunchIDs::sustain[0],
+                                        MasterPunchIDs::punch[1], MasterPunchIDs::sustain[1], MasterPunchIDs::mix };
+        if (module == width)   return { MasterWidthIDs::on, MasterWidthIDs::width, MasterWidthIDs::monoBass };
         if (module == multiband)
         {
             juce::StringArray list { MasterMBIDs::on, MasterMBIDs::mode };
@@ -336,8 +356,37 @@ namespace MasterModules
         return p;
     }
 
+    inline Preset punchPreset (const char* name, const char* tip, int midSide, float mp, float ms, float sp, float ss, float mix)
+    {
+        using namespace MasterPunchIDs;
+        return { "", name, tip, { { on, 1.0f }, { mode, (float) midSide }, { MasterPunchIDs::punch[0], mp }, { sustain[0], ms }, { MasterPunchIDs::punch[1], sp }, { sustain[1], ss },
+                                  { MasterPunchIDs::mix, mix } } };
+    }
+    inline Preset widthPreset (const char* name, const char* tip, float w, float mono)
+    {
+        return { "", name, tip, { { MasterWidthIDs::on, 1.0f }, { MasterWidthIDs::width, w }, { MasterWidthIDs::monoBass, mono } } };
+    }
+
     inline std::vector<Preset> presets (int module)
     {
+        if (module == punch)
+            return {
+                punchPreset ("Bring Back the Snap", "The attack of kick and snare brought back after all the levelling: +20% PUNCH.", 0, 20, 0, 20, 0, 100),
+                punchPreset ("Drums Forward (M/S)", "More punch in the middle (kick, snare), the sides left as they are.", 1, 30, 0, 0, 0, 100),
+                punchPreset ("Punch & Tight Tails", "Sharper hits with shorter tails: a tighter, drier, more modern master.", 0, 20, -15, 20, -15, 100),
+                punchPreset ("Softer Attacks", "Takes the edge off spiky hits and picks: smoother, rounder, less clicky.", 0, -20, 0, -20, 0, 100),
+                punchPreset ("More Room (M/S)", "Longer tails at the sides: more room and space around the mix.", 1, 0, 0, 0, 25, 100),
+                punchPreset ("Gentle Lift (50% mix)", "+40% PUNCH blended in at half: a subtle, natural lift.", 0, 40, 0, 40, 0, 50),
+            };
+        if (module == width)
+            return {
+                widthPreset ("As It Is", "100%, no mono bass: the width doesn't change.", 100, 20),
+                widthPreset ("A Little Wider (115%)", "The sides up a touch: a little more open, still natural.", 115, 20),
+                widthPreset ("Wider (130%)", "Clearly wider. Check MONO now and then: nothing should disappear.", 130, 20),
+                widthPreset ("Wide & Tight (130% + mono bass)", "Wider on top, the bass and kick mono below 120 Hz: big and solid.", 130, 120),
+                widthPreset ("Mono Bass Only (120 Hz)", "The width as it is, everything under 120 Hz in the middle: a tight, focused low end.", 100, 120),
+                widthPreset ("Narrower (80%)", "Pulls an over-wide mix in a little: more solid and centred.", 80, 20),
+            };
         if (module == multiband)
         {
             const MB off { 0.0f, 1.0f, 50.0f, 0.0f };

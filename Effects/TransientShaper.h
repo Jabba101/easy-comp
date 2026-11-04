@@ -179,6 +179,20 @@ public:
         return result;
     }
 
+    /** Only listens: works out, for each sample, the volume change (dB) it
+        would make - PUNCH and SUSTAIN shaping, before MIX, OUTPUT and BYPASS -
+        without touching the sound. (Easy Master's PUNCH uses this to listen
+        to filtered copies of the mix, then applies the change itself.) */
+    void analyse (const float* const* channels, int numChannels, int numSamples, float* changeDb) noexcept
+    {
+        for (int start = 0; start < numSamples; start += Work::size)
+        {
+            const int len = std::min (Work::size, numSamples - start);
+            workOutChange (channels, numChannels, start, len);
+            std::copy (work.change, work.change + len, changeDb + start);
+        }
+    }
+
     /** Whether the last block was digital silence it could skip straight through. */
     bool isResting() const noexcept                     { return resting; }
 
@@ -214,8 +228,8 @@ private:
         double heard[size] {};
     };
 
-    /** Steps 0 to 4 for numSamples (at most Work::size) samples from start. */
-    void processRun (float* const* channels, int numChannels, int start, int numSamples, BlockResult& result) noexcept
+    /** Steps 0 to 3 for numSamples (at most Work::size) samples from start: the volume change, into work.change. */
+    void workOutChange (const float* const* channels, int numChannels, int start, int numSamples) noexcept
     {
         using FastMath::Vec4;
         auto& w = work;
@@ -232,10 +246,6 @@ private:
         //    The knobs at each sample (they only change while gliding to a new setting).
         const FastMath::KnobRun punch      (smoothedPunch,      w.punch,      numSamples);
         const FastMath::KnobRun sustain    (smoothedSustain,    w.sustain,    numSamples);
-        const FastMath::KnobRun output     (smoothedOutput,     w.output,     numSamples);
-        const FastMath::KnobRun mix        (smoothedMix,        w.mix,        numSamples);
-        const FastMath::KnobRun autoAmount (smoothedAutoAmount, w.autoAmount, numSamples);   // 0 = OUTPUT knob, 1 = AUTO-GAIN
-        const FastMath::KnobRun bypass     (smoothedBypass,     w.bypass,     numSamples);
 
         // 2. SPOT and 3. SHAPE - each sample on its own, so four at a time.
         const auto zero = Vec4::broadcast (0.0f), one = Vec4::broadcast (1.0f);
@@ -276,6 +286,22 @@ private:
 
             currentChangeDb = current;
         }
+    }
+
+    /** Steps 0 to 4 for numSamples (at most Work::size) samples from start. */
+    void processRun (float* const* channels, int numChannels, int start, int numSamples, BlockResult& result) noexcept
+    {
+        using FastMath::Vec4;
+        auto& w = work;
+        const int numInFours = FastMath::roundUpToFour (numSamples);
+        const auto one = Vec4::broadcast (1.0f);
+
+        workOutChange (channels, numChannels, start, numSamples);
+
+        const FastMath::KnobRun output     (smoothedOutput,     w.output,     numSamples);
+        const FastMath::KnobRun mix        (smoothedMix,        w.mix,        numSamples);
+        const FastMath::KnobRun autoAmount (smoothedAutoAmount, w.autoAmount, numSamples);   // 0 = OUTPUT knob, 1 = AUTO-GAIN
+        const FastMath::KnobRun bypass     (smoothedBypass,     w.bypass,     numSamples);
 
         // 4. APPLY - four at a time. MIX: the original blended with the shaped sound...
         for (int i = 0; i < numInFours; i += 4)
@@ -331,7 +357,7 @@ private:
     /** Steps 0 and 1 for a run of samples. fixedChannels is 1 or 2 for mono or
         stereo (worked out specially), or 0 for any other number of channels. */
     template <int fixedChannels>
-    void followLevel (float* const* channels, int start, int numSamples, int numDetected) noexcept
+    void followLevel (const float* const* channels, int start, int numSamples, int numDetected) noexcept
     {
         constexpr size_t capacity = fixedChannels > 0 ? (size_t) fixedChannels : (size_t) LoudnessMatcher::maxChannels;
         const int count = fixedChannels > 0 ? fixedChannels : numDetected;

@@ -301,6 +301,117 @@ namespace
         }
     }
 
+    void testPunchWidth()
+    {
+        std::cout << "\n[punch and width]\n";
+        const auto quiet = [] (P& p) { set (p, MasterIDs::tamerOn, 0.0f); set (p, MasterIDs::compOn, 0.0f); set (p, MasterIDs::limitGain, 0.0f); set (p, MasterIDs::ceiling, 0.0f);
+                                       set (p, MasterIDs::trim, -12.0f); };   // (well under the ceiling: the limiter never acts)
+        const auto band = loadMix ("band", 20.0, 8.0);
+        const auto runWith = [&] (std::function<void (P&)> setUp, const juce::AudioBuffer<float>& in)
+        {
+            P p; quiet (p); setUp (p); prepare (p, sr, 512);
+            return run (p, in, 512);
+        };
+        const auto plain = runWith ([] (P&) {}, band);
+        {
+            const auto zero = runWith ([] (P& p) { set (p, MasterPunchIDs::on, 1.0f); set (p, MasterWidthIDs::on, 1.0f); }, band);
+            check (maxDifference (plain, zero) < 1.0e-6f, "PUNCH and WIDTH on at their starting settings (0%, 100%, no mono bass): the mix passes untouched");
+        }
+        const auto crest = [&] (const juce::AudioBuffer<float>& b)
+        {
+            // (how far the hits stand above the music: the loudest 2% of 5 ms moments against the typical moment)
+            const int w = (int) (sr * 0.005);
+            std::vector<float> levels;
+            for (int i = (int) sr; i + w < b.getNumSamples(); i += w)
+                levels.push_back (toDb (juce::jmax (rms (b, 0, i, i + w), rms (b, 1, i, i + w)) + 1.0e-9f));
+            std::sort (levels.begin(), levels.end());
+            return (double) (levels[(size_t) (levels.size() * 98 / 100)] - levels[levels.size() / 2]);
+        };
+        {
+            const auto more = runWith ([] (P& p) { set (p, MasterPunchIDs::on, 1.0f); set (p, MasterPunchIDs::punch[0], 50.0f); }, band);
+            const auto less = runWith ([] (P& p) { set (p, MasterPunchIDs::on, 1.0f); set (p, MasterPunchIDs::punch[0], -50.0f); }, band);
+            const double c0 = crest (plain), cUp = crest (more);
+            // (at the hits - the moments +50% lifts most - -50% should soften by about as much)
+            const int w = (int) (sr * 0.005);
+            std::vector<std::pair<float, float>> moments;
+            for (int i = (int) sr; i + w < plain.getNumSamples(); i += w)
+            {
+                const float base = rms (plain, 0, i, i + w) + 1.0e-9f;
+                moments.push_back ({ toDb (rms (more, 0, i, i + w) / base), toDb (rms (less, 0, i, i + w) / base) });
+            }
+            std::sort (moments.begin(), moments.end(), [] (auto& x, auto& y) { return x.first > y.first; });
+            double up = 0.0, down = 0.0;
+            const size_t top = moments.size() / 50;
+            for (size_t i = 0; i < top; ++i) { up += moments[i].first; down += moments[i].second; }
+            up /= (double) top; down /= (double) top;
+            check (cUp > c0 + 0.3 && up > 1.0 && down < -1.0, "PUNCH on your band's mix: +50% lifts the hits " + juce::String (up, 1) + " dB (they stand "
+                   + juce::String (cUp - c0, 2) + " dB further above the music), -50% softens them " + juce::String (down, 1) + " dB");
+        }
+        {
+            juce::AudioBuffer<float> mono (band); mono.copyFrom (1, 0, mono, 0, 0, mono.getNumSamples());
+            const auto out = runWith ([] (P& p) { set (p, MasterPunchIDs::on, 1.0f); set (p, MasterPunchIDs::mode, 1.0f);
+                                                  set (p, MasterPunchIDs::punch[1], 100.0f); set (p, MasterPunchIDs::sustain[1], 100.0f); }, mono);
+            float diff = 0.0f;
+            for (int i = 0; i < out.getNumSamples(); ++i) diff = std::max (diff, std::abs (out.getSample (0, i) - out.getSample (1, i)));
+            check (diff < 1.0e-5f, "PUNCH MID + SIDE on a mono mix: the sides' settings leave it alone (left = right)");
+        }
+        {
+            P p; quiet (p); set (p, MasterPunchIDs::on, 1.0f); set (p, MasterPunchIDs::punch[0], 30.0f); prepare (p, sr, 512);
+            const auto tone = sine (sr, 220.0, 0.1f, 2.0);
+            const float normal = biggestJump (run (p, tone, 512), (int) sr / 2, (int) sr);
+            const auto out = run (p, tone, 512, [&] (int start) { if (start >= (int) sr / 2 && start < (int) sr / 2 + 512) set (p, MasterPunchIDs::mode, 1.0f); });
+            const float during = biggestJump (out, (int) sr / 2, (int) sr);
+            check (during < normal * 1.6f, "switching PUNCH to MID + SIDE while playing: no click (" + juce::String (during, 3) + " vs " + juce::String (normal, 3) + ")");
+        }
+        const auto sideToMid = [] (const juce::AudioBuffer<float>& b)
+        {
+            double mm = 0.0, ss = 0.0;
+            for (int i = (int) sr; i < b.getNumSamples(); ++i)
+            {
+                const double l = b.getSample (0, i), r = b.getSample (1, i);
+                mm += 0.25 * (l + r) * (l + r); ss += 0.25 * (l - r) * (l - r);
+            }
+            return 10.0 * std::log10 (ss / mm + 1.0e-30);
+        };
+        {
+            const auto wide = runWith ([] (P& p) { set (p, MasterWidthIDs::on, 1.0f); set (p, MasterWidthIDs::width, 150.0f); }, band);
+            const double change = sideToMid (wide) - sideToMid (plain);
+            double midDiff = 0.0;
+            for (int i = 0; i < wide.getNumSamples(); ++i)
+                midDiff = std::max (midDiff, (double) std::abs ((wide.getSample (0, i) + wide.getSample (1, i)) - (plain.getSample (0, i) + plain.getSample (1, i))));
+            check (std::abs (change - 3.52) < 0.1 && midDiff < 1.0e-5, "WIDTH 150%: the sides " + juce::String (change, 2) + " dB louder (should be +3.52), the middle untouched");
+            const auto mono = runWith ([] (P& p) { set (p, MasterWidthIDs::on, 1.0f); set (p, MasterWidthIDs::width, 0.0f); }, band);
+            float diff = 0.0f;
+            for (int i = (int) sr; i < mono.getNumSamples(); ++i) diff = std::max (diff, std::abs (mono.getSample (0, i) - mono.getSample (1, i)));
+            check (diff < 1.0e-5f, "WIDTH 0%: mono (left = right)");
+        }
+        {
+            // MONO BASS 120 Hz on pure width (left = -right): the lows gone from the sides, the highs kept
+            const auto sideTone = [&] (double hz) { auto b = sine (sr, hz, 0.1f, 2.0); b.applyGain (1, 0, b.getNumSamples(), -1.0f); return b; };
+            const auto change = [&] (double hz)
+            {
+                const auto in = sideTone (hz);
+                const auto out = runWith ([] (P& p) { set (p, MasterWidthIDs::on, 1.0f); set (p, MasterWidthIDs::monoBass, 120.0f); }, in);
+                return toDb (rms (out, 0, (int) sr, out.getNumSamples()) / rms (in, 0, (int) sr, in.getNumSamples())) + 12.0f;   // (less the -12 dB TRIM)
+            };
+            const float low = change (40.0), high = change (2000.0);
+            check (low < -30.0f && std::abs (high) < 0.1f, "MONO BASS 120 Hz: a 40 Hz sound at the sides " + juce::String (low, 0) + " dB, at 2 kHz "
+                   + juce::String (high, 2) + " dB (the kick and bass dead centre)");
+        }
+        {
+            P p; set (p, MasterPunchIDs::on, 1.0f); set (p, MasterWidthIDs::on, 1.0f); set (p, MasterWidthIDs::width, 140.0f);
+            loadPresetNamed (p, "Master - Heavy Low End");
+            check (getParam (p, MasterPunchIDs::on) < 0.5f && getParam (p, MasterWidthIDs::on) < 0.5f && std::abs (getParam (p, MasterWidthIDs::width) - 100.0f) < 0.01f,
+                   "a main preset puts PUNCH and WIDTH back off (the main presets sound exactly as before)");
+            juce::MemoryBlock state;
+            set (p, MasterPunchIDs::sustain[1], -25.0f); set (p, MasterWidthIDs::monoBass, 110.0f);
+            p.getStateInformation (state);
+            P r; r.setStateInformation (state.getData(), (int) state.getSize());
+            check (std::abs (getParam (r, MasterPunchIDs::sustain[1]) + 25.0f) < 0.01f && std::abs (getParam (r, MasterWidthIDs::monoBass) - 110.0f) < 0.5f,
+                   "PUNCH and WIDTH are saved with the project");
+        }
+    }
+
     void testParts (const juce::File& outDir)
     {
         std::cout << "\n[presets, saving, A / B, window]\n";
@@ -386,6 +497,23 @@ namespace
             view.mouseUp (mouseAt (&view, { x + 50.0f, 60.0f }, false));
             check (getParam (p, MasterMBIDs::split[1]) > 1200.0f, "dragging the line between LOW MID and HIGH MID moves the split: " + Format::hertz (getParam (p, MasterMBIDs::split[1])));
         }
+        {
+            // The PUNCH and WIDTH pages, each with a module preset loaded
+            window->showPage (E::punchPage);
+            window->getModulePresets (MasterModules::punch).browser.onPresetChosen (MasterModules::presets (MasterModules::punch)[1]);   // "Drums Forward (M/S)"
+            for (int i = 0; i < 30; ++i) { run (p, loadMix ("band", 30.0 + i * 0.2, 0.2), 512); window->updateDisplaysNow(); }
+            check (window->getPunchKnob (0).isVisible() && window->getPunchKnob (3).isVisible() && window->getPunchKnob (3).isEnabled()
+                   && ! window->getEQKnob (0, 0).isVisible() && fitsAndNoOverlaps(), "the PUNCH page: PUNCH and SUSTAIN for MID and SIDE, MIX, nothing overlapping");
+            savePng (*editor, outDir.getChildFile ("master_punch.png"));
+            window->showPage (E::widthPage);
+            window->getModulePresets (MasterModules::width).browser.onPresetChosen (MasterModules::presets (MasterModules::width)[3]);   // "Wide & Tight"
+            for (int i = 0; i < 10; ++i) { run (p, loadMix ("mureka", 54.0 + i * 0.1, 0.1), 512); window->updateDisplaysNow(); }
+            check (window->getWidthKnob (0).isVisible() && window->getWidthKnob (1).isVisible() && std::abs (getParam (p, MasterWidthIDs::monoBass) - 120.0f) < 0.5f
+                   && fitsAndNoOverlaps(), "the WIDTH page: WIDTH and MONO BASS, the stereo picture, nothing overlapping");
+            savePng (*editor, outDir.getChildFile ("master_width.png"));
+            window->getModulePresets (MasterModules::width).init.onClick();
+            window->getModulePresets (MasterModules::punch).init.onClick();
+        }
         loadPresetNamed (p, "Master - Synthwave Smooth & Wide");
         window->showPage (E::compPage);
         window->updateDisplaysNow();
@@ -446,6 +574,8 @@ namespace
                 if (window->hintBar.getText().length() < 40) hints = false;
             }
         }
+        for (int k = 0; k < 5; ++k) { window->showPage (E::punchPage); window->mouseEnter (hoverEvent (&window->getPunchKnob (k))); if (window->hintBar.getText().length() < 40) hints = false; }
+        for (int k = 0; k < 2; ++k) { window->showPage (E::widthPage); window->mouseEnter (hoverEvent (&window->getWidthKnob (k))); if (window->hintBar.getText().length() < 40) hints = false; }
         check (hints, "every knob on both pages explains itself in the help bar");
     }
 
@@ -460,8 +590,10 @@ namespace
         P q; prepare (q, 48000.0, 256);
         loadPresetNamed (q, "Master - Darksynth Dense");
         set (q, MasterMBIDs::on, 1.0f); set (q, MasterMBIDs::mode, 1.0f);
+        set (q, MasterPunchIDs::on, 1.0f); set (q, MasterPunchIDs::mode, 1.0f); set (q, MasterPunchIDs::punch[0], 20.0f); set (q, MasterPunchIDs::sustain[1], 10.0f);
+        set (q, MasterWidthIDs::on, 1.0f); set (q, MasterWidthIDs::width, 120.0f); set (q, MasterWidthIDs::monoBass, 120.0f);
         const double all = coreShare (q, song);
-        check (all < 15.0, "everything on, the multiband in MID + SIDE too: " + juce::String (all, 2) + "% of one core");
+        check (all < 15.0, "everything on (multiband, PUNCH in MID + SIDE, WIDTH): " + juce::String (all, 2) + "% of one core");
        #endif
     }
 }
@@ -476,6 +608,7 @@ int main (int argc, char** argv)
     testTamer();
     testEQ();
     testMultiband();
+    testPunchWidth();
     testParts (outDir);
     testSpeed();
     return finish();

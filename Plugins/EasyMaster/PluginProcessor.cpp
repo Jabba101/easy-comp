@@ -85,6 +85,29 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyMasterAudioProcessor::cr
         }
     }
 
+    // PUNCH and WIDTH (both off by default)
+    {
+        juce::NormalisableRange<float> shapeRange (-100.0f, 100.0f, 1.0f);
+        juce::NormalisableRange<float> percentRange (0.0f, 100.0f, 1.0f);
+        juce::NormalisableRange<float> widthRange (0.0f, 200.0f, 1.0f);
+        juce::NormalisableRange<float> monoRange (StereoWidth::monoBassOffHz, 300.0f, 1.0f);  monoRange.setSkewForCentre (100.0f);
+        const auto signedPercent = [] (float v) { return (v > 0.5f ? "+" : "") + juce::String (juce::roundToInt (v)) + "%"; };
+        layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { MasterPunchIDs::on, 5 }, "Punch On", false));
+        layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { MasterPunchIDs::mode, 5 }, "Punch Mode", juce::StringArray { "Stereo", "Mid + Side" }, 0));
+        const char* partName[2] { "Mid", "Side" };
+        for (int part = 0; part < 2; ++part)
+        {
+            layout.add (makeKnob (MasterPunchIDs::punch[part], 5, juce::String ("Punch ") + partName[part] + " Attack", shapeRange, 0.0f, signedPercent));
+            layout.add (makeKnob (MasterPunchIDs::sustain[part], 5, juce::String ("Punch ") + partName[part] + " Sustain", shapeRange, 0.0f, signedPercent));
+        }
+        layout.add (makeKnob (MasterPunchIDs::mix, 5, "Punch Mix", percentRange, 100.0f, Format::percent));
+        layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { MasterWidthIDs::on, 5 }, "Width On", false));
+        layout.add (makeKnob (MasterWidthIDs::width, 5, "Width", widthRange, 100.0f, Format::percent));
+        layout.add (makeKnob (MasterWidthIDs::monoBass, 5, "Mono Bass", monoRange, StereoWidth::monoBassOffHz,
+                              [] (float hz) { return hz <= StereoWidth::monoBassOffHz + 0.5f ? juce::String ("Off") : Format::hertz (hz); },
+                              [] (const juce::String& t) { return t.trim().equalsIgnoreCase ("off") ? StereoWidth::monoBassOffHz : Format::hertzFromText (t); }));
+    }
+
     // RESONANCE TAMER
     {
         juce::NormalisableRange<float> amountRange (0.0f, 12.0f, 0.1f);
@@ -158,6 +181,9 @@ EasyMasterAudioProcessor::EasyMasterAudioProcessor()
         for (int b = 0; b < 5; ++b) { eqFreqValues[(size_t) part][(size_t) b] = v (MasterEQIDs::freq[part][b]); eqGainValues[(size_t) part][(size_t) b] = v (MasterEQIDs::gain[part][b]); }
         eqLowCutValues[(size_t) part] = v (MasterEQIDs::lowCut[part]);
     }
+    punchValues = { v (MasterPunchIDs::on), v (MasterPunchIDs::mode), v (MasterPunchIDs::punch[0]), v (MasterPunchIDs::sustain[0]),
+                    v (MasterPunchIDs::punch[1]), v (MasterPunchIDs::sustain[1]), v (MasterPunchIDs::mix) };
+    widthValues = { v (MasterWidthIDs::on), v (MasterWidthIDs::width), v (MasterWidthIDs::monoBass) };
     midValues  = { v (midThreshold),  v (midRatio),  v (midAttack),  v (midRelease),  v (midMakeup) };
     sideValues = { v (sideThreshold), v (sideRatio), v (sideAttack), v (sideRelease), v (sideMakeup) };
 }
@@ -242,6 +268,27 @@ ResonanceTamer::Settings EasyMasterAudioProcessor::tamerSettings() const noexcep
     return s;
 }
 
+MixPunch::Settings EasyMasterAudioProcessor::punchSettings (int part) const noexcept
+{
+    // (STEREO: the MID settings for both)
+    const int from = (part == 1 && isPunchMidSide()) ? 4 : 2;
+    MixPunch::Settings s;
+    s.punch = punchValues[(size_t) from]->load() / 100.0f;
+    s.sustain = punchValues[(size_t) from + 1]->load() / 100.0f;
+    s.mix = punchValues[6]->load() / 100.0f;
+    s.bypassed = punchValues[0]->load() < 0.5f;
+    return s;
+}
+
+StereoWidth::Settings EasyMasterAudioProcessor::widthSettings() const noexcept
+{
+    StereoWidth::Settings s;
+    s.bypassed = widthValues[0]->load() < 0.5f;
+    s.width = widthValues[1]->load() / 100.0f;
+    s.monoBassHz = widthValues[2]->load();
+    return s;
+}
+
 TruePeakLimiter::Settings EasyMasterAudioProcessor::limiterSettings() const noexcept
 {
     TruePeakLimiter::Settings s;
@@ -263,6 +310,12 @@ void EasyMasterAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     tamer.prepare (sampleRate, tamerSettings());
     eq.prepare (sampleRate, eqSettings());
     multiband.prepare (sampleRate, block, multibandSettings());
+    shapers[0].prepare (sampleRate, block, 2, punchSettings (0));
+    shapers[1].prepare (sampleRate, block, 2, punchSettings (1));
+    width.prepare (sampleRate, widthSettings());
+    punchPlayingMode = juce::roundToInt (punchValues[1]->load());
+    punchModeChanging = false;
+    punchFade = 1.0f;
     loudness.prepare (sampleRate);
     originalLoudness.prepare (sampleRate);
     mid.setSize (1, block);
@@ -291,7 +344,7 @@ void EasyMasterAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
         d.assign ((size_t) juce::jmax (1, latency), 0.0f);
     dryPos = 0;
 
-    sumLR = sumLL = sumRR = 0.0;
+    sumLR = sumLL = sumRR = sumMM = sumSS = 0.0;
     momentLength = juce::jmax (1, juce::roundToInt (sampleRate * 0.01));
     momentFilled = 0;
     building = {};
@@ -358,6 +411,75 @@ void EasyMasterAudioProcessor::compress (juce::AudioBuffer<float>& buffer, int n
     nowSideCut.store (playingMode == MasterMode::stereo ? midCut : sideCut);
 }
 
+void EasyMasterAudioProcessor::punch (juce::AudioBuffer<float>& buffer, int n) noexcept
+{
+    const int wanted = juce::roundToInt (punchValues[1]->load());
+    if (wanted != punchPlayingMode && ! punchModeChanging)
+        punchModeChanging = true;
+
+    MixPunch::BlockResult a, b;
+    if (punchPlayingMode == MasterMode::stereo)
+    {
+        juce::AudioBuffer<float> both (buffer.getArrayOfWritePointers(), 2, 0, n);
+        a = shapers[0].process (both);
+    }
+    else
+    {
+        float* left = buffer.getWritePointer (0);
+        float* right = buffer.getWritePointer (1);
+        float* m = mid.getWritePointer (0);
+        float* s = sides.getWritePointer (0);
+        for (int i = 0; i < n; ++i)
+        {
+            m[i] = 0.5f * (left[i] + right[i]);
+            s[i] = 0.5f * (left[i] - right[i]);
+        }
+        juce::AudioBuffer<float> midPart (mid.getArrayOfWritePointers(), 1, 0, n), sidePart (sides.getArrayOfWritePointers(), 1, 0, n);
+        a = shapers[0].process (midPart);
+        b = shapers[1].process (sidePart);
+        for (int i = 0; i < n; ++i)
+        {
+            left[i] = m[i] + s[i];
+            right[i] = m[i] - s[i];
+        }
+    }
+
+    // Changing STEREO <-> MID + SIDE: a 10 ms dip and back, switching at the bottom (no click)
+    if (punchModeChanging || punchFade < 1.0f)
+    {
+        const float step = 1.0f / (0.01f * (float) rate);
+        for (int i = 0; i < n; ++i)
+        {
+            punchFade = juce::jlimit (0.0f, 1.0f, punchFade + (punchModeChanging ? -step : step));
+            const float level = punchFade * punchFade * (3.0f - 2.0f * punchFade);
+            buffer.getWritePointer (0)[i] *= level;
+            buffer.getWritePointer (1)[i] *= level;
+            if (punchModeChanging && punchFade <= 0.0f)
+            {
+                punchPlayingMode = wanted;
+                punchModeChanging = false;
+                shapers[0].prepare (rate, mid.getNumSamples(), 2, punchSettings (0));   // (fresh, so the switch doesn't carry old levels over)
+                shapers[1].prepare (rate, mid.getNumSamples(), 2, punchSettings (1));
+            }
+        }
+    }
+
+    if (punchValues[0]->load() > 0.5f)
+    {
+        building.punchUpDb = juce::jmax (building.punchUpDb, a.maxBoostDb, b.maxBoostDb);
+        building.punchDownDb = juce::jmax (building.punchDownDb, a.maxCutDb, b.maxCutDb);
+    }
+}
+
+int EasyMasterAudioProcessor::takeScope (float* left, float* right, int maxPoints) noexcept
+{
+    const auto read = scopeFifo.read (juce::jmin (maxPoints, scopeFifo.getNumReady()));
+    int written = 0;
+    for (int i = 0; i < read.blockSize1; ++i, ++written) { left[written] = scopeL[(size_t) (read.startIndex1 + i)]; right[written] = scopeR[(size_t) (read.startIndex1 + i)]; }
+    for (int i = 0; i < read.blockSize2; ++i, ++written) { left[written] = scopeL[(size_t) (read.startIndex2 + i)]; right[written] = scopeR[(size_t) (read.startIndex2 + i)]; }
+    return written;
+}
+
 void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -371,6 +493,8 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         eq.process (buffer);
         multiband.setSettings (multibandSettings());
         multiband.process (buffer);
+        shapers[0].setSettings (punchSettings (0));
+        shapers[0].process (buffer);
         limiter.setSettings (limiterSettings());
         limiter.process (buffer, 1);
         return;
@@ -384,6 +508,9 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     tamer.setSettings (tamerSettings());
     eq.setSettings (eqSettings());
     multiband.setSettings (multibandSettings());
+    shapers[0].setSettings (punchSettings (0));
+    shapers[1].setSettings (punchSettings (1));
+    width.setSettings (widthSettings());
     trimGain.setTargetValue (juce::Decibels::decibelsToGain (trimValue->load()));
     bypassFade.setTargetValue (bypassValue->load() > 0.5f ? 1.0f : 0.0f);
     const int listening = juce::roundToInt (listenValue->load());
@@ -452,6 +579,12 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         // COMPRESSOR
         compress (part, n);
 
+        // PUNCH
+        punch (part, n);
+
+        // WIDTH
+        width.process (part);
+
         // LIMITER
         building.inDb = juce::jmax (building.inDb, juce::Decibels::gainToDecibels (juce::jmax (part.getMagnitude (0, 0, n), part.getMagnitude (1, 0, n)) * limitGain, -100.0f));
         limiter.process (part, 2);
@@ -470,6 +603,16 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             for (int i = 0; i < n; ++i) { lr += l[i] * r[i]; ll += l[i] * l[i]; rr += r[i] * r[i]; }
             sumLR = sumLR * fall + lr; sumLL = sumLL * fall + ll; sumRR = sumRR * fall + rr;
             correlation.store (sumLL > 1.0e-9 && sumRR > 1.0e-9 ? (float) (sumLR / std::sqrt (sumLL * sumRR)) : 1.0f);
+            // (mid energy = (ll + rr + 2lr) / 4, side = (ll + rr - 2lr) / 4)
+            sumMM = 0.25 * (sumLL + sumRR + 2.0 * sumLR);
+            sumSS = juce::jmax (0.0, 0.25 * (sumLL + sumRR - 2.0 * sumLR));
+            sideToMid.store (sumMM > 1.0e-9 ? (float) (10.0 * std::log10 (sumSS / sumMM + 1.0e-10)) : -100.0f);
+            // (the picture for the WIDTH page: every second sample)
+            const auto write = scopeFifo.write (juce::jmin (scopeFifo.getFreeSpace(), (n + (scopeSkip ? 0 : 1)) / 2));
+            int at = scopeSkip ? 1 : 0;
+            for (int i = 0; i < write.blockSize1; ++i, at += 2) { scopeL[(size_t) (write.startIndex1 + i)] = l[at]; scopeR[(size_t) (write.startIndex1 + i)] = r[at]; }
+            for (int i = 0; i < write.blockSize2; ++i, at += 2) { scopeL[(size_t) (write.startIndex2 + i)] = l[at]; scopeR[(size_t) (write.startIndex2 + i)] = r[at]; }
+            if ((n % 2) == 1) scopeSkip = ! scopeSkip;
         }
 
         // MATCH, LISTEN, BYPASS
@@ -531,6 +674,7 @@ EasyMasterAudioProcessor::Readings EasyMasterAudioProcessor::getReadings() const
     r.matchDb = matchDb.load();
     r.tamerMidCut = nowTamerCut[0].load();
     r.tamerSideCut = nowTamerCut[1].load();
+    r.sideToMidDb = sideToMid.load();
     return r;
 }
 

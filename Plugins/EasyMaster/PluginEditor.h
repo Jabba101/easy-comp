@@ -116,6 +116,46 @@ private:
 };
 
 //==============================================================================
+/** The PUNCH page's display: the last six seconds - the master's level on
+    top, and underneath how much PUNCH is turning up (the attacks, or longer
+    tails: above the line) and down (softer attacks, shorter tails: below). */
+class PunchDisplay : public juce::Component
+{
+public:
+    PunchDisplay();
+    void addMoments (const EasyMasterAudioProcessor::Moment*, int count);
+    void setState (bool on, bool bypassed);
+    void paint (juce::Graphics&) override;
+
+private:
+    std::vector<EasyMasterAudioProcessor::Moment> history;
+    int next = 0;
+    bool on = false, bypassed = false;
+};
+
+//==============================================================================
+/** The WIDTH page's display: the stereo picture (the middle up and down, the
+    sides left and right - a narrow upright shape is near mono, a wide round
+    cloud is very wide), with how loud the sides are next to the middle, the
+    correlation, and what WIDTH and MONO BASS do to the sides across the range. */
+class WidthDisplay : public juce::Component
+{
+public:
+    void addPoints (const float* left, const float* right, int count);
+    void setState (const StereoWidth::Settings&, float sideToMidDb, float correlation, bool on, bool bypassed, double sampleRate);
+    void paint (juce::Graphics&) override;
+    static constexpr int numPoints = 2048;
+
+private:
+    std::array<float, numPoints> pointL {}, pointR {};
+    int next = 0;
+    float zoom = 1.0f, sideToMid = -100.0f, correlation = 1.0f;
+    StereoWidth::Settings settings;
+    bool on = false, bypassed = false;
+    double rate = 48000.0;
+};
+
+//==============================================================================
 /** The readings: LUFS momentary / short-term / integrated, the highest true
     peak, PLR, stereo correlation, and how much each part turns down now.
     Click it to reset the integrated LUFS and the highest peak. */
@@ -150,7 +190,9 @@ public:
                      tSpeedKnob, tFromKnob, tToKnob, numKnobs };
 
     /** The pages the chain along the top switches between. */
-    enum Page { tamerPage = 0, eqPage, mbPage, compPage, numPages };
+    enum Page { tamerPage = 0, eqPage, mbPage, compPage, punchPage, widthPage, numPages };
+    juce::Slider& getPunchKnob (int index)    { return punchKnobs[(size_t) index].slider; }   // 0 MID PUNCH, 1 MID SUSTAIN, 2 SIDE PUNCH, 3 SIDE SUSTAIN, 4 MIX
+    juce::Slider& getWidthKnob (int index)    { return widthKnobs[(size_t) index].slider; }   // 0 WIDTH, 1 MONO BASS
     juce::Slider& getMBKnob (int part, int band, int which)   { return mbKnobs[(size_t) part][(size_t) (band * 4 + which)].slider; }   // which: 0 THRESHOLD, 1 RATIO, 2 SPEED, 3 GAIN
     juce::Slider& getMBSplit (int split)                       { return mbSplits[(size_t) split]; }
     MultibandDisplay& getMBDisplay()                           { return mbDisplay; }
@@ -230,7 +272,7 @@ private:
 
     // The back-panel tones: each cluster of controls that works together on its own tone, alternating (like a console)
     struct Group { juce::Rectangle<int> area; int tone; };
-    std::array<std::vector<Group>, 4> pageGroups;   // (per page)
+    std::array<std::vector<Group>, numPages> pageGroups;   // (per page)
     std::vector<Group> limiterGroups;
     void layoutGroups();
     // Each page's groups: the knobs that work together share a panel of their own tone, alternating (like a console's modules)
@@ -249,6 +291,20 @@ private:
     std::array<juce::Rectangle<float>, 9> chainBoxes;
     int shownPage = compPage;
     bool shownTamerMidSide = false, shownTamerOn = true;
+    // PUNCH and WIDTH
+    void setUpKnob (Knob&, const char* id, const juce::String& name, const juce::String& hintTitle, const char* hint, juce::Colour colour, float fontSize);
+    std::array<Knob, 5> punchKnobs;
+    std::array<Knob, 2> widthKnobs;
+    LightButton punchOnButton { "ON", Palette::meterLow }, widthOnButton { "ON", Palette::meterLow };
+    std::unique_ptr<juce::ButtonParameterAttachment> punchOnAttachment, widthOnAttachment;
+    ChoiceSwitch punchModeSwitch;
+    juce::Label widthTip;
+    PunchDisplay punchDisplay;
+    WidthDisplay widthDisplay;
+    std::vector<float> scopeLeft, scopeRight;
+    juce::Rectangle<int> punchMidName, punchSideName;
+    bool shownPunchMidSide = false, shownPunchOn = false, shownWidthOn = false;
+
     MasterMeters meters;
     std::vector<EasyMasterAudioProcessor::Moment> incoming;
     bool shownMidSide = false, shownCompOn = true;

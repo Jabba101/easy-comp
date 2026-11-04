@@ -17,7 +17,7 @@ Beginner-friendly mixing plugins (VST3) for Windows, built with [JUCE](https://j
 - **Easy Flange** – flanger, chorus and vibrato
 - **Easy Limiter** – a clean, transparent true-peak ceiling
 - **Easy Filter** – a moving filter: sweeps, wobbles and tempo-locked pulses, wide stereo
-- **Easy Master** – the mastering chain for the master bus (compressor with separate mid / side controls, true-peak limiter, LUFS meters)
+- **Easy Master** – the mastering chain for the master bus (resonance tamer, mastering EQ, multiband, compressor, punch and width – each with separate mid / side controls – into a true-peak limiter, with LUFS meters)
 - **Easy Unbleed** – cleans the other instruments' ghost out of separated stems (UVR5 and the like)
 - **Easy Strip** – all of them in one channel strip
 

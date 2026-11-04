@@ -110,8 +110,8 @@ namespace
     constexpr const char* initAllHint =
         "Puts every setting back to its default (the 'Default settings' preset). BYPASS, MATCH and LISTEN stay as they are.";
     constexpr const char* chainHint =
-        "The order the sound goes through. Click a stage to show its controls and its own display below. Dim = coming in "
-        "later stages, each in its place. INPUT, LIMITER and the meters are always on screen.";
+        "The order the sound goes through. Click a stage to show its controls and its own display below; the lamp shows "
+        "whether it's on. INPUT, LIMITER and the meters are always on screen.";
     constexpr const char* mbOnHint = "Switches the multiband on or off (the rest of the chain keeps working). Off by default.";
     constexpr const char* mbModeHint =
         "STEREO: one set of settings for the whole mix (the top row). MID + SIDE: the middle (green) and the sides (blue) "
@@ -155,6 +155,25 @@ namespace
     constexpr const char* tamerDisplayHint =
         "The mix right now, a sixth of an octave at a time (amber = middle or both, blue = sides in MID + SIDE), and from "
         "the top, how much each spot is being turned down. The shaded ends are outside FROM / TO.";
+
+    constexpr const char* punchOnHint = "Switches PUNCH on or off (the rest of the chain keeps working). Off by default.";
+    constexpr const char* punchModeHint =
+        "STEREO: one setting for the whole mix (the top row). MID + SIDE: the middle (green: kick, snare, vocal) and the "
+        "sides (blue: the room, wide guitars, cymbals) each get their own PUNCH and SUSTAIN - e.g. more snap in the middle only.";
+    constexpr const char* punchHint =
+        "The start of each hit: right = louder (more snap and crack - the drums come forward), left = softer (rounder, "
+        "less clicky). After compression and before the limiter, +10 to +30% brings back the punch the levelling took away.";
+    constexpr const char* sustainHint =
+        "The tail of each hit: right = longer (more ring, more room), left = shorter (tighter, drier). Small amounts on a "
+        "master: -20 to +20%.";
+    constexpr const char* punchMixHint = "How much of the shaped sound you hear, blended with the sound before PUNCH. 50% is a gentle, natural lift.";
+    constexpr const char* widthOnHint = "Switches WIDTH on or off (the rest of the chain keeps working). Off by default.";
+    constexpr const char* widthHint =
+        "How loud the sides are: 100% = as it is, more = wider, less = narrower, 0% = mono. The middle (kick, bass, snare, "
+        "vocal) is never touched. 110-130% is plenty; check LISTEN: MONO now and then - nothing should disappear.";
+    constexpr const char* monoBassHint =
+        "Everything below this frequency goes to the middle (the sides' lows taken out, 24 dB per octave): the bass and kick "
+        "dead centre and tight on any system. 80-150 Hz for heavy low end; Off for none.";
 
     constexpr float topDb = 2.0f, bottomDb = -30.0f, cutScaleDb = 12.0f;
     const juce::Colour midColour = Palette::meterLow;
@@ -339,6 +358,293 @@ void MasterDisplay::paint (juce::Graphics& g)
         g.setFont (juce::Font (juce::FontOptions (12.5f)));
         g.drawText ("You're hearing the original mix", lines, juce::Justification::centred, false);
     }
+}
+
+//==============================================================================
+namespace
+{
+    void paintBypassedBadge (juce::Graphics& g, juce::Rectangle<float> area)
+    {
+        g.setColour (Palette::background.withAlpha (0.65f));
+        g.fillRect (area);
+        const auto badge = juce::Rectangle<float> (230.0f, 58.0f).withCentre (area.getCentre());
+        g.setColour (Palette::panel);
+        g.fillRoundedRectangle (badge, 8.0f);
+        g.setColour (Palette::meterHigh);
+        g.drawRoundedRectangle (badge.reduced (0.75f), 8.0f, 1.5f);
+        auto lines = badge.reduced (10.0f, 9.0f);
+        g.setFont (juce::Font (juce::FontOptions (17.0f, juce::Font::bold)));
+        g.drawText ("BYPASSED", lines.removeFromTop (lines.getHeight() * 0.55f), juce::Justification::centred, false);
+        g.setColour (Palette::textDim);
+        g.setFont (juce::Font (juce::FontOptions (12.5f)));
+        g.drawText ("You're hearing the original mix", lines, juce::Justification::centred, false);
+    }
+
+    void paintOffNote (juce::Graphics& g, juce::Rectangle<float> area, const juce::String& text)
+    {
+        const auto box = juce::Rectangle<float> (juce::jmin (area.getWidth() - 20.0f, 420.0f), 30.0f).withCentre (area.getCentre());
+        g.setColour (Palette::background.withAlpha (0.85f));
+        g.fillRoundedRectangle (box, 6.0f);
+        g.setColour (Palette::textDim);
+        g.setFont (juce::Font (juce::FontOptions (13.0f)));
+        g.drawText (text, box, juce::Justification::centred, false);
+    }
+}
+
+PunchDisplay::PunchDisplay() : history ((size_t) MasterDisplay::numMoments) {}
+
+void PunchDisplay::addMoments (const EasyMasterAudioProcessor::Moment* m, int count)
+{
+    if (count <= 0) return;
+    for (int i = 0; i < count; ++i)
+    {
+        history[(size_t) next] = m[i];
+        next = (next + 1) % MasterDisplay::numMoments;
+    }
+    if (isVisible()) repaint();
+}
+
+void PunchDisplay::setState (bool isOn, bool isBypassed)
+{
+    if (isOn != on || isBypassed != bypassed) { on = isOn; bypassed = isBypassed; repaint(); }
+}
+
+void PunchDisplay::paint (juce::Graphics& g)
+{
+    const int numMoments = MasterDisplay::numMoments;
+    const auto area = getLocalBounds().toFloat();
+    g.setColour (Palette::background);
+    g.fillRoundedRectangle (area, 6.0f);
+
+    auto plot = area.reduced (14.0f, 12.0f).withTrimmedLeft (34.0f).withTrimmedBottom (40.0f);
+    const auto levelLane = plot.removeFromTop (plot.getHeight() * 0.4f);
+    plot.removeFromTop (10.0f);
+    const auto& shapeLane = plot;
+    constexpr float shapeScaleDb = 9.0f;
+    const auto xOf = [&] (int age) { return plot.getRight() - (float) age / (float) (numMoments - 1) * plot.getWidth(); };
+    const auto levelY = [&] (float db) { return levelLane.getY() + levelLane.getHeight() * (topDb - juce::jlimit (bottomDb, topDb, db)) / (topDb - bottomDb); };
+    const auto shapeY = [&] (float db) { return shapeLane.getCentreY() - shapeLane.getHeight() * 0.5f * juce::jlimit (-1.0f, 1.0f, db / shapeScaleDb); };
+
+    g.setFont (juce::Font (juce::FontOptions (11.0f)));
+    for (float db : { 0.0f, -12.0f, -24.0f })
+    {
+        g.setColour (Palette::panelEdge);
+        g.drawHorizontalLine (juce::roundToInt (levelY (db)), levelLane.getX(), levelLane.getRight());
+        g.setColour (Palette::textDim);
+        g.drawText (juce::String ((int) db), juce::Rectangle<float> (levelLane.getX() - 36.0f, levelY (db) - 7.0f, 32.0f, 14.0f), juce::Justification::centredRight, false);
+    }
+    g.setColour (Palette::panel.withAlpha (0.6f));
+    g.fillRect (shapeLane);
+    for (float db : { -6.0f, 0.0f, 6.0f })
+    {
+        g.setColour (std::abs (db) < 0.5f ? Palette::textDim.withAlpha (0.6f) : Palette::panelEdge);
+        g.drawHorizontalLine (juce::roundToInt (shapeY (db)), shapeLane.getX(), shapeLane.getRight());
+        g.setColour (Palette::textDim);
+        g.drawText (db > 0.0f ? "+" + juce::String ((int) db) : juce::String ((int) db), juce::Rectangle<float> (shapeLane.getX() - 36.0f, shapeY (db) - 7.0f, 32.0f, 14.0f),
+                    juce::Justification::centredRight, false);
+    }
+
+    juce::Path level, levelLine, up, down;
+    level.startNewSubPath (levelLane.getBottomRight());
+    up.startNewSubPath (shapeLane.getRight(), shapeLane.getCentreY());
+    down.startNewSubPath (shapeLane.getRight(), shapeLane.getCentreY());
+    for (int age = 0; age < numMoments; ++age)
+    {
+        const auto& m = history[(size_t) ((next - 1 - age + numMoments * 2) % numMoments)];
+        const float x = xOf (age);
+        level.lineTo (x, levelY (m.outDb));
+        if (age == 0) levelLine.startNewSubPath (x, levelY (m.outDb)); else levelLine.lineTo (x, levelY (m.outDb));
+        up.lineTo (x, shapeY (m.punchUpDb));
+        down.lineTo (x, shapeY (-m.punchDownDb));
+    }
+    level.lineTo (levelLane.getBottomLeft()); level.closeSubPath();
+    up.lineTo (shapeLane.getX(), shapeLane.getCentreY()); up.closeSubPath();
+    down.lineTo (shapeLane.getX(), shapeLane.getCentreY()); down.closeSubPath();
+    {
+        juce::Graphics::ScopedSaveState save (g);
+        g.reduceClipRegion (levelLane.toNearestInt());
+        g.setColour (Palette::accent.withAlpha (0.16f));
+        g.fillPath (level);
+        g.setColour (Palette::accent);
+        g.strokePath (levelLine, juce::PathStrokeType (1.4f));
+    }
+    {
+        juce::Graphics::ScopedSaveState save (g);
+        g.reduceClipRegion (shapeLane.toNearestInt());
+        g.setColour (midColour.withAlpha (0.75f));
+        g.fillPath (up);
+        g.setColour (sideColour.withAlpha (0.75f));
+        g.fillPath (down);
+    }
+
+    const auto laneName = [&g] (juce::Rectangle<float> lane, const juce::String& name)
+    {
+        const auto tag = juce::Rectangle<float> (lane.getX() + 4.0f, lane.getY() + 3.0f, (float) name.length() * 7.2f + 12.0f, 15.0f);
+        g.setColour (Palette::background.withAlpha (0.85f));
+        g.fillRoundedRectangle (tag, 3.0f);
+        g.setColour (Palette::textDim);
+        g.setFont (juce::Font (juce::FontOptions (10.5f, juce::Font::bold)));
+        g.drawText (name, tag, juce::Justification::centred, false);
+    };
+    laneName (levelLane, "LEVEL OUT");
+    laneName (shapeLane, "PUNCH: TURNING UP / DOWN");
+
+    g.setColour (Palette::textDim);
+    g.setFont (juce::Font (juce::FontOptions (11.0f)));
+    g.drawText ("6 seconds ago", juce::Rectangle<float> (plot.getX(), plot.getBottom() + 3.0f, 120.0f, 14.0f), juce::Justification::centredLeft, false);
+    g.drawText ("now", juce::Rectangle<float> (plot.getRight() - 60.0f, plot.getBottom() + 3.0f, 60.0f, 14.0f), juce::Justification::centredRight, false);
+
+    auto key = juce::Rectangle<float> (plot.getX(), plot.getBottom() + 20.0f, plot.getWidth(), 16.0f);
+    g.setFont (juce::Font (juce::FontOptions (12.0f)));
+    const auto item = [&] (juce::Colour c, const juce::String& t, float w)
+    {
+        g.setColour (c);
+        g.fillRect (key.removeFromLeft (12.0f).withSizeKeepingCentre (12.0f, 10.0f));
+        key.removeFromLeft (6.0f);
+        g.setColour (Palette::textDim);
+        g.drawText (t, key.removeFromLeft (w), juce::Justification::centredLeft, false);
+        key.removeFromLeft (12.0f);
+    };
+    item (Palette::accent, "level out", 64.0f);
+    item (midColour.withAlpha (0.8f), "turned up (more snap, longer tails)", 220.0f);
+    item (sideColour.withAlpha (0.8f), "turned down (softer, tighter)", 190.0f);
+
+    if (! on && ! bypassed) paintOffNote (g, shapeLane, "PUNCH is off - switch it ON to shape the hits");
+    if (bypassed) paintBypassedBadge (g, area);
+}
+
+//==============================================================================
+void WidthDisplay::addPoints (const float* left, const float* right, int count)
+{
+    for (int i = 0; i < count; ++i)
+    {
+        pointL[(size_t) next] = left[i];
+        pointR[(size_t) next] = right[i];
+        next = (next + 1) % numPoints;
+    }
+    if (count > 0 && isVisible()) repaint();
+}
+
+void WidthDisplay::setState (const StereoWidth::Settings& s, float sideToMidDb, float corr, bool isOn, bool isBypassed, double sampleRate)
+{
+    settings = s; sideToMid = sideToMidDb; correlation = corr; on = isOn; bypassed = isBypassed; rate = sampleRate;
+    if (isVisible()) repaint();
+}
+
+void WidthDisplay::paint (juce::Graphics& g)
+{
+    const auto area = getLocalBounds().toFloat();
+    g.setColour (Palette::background);
+    g.fillRoundedRectangle (area, 6.0f);
+
+    auto inside = area.reduced (14.0f, 12.0f);
+    // Left: the stereo picture (a square)
+    const float side = juce::jmin (inside.getHeight(), inside.getWidth() * 0.45f);
+    const auto scope = inside.removeFromLeft (side).withSizeKeepingCentre (side, side);
+    inside.removeFromLeft (24.0f);
+    {
+        g.setColour (Palette::panel.withAlpha (0.6f));
+        g.fillEllipse (scope.reduced (2.0f));
+        g.setColour (Palette::panelEdge);
+        g.drawEllipse (scope.reduced (2.0f), 1.0f);
+        const auto c = scope.getCentre();
+        const float r = scope.getWidth() * 0.5f - 4.0f;
+        g.drawLine (c.x, scope.getY() + 4.0f, c.x, scope.getBottom() - 4.0f, 1.0f);
+        g.drawLine (scope.getX() + 4.0f, c.y, scope.getRight() - 4.0f, c.y, 1.0f);
+        // (the L and R diagonals)
+        g.setColour (Palette::panelEdge.withAlpha (0.6f));
+        g.drawLine (c.x - r * 0.707f, c.y - r * 0.707f, c.x + r * 0.707f, c.y + r * 0.707f, 1.0f);
+        g.drawLine (c.x + r * 0.707f, c.y - r * 0.707f, c.x - r * 0.707f, c.y + r * 0.707f, 1.0f);
+        g.setColour (Palette::textDim);
+        g.setFont (juce::Font (juce::FontOptions (10.5f, juce::Font::bold)));
+        g.drawText ("MID", juce::Rectangle<float> (c.x - 20.0f, scope.getY() + 6.0f, 40.0f, 13.0f), juce::Justification::centred, false);
+        g.drawText ("SIDE", juce::Rectangle<float> (scope.getRight() - 40.0f, c.y - 15.0f, 36.0f, 13.0f), juce::Justification::centredRight, false);
+        g.drawText ("L", juce::Rectangle<float> (c.x - r * 0.707f - 14.0f, c.y - r * 0.707f - 14.0f, 14.0f, 13.0f), juce::Justification::centred, false);
+        g.drawText ("R", juce::Rectangle<float> (c.x + r * 0.707f, c.y - r * 0.707f - 14.0f, 14.0f, 13.0f), juce::Justification::centred, false);
+
+        // (scaled to the loudest point, following slowly, so the shape - not the level - is what you see)
+        float peak = 1.0e-4f;
+        for (int i = 0; i < numPoints; ++i)
+            peak = juce::jmax (peak, std::abs (pointL[(size_t) i] + pointR[(size_t) i]), std::abs (pointL[(size_t) i] - pointR[(size_t) i]));
+        const float wanted = 0.70710678f / peak;
+        zoom = wanted < zoom ? wanted : zoom + (wanted - zoom) * 0.08f;
+        const float k = r * zoom * 0.70710678f;
+        g.setColour ((on ? sideColour : Palette::accent).withAlpha (0.35f));
+        for (int i = 0; i < numPoints; ++i)
+        {
+            const float l = pointL[(size_t) i], rr = pointR[(size_t) i];
+            const float x = c.x + (l - rr) * k, y = c.y - (l + rr) * k;
+            g.fillRect (x - 0.75f, y - 0.75f, 1.5f, 1.5f);
+        }
+    }
+
+    // Right: the readings, then what WIDTH and MONO BASS do to the sides
+    auto readings = inside.removeFromTop (juce::jmin (120.0f, inside.getHeight() * 0.42f));
+    const auto bar = [&g] (juce::Rectangle<float> row, const juce::String& name, const juce::String& value, float position, float centre, juce::Colour c)
+    {
+        g.setColour (Palette::textDim);
+        g.setFont (juce::Font (juce::FontOptions (12.0f, juce::Font::bold)));
+        auto top = row.removeFromTop (16.0f);
+        g.drawText (name, top, juce::Justification::centredLeft, false);
+        g.setColour (Palette::textBright);
+        g.drawText (value, top, juce::Justification::centredRight, false);
+        const auto track = row.removeFromTop (12.0f).reduced (0.0f, 1.0f);
+        g.setColour (Palette::panel);
+        g.fillRoundedRectangle (track, 3.0f);
+        const float x0 = track.getX() + track.getWidth() * centre, x1 = track.getX() + track.getWidth() * juce::jlimit (0.0f, 1.0f, position);
+        g.setColour (c);
+        g.fillRoundedRectangle (juce::Rectangle<float> (juce::jmin (x0, x1), track.getY(), std::abs (x1 - x0) + 2.0f, track.getHeight()), 3.0f);
+    };
+    const float sm = juce::jlimit (-30.0f, 0.0f, sideToMid);
+    bar (readings.removeFromTop (34.0f), "SIDES NEXT TO THE MIDDLE", sideToMid <= -99.0f ? juce::String ("--") : juce::String (sideToMid, 1) + " dB",
+         (sm + 30.0f) / 30.0f, 0.0f, sideColour);
+    readings.removeFromTop (6.0f);
+    bar (readings.removeFromTop (34.0f), "CORRELATION", juce::String (correlation, 2), (correlation + 1.0f) * 0.5f, 0.5f,
+         correlation < 0.0f ? Palette::meterHigh : (correlation < 0.3f ? Palette::meterMid : Palette::meterLow));
+    readings.removeFromTop (4.0f);
+    g.setColour (Palette::textDim);
+    g.setFont (juce::Font (juce::FontOptions (11.0f)));
+    g.drawFittedText ("Usually -6 to -15 dB, correlation above 0. Below 0 = parts will vanish in mono.", readings.toNearestInt(), juce::Justification::topLeft, 2);
+
+    inside.removeFromTop (8.0f);
+    auto curve = inside.withTrimmedBottom (16.0f).withTrimmedLeft (30.0f);
+    g.setColour (Palette::panel.withAlpha (0.6f));
+    g.fillRect (curve);
+    const auto xOf = [&] (double hz) { return curve.getX() + curve.getWidth() * (float) (std::log (hz / 20.0) / std::log (1000.0)); };
+    const auto yOf = [&] (float pct) { return curve.getBottom() - curve.getHeight() * juce::jlimit (0.0f, 1.0f, pct / 200.0f); };
+    g.setFont (juce::Font (juce::FontOptions (10.5f)));
+    for (float pct : { 0.0f, 100.0f, 200.0f })
+    {
+        g.setColour (std::abs (pct - 100.0f) < 0.5f ? Palette::textDim.withAlpha (0.6f) : Palette::panelEdge);
+        g.drawHorizontalLine (juce::roundToInt (yOf (pct)), curve.getX(), curve.getRight());
+        g.setColour (Palette::textDim);
+        g.drawText (juce::String ((int) pct) + "%", juce::Rectangle<float> (curve.getX() - 32.0f, yOf (pct) - 7.0f, 30.0f, 14.0f), juce::Justification::centredRight, false);
+    }
+    for (double hz : { 100.0, 1000.0, 10000.0 })
+    {
+        g.setColour (Palette::panelEdge);
+        g.drawVerticalLine (juce::roundToInt (xOf (hz)), curve.getY(), curve.getBottom());
+        g.setColour (Palette::textDim);
+        g.drawText (hz >= 1000.0 ? juce::String ((int) (hz / 1000.0)) + "k" : juce::String ((int) hz), juce::Rectangle<float> (xOf (hz) - 20.0f, curve.getBottom() + 2.0f, 40.0f, 13.0f),
+                    juce::Justification::centred, false);
+    }
+    juce::Path p;
+    auto shown = settings;
+    shown.bypassed = shown.bypassed || ! on;
+    for (int i = 0; i <= 200; ++i)
+    {
+        const double hz = 20.0 * std::pow (1000.0, i / 200.0);
+        const float y = yOf ((float) (StereoWidth::sideResponseAt (shown, hz, rate) * 100.0));
+        if (i == 0) p.startNewSubPath (xOf (hz), y); else p.lineTo (xOf (hz), y);
+    }
+    g.setColour (on ? sideColour : Palette::textDim);
+    g.strokePath (p, juce::PathStrokeType (2.0f));
+    g.setColour (Palette::textDim);
+    g.setFont (juce::Font (juce::FontOptions (10.5f, juce::Font::bold)));
+    g.drawText ("THE SIDES' LEVEL ACROSS THE RANGE", curve.reduced (6.0f, 4.0f), juce::Justification::topLeft, false);
+
+    if (! on && ! bypassed) paintOffNote (g, curve, "WIDTH is off - the picture shows the mix as it is");
+    if (bypassed) paintBypassedBadge (g, area);
 }
 
 //==============================================================================
@@ -1023,6 +1329,7 @@ EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioP
       mbModeSwitch (*p.parameters.getParameter (MasterMBIDs::mode), { "STEREO", "MID + SIDE" }, Palette::accent),
       eqModeSwitch (*p.parameters.getParameter (MasterEQIDs::mode), { "STEREO", "MID + SIDE" }, Palette::accent),
       tamerModeSwitch (*p.parameters.getParameter (MasterIDs::tamerMode), { "STEREO", "MID + SIDE" }, Palette::accent),
+      punchModeSwitch (*p.parameters.getParameter (MasterPunchIDs::mode), { "STEREO", "MID + SIDE" }, Palette::accent),
       incoming ((size_t) MasterDisplay::numMoments)
 {
     for (size_t i = 0; i < knobs.size(); ++i)
@@ -1151,6 +1458,44 @@ EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioP
     addHint (eqDisplay, "THE EQ'S CURVE", eqDisplayHint);
     eqDisplay.onEdit = [this] { knobMoved(); };
 
+    // PUNCH: per part PUNCH and SUSTAIN, then MIX; WIDTH: WIDTH and MONO BASS
+    for (int part = 0; part < 2; ++part)
+    {
+        const juce::String partName = part == 0 ? "MID " : "SIDE ";
+        const auto colour = part == 0 ? midColour : sideColour;
+        setUpKnob (punchKnobs[(size_t) (part * 2)], MasterPunchIDs::punch[part], "PUNCH", "PUNCH " + partName + "- PUNCH", punchHint, colour, 14.0f);
+        setUpKnob (punchKnobs[(size_t) (part * 2 + 1)], MasterPunchIDs::sustain[part], "SUSTAIN", "PUNCH " + partName + "- SUSTAIN", sustainHint, colour, 14.0f);
+    }
+    setUpKnob (punchKnobs[4], MasterPunchIDs::mix, "MIX", "PUNCH - MIX", punchMixHint, Palette::accent, 13.0f);
+    setUpKnob (widthKnobs[0], MasterWidthIDs::width, "WIDTH", "WIDTH", widthHint, sideColour, 15.0f);
+    setUpKnob (widthKnobs[1], MasterWidthIDs::monoBass, "MONO BASS", "WIDTH - MONO BASS", monoBassHint, midColour, 15.0f);
+    for (auto [button, attachment, id, buttonTitle, hint] : { std::tuple<LightButton*, std::unique_ptr<juce::ButtonParameterAttachment>*, const char*, const char*, const char*>
+                                                       { &punchOnButton, &punchOnAttachment, MasterPunchIDs::on, "PUNCH ON", punchOnHint },
+                                                       { &widthOnButton, &widthOnAttachment, MasterWidthIDs::on, "WIDTH ON", widthOnHint } })
+    {
+        button->setClickingTogglesState (true);
+        *attachment = std::make_unique<juce::ButtonParameterAttachment> (*p.parameters.getParameter (id), *button);
+        addAndMakeVisible (*button);
+        addHint (*button, buttonTitle, hint);
+        button->onClick = [this] { knobMoved(); showParts(); };
+    }
+    punchModeSwitch.setHorizontal (true);
+    addAndMakeVisible (punchModeSwitch);
+    punchModeSwitch.onUserChange = [this] { knobMoved(); };
+    addHint (punchModeSwitch, "PUNCH - STEREO / MID + SIDE", punchModeHint);
+    widthTip.setText ("Check with LISTEN: MONO (on the right) - the mix should still work in mono, with nothing disappearing.", juce::dontSendNotification);
+    widthTip.setFont (juce::Font (juce::FontOptions (12.5f)));
+    widthTip.setColour (juce::Label::textColourId, Palette::textDim);
+    widthTip.setJustificationType (juce::Justification::centredLeft);
+    addAndMakeVisible (widthTip);
+    addAndMakeVisible (punchDisplay);
+    addHint (punchDisplay, "WHAT PUNCH IS DOING", "The last six seconds: the master's level on top; underneath, how much PUNCH is turning up "
+             "(green: the attacks, or longer tails) and down (blue: softer attacks, shorter tails).");
+    addAndMakeVisible (widthDisplay);
+    addHint (widthDisplay, "THE STEREO PICTURE", "Left: the master's stereo picture - the middle up and down, the sides across. Tall and thin = "
+             "nearly mono; a wide, round cloud = very wide; flat and sideways = trouble in mono. Right: how loud the sides are next to the "
+             "middle, the correlation, and what WIDTH and MONO BASS do to the sides across the range.");
+
     initAllButton.setColour (juce::TextButton::buttonColourId, Palette::panel);
     initAllButton.setColour (juce::TextButton::textColourOffId, Palette::meterHigh);
     initAllButton.setColour (juce::ComboBox::outlineColourId, Palette::meterHigh);
@@ -1272,6 +1617,23 @@ EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioP
     refreshLiveDisplays();
 }
 
+void EasyMasterAudioProcessorEditor::setUpKnob (Knob& knob, const char* id, const juce::String& name, const juce::String& hintTitle, const char* hint,
+                                                juce::Colour colour, float fontSize)
+{
+    knob.slider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+    knob.slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 86, 24);
+    knob.slider.setColour (juce::Slider::rotarySliderFillColourId, colour);
+    addAndMakeVisible (knob.slider);
+    knob.label.setText (name, juce::dontSendNotification);
+    knob.label.setFont (juce::Font (juce::FontOptions (fontSize, juce::Font::bold)));
+    knob.label.setJustificationType (juce::Justification::centred);
+    addAndMakeVisible (knob.label);
+    knob.attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (easyProcessor.parameters, id, knob.slider);
+    knob.slider.onValueChange = [this] { knobMoved(); };
+    addHint (knob.slider, hintTitle, hint);
+    addHint (knob.label, hintTitle, hint);
+}
+
 void EasyMasterAudioProcessorEditor::applyModulePreset (int module, const Preset* preset)
 {
     // Only this module's settings: the ones the preset gives, the rest of the module back to its defaults
@@ -1337,12 +1699,25 @@ void EasyMasterAudioProcessorEditor::placeModuleButtons (int module, juce::Recta
 std::vector<juce::Component*> EasyMasterAudioProcessorEditor::pageComponents (int page)
 {
     std::vector<juce::Component*> list;
-    const int module = page == tamerPage ? MasterModules::tamer : page == eqPage ? MasterModules::eq : page == mbPage ? MasterModules::multiband : MasterModules::comp;
+    const int module = page == tamerPage ? MasterModules::tamer : page == eqPage ? MasterModules::eq : page == mbPage ? MasterModules::multiband
+                     : page == punchPage ? MasterModules::punch : page == widthPage ? MasterModules::width : MasterModules::comp;
     for (juce::Component* c : { (juce::Component*) &modulePresets[(size_t) module].pr, (juce::Component*) &modulePresets[(size_t) module].init,
                                 (juce::Component*) &modulePresets[(size_t) module].name })
         list.push_back (c);
     const auto addKnobs = [&] (int from, int to) { for (int k = from; k <= to; ++k) { list.push_back (&knobs[(size_t) k].slider); list.push_back (&knobs[(size_t) k].label); } };
-    if (page == mbPage)
+    if (page == punchPage)
+    {
+        for (auto& k : punchKnobs) { list.push_back (&k.slider); list.push_back (&k.label); }
+        for (juce::Component* c : { (juce::Component*) &punchDisplay, (juce::Component*) &punchOnButton, (juce::Component*) &punchModeSwitch })
+            list.push_back (c);
+    }
+    else if (page == widthPage)
+    {
+        for (auto& k : widthKnobs) { list.push_back (&k.slider); list.push_back (&k.label); }
+        for (juce::Component* c : { (juce::Component*) &widthDisplay, (juce::Component*) &widthOnButton, (juce::Component*) &widthTip })
+            list.push_back (c);
+    }
+    else if (page == mbPage)
     {
         for (auto& row : mbKnobs) for (auto& k : row) { list.push_back (&k.slider); list.push_back (&k.label); }
         for (auto& b : mbBandOn) list.push_back (&b);
@@ -1392,6 +1767,8 @@ void EasyMasterAudioProcessorEditor::mouseDown (const juce::MouseEvent& e)
     else if (chainBoxes[2].contains (at)) showPage (eqPage);
     else if (chainBoxes[3].contains (at)) showPage (mbPage);
     else if (chainBoxes[4].contains (at)) showPage (compPage);
+    else if (chainBoxes[5].contains (at)) showPage (punchPage);
+    else if (chainBoxes[6].contains (at)) showPage (widthPage);
 }
 
 void EasyMasterAudioProcessorEditor::showParts()
@@ -1425,6 +1802,23 @@ void EasyMasterAudioProcessorEditor::showParts()
             k.label.setAlpha (usable ? 1.0f : 0.3f);
             if (part == 0) k.slider.setColour (juce::Slider::rotarySliderFillColourId, mms ? midColour : Palette::accent);
         }
+    const bool pms = masterProcessor.isPunchMidSide(), pon = params.getRawParameterValue (MasterPunchIDs::on)->load() > 0.5f;
+    for (int k = 0; k < 5; ++k)
+    {
+        auto& knob = punchKnobs[(size_t) k];
+        const bool sideKnob = k == 2 || k == 3;
+        const bool usable = pon && (! sideKnob || pms);
+        knob.slider.setEnabled (! sideKnob || pms);
+        knob.slider.setAlpha (usable ? 1.0f : 0.3f);
+        knob.label.setAlpha (usable ? 1.0f : 0.3f);
+        if (k < 2) knob.slider.setColour (juce::Slider::rotarySliderFillColourId, pms ? midColour : Palette::accent);
+    }
+    const bool won = params.getRawParameterValue (MasterWidthIDs::on)->load() > 0.5f;
+    for (auto& knob : widthKnobs)
+    {
+        knob.slider.setAlpha (won ? 1.0f : 0.3f);
+        knob.label.setAlpha (won ? 1.0f : 0.3f);
+    }
     const bool ems = masterProcessor.isEQMidSide(), eon = params.getRawParameterValue (MasterEQIDs::on)->load() > 0.5f;
     for (int part = 0; part < 2; ++part)
         for (auto& k : eqKnobs[(size_t) part])
@@ -1445,12 +1839,14 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
     {
         struct Stage { const char* name; bool built; int page; };
         const Stage stages[] { { "INPUT", true, -1 }, { "RESONANCE TAMER", true, tamerPage }, { "EQ", true, eqPage }, { "MULTIBAND", true, mbPage },
-                               { "COMPRESSOR", true, compPage }, { "PUNCH", false, -1 }, { "WIDTH", false, -1 }, { "LIMITER", true, -1 }, { "OUTPUT", true, -1 } };
+                               { "COMPRESSOR", true, compPage }, { "PUNCH", true, punchPage }, { "WIDTH", true, widthPage }, { "LIMITER", true, -1 }, { "OUTPUT", true, -1 } };
         const auto& params = easyProcessor.parameters;
         const bool tamerOn = params.getRawParameterValue (MasterIDs::tamerOn)->load() > 0.5f;
         const bool compOn = params.getRawParameterValue (MasterIDs::compOn)->load() > 0.5f;
         const bool eqOn = params.getRawParameterValue (MasterEQIDs::on)->load() > 0.5f;
         const bool mbOn = params.getRawParameterValue (MasterMBIDs::on)->load() > 0.5f;
+        const bool punchOn = params.getRawParameterValue (MasterPunchIDs::on)->load() > 0.5f;
+        const bool widthOn = params.getRawParameterValue (MasterWidthIDs::on)->load() > 0.5f;
         const int count = (int) std::size (stages);
         const float arrow = 18.0f;
         const float w = ((float) chainArea.getWidth() - arrow * (float) (count - 1)) / (float) count;
@@ -1470,7 +1866,8 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
             if (st.page >= 0)
             {
                 // (a page: its name, a lamp for on / off, and "click to show" until it's showing)
-                const bool isOn = st.page == tamerPage ? tamerOn : st.page == eqPage ? eqOn : st.page == mbPage ? mbOn : compOn;
+                const bool isOn = st.page == tamerPage ? tamerOn : st.page == eqPage ? eqOn : st.page == mbPage ? mbOn
+                                : st.page == punchPage ? punchOn : st.page == widthPage ? widthOn : compOn;
                 g.setColour (isOn ? Palette::meterLow : Palette::meterOff);
                 g.fillEllipse (juce::Rectangle<float> (9.0f, 9.0f).withCentre ({ b.getX() + 8.0f, b.getCentreY() }));
                 g.setColour (Palette::textBright);
@@ -1515,7 +1912,7 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
 
     drawPanel (g, inputPanel, "1", "INPUT");
     drawPanel (g, metersPanel, {}, "METERS");
-    drawPanel (g, limiterPanel, "6", "LIMITER");
+    drawPanel (g, limiterPanel, "8", "LIMITER");
     paintGroups (limiterGroups);
     drawPanel (g, comparePanel, "", "COMPARE");
 
@@ -1558,6 +1955,21 @@ void EasyMasterAudioProcessorEditor::paintBody (juce::Graphics& g)
         const bool ms = masterProcessor.isMidSide();
         rowName (midRowName, ms ? "MID" : "STEREO", ms ? "kick, bass,\nsnare, vocal" : "the whole mix", midColour, true);
         rowName (sideRowName, "SIDE", ms ? "the width" : "only in\nMID + SIDE", sideColour, ms);
+    }
+    else if (shownPage == punchPage)
+    {
+        drawPanel (g, pageDisplayPanel, {}, "PUNCH - WHAT IT'S DOING");
+        drawPanel (g, pagePanel, "6", "PUNCH");
+        paintGroups (pageGroups[(size_t) shownPage]);
+        const bool ms = masterProcessor.isPunchMidSide();
+        rowName (punchMidName, ms ? "MID" : "STEREO", ms ? "kick, snare,\nvocal" : "the whole mix", ms ? midColour : Palette::accent, true);
+        rowName (punchSideName, "SIDE", ms ? "room, wide\nguitars" : "only in\nMID + SIDE", sideColour, ms);
+    }
+    else if (shownPage == widthPage)
+    {
+        drawPanel (g, pageDisplayPanel, {}, "WIDTH - THE STEREO PICTURE");
+        drawPanel (g, pagePanel, "7", "WIDTH");
+        paintGroups (pageGroups[(size_t) shownPage]);
     }
     else if (shownPage == mbPage)
     {
@@ -1845,7 +2257,49 @@ void EasyMasterAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
         placeKnob (knobs[tFromKnob], fromArea, knobSizeFor (fromArea, 56));
         placeKnob (knobs[tToKnob], shared, knobSizeFor (shared, 56));
     }
-    for (int m : { (int) MasterModules::tamer, (int) MasterModules::eq, (int) MasterModules::comp, (int) MasterModules::multiband })
+    // The PUNCH page: per row, the name, PUNCH and SUSTAIN; MIX (for both) on the right
+    punchDisplay.setBounds (display.getBounds());
+    {
+        auto inside = pagePanel.reduced (14, 12).withTrimmedTop (28);
+        auto row = inside.removeFromTop (32);
+        punchOnButton.setBounds (row.removeFromLeft (64).withSizeKeepingCentre (64, 30));
+        row.removeFromLeft (12);
+        punchModeSwitch.setBounds (row.removeFromLeft (220).withSizeKeepingCentre (220, 30));
+        inside.removeFromTop (10);
+        auto shared = inside.removeFromRight (inside.getWidth() / 4);
+        inside.removeFromRight (10);
+        const int rowHeight = inside.getHeight() / 2;
+        auto midRow = inside.removeFromTop (rowHeight), sideRow = inside;
+        punchMidName = midRow.removeFromLeft (84);
+        punchSideName = sideRow.removeFromLeft (84);
+        const int w = midRow.getWidth() / 2;
+        const int size = knobSizeFor (juce::Rectangle<int> (0, 0, w, rowHeight - 8), 70);
+        for (int c = 0; c < 2; ++c)
+        {
+            placeKnob (punchKnobs[(size_t) c], juce::Rectangle<int> (midRow.getX() + c * w, midRow.getY(), w, midRow.getHeight()), size);
+            placeKnob (punchKnobs[(size_t) (2 + c)], juce::Rectangle<int> (sideRow.getX() + c * w, sideRow.getY(), w, sideRow.getHeight()), size);
+        }
+        placeKnob (punchKnobs[4], shared, knobSizeFor (shared.withHeight (rowHeight), 70));
+    }
+
+    // The WIDTH page: WIDTH and MONO BASS, and the reminder to check in mono
+    widthDisplay.setBounds (display.getBounds());
+    {
+        auto inside = pagePanel.reduced (14, 12).withTrimmedTop (28);
+        auto row = inside.removeFromTop (32);
+        widthOnButton.setBounds (row.removeFromLeft (64).withSizeKeepingCentre (64, 30));
+        row.removeFromLeft (16);
+        widthTip.setBounds (row.withTrimmedRight (360));
+        inside.removeFromTop (16);
+        inside = inside.withSizeKeepingCentre (juce::jmin (inside.getWidth(), 560), inside.getHeight());
+        auto widthColumn = inside.removeFromLeft (inside.getWidth() / 2).reduced (10, 0), monoColumn = inside.reduced (10, 0);
+        const int size = knobSizeFor (widthColumn.withHeight (juce::jmin (widthColumn.getHeight(), 230)), 110);
+        placeKnob (widthKnobs[0], widthColumn, size);
+        placeKnob (widthKnobs[1], monoColumn, size);
+    }
+
+    for (int m : { (int) MasterModules::tamer, (int) MasterModules::eq, (int) MasterModules::comp, (int) MasterModules::multiband,
+                   (int) MasterModules::punch, (int) MasterModules::width })
         placeModuleButtons (m, pagePanel);
     layoutGroups();
     placeModuleButtons (MasterModules::limiter, limiterPanel);
@@ -1887,6 +2341,13 @@ void EasyMasterAudioProcessorEditor::layoutGroups()
     pageGroups[compPage].push_back ({ around ({ &knobs[midAttackKnob].label, &knobs[sideReleaseKnob].slider }), 1 });
     pageGroups[compPage].push_back ({ around ({ &knobs[midMakeupKnob].label, &knobs[sideMakeupKnob].slider }), 0 });
     pageGroups[compPage].push_back ({ around ({ &knobs[mixKnob].label, &knobs[ignoreKnob].slider }), 2 });
+    // PUNCH: PUNCH (both rows) | SUSTAIN (both rows) | MIX
+    pageGroups[punchPage].push_back ({ around ({ &punchKnobs[0].label, &punchKnobs[2].slider }), 0 });
+    pageGroups[punchPage].push_back ({ around ({ &punchKnobs[1].label, &punchKnobs[3].slider }), 1 });
+    pageGroups[punchPage].push_back ({ around ({ &punchKnobs[4].label, &punchKnobs[4].slider }), 2 });
+    // WIDTH: WIDTH | MONO BASS
+    pageGroups[widthPage].push_back ({ around ({ &widthKnobs[0].label, &widthKnobs[0].slider }), 0 });
+    pageGroups[widthPage].push_back ({ around ({ &widthKnobs[1].label, &widthKnobs[1].slider }), 2 });
     // LIMITER: GAIN | CEILING | RELEASE
     limiterGroups.push_back ({ around ({ &knobs[gainKnob].label, &knobs[gainKnob].slider }), 0 });
     limiterGroups.push_back ({ around ({ &knobs[ceilingKnob].label, &knobs[ceilingKnob].slider }), 1 });
@@ -1897,6 +2358,14 @@ void EasyMasterAudioProcessorEditor::refreshLiveDisplays()
 {
     const int count = masterProcessor.takeMoments (incoming.data(), (int) incoming.size());
     display.addMoments (incoming.data(), count);
+    punchDisplay.addMoments (incoming.data(), count);
+    {
+        // (always drained, so the picture is never stale when the page is shown)
+        scopeLeft.resize ((size_t) EasyMasterAudioProcessor::scopeSize);
+        scopeRight.resize ((size_t) EasyMasterAudioProcessor::scopeSize);
+        const int points = masterProcessor.takeScope (scopeLeft.data(), scopeRight.data(), EasyMasterAudioProcessor::scopeSize);
+        if (shownPage == widthPage) widthDisplay.addPoints (scopeLeft.data(), scopeRight.data(), points);
+    }
 
     const auto& params = easyProcessor.parameters;
     const bool ms = masterProcessor.isMidSide();
@@ -1913,12 +2382,20 @@ void EasyMasterAudioProcessorEditor::refreshLiveDisplays()
         mbDisplay.setState (masterProcessor.multibandSettings(), masterProcessor.takeMultibandPicture(), masterProcessor.getTamerPicture(), mon, bypassed);
     if (shownPage == eqPage)
         eqDisplay.setState (masterProcessor.eqSettings(), masterProcessor.getTamerPicture(), eon, bypassed, masterProcessor.getSampleRate() > 0 ? masterProcessor.getSampleRate() : 48000.0);
+    const bool pms = masterProcessor.isPunchMidSide(), pon = params.getRawParameterValue (MasterPunchIDs::on)->load() > 0.5f;
+    const bool won = params.getRawParameterValue (MasterWidthIDs::on)->load() > 0.5f;
+    punchDisplay.setState (pon, bypassed);
+    if (shownPage == widthPage)
+        widthDisplay.setState (masterProcessor.widthSettings(), readings.sideToMidDb, readings.correlation, won, bypassed,
+                               masterProcessor.getSampleRate() > 0 ? masterProcessor.getSampleRate() : 48000.0);
     if (shownPage == tamerPage)
         tamerDisplay.setPicture (masterProcessor.getTamerPicture(), tms, tamerOn, params.getRawParameterValue (MasterIDs::tFrom)->load(),
                                  params.getRawParameterValue (MasterIDs::tTo)->load(), bypassed);
 
-    if (ms != shownMidSide || compOn != shownCompOn || tms != shownTamerMidSide || tamerOn != shownTamerOn || ems != shownEQMidSide || eon != shownEQOn || mms != shownMBMidSide || mon != shownMBOn)
+    if (ms != shownMidSide || compOn != shownCompOn || tms != shownTamerMidSide || tamerOn != shownTamerOn || ems != shownEQMidSide || eon != shownEQOn || mms != shownMBMidSide || mon != shownMBOn
+         || pms != shownPunchMidSide || pon != shownPunchOn || won != shownWidthOn)
     {
+        shownPunchMidSide = pms; shownPunchOn = pon; shownWidthOn = won;
         shownMBMidSide = mms; shownMBOn = mon;
         shownMidSide = ms; shownCompOn = compOn; shownTamerMidSide = tms; shownTamerOn = tamerOn; shownEQMidSide = ems; shownEQOn = eon;
         showParts();

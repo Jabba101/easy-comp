@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.27.0)
+project(EasyPlugins VERSION 1.28.0)
 
 # Link-time optimisation squeezes a few more percent of speed out of the
 # finished plugins, but makes every build much slower (each plugin is
@@ -301,7 +301,7 @@ add_easy_plugin(EasyLimiter
 add_easy_plugin(EasyMaster
     NAME        "Easy Master"
     CODE        Ezms
-    VERSION     1.3.0
+    VERSION     1.4.0
     BUNDLE_ID   com.homestudio.easymaster
     CATEGORIES  Fx Dynamics Mastering
     SOURCES     Effects/Compressor.h
@@ -310,6 +310,8 @@ add_easy_plugin(EasyMaster
                 Effects/ResonanceTamer.h
                 Effects/MasteringEQ.h
                 Effects/MultibandCompressor.h
+                Effects/TransientShaper.h
+                Effects/StereoWidth.h
                 Plugins/EasyMaster/Presets.h
                 Plugins/EasyMaster/PluginProcessor.h
                 Plugins/EasyMaster/PluginProcessor.cpp

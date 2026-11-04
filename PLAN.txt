@@ -540,8 +540,30 @@ LATER
      (the main presets unchanged); 6 module presets (Gentle Control, Tame
      Boomy Lows, Control Harsh Highs, Heavy Rock Density, Tight Mono Lows
      (M/S), Smooth Wide Highs (M/S)). Everything on: ~4.9% of a core.
-     Easy Master 1.3.0. NEXT: PUNCH (transient restore, Easy Trans engine)
-     and WIDTH, then the HOLOGRAM skin.
+     Easy Master 1.3.0.
+   - EASY MASTER PUNCH + WIDTH BUILT (4 November 2026, 1.4.0): chain now
+     ... COMPRESSOR > PUNCH > WIDTH > LIMITER, both off by default (the
+     main presets unchanged; loading one puts them back off). PUNCH
+     (Effects/MixPunch.h): the Easy Trans engine listening three ways -
+     the whole mix, LP 150 Hz (kick), HP 2.5 kHz (snare crack / hats) -
+     and following whichever hears the hit most clearly (largest change,
+     up or down), applied to the whole part (no filtering, no delay).
+     Why: on the dense band mix the whole-mix detector heard almost
+     nothing (+0.36 dB at most at +50%); with the three listeners +3.2
+     dB, the hits lifted 2.3 dB at +50% and softened 2.3 dB at -50%.
+     TransientShaper.h got analyse() (listen only); Easy Trans output is
+     bit-identical (checked against the previous engine). PUNCH, SUSTAIN
+     per part (STEREO or MID + SIDE rows) and MIX; 10 ms dip on a mode
+     switch. 6 module presets (Bring Back the Snap, Drums Forward (M/S),
+     Punch & Tight Tails, Softer Attacks, More Room (M/S), Gentle Lift).
+     WIDTH (Effects/StereoWidth.h): WIDTH 0-200% (the sides' level, the
+     middle untouched) and MONO BASS (24 dB/oct high-pass on the sides,
+     Off at 20 Hz, fades in/out); display = stereo picture (vectorscope),
+     sides-vs-middle level, correlation, and the sides' level across the
+     range. 6 module presets (As It Is, A Little Wider 115%, Wider 130%,
+     Wide & Tight 130% + 120 Hz, Mono Bass Only 120 Hz, Narrower 80%).
+     Panels renumbered: 6 PUNCH, 7 WIDTH, 8 LIMITER. Everything on ~7%
+     of a core. NEXT: the HOLOGRAM skin (with the per-node panel tones).
      DESIGN RULE (user, 4 November - from the bx_console AMEK 9099 look):
      every cluster of controls that works together (one EQ band, one
      multiband band, a compressor's HOW MUCH / HOW FAST / OUTPUT, the
