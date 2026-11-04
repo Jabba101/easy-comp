@@ -533,6 +533,25 @@ LATER
      ghost -10 dB; the band song's loud ghost only -0.5 dB at default,
      'Vocal - Strong Cleanup' -1.4 dB there (that ghost is only ~8 dB
      under the singing - too close to separate safely). Ears again.
+     USER (4 November 2026): no instrument bleed in any "removed" file,
+     only a faint smeared-vocal / reverb sound; "within a workable
+     window ... an improvement". Wants it as good as possible now.
+     TRIED, NOT KEPT (measured on both songs):
+     - per-bin "mask sharpening" (turn down bins the separator was unsure
+       of): took as much real voice as ghost on the Mureka song.
+     - HARMONIC MATCH: does the stem's fine detail (exact harmonics,
+       200 Hz - 4 kHz) copy the sidechain's? A ghost does, a real voice
+       doesn't (band song: singing p90 0.28 vs ghost median 0.38; Mureka
+       0.52 vs 0.53). Catches the band song's loud guitar ghost (accuracy
+       +1.2 dB, voice removed 16 dB under ghost) but on the Mureka song
+       htdemucs's stems carry some of the voice, so the sidechain "sings"
+       too and it took more voice. Tied to SENSITIVITY it gave little.
+     - SEPARATOR CONFIDENCE (the 90th-percentile bin's stem share): splits
+       singing from ghost cleanly on Mureka, but Kim Vocal 2 was confident
+       the band song's guitar ghost WAS voice - no help there.
+     Conclusion: the shipped version is the best balance found; the rest
+     is the information limit (the stems come from one mix). Code for the
+     two cues is in the session scratchpad history if wanted later.
    - Once the essentials are perfected: EASY FX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the
