@@ -793,3 +793,17 @@ DONE
    - Easy Comp 1.5.0 and Easy Transient 1.2.0: the faster engine, about a
      third of the processor time while playing, and almost none on silent
      tracks. The sound is unchanged.
+
+FUTURE IDEAS (brainstorm, not scheduled)
+   - PHYSICALLY MODELLED INSTRUMENTS (user, 4 November 2026): resonators
+     instead of samples - tiny footprint, played by MIDI (a VST3
+     instrument, which JUCE supports). Ways in: MODAL (a bank of tuned
+     resonant filters struck by an exciter - drums, toms, bells, marimba,
+     plates; cheap, very controllable), WAVEGUIDE (delay-line loops -
+     plucked / struck strings, tubes, Karplus-Strong family), finite-
+     difference meshes (most realistic membranes and plates, heaviest).
+     Natural first experiments for a drummer: a modelled tom / snare
+     (membrane modes + snare wires + shell), and an EFFECT version - feed
+     a real drum track into tuned resonators (sympathetic strings, a
+     shell or room ring, a tuned body for thin toms). Hardest: cymbals
+     (dense, non-linear).
