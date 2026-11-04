@@ -593,6 +593,8 @@ LATER
      Shared widgets got an opt-in EasySkin hook (no change elsewhere).
      USER: "really impressive... match Easy Strip's vibe very well".
      INIT is a momentary flash (not a toggle) - as in the Strip.
+     USER (4 November, after installing 1.5.0): "very functional and very
+     high quality... pretty much complete" - tweaks to come through use.
      DESIGN RULE (user, 4 November - from the bx_console AMEK 9099 look):
      every cluster of controls that works together (one EQ band, one
      multiband band, a compressor's HOW MUCH / HOW FAST / OUTPUT, the
