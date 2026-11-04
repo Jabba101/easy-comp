@@ -43,14 +43,15 @@ int main (int argc, char** argv)
         const int L = u.getLatencySamples();
         if (auto* dir = std::getenv ("UB_WRITE"))
         {
-            juce::AudioBuffer<float> outB (2, n - L), gone (2, n - L);
+            juce::AudioBuffer<float> outB (2, n - L), gone (2, n - L), tg (2, n - L);
+            for (int c = 0; c < 2; ++c) tg.copyFrom (c, 0, buf, c + 2, L, n - L);
             for (int c = 0; c < 2; ++c)
             {
                 outB.copyFrom (c, 0, buf, c, L, n - L);
                 gone.copyFrom (c, 0, est[(size_t) k], c, 0, n - L);
                 gone.addFrom (c, 0, outB, c, 0, n - L, -1.0f);
             }
-            for (auto [name, b] : { std::pair<const char*, juce::AudioBuffer<float>*> { "_cleaned", &outB }, { "_removed", &gone } })
+            for (auto [name, b] : { std::pair<const char*, juce::AudioBuffer<float>*> { "_cleaned", &outB }, { "_removed", &gone }, { "_truegained", &tg } })
             {
                 juce::File f (juce::String (dir) + "/" + names[k] + name + ".wav"); f.deleteFile();
                 juce::WavAudioFormat wav;

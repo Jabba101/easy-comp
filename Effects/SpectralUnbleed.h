@@ -15,38 +15,39 @@
 
     What it can and can't do: every stem a separator makes comes from the
     same mix, so the other stems can't reveal anything the separator didn't
-    already know. What they CAN do is show where bleed is most likely and
-    most audible: the moments a stem goes quiet (a vocal pause, a gap in the
-    drums) while the other stems are clearly louder in that part of the
-    spectrum. That is where the ghost hi-hat or the shadow of a vocal is
-    heard - and where Unbleed turns down, band by band, leaving the stem's
-    own sound alone.
+    already know. What they CAN do is show when the stem has stopped - a
+    vocal pause, a long instrumental - and what's left in it then is ghost.
+    That is where the ghost is heard, and where Unbleed turns down. While
+    the stem plays, it's left alone. (Tested on real songs: a band's
+    multitracks and a Mureka song's own stems, each split with UVR5 - Kim
+    Vocal 2 and htdemucs - and compared. A band-by-band rule that also cut
+    "quiet" bands during the singing was tried and dropped: it took some
+    of the real voice for almost no gain.)
 
       AMOUNT       how far it turns a ghost down (0 - 40 dB)
-      SENSITIVITY  how readily something counts as a ghost: low = only in
-                   clear gaps with the others much louder; high = also in
-                   quieter passages
-      SMOOTHNESS   how gently it lets go (short = tight, long = smooth and
-                   free of fluttering)
+      SENSITIVITY  how readily it decides the stem has stopped, and how
+                   much louder the others must be in a band to count it
+                   as ghost
+      SMOOTHNESS   how gently a ghost fades out (short = tight, long =
+                   smooth)
       FROM / TO    the range it works in (e.g. only above 3 kHz for
                    hi-hat ghosts in a vocal)
       LISTEN       hear only what it's taking out
 
     How: the sound is analysed in short, overlapping slices (FFT, 2048
     points at 48 kHz, every 512 samples), grouped into third-octave bands.
-    For each band it follows how loud the stem usually is (a slow peak
-    follower), and compares the stem now with that and with the sidechain.
-    A band is turned down by AMOUNT x (how far the stem is below its usual
-    level) x (how much louder the others are) - both eased in over 6 dB, so
-    nothing switches abruptly. On top of that it judges whether the stem is
-    playing AT ALL, across its whole range (the bands it's usually within
-    20 dB of its loudest in, followed over ~20 s): when it's far below its
-    usual level everywhere and the others are far louder, the stem is
-    silent, and every band the others are about as loud in is ghost - even
-    a ghost as loud as the real part in a few bands (real UVR5 vocal stems
-    carry exactly that: guitar low mids in the long instrumental gaps). Then the gains are smoothed in time (fast
-    down at SMOOTHNESS, straight back up when the stem returns) and across frequency, and the slices put back
-    together. Left and right get the same gains (the stereo image stays).
+    For each band it follows how loud the stem usually is (over ~20 s).
+    Across the stem's own range (the bands it's usually within 20 dB of its
+    loudest in) it judges whether the stem is playing at all: when it's far
+    below its usual level there and the other stems are far louder, it has
+    stopped (eased in over 6 dB and ~150 ms, so a breath between words
+    doesn't count). Then every band the others are about as loud in or
+    louder is turned down by AMOUNT - even a ghost as loud as the real part
+    in a few bands (real UVR5 vocal stems carry exactly that: guitar low
+    mids through a long instrumental). The gains fade down at SMOOTHNESS,
+    open at once when the stem returns, are smoothed across frequency, and
+    the slices put back together. Left and right get the same gains (the
+    stereo image stays).
 
     A sidechain that is the same sound as the stem itself (a copy sent by
     mistake) is noticed and ignored, so it can never cancel the stem.
@@ -101,7 +102,7 @@ public:
         makeBands();
         binGain.assign ((size_t) bins, 1.0f);
         bandPowerT.fill (0.0f); bandPowerS.fill (0.0f);
-        usual.fill (0.0f); usualLong.fill (0.0f); stemAbsent = 0.0f; bandGain.fill (1.0f); shownReduction.fill (0.0f); previousPower.fill (0.0f);
+        usualLong.fill (0.0f); stemAbsent = 0.0f; bandGain.fill (1.0f); shownReduction.fill (0.0f); previousPower.fill (0.0f);
         copyEvidence = 0.0f;
         sidechainIsCopy = false;
 
@@ -289,10 +290,7 @@ private:
         // The gains, band by band
         const float sens = juce::jlimit (0.0f, 1.0f, settings.sensitivity);
         const float frameSeconds = (float) hop / (float) sampleRate;
-        const float dropDb = 24.0f - 16.0f * sens;          // how far below its usual level counts as quiet (24 .. 8 dB)
-        const float louderDb = 12.0f - 10.0f * sens;        // how much louder the others must be (12 .. 2 dB)
         const float amount = juce::jlimit (0.0f, 40.0f, settings.amountDb);
-        const float usualFall = std::exp (-frameSeconds / 1.5f);
         // (turning down eases in - SMOOTHNESS - so a ghost fades out rather than being chopped; when the stem comes
         //  back it opens at once, so the start of every phrase or hit is untouched)
         const float easeDown = 1.0f - std::exp (-frameSeconds / (0.005f + 0.115f * juce::jlimit (0.0f, 1.0f, settings.smoothness)));
@@ -336,6 +334,7 @@ private:
             }
             // (settles in over ~150 ms so a breath between words isn't taken for silence; drops at once when the stem returns)
             const float settle = 1.0f - std::exp (-frameSeconds / 0.15f);
+            stemReturning = absent < stemAbsent - 0.2f;
             stemAbsent = absent < stemAbsent ? absent : stemAbsent + settle * (absent - stemAbsent);
         }
 
@@ -346,25 +345,20 @@ private:
             bandPowerT[(size_t) b] = pt;
             bandPowerS[(size_t) b] = ps;
 
-            auto& u = usual[(size_t) b];
-            u = juce::jmax (pt, usualFall * u + (1.0f - usualFall) * pt);   // (a slow peak follower: the band's usual level)
 
-            const float belowUsual = 10.0f * std::log10 ((u + 1.0e-20f) / pt);
             const float othersLouder = 10.0f * std::log10 (ps / pt);
-            const float quiet = juce::jlimit (0.0f, 1.0f, (belowUsual - dropDb) / 6.0f);
-            const float dominated = juce::jlimit (0.0f, 1.0f, (othersLouder - louderDb) / 6.0f);
             const bool inRange = bandCentre[(size_t) b] >= settings.fromHz * 0.89f && bandCentre[(size_t) b] <= settings.toHz * 1.12f;
             // (while the stem is silent, a band is ghost if the others are about as loud there or louder - how much
             //  louder they must be follows SENSITIVITY)
             const float notOwn = juce::jlimit (0.0f, 1.0f, (othersLouder + 12.0f * sens - 6.0f) / 6.0f);
-            const float ghost = juce::jmax (quiet * dominated, stemAbsent * notOwn);
+            const float ghost = stemAbsent * notOwn;
             const float reduction = (sidechainIsCopy || ! inRange) ? 0.0f : amount * ghost;
             const float target = juce::Decibels::decibelsToGain (-reduction);
 
             auto& g = bandGain[(size_t) b];
             const bool comingIn = pt > previousPower[(size_t) b] * 3.0f;    // (up more than ~5 dB since the last slice)
             previousPower[(size_t) b] = pt;
-            g += (target < g ? easeDown : (comingIn ? openFast : openSlow)) * (target - g);
+            g += (target < g ? easeDown : ((comingIn || stemReturning) ? openFast : openSlow)) * (target - g);
             shownReduction[(size_t) b] = -juce::Decibels::gainToDecibels (g, -60.0f);
         }
 
@@ -419,7 +413,8 @@ private:
     int numBands = 0;
     std::array<int, numBandsMax> bandFirst {}, bandLast {};
     float stemAbsent = 0.0f;
-    std::array<float, numBandsMax> bandCentre {}, bandPowerT {}, bandPowerS {}, usual {}, usualLong {}, bandGain {}, shownReduction {}, previousPower {};
+    bool stemReturning = false;
+    std::array<float, numBandsMax> bandCentre {}, bandPowerT {}, bandPowerS {}, usualLong {}, bandGain {}, shownReduction {}, previousPower {};
     float copyEvidence = 0.0f;
     bool sidechainIsCopy = false;
 

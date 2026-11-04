@@ -219,6 +219,17 @@ namespace
             levels << name << " " << juce::String (x.sdrAfter - x.sdrBefore, 2) << "  ";
         }
         check (safe, "parts that never stop (drums, bass, other) are left essentially alone (accuracy change: " + levels.trim() + " dB)");
+
+        // An AI song: Mureka's own stems as the answer sheet, the same UVR5 split; 155 s
+        std::cout << "\n[a Mureka song: UVR5 stems against Mureka's own stems]\n";
+        stemFolder = "mureka";
+        if (load ("vocals_est").getNumSamples() > 0)
+        {
+            const auto m = score ("vocals", [] (P&) {});
+            check (m.ghostDb < -10.0 && m.sdrAfter > m.sdrBefore - 0.5, "the vocal: the ghost between phrases down " + juce::String (-m.ghostDb, 1) + " dB, accuracy "
+                   + juce::String (m.sdrBefore, 2) + " -> " + juce::String (m.sdrAfter, 2) + " dB (default settings)");
+            check (std::abs (m.damageDb) < 1.0, "while singing, the vocal keeps its level (" + juce::String (m.damageDb, 2) + " dB)");
+        }
         stemFolder = "unbleed";
     }
 

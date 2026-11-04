@@ -505,8 +505,21 @@ LATER
      range, levels followed over 20 s). Now: default accuracy 3.86 ->
      5.38 dB, ghost -2.6 dB; 'Vocal - Strong Cleanup' 6.03 dB, ghost
      -5.6 dB; the vocal keeps its level while singing (-0.6 dB). Drums,
-     bass, other never stop in this song, so they're left alone. The
-     user's ears decide next.
+     bass, other never stop in this song, so they're left alone.
+     SECOND REAL TEST (4 November 2026): an AI song made on Mureka
+     ("The Other Woman", 155 s), Mureka's paid stems as the answer sheet
+     (note: Mureka's "vocal" = "lead" + "backing_vocal" exactly - load one
+     or the other, not all three), split with the same UVR5 models. UVR5
+     does far better on AI music (accuracy ~10-11 dB vs 3-7 on the band).
+     Unbleed takes the ghost between phrases down ~13-14 dB at default.
+     It showed the original band-by-band rule (cut a band when the stem
+     is "quiet" there and the others louder) was taking some real voice
+     during the singing in both songs for almost no gain - dropped. Now
+     only the whole-stem "has it stopped?" rule, opening at once when the
+     stem returns. Default: band song 3.86 -> 5.35 dB, Mureka vocal ghost
+     -13 dB at -0.3 dB accuracy (that's the singing UVR5 already got
+     wrong, which Unbleed can't fix). 'Strong Cleanup' goes further but
+     starts nibbling the voice on the Mureka song (-1.5 dB). Ears next.
    - Once the essentials are perfected: EASY FX, an effects rack.
      WEAPON SELECT opens the rack IN PLACE of the panels to its left:
      Gate, Amp, the big screen, the EQ, DS and Comp are replaced by the
