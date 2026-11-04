@@ -564,6 +564,8 @@ LATER
      Wide & Tight 130% + 120 Hz, Mono Bass Only 120 Hz, Narrower 80%).
      Panels renumbered: 6 PUNCH, 7 WIDTH, 8 LIMITER. Everything on ~7%
      of a core. NEXT: the HOLOGRAM skin (with the per-node panel tones).
+     USER (4 November, after listening): PUNCH and WIDTH sound "perfectly
+     good for professional sound" as they are; refine over time.
      DESIGN RULE (user, 4 November - from the bx_console AMEK 9099 look):
      every cluster of controls that works together (one EQ band, one
      multiband band, a compressor's HOW MUCH / HOW FAST / OUTPUT, the
