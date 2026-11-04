@@ -16,8 +16,10 @@
 
     WORKS ON: STEREO hands it your track as it is. MID, SIDE and MID+SIDE
     split the track into its middle (L+R)/2 and sides (L-R)/2 first,
-    compress the middle, the sides, or each with its own compressor (same
-    settings), and put left and right back together. Changing it while
+    compress the middle, the sides, or each with its own compressor - in
+    MID+SIDE the sides have their own THRESHOLD, RATIO, ATTACK, RELEASE and
+    MAKE-UP (MIX, IGNORE BELOW and CHARACTER are shared) - and put left and
+    right back together. Changing it while
     playing dips for 20 ms instead of clicking.
 */
 class EasyCompAudioProcessor : public EasyProcessor
@@ -51,6 +53,12 @@ public:
     /** All the settings right now, in the form the compressor uses. */
     Compressor::Settings getCurrentSettings() const noexcept;
 
+    /** MID+SIDE: the settings for the sides (their own THRESHOLD, RATIO, ATTACK, RELEASE, MAKE-UP; the rest shared). */
+    Compressor::Settings getSideSettings() const noexcept;
+
+    /** MID+SIDE: the most the sides were turned down since the window last asked. */
+    float takeSideReductionForMeter() noexcept    { return sideReductionDb.exchange (0.0f); }
+
     /** WORKS ON right now (STEREO, MID, SIDE or MID+SIDE). */
     WorksOn getWorksOn() const noexcept   { return (WorksOn) juce::jlimit (0, 3, juce::roundToInt (worksOnValue->load())); }
 
@@ -73,6 +81,8 @@ private:
     std::atomic<float>* autoGainValue  = nullptr;
     std::atomic<float>* bypassValue    = nullptr;
     std::atomic<float>* worksOnValue   = nullptr;
+    std::array<std::atomic<float>*, 5> sideValues {};
+    std::atomic<float> sideReductionDb { 0.0f };
 
     /** MID, SIDE, MID+SIDE: the track split into middle and sides, compressed, and put back together. */
     Compressor::BlockResult processMidSide (juce::AudioBuffer<float>& track, const juce::AudioBuffer<float>* key, WorksOn) noexcept;

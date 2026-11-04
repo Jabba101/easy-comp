@@ -22,6 +22,12 @@ namespace CompIDs
     inline constexpr const char* lowEnd    = "thrust";   // added in version 1.6: LOW END
     inline constexpr const char* listensTo = "listensto"; // added in version 1.6
     inline constexpr const char* worksOn   = "workson";  // added in version 1.8: STEREO / MID / SIDE / MID+SIDE
+    // MID+SIDE: the sides' own settings (added in version 1.9) - the knobs above are then the middle's
+    inline constexpr const char* sideThreshold = "sthreshold";
+    inline constexpr const char* sideRatio     = "sratio";
+    inline constexpr const char* sideAttack    = "sattack";
+    inline constexpr const char* sideRelease   = "srelease";
+    inline constexpr const char* sideMakeup    = "smakeup";
 }
 
 /** REACTS TO: the two choices (in this order). */
@@ -284,7 +290,10 @@ inline std::vector<Preset> makeCompressorPresets()
                                { CompIDs::makeup,    p.makeupDb },    { CompIDs::mix,      p.mixPercent },
                                { CompIDs::lowCut,    p.lowCutHz },    { CompIDs::reactsTo, (float) p.reactsTo },
                                { CompIDs::character, (float) p.style }, { CompIDs::lowEnd,  (float) p.lowEnd },
-                               { CompIDs::worksOn,   (float) worksOn } } });
+                               { CompIDs::worksOn,   (float) worksOn },
+                               // (the sides start the same as the middle; tweak them apart from there)
+                               { CompIDs::sideThreshold, p.thresholdDb }, { CompIDs::sideRatio, p.ratio },
+                               { CompIDs::sideAttack, p.attackMs }, { CompIDs::sideRelease, p.releaseMs }, { CompIDs::sideMakeup, p.makeupDb } } });
     };
 
     for (auto& p : compressorPresets)
@@ -300,5 +309,6 @@ inline juce::StringArray compressorPresetIDs()
 {
     return { CompIDs::threshold, CompIDs::ratio, CompIDs::attack, CompIDs::release,
              CompIDs::makeup, CompIDs::mix, CompIDs::lowCut, CompIDs::reactsTo,
-             CompIDs::character, CompIDs::lowEnd, CompIDs::worksOn };
+             CompIDs::character, CompIDs::lowEnd, CompIDs::worksOn,
+             CompIDs::sideThreshold, CompIDs::sideRatio, CompIDs::sideAttack, CompIDs::sideRelease, CompIDs::sideMakeup };
 }

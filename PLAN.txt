@@ -467,6 +467,26 @@ LATER
      Pultec-style EQ and a vari-mu, "sounds right" designs like Easy Tape;
      the character boxes stay professional. VINTAGE chain (Neold, Fuse
      Audio Labs, VCL-864U): not built - already covered.
+   - RULE (user, 4 November 2026): anything with a MID / SIDE option
+     gets SEPARATE controls for mid and side, both visible at once (no
+     EDIT MID / EDIT SIDE switch). Done: Easy Master's compressor (green
+     MID row, blue SIDE row), Easy Comp 1.9.0 (MID+SIDE: the top knobs
+     are the middle, a SIDES row underneath; in Easy Strip the COMP panel
+     shows MID and SIDE side by side). EQ: Easy Master's mastering EQ
+     (stage 2) will be FULL mid and side - two complete sets of bands;
+     Easy EQ / the Strip's EQ stay as they are (each band picks ST / MID
+     / SIDE).
+   - EASY MASTER STAGE 1 BUILT (4 November 2026, 1.0.0): 1680 x 900.
+     Chain ribbon along the top (built stages lit, the rest "coming"),
+     WHAT IT'S DOING (6 s: turning-down lane on top, levels below), METERS
+     (LUFS M / S / I, highest true peak, PLR, correlation, turning down
+     now), INPUT (TRIM + clip warning), COMPRESSOR (STEREO or MID + SIDE,
+     separate rows; MIX, IGNORE BELOW, PEAKS / AVERAGE, MODERN / VINTAGE),
+     LIMITER (Easy Limiter engine), COMPARE (MATCH = whole chain at the
+     original's loudness, LISTEN STEREO / MID / SIDE / MONO, A / B).
+     11 presets. 1.6% of a core. NEXT: stage 2 - the resonance tamer
+     (the Unbleed learnings: typical-not-peak levels, measure first) and
+     the full M/S mastering EQ.
    - EASY UNBLEED (idea, 1 November 2026): for stems split with UVR5
      (the user's separator - no paid tool beats it). Split in UVR5 as
      normal (tips: Ensemble mode with a Roformer + an MDX model; vocals

@@ -776,6 +776,33 @@ namespace Holo
             worksOn = &choice (CompIDs::worksOn, { "STEREO", "MID", "SIDE", "MID+SIDE" }, "WORKS ON", true);
             worksOn->segmentHeight = 24;
             worksOn->fontSize = 13.0f;
+
+            // MID+SIDE: the middle (green) and the sides (blue) side by side, each with its own controls - smaller copies
+            // of THRESHOLD, RATIO, ATTACK, RELEASE and MAKE-UP (the middle's are the same settings as the big ones)
+            const juce::Colour midTint = Colours::gate, sideTint = Colours::cyan;
+            msThreshold[0] = &bar (CompIDs::threshold, "THRESH", Format::db, "dB", midTint, false, "THRESHOLD");
+            msRatio[0]     = &bar (CompIDs::ratio, "RATIO", Format::ratio, ": 1", midTint, false, "RATIO");
+            msThreshold[1] = &bar (CompIDs::sideThreshold, "THRESH", Format::db, "dB", sideTint, false, "SIDES - THRESHOLD");
+            msRatio[1]     = &bar (CompIDs::sideRatio, "RATIO", Format::ratio, ": 1", sideTint, false, "SIDES - RATIO");
+            msAttack[0]  = &ring (CompIDs::attack, "ATTACK", Format::msPrecise, "ms", Ring::tiny, midTint, "ATTACK");
+            msRelease[0] = &ring (CompIDs::release, "RELEASE", Format::msPrecise, "ms", Ring::tiny, midTint, "RELEASE");
+            msAttack[1]  = &ring (CompIDs::sideAttack, "ATTACK", Format::msPrecise, "ms", Ring::tiny, sideTint, "SIDES - ATTACK");
+            msRelease[1] = &ring (CompIDs::sideRelease, "RELEASE", Format::msPrecise, "ms", Ring::tiny, sideTint, "SIDES - RELEASE");
+            msMakeup[0]  = &ring (CompIDs::makeup, "MAKE-UP", Format::signedDb, "dB", Ring::tiny, midTint, "MAKE-UP");
+            msMakeup[1]  = &ring (CompIDs::sideMakeup, "MAKE-UP", Format::signedDb, "dB", Ring::tiny, sideTint, "SIDES - MAKE-UP");
+            msMix        = &ring (CompIDs::mix, "MIX", Format::percent, "%", Ring::tiny);
+            // (the big controls stay the ones the strip finds for these settings)
+            view.registerControl (module, CompIDs::threshold, *threshold);
+            view.registerControl (module, CompIDs::ratio, *ratio);
+            view.registerControl (module, CompIDs::attack, *attack);
+            view.registerControl (module, CompIDs::release, *release);
+            view.registerControl (module, CompIDs::makeup, *makeup);
+            view.registerControl (module, CompIDs::mix, *mix);
+            for (int part = 0; part < 4; ++part)
+            {
+                msName[part] = &caption (part % 2 == 0 ? "MID" : "SIDE", part % 2 == 0 ? midTint : sideTint, 12.5f);
+                msName[part]->setJustificationType (juce::Justification::centred);
+            }
         }
 
         void resized() override
@@ -796,6 +823,22 @@ namespace Holo
             body.removeFromTop (8);
             auto s1 = section (upper.removeFromLeft (232), 1, "HOW MUCH");
             upper.removeFromLeft (8);
+            auto s2 = section (upper.removeFromTop (115), 2, "HOW FAST");
+            upper.removeFromTop (8);
+            auto s3 = section (upper, 3, "OUTPUT");
+
+            // (STEREO, MID, SIDE: the big controls; MID+SIDE: the middle and the sides side by side)
+            for (juce::Component* c : { (juce::Component*) threshold, (juce::Component*) ratio, (juce::Component*) attack, (juce::Component*) release,
+                                        (juce::Component*) makeup, (juce::Component*) mix, (juce::Component*) &meter, (juce::Component*) inLabel })
+                c->setVisible (! shownMidSide);
+            for (int part = 0; part < 2; ++part)
+                for (juce::Component* c : { (juce::Component*) msThreshold[part], (juce::Component*) msRatio[part], (juce::Component*) msAttack[part],
+                                            (juce::Component*) msRelease[part], (juce::Component*) msMakeup[part] })
+                    c->setVisible (shownMidSide);
+            msMix->setVisible (shownMidSide);
+            for (auto* n : msName) n->setVisible (shownMidSide);
+
+            if (! shownMidSide)
             {
                 auto row = s1;
                 auto col = row.removeFromLeft (46);
@@ -810,18 +853,50 @@ namespace Holo
                 grLabel->setBounds (gr.removeFromTop (17));
                 grValue->setBounds (gr.removeFromBottom (14).expanded (8, 0));
                 reduction.setBounds (gr.withSizeKeepingCentre (16, gr.getHeight()));
-            }
 
-            auto s2 = section (upper.removeFromTop (115), 2, "HOW FAST");
-            upper.removeFromTop (8);
-            auto s3 = section (upper, 3, "OUTPUT");
-            centreIn (*attack, s2.removeFromLeft (s2.getWidth() / 2), s2.getY());
-            centreIn (*release, s2, s2.getY());
-            {
+                centreIn (*attack, s2.removeFromLeft (s2.getWidth() / 2), s2.getY());
+                centreIn (*release, s2, s2.getY());
                 const int w = s3.getWidth() / 3;
                 centreIn (*makeup, s3.removeFromLeft (w), s3.getY());
                 centreIn (*mix, s3.removeFromLeft (w), s3.getY());
                 autoGain->setBounds (s3.withSizeKeepingCentre (54, 54));
+            }
+            else
+            {
+                // HOW MUCH: MID threshold + ratio, SIDE threshold + ratio, then GR
+                auto row = s1;
+                auto gr = row.removeFromRight (24);
+                grLabel->setBounds (gr.removeFromTop (17));
+                grValue->setBounds (gr.removeFromBottom (14).expanded (8, 0));
+                reduction.setBounds (gr.withSizeKeepingCentre (16, gr.getHeight()));
+                row.removeFromRight (6);
+                auto names = row.removeFromTop (15);
+                const int half = row.getWidth() / 2;
+                msName[0]->setBounds (names.removeFromLeft (half));
+                msName[1]->setBounds (names);
+                for (int part = 0; part < 2; ++part)
+                {
+                    auto pair = row.removeFromLeft (part == 0 ? half : row.getWidth()).reduced (2, 0);
+                    msThreshold[part]->setBounds (pair.removeFromLeft (pair.getWidth() / 2).reduced (2, 0));
+                    msRatio[part]->setBounds (pair.reduced (2, 0));
+                }
+
+                // HOW FAST: MID attack + release, SIDE attack + release
+                auto fastNames = s2.removeFromTop (13);
+                const int q = s2.getWidth() / 4;
+                msName[2]->setBounds (fastNames.removeFromLeft (q * 2));
+                msName[3]->setBounds (fastNames);
+                centreIn (*msAttack[0], s2.removeFromLeft (q), s2.getY());
+                centreIn (*msRelease[0], s2.removeFromLeft (q), s2.getY());
+                centreIn (*msAttack[1], s2.removeFromLeft (q), s2.getY());
+                centreIn (*msRelease[1], s2, s2.getY());
+
+                // OUTPUT: MID make-up, SIDE make-up, MIX (shared), AUTO GAIN
+                const int w = (s3.getWidth() - 52) / 3;
+                centreIn (*msMakeup[0], s3.removeFromLeft (w), s3.getY() + 6);
+                centreIn (*msMakeup[1], s3.removeFromLeft (w), s3.getY() + 6);
+                centreIn (*msMix, s3.removeFromLeft (w), s3.getY() + 6);
+                autoGain->setBounds (s3.withSizeKeepingCentre (48, 48));
             }
 
             // WORKS ON along the bottom: STEREO / MID / SIDE / MID+SIDE
@@ -861,6 +936,14 @@ namespace Holo
             reduction.setGainDb (gr);
             grValue->setText (juce::String (reduction.getShownDb(), 1), juce::dontSendNotification);
             view.getScreen().addCompFrame (level, gr);
+
+            const bool midSide = comp.getWorksOn() == worksOnMidSide;
+            if (midSide != shownMidSide)
+            {
+                shownMidSide = midSide;
+                resized();
+                repaint();
+            }
         }
 
     private:
@@ -883,6 +966,10 @@ namespace Holo
         juce::Label *reactsLabel = nullptr, *listensLabel = nullptr, *styleLabel = nullptr, *lowEndLabel = nullptr;
         Choice *reactsTo = nullptr, *listensTo = nullptr, *style = nullptr, *lowEnd = nullptr, *worksOn = nullptr;
         juce::Label* worksOnLabel = nullptr;
+        Bar *msThreshold[2] {}, *msRatio[2] {};
+        Ring *msAttack[2] {}, *msRelease[2] {}, *msMakeup[2] {}, *msMix = nullptr;
+        juce::Label* msName[4] {};
+        bool shownMidSide = false;
     };
 
     //==========================================================================

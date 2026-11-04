@@ -81,6 +81,19 @@ private:
     CurveGraph graph;
     GainReductionMeter meter;
 
+    // MID+SIDE: the sides' own THRESHOLD, RATIO, ATTACK, RELEASE and MAKE-UP (blue), with their own meter
+    std::array<Knob, 5> sideKnobs;
+    float shownSideCut = 0.0f;   // (the sides' meter: a bar drawn in paintBody)
+    juce::Rectangle<int> sidePanel, sideNameBox, sideMeterBox;
+    bool shownMidSide = false;
+    void showMidSide (bool midSide);
+
+public:
+    juce::Slider& getSideKnob (int index)   { return sideKnobs[(size_t) index].slider; }
+    bool isSideRowWorking() const           { return sideKnobs[0].slider.isEnabled(); }
+
+private:
+
     // What the MAKE-UP box is showing while AUTO-GAIN is on
     bool  showingAutoGain = false;
     float shownAutoGainDb = 0.0f;

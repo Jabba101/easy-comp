@@ -192,7 +192,7 @@ namespace
         std::cout << "\n[parameters, defaults and value text]\n";
         EasyCompAudioProcessor p;
 
-        check (p.getParameters().size() == 14, "14 settings visible to the DAW (7 knobs, 2 buttons, REACTS TO, STYLE, LOW END, LISTENS TO, WORKS ON)");
+        check (p.getParameters().size() == 19, "19 settings visible to the DAW (7 knobs, 5 SIDES knobs, 2 buttons, REACTS TO, STYLE, LOW END, LISTENS TO, WORKS ON)");
         check (p.getBypassParameter() != nullptr && p.getBypassParameter() == p.parameters.getParameter (CommonIDs::bypass),
                "the BYPASS button is also the DAW's own bypass switch");
         check (getParam (p, CommonIDs::autoGain) < 0.5f && getParam (p, CommonIDs::bypass) < 0.5f, "AUTO-GAIN and BYPASS start off");
@@ -1211,6 +1211,7 @@ namespace
         {
             EasyCompAudioProcessor p;
             setParam (p, CompIDs::threshold, -30.0f); setParam (p, CompIDs::ratio, 8.0f); setParam (p, CompIDs::worksOn, (float) worksOn);
+            setParam (p, CompIDs::sideThreshold, -30.0f); setParam (p, CompIDs::sideRatio, 8.0f);
             if (bypass) setParam (p, CommonIDs::bypass, 1.0f);
             prepare (p, rate, 512);
             return th::run (p, in, 512);
@@ -1254,6 +1255,31 @@ namespace
             check (midCut < -10.0f && std::abs (sideKept) < 0.05f && sideCut < -10.0f,
                    "MID+SIDE: each compressed on its own (loud middle " + juce::String (midCut, 1) + " dB, quiet sides " + juce::String (sideKept, 2)
                    + " dB; loud sides " + juce::String (sideCut, 1) + " dB)");
+        }
+        // MID+SIDE: the sides have their own settings
+        {
+            const auto in = make (0.4f, 0.4f, 2.0);
+            EasyCompAudioProcessor p;
+            setParam (p, CompIDs::worksOn, (float) worksOnMidSide);
+            setParam (p, CompIDs::threshold, -40.0f); setParam (p, CompIDs::ratio, 10.0f);      // the middle: squeezed hard
+            setParam (p, CompIDs::sideThreshold, 0.0f); setParam (p, CompIDs::sideRatio, 1.0f); // the sides: left alone
+            setParam (p, CompIDs::sideMakeup, 3.0f);
+            prepare (p, rate, 512);
+            const auto out = th::run (p, in, 512);
+            const float midCut = th::toDb (midOf (out, from, to) / midOf (in, from, to));
+            const float sideChange = th::toDb (sideOf (out, from, to) / sideOf (in, from, to));
+            check (midCut < -10.0f && std::abs (sideChange - 3.0f) < 0.1f, "MID+SIDE, separate settings: the middle squeezed " + juce::String (midCut, 1)
+                   + " dB while the sides follow their own (1:1, +3 dB make-up: " + juce::String (sideChange, 2) + " dB)");
+            const float sideMeter = p.takeSideReductionForMeter();
+            check (sideMeter < 0.1f, "the SIDES meter shows the sides' own (none: " + juce::String (sideMeter, 2) + " dB)");
+            // ... and in STEREO, MID or SIDE the side knobs do nothing
+            EasyCompAudioProcessor q;
+            setParam (q, CompIDs::threshold, -30.0f); setParam (q, CompIDs::ratio, 8.0f); setParam (q, CompIDs::worksOn, (float) worksOnSide);
+            setParam (q, CompIDs::sideThreshold, 0.0f); setParam (q, CompIDs::sideRatio, 1.0f);
+            prepare (q, rate, 512);
+            const auto loudSides = make (0.05f, 0.8f, 2.0);
+            const auto o = th::run (q, loudSides, 512);
+            check (th::toDb (sideOf (o, from, to) / sideOf (loudSides, from, to)) < -10.0f, "WORKS ON SIDE uses the main knobs (the SIDES row is for MID+SIDE only)");
         }
         // A track with nothing in the sides: MID does what STEREO does
         {

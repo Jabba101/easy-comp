@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.26.0)
+project(EasyPlugins VERSION 1.27.0)
 
 # Link-time optimisation squeezes a few more percent of speed out of the
 # finished plugins, but makes every build much slower (each plugin is
@@ -109,7 +109,7 @@ endfunction()
 add_easy_plugin(EasyComp
     NAME        "Easy Comp"
     CODE        Ezcp
-    VERSION     1.8.0
+    VERSION     1.9.0
     BUNDLE_ID   com.homestudio.easycomp
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/Compressor.h
@@ -298,6 +298,21 @@ add_easy_plugin(EasyLimiter
                 Plugins/EasyLimiter/PluginEditor.h
                 Plugins/EasyLimiter/PluginEditor.cpp)
 
+add_easy_plugin(EasyMaster
+    NAME        "Easy Master"
+    CODE        Ezms
+    VERSION     1.0.0
+    BUNDLE_ID   com.homestudio.easymaster
+    CATEGORIES  Fx Dynamics Mastering
+    SOURCES     Effects/Compressor.h
+                Effects/TruePeakLimiter.h
+                Effects/LoudnessMeter.h
+                Plugins/EasyMaster/Presets.h
+                Plugins/EasyMaster/PluginProcessor.h
+                Plugins/EasyMaster/PluginProcessor.cpp
+                Plugins/EasyMaster/PluginEditor.h
+                Plugins/EasyMaster/PluginEditor.cpp)
+
 add_easy_plugin(EasyUnbleed
     NAME        "Easy Unbleed"
     CODE        Ezub
@@ -340,7 +355,7 @@ endforeach()
 add_easy_plugin(EasyStrip
     NAME        "Easy Strip"
     CODE        Ezst
-    VERSION     0.14.0
+    VERSION     0.15.0
     BUNDLE_ID   com.homestudio.easystrip
     CATEGORIES  Fx
     SOURCES     Effects/LoudnessMeter.h

@@ -1025,6 +1025,15 @@ check (tidy, "full-mix presets in one list, Mixing & Mastering; drum bus presets
         view->pageButtons[4]->onClick();
         for (int i = 0; i < 10; ++i) { process (s, music (0.05)); view->updateNow(); }
         savePng (*editor, outDir.getChildFile ("strip-hologram-comp.png"));
+        {
+            // COMP in MID+SIDE: the middle and the sides side by side, each with its own controls
+            setParam (s.getComp(), CompIDs::worksOn, 3.0f);
+            setParam (s.getComp(), CompIDs::sideThreshold, -30.0f);
+            for (int i = 0; i < 4; ++i) { process (s, music (0.05)); view->updateNow(); }
+            savePng (*editor, outDir.getChildFile ("strip-hologram-midside.png"));
+            setParam (s.getComp(), CompIDs::worksOn, 0.0f);
+            view->updateNow();
+        }
 
         // SETUP: size
         view->showSetup (true);

@@ -10,6 +10,7 @@
     LUFS: loudness the way streaming services measure it (ITU-R BS.1770 /
     EBU R128), for the Easy Strip's output meter.
 
+      MOMENTARY   the last 400 ms
       SHORT-TERM  the last 3 seconds
       INTEGRATED  the whole song so far (until reset): 400 ms blocks every
                   100 ms, ignoring silence (below -70 LUFS) and the quiet
@@ -51,6 +52,7 @@ public:
 
     float getShortTermLufs() const noexcept    { return shortTerm.load(); }
     float getIntegratedLufs() const noexcept   { return integrated.load(); }
+    float getMomentaryLufs() const noexcept    { return momentary.load(); }   // the last 400 ms
 
 private:
     static float lufsOf (double meanSquare) noexcept
@@ -67,6 +69,7 @@ private:
         histogramEnergy.fill (0.0);
         shortTerm.store (-200.0f);
         integrated.store (-200.0f);
+        momentary.store (-200.0f);
         resetRequested.store (false);
     }
 
@@ -97,6 +100,7 @@ private:
         };
 
         shortTerm.store (lufsOf (averageOfLast (30)));
+        momentary.store (lufsOf (averageOfLast (4)));
 
         // The integrated reading: each 400 ms gating block, into a histogram (0.1 LU steps)
         // (only whole 400 ms blocks heard since the last reset count)
@@ -135,6 +139,6 @@ private:
     std::array<double, numBins> histogramEnergy {};
     int blockLength = 4800, position = 0, filled = 0, blocksHeard = 0, blocksSinceReset = 0;
     double sum = 0.0;
-    std::atomic<float> shortTerm { -200.0f }, integrated { -200.0f };
+    std::atomic<float> shortTerm { -200.0f }, integrated { -200.0f }, momentary { -200.0f };
     std::atomic<bool> resetRequested { false };
 };

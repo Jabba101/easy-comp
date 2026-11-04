@@ -60,6 +60,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyCompAudioProcessor::crea
                                                               juce::StringArray { "This Track", "Sidechain" }, (int) ListensTo::listensToTrack));
     layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { CompIDs::worksOn, 6 }, "Works On",
                                                               juce::StringArray { "Stereo", "Mid", "Side", "Mid+Side" }, (int) worksOnStereo));
+    layout.add (makeKnob (CompIDs::sideThreshold, 7, "Side Threshold",    thresholdRange, defaults.thresholdDb, Format::decibels));
+    layout.add (makeKnob (CompIDs::sideRatio,     7, "Side Ratio",        ratioRange,     defaults.ratio,       Format::ratio));
+    layout.add (makeKnob (CompIDs::sideAttack,    7, "Side Attack",       attackRange,    defaults.attackMs,    Format::milliseconds));
+    layout.add (makeKnob (CompIDs::sideRelease,   7, "Side Release",      releaseRange,   defaults.releaseMs,   Format::milliseconds));
+    layout.add (makeKnob (CompIDs::sideMakeup,    7, "Side Make-up Gain", makeupRange,    defaults.makeupDb,    Format::signedDecibels));
     return layout;
 }
 
@@ -81,6 +86,20 @@ EasyCompAudioProcessor::EasyCompAudioProcessor()
     autoGainValue  = parameters.getRawParameterValue (CommonIDs::autoGain);
     bypassValue    = parameters.getRawParameterValue (CommonIDs::bypass);
     worksOnValue   = parameters.getRawParameterValue (CompIDs::worksOn);
+    sideValues = { parameters.getRawParameterValue (CompIDs::sideThreshold), parameters.getRawParameterValue (CompIDs::sideRatio),
+                   parameters.getRawParameterValue (CompIDs::sideAttack), parameters.getRawParameterValue (CompIDs::sideRelease),
+                   parameters.getRawParameterValue (CompIDs::sideMakeup) };
+}
+
+Compressor::Settings EasyCompAudioProcessor::getSideSettings() const noexcept
+{
+    auto s = getCurrentSettings();
+    s.thresholdDb = sideValues[0]->load();
+    s.ratio       = sideValues[1]->load();
+    s.attackMs    = sideValues[2]->load();
+    s.releaseMs   = sideValues[3]->load();
+    s.makeupDb    = sideValues[4]->load();
+    return s;
 }
 
 //==============================================================================
@@ -88,7 +107,7 @@ void EasyCompAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
 {
     currentSampleRate = sampleRate;
     compressor.prepare (sampleRate, getCurrentSettings());
-    sideCompressor.prepare (sampleRate, getCurrentSettings());
+    sideCompressor.prepare (sampleRate, getSideSettings());
     middle.setSize (1, juce::jmax (1, samplesPerBlock));
     sides.setSize (1, juce::jmax (1, samplesPerBlock));
     playingWorksOn = getWorksOn();
@@ -191,7 +210,9 @@ Compressor::BlockResult EasyCompAudioProcessor::processMidSide (juce::AudioBuffe
     const bool bypassed = settings.bypassed;
     settings.bypassed = false;   // (BYPASS is done here instead, on left and right: exactly your track when it's on)
     compressor.setSettings (settings);
-    sideCompressor.setSettings (settings);
+    auto sideSettings = getSideSettings();
+    sideSettings.bypassed = false;
+    sideCompressor.setSettings (mode == worksOnMidSide ? sideSettings : settings);   // (MID+SIDE: the sides' own settings)
     midSideBypass.setTargetValue (bypassed ? 1.0f : 0.0f);
 
     float* left = track.getWritePointer (0);
@@ -221,7 +242,12 @@ Compressor::BlockResult EasyCompAudioProcessor::processMidSide (juce::AudioBuffe
             result.autoGainDb = r.autoGainDb;
         };
         if (mode == worksOnMid || mode == worksOnMidSide)   merge (compressor.process (mid, keyPart ? &*keyPart : nullptr));
-        if (mode == worksOnSide || mode == worksOnMidSide)  merge ((mode == worksOnSide ? compressor : sideCompressor).process (side, keyPart ? &*keyPart : nullptr));
+        if (mode == worksOnSide || mode == worksOnMidSide)
+        {
+            const auto r = (mode == worksOnSide ? compressor : sideCompressor).process (side, keyPart ? &*keyPart : nullptr);
+            if (mode == worksOnMidSide) storeIfBigger (sideReductionDb, r.maxReductionDb);   // (its own meter: the main one shows the middle)
+            else                        merge (r);
+        }
 
         for (int i = 0; i < n; ++i)
         {

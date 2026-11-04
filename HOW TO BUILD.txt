@@ -22,6 +22,10 @@ Right now this project makes:
     Easy Flange  flanger, chorus and vibrato
     Easy Filter  a moving filter: sweeps, wobbles and pulses in time
     Easy Limiter a clean, transparent true-peak ceiling (stops overs)
+    Easy Master  the mastering chain for the master bus: compressor
+                 (stereo, or mid and side with separate controls),
+                 the Easy Limiter ceiling, LUFS / true-peak meters.
+                 Not part of Easy Strip. (Stage 1: more to come.)
     Easy Unbleed cleans the other instruments' ghost out of a separated
                  stem (UVR5 and the like). Not part of Easy Strip.
     Easy Strip   all of the above in one channel strip (HOLOGRAM look)
@@ -157,9 +161,14 @@ YOUR FIRST FIVE MINUTES WITH EASY COMP
                    middle of a drum bus while the cymbals breathe.
         SIDE       only the sides: tame harsh wide cymbals or a big
                    reverb tail without touching the middle.
-        MID+SIDE   both, each compressed on its own (same settings), so
-                   a loud middle never pulls the width down with it -
-                   the mastering way. Put Easy Limiter after it.
+        MID+SIDE   both, each with its own compressor AND its own
+                   settings: the knobs at the top work on the middle
+                   (green), the SIDES row underneath on the width
+                   (blue: THRESHOLD, RATIO, ATTACK, RELEASE, MAKE-UP).
+                   MIX, IGNORE BELOW and CHARACTER are shared. A loud
+                   middle never pulls the width down with it. In Easy
+                   Strip, MID+SIDE shows the middle and the sides side
+                   by side in the COMP panel.
       Changing it while playing dips the sound for a moment (no click).
       On a mono track there are no sides, so it always works on STEREO.
    Hover over anything for a plain-English explanation.
@@ -622,6 +631,34 @@ YOUR FIRST FIVE MINUTES WITH EASY LIMITER
 
 
 ====================================================================
+YOUR FIRST FIVE MINUTES WITH EASY MASTER
+====================================================================
+   The last plugin on your master bus. Stage 1: INPUT > COMPRESSOR >
+   LIMITER, with meters. (The resonance tamer, EQ, multiband, punch and
+   width will arrive in their places - the chain along the top shows
+   them dimmed until then.)
+
+   1. Pick a preset for the song (Rock & Punk, Synthwave, Jazz...).
+   2. INPUT - TRIM: set it so the compressor turns down 1-3 dB on the
+      loud parts (TURNING DOWN NOW, in the meters). A red warning
+      means the mix is already clipping on the way in: turn it down in
+      Samplitude instead.
+   3. COMPRESSOR: STEREO for the whole mix, or MID + SIDE, where the
+      middle (green row: kick, bass, snare, vocal) and the sides (blue
+      row: the width) each have their own controls. IGNORE BELOW keeps
+      a heavy kick and bass from making the whole mix pump.
+   4. LIMITER - GAIN: push the master up into the ceiling (-0.3 dBTP
+      by default). The meters show LUFS - a reading, never a target.
+   5. COMPARE: MATCH plays the whole chain at the original's loudness;
+      then click BYPASS on and off to judge the sound, not the volume.
+      LISTEN MONO / MID / SIDE are for checking (switch back to
+      STEREO). A and B hold two versions to compare.
+   Click the meters to reset the INTEGRATED reading and the peak. It
+   delays the sound by 3 ms (the limiter's look-ahead) - your DAW lines
+   everything up automatically.
+
+
+====================================================================
 YOUR FIRST FIVE MINUTES WITH EASY UNBLEED
 ====================================================================
    For stems split out of a finished mix (UVR5 and the like). A vocal
@@ -849,6 +886,7 @@ WHAT'S IN THIS FOLDER
    Plugins\EasyFlange\    Easy Flange's knobs, picture of the swing and presets.
    Plugins\EasyFilter\    Easy Filter's knobs, picture of the filter and presets.
    Plugins\EasyLimiter\   Easy Limiter's knobs, display and presets.
+   Plugins\EasyMaster\    Easy Master's chain, window, meters and presets.
    Plugins\EasyUnbleed\   Easy Unbleed's knobs, display and presets.
    Plugins\EasyStrip\     Easy Strip: the plumbing that runs the plugins
                           above as its modules, and its windows (Holo* =

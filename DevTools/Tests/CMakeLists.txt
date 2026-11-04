@@ -138,3 +138,9 @@ target_sources(UnbleedTests PRIVATE UnbleedTests.cpp ${P}/Plugins/EasyUnbleed/Pl
 target_include_directories(UnbleedTests PRIVATE ${P}/Plugins/EasyUnbleed ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(UnbleedTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Unbleed")
 target_link_libraries(UnbleedTests PRIVATE pffft juce::juce_audio_utils PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
+juce_add_console_app(MasterTests PRODUCT_NAME "MasterTests")
+target_sources(MasterTests PRIVATE MasterTests.cpp ${P}/Plugins/EasyMaster/PluginProcessor.cpp ${P}/Plugins/EasyMaster/PluginEditor.cpp ${SHARED})
+target_include_directories(MasterTests PRIVATE ${P}/Plugins/EasyMaster ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(MasterTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Master")
+target_link_libraries(MasterTests PRIVATE juce::juce_audio_utils PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)

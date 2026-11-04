@@ -68,8 +68,13 @@ namespace
 
     constexpr const char* worksOnHint =
         "STEREO: both sides together. MID: only the middle - vocal, kick, snare, bass - while the sides (wide guitars, "
-        "cymbals, room, reverb) pass untouched. SIDE: only the sides. MID+SIDE: both, each compressed on its own, so a loud "
-        "middle doesn't pull the width down.";
+        "cymbals, room, reverb) pass untouched. SIDE: only the sides. MID+SIDE: both, each with its own compressor - the "
+        "knobs above for the middle (green), the SIDES row for the width (blue).";
+    constexpr const char* sideRowHint =
+        "MID+SIDE only: the sides' own settings (the width - wide guitars, cymbals, room, reverb). The knobs above then "
+        "work on the middle. MIX, IGNORE BELOW, REACTS TO and CHARACTER are shared.";
+    const juce::Colour midColour = Palette::meterLow;
+    const juce::Colour sideColour = Palette::meterLow.interpolatedWith (juce::Colours::deepskyblue, 0.7f);
     constexpr const char* lowEndHint =
         "THRUST: the compressor hears less and less of the low end the lower it goes (and a little more of the bright, "
         "edgy range), so the kick and bass punch through instead of setting it off. Only changes what it reacts to - you "
@@ -379,6 +384,26 @@ EasyCompAudioProcessorEditor::EasyCompAudioProcessorEditor (EasyCompAudioProcess
         return manualText != nullptr ? manualText (value) : juce::String (value, 1);
     };
 
+    const std::array<const char*, 5> sideIDs { CompIDs::sideThreshold, CompIDs::sideRatio, CompIDs::sideAttack, CompIDs::sideRelease, CompIDs::sideMakeup };
+    for (size_t i = 0; i < sideKnobs.size(); ++i)
+    {
+        auto& knob = sideKnobs[i];
+        knob.slider.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+        knob.slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 90, 24);
+        knob.slider.setColour (juce::Slider::rotarySliderFillColourId, sideColour);
+        addAndMakeVisible (knob.slider);
+        knob.label.setText (knobInfo[i].name, juce::dontSendNotification);
+        knob.label.setFont (juce::Font (juce::FontOptions (13.0f, juce::Font::bold)));
+        knob.label.setJustificationType (juce::Justification::centred);
+        addAndMakeVisible (knob.label);
+        knob.attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (easyProcessor.parameters, sideIDs[i], knob.slider);
+        knob.slider.onValueChange = [this] { knobMoved(); };
+        const auto sideTitle = "SIDES - " + juce::String (knobInfo[i].name);
+        const auto text = juce::String (knobInfo[i].hint) + " (For the sides: MID+SIDE only.)";
+        addHint (knob.slider, sideTitle, text);
+        addHint (knob.label, "SIDES (MID+SIDE ONLY)", sideRowHint);
+    }
+
     addSwitch (reactsTo,  reactsToHint);
     addSwitch (listensTo, listensToHint);   // (not part of presets: it depends on how your tracks are routed)
     addSwitch (style,     styleHint);
@@ -414,7 +439,8 @@ EasyCompAudioProcessorEditor::EasyCompAudioProcessorEditor (EasyCompAudioProcess
     addAndMakeVisible (copyButton);
     addHint (copyButton, "COPY", copyHint);
 
-    finishSetup (1340, 600);
+    finishSetup (1340, 790);
+    showMidSide (compProcessor.getWorksOn() == worksOnMidSide);
 }
 
 void EasyCompAudioProcessorEditor::addSwitch (Switch& choice, const char* hint)
@@ -437,8 +463,59 @@ void EasyCompAudioProcessorEditor::paintBody (juce::Graphics& g)
     for (size_t i = 0; i < groupPanels.size(); ++i)
         drawPanel (g, groupPanels[i], juce::String ((int) i + 1), panelNames[i]);
 
-    drawPanel (g, graphPanel, {}, "COMPRESSION CURVE");
-    drawPanel (g, meterPanel, {}, "GAIN REDUCTION");
+    drawPanel (g, graphPanel, {}, shownMidSide ? "COMPRESSION CURVE (MID)" : "COMPRESSION CURVE");
+    drawPanel (g, meterPanel, {}, shownMidSide ? "MID" : "GAIN REDUCTION");
+    drawPanel (g, sidePanel, "6", "SIDES (MID+SIDE ONLY)");
+
+    // The name box: SIDES in blue while it works (MID+SIDE), resting otherwise
+    const auto box = sideNameBox.toFloat().reduced (2.0f, 4.0f);
+    g.setColour (shownMidSide ? sideColour.withAlpha (0.16f) : Palette::background);
+    g.fillRoundedRectangle (box, 6.0f);
+    g.setColour (shownMidSide ? sideColour : Palette::panelEdge);
+    g.drawRoundedRectangle (box.reduced (0.75f), 6.0f, 1.3f);
+    g.setColour (shownMidSide ? sideColour : Palette::textDim.withAlpha (0.5f));
+    g.setFont (juce::Font (juce::FontOptions (16.0f, juce::Font::bold)));
+    auto text = box.reduced (4.0f, 0.0f);
+    g.drawText ("SIDES", text.removeFromTop (text.getHeight() * 0.5f), juce::Justification::centredBottom, false);
+    g.setFont (juce::Font (juce::FontOptions (11.0f)));
+    g.drawFittedText (shownMidSide ? "the width" : "set WORKS ON\nto MID+SIDE", text.toNearestInt(), juce::Justification::centredTop, 2);
+    // The sides' meter: how much they're turned down right now
+    {
+        auto m = sideMeterBox.toFloat();
+        const float alpha = shownMidSide ? 1.0f : 0.3f;
+        g.setColour (Palette::textDim.withMultipliedAlpha (alpha));
+        g.setFont (juce::Font (juce::FontOptions (11.0f, juce::Font::bold)));
+        g.drawText ("SIDES TURNED DOWN", m.removeFromTop (18.0f), juce::Justification::centredLeft, false);
+        auto bar = m.removeFromTop (16.0f);
+        g.setColour (Palette::background);
+        g.fillRoundedRectangle (bar, 3.0f);
+        if (shownMidSide && shownSideCut > 0.05f)
+        {
+            g.setColour (sideColour);
+            g.fillRoundedRectangle (bar.withWidth (bar.getWidth() * juce::jlimit (0.0f, 1.0f, shownSideCut / 24.0f)), 3.0f);
+        }
+        g.setColour (Palette::textBright.withMultipliedAlpha (alpha));
+        g.setFont (juce::Font (juce::FontOptions (15.0f, juce::Font::bold)));
+        g.drawText (shownSideCut < 0.05f ? juce::String ("0.0 dB") : juce::String (-shownSideCut, 1) + " dB", m.removeFromTop (26.0f), juce::Justification::centredLeft, false);
+    }
+}
+
+void EasyCompAudioProcessorEditor::showMidSide (bool midSide)
+{
+    shownMidSide = midSide;
+    for (auto& knob : sideKnobs)
+    {
+        knob.slider.setEnabled (midSide);
+        knob.slider.setAlpha (midSide ? 1.0f : 0.3f);
+        knob.label.setAlpha (midSide ? 1.0f : 0.3f);
+    }
+    // (the knobs above turn green: they're the middle's now)
+    for (size_t i = 0; i < 5; ++i)
+    {
+        if (midSide) knobs[i].slider.setColour (juce::Slider::rotarySliderFillColourId, midColour);
+        else         knobs[i].slider.removeColour (juce::Slider::rotarySliderFillColourId);
+    }
+    repaint();
 }
 
 void EasyCompAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
@@ -454,6 +531,27 @@ void EasyCompAudioProcessorEditor::layoutBody (juce::Rectangle<int> area)
         slotB.setBounds (ab.removeFromLeft (48));
         ab.removeFromLeft (10);
         copyButton.setBounds (ab.reduced (0, 2));
+    }
+
+    // Along the bottom: the SIDES row (MID+SIDE)
+    sidePanel = area.removeFromBottom (176);
+    area.removeFromBottom (gap);
+    {
+        auto inside = sidePanel.reduced (12, 12).withTrimmedTop (24);
+        sideNameBox = inside.removeFromLeft (130);
+        inside.removeFromLeft (10);
+        sideMeterBox = inside.removeFromRight (170).withSizeKeepingCentre (170, 60);
+        inside.removeFromRight (20);
+        const int w = inside.getWidth() / 5;
+        constexpr int nameHeight = 20, spacing = 4, knobArea = 66 + 24;
+        for (int i = 0; i < 5; ++i)
+        {
+            auto column = juce::Rectangle<int> (inside.getX() + i * w, inside.getY(), w, inside.getHeight())
+                              .withSizeKeepingCentre (w, nameHeight + spacing + knobArea);
+            sideKnobs[(size_t) i].label.setBounds (column.removeFromTop (nameHeight));
+            column.removeFromTop (spacing);
+            sideKnobs[(size_t) i].slider.setBounds (column.withSizeKeepingCentre (juce::jmin (w, 110), column.getHeight()));
+        }
     }
 
     // Right-hand side: the meter, and the curve graph (square) beside it
@@ -559,6 +657,14 @@ void EasyCompAudioProcessorEditor::refreshLiveDisplays()
     const float autoGainDb = compProcessor.getAutoGainDb();
 
     meter.setGainReduction (compProcessor.takeGainReductionForMeter());
+    {
+        const float now = compProcessor.takeSideReductionForMeter();
+        const float shown = now > shownSideCut ? now : shownSideCut + 0.2f * (now - shownSideCut);
+        if (std::abs (shown - shownSideCut) > 0.01f) { shownSideCut = shown; repaint (sideMeterBox.expanded (4)); }
+    }
+    const bool midSide = compProcessor.getWorksOn() == worksOnMidSide;
+    if (midSide != shownMidSide)
+        showMidSide (midSide);
     graph.update (settings, compProcessor.takeInputLevelForGraph(), autoGainDb);
     graph.setSidechainStatus (compProcessor.usesSidechain(), compProcessor.isSidechainMissing());
 
