@@ -552,6 +552,18 @@ LATER
      keep it (alternating tinted glass panels per node, not rows of
      identical buttons). The user forgets to repeat requirements after
      the chat is summarised - keep them here.
+     USER (4 November, after testing): the sound is fine so far; enough
+     fine adjustment; refine later if needed.
+     LOOK REQUIREMENT (user, with an AMEK 9099 / bx_console screenshot as
+     the reference): rows of same-looking knobs are slow to read. Every
+     cluster of controls that works together (one EQ band's FREQ + GAIN,
+     one multiband band's THRESH / RATIO / SPEED / GAIN + ON / SOLO, the
+     tamer's AMOUNT / SENSITIVITY / SHARPNESS, the compressor's sections)
+     must sit on its OWN back-panel tone, alternating light / dark /
+     tinted between neighbouring clusters (like the AMEK's grey, light and
+     blue panels), so you see at a glance which knobs belong together.
+     MID and SIDE still told apart by green / blue. Applies to the
+     hologram skin of Easy Master (and anywhere else with dense rows).
      LOOK: Easy Master will get the HOLOGRAM skin to match Easy Strip; the
      user mainly wants to approve the look at that stage (until then
      working layouts can be pushed without a look check).
