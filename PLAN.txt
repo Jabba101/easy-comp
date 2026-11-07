@@ -882,3 +882,15 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      (later its own control). Kick model: fit from 20 Hz, beater contact
      5 ms (best of 3/5/8/12), a sharp-start beater tick. Typically within
      ~2 dB, peak 2.6-3.5 dB hot.
+     TOMS: Sonor Designer 10", 12", 14", each open + gel (fully damped:
+     he's happy for it to be done by theory - extend the gel's effect).
+     Files unique, not clipped (normalised). Fitted (3 ms contact best):
+     typically within 2.0-2.8 dB, peaks within ~2.4 dB. BUT all three show
+     the same pitches: own (gel-shortened) rings ~133-152 Hz in every tom,
+     octave ~300 Hz, ~520 Hz; 10" and 14" 70% alike as waveforms (two
+     different snares: 26%). A ring at 121 Hz (3 s, untouched by the gel)
+     and mostly 137 Hz = external (another drum / the room ringing in
+     sympathy). He says the toms ARE tuned differently (12" deader - the
+     recordings agree: its ring dies ~4.5x faster than the 10"'s). Sent a
+     CHECK file (real 10/12/14 back to back) for his ears before trusting
+     them as three different drums.

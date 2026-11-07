@@ -7,6 +7,7 @@ TICK_EDGES = [250, 500, 1000, 2000, 4000, 8000, 16000, 23900]
 import os
 DRUM = os.environ.get('DRUM', 'SD296')
 KICK = DRUM.startswith('Kick')
+TOM = DRUM.startswith('Tom')
 CONTACT = 0.008 if KICK else 0.003   # (how long the beater / stick stays on the head)
 FITNAME = os.environ.get('FITNAME', DRUM)
 FITS = json.load(open('/home/claude/snare/fit/%s.json' % FITNAME))
@@ -142,7 +143,7 @@ def pulse_of(damping):
     seg = env[int(0.02 * SR):int(0.2 * SR)]
     seg = seg / np.convolve(seg, np.ones(480) / 480, 'same') - 1
     sp = np.abs(np.fft.rfft(seg * np.hanning(len(seg)), 1 << 16)); fq = np.fft.rfftfreq(1 << 16, 1 / SR)
-    band = (fq > (40 if KICK else 80)) & (fq < (300 if KICK else 1000))
+    band = (fq > (40 if (KICK or TOM) else 80)) & (fq < (300 if KICK else 1000))
     hz = float(fq[band][np.argmax(sp[band])])
     depth = float(np.clip(np.sqrt((seg ** 2).mean()) * np.sqrt(2), 0.1, 0.7))
     return hz, depth
