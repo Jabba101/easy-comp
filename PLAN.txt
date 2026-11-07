@@ -831,3 +831,17 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      record all three). Second voice later: his Sonor Designer maple
      14" x 3.5" (vintage tone, for styles before the steel-snare crack) -
      maple shell, shallow depth.
+     FIRST MODEL (7 November 2026, DevTools/SnareModel, Python, listening
+     files only): from his recordings (open / gel / ring; stereo pair,
+     treated as mono; hits on a grid but genuinely different strokes).
+     SD296 open: main ring 215 Hz (1.5 s, drops 20 dB in 0.1 s then a long
+     beating tail - the 215/226 Hz head pair); 607 Hz swells for 0.15 s
+     (shell/head exchange); pairs 188/197, 312/324, 596/607. Gel: main
+     ring 0.38 s, 1.2-1.7 kHz down 8-13 dB. Ring: main ring 0.59 s, most
+     above shortened. Wires: plateau ~10 ms, then -57 dB/s open (-67 gel,
+     -94 ring), pulsing ~30% at 166 Hz (gel 540 Hz) = the snare-side head.
+     Model: ESPRIT-fitted rings (~80 per damping), wires as their own
+     envelope + pulse, high-passed stick tick. Matches the real hits on
+     peak (0.4-2 dB), loudness (0.5 dB) and every band at every moment
+     (within ~2 dB); the buzz within ~2 dB of the natural hit-to-hit
+     spread. NEXT: his ears on the comparison files.
