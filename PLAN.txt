@@ -905,3 +905,12 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      mounted on / coupled to the kick, whose early ring is 133 Hz), or the
      toms really are tuned close. Rendered each drum with the room / dry.
      In the instrument: ROOM as its own control.
+     USER on the dry toms: "they do sound the same" -> option 2 for now
+     (re-recording with the rest muted later - too early for the
+     neighbours). TOMS RE-PITCHED: each keeps its own recording (10"/14"
+     sustain, 12" dead), the room taken out of every ring BEFORE moving it
+     (rings / roomfilter.boost), then all rings x ratio, T60 x ratio^-0.5
+     (lower = a little longer). Own pitches (room out) 140-144 Hz ->
+     10" 173 Hz (+4 st), 12" 140 Hz, 14" 105 Hz (-5 st). The room can be
+     put back around dry drums at its own fixed pitches (roomfilter.add).
+     In the instrument: per-tom TUNING control.

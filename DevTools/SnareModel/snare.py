@@ -1,6 +1,7 @@
 """The first modelled SD296 (not shipped): fitted rings + a stick + snare wires that slap only while the bottom head moves."""
 import sys; sys.path.insert(0, '/home/claude/snare/tools')
 import json, numpy as np, soundfile as sf
+import roomfilter
 from scipy.signal import butter, sosfilt, sosfiltfilt, firwin2, fftconvolve
 SR = 48000
 TICK_EDGES = [250, 500, 1000, 2000, 4000, 8000, 16000, 23900]
@@ -31,7 +32,7 @@ def tick_window(n):
     t = np.arange(n) / SR
     return (1 - np.exp(-t / 0.0003)) * np.exp(-t / 0.0025)
 
-def render(damping='No_Dampening', velocity=0.8, wires=1.0, seed=1, length=1.9, threshold=None, power=None, settle=None, slap=None, click=True):
+def render(damping='No_Dampening', velocity=0.8, wires=1.0, seed=1, length=1.9, threshold=None, power=None, settle=None, slap=None, click=True, pitch=1.0, dry=False):
     p = FITS[damping]; rng = np.random.default_rng(seed)
     n = int(length * SR); t = np.arange(n) / SR
     v_ref = 0.8   # the recorded hits: medium-hard
@@ -42,10 +43,13 @@ def render(damping='No_Dampening', velocity=0.8, wires=1.0, seed=1, length=1.9, 
     head = np.zeros(n)
     for m in p['modes']:
         if m['t60'] < 0.03: continue   # (shorter than 30 ms: the stick's impact, not a ring - the tick carries it)
-        g = (velocity / v_ref) ** 1.5 * np.exp(tilt * 0.9 * (m['f'] / 1000.0))
-        ph = 2 * np.pi * np.cumsum(m['f'] * lift) / SR + m['phase']
+        g = (velocity / v_ref) ** 1.5 * np.exp(tilt * 0.9 * (m['f'] * pitch / 1000.0))
+        if dry: g /= roomfilter.boost(m['f'])   # (the room taken out of this ring, before it's moved)
+        # (re-pitched like a real drum: every ring moves together; a lower drum sustains a little longer)
+        f_m = m['f'] * pitch; t60_m = m['t60'] * pitch ** -0.5
+        ph = 2 * np.pi * np.cumsum(f_m * lift) / SR + m['phase']
         # (the fit is only trusted from 3 ms on: during the stick contact each ring holds its 3 ms strength, rising in)
-        head += g * m['amp'] * np.exp(-6.9078 * np.maximum(t, p.get('contact', CONTACT)) / m['t60']) * np.cos(ph)
+        head += g * m['amp'] * np.exp(-6.9078 * np.maximum(t, p.get('contact', CONTACT)) / t60_m) * np.cos(ph)
     # (the rings build up while the stick is on the head - about 3 ms)
     c = p.get('contact', CONTACT)
     ramp = np.where(t < c, np.sin(0.5 * np.pi * np.clip(t / c, 0, 1)) ** 2, 1.0)

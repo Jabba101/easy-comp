@@ -33,6 +33,23 @@ def apply(y, amount):
         if abs(g) > 0.01: y = sosfilt(peaking(r['f'], g, r['q'])[None, :], y)
     return y
 
+def boost(f):
+    """How much the room raises a pitch (not in dB): the product of its resonances at that frequency."""
+    g = 1.0
+    for r in ROOM:
+        A = 10 ** (r['gain'] / 40); w0 = 2 * np.pi * r['f'] / SR; w = 2 * np.pi * f / SR
+        c = peaking(r['f'], r['gain'], r['q']); b, a = c[:3], c[3:]
+        z = np.exp(-1j * w * np.arange(3))
+        g *= abs(np.dot(b, z) / np.dot(a, z))
+    return g
+
+def add(y, amount):
+    """Put the room around a dry drum: amount 1 = your bedroom as recorded, 0 = none."""
+    for r in ROOM:
+        g = amount * r['gain']
+        if abs(g) > 0.01: y = sosfilt(peaking(r['f'], g, r['q'])[None, :], y)
+    return y
+
 if __name__ == '__main__':
     print('the room:', ', '.join('%.0f Hz %+.1f dB Q%.0f' % (r['f'], r['gain'], r['q']) for r in ROOM))
     json.dump(ROOM, open('/home/claude/snare/fit/room.json', 'w'), indent=1)
