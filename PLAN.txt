@@ -894,3 +894,14 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      recordings agree: its ring dies ~4.5x faster than the 10"'s). Sent a
      CHECK file (real 10/12/14 back to back) for his ears before trusting
      them as three different drums.
+     He says it'll be the ROOM (his bedroom). ROOM SEPARATED (tools/room.py
+     + roomfilter.py): each recording's fine detail averaged across all 6
+     drums - shared peaks = the room. Two families: 60.8 Hz x n (~2.8 m
+     wall to wall) and 72 Hz x n (~2.4 m ceiling). Strongest: 121 Hz
+     +14.5 dB, 144 +8.4, 61 +8.8, 352 +7.8, 275 +5.7 (12 resonances, as
+     peaking filters). Room amount 0 = dry drum, 1 = as recorded. Removing
+     it drops the toms' shared 121 Hz by 10-11 dB - but all three still
+     centre on ~137-141 Hz: not the room. Likely the kit itself (toms
+     mounted on / coupled to the kick, whose early ring is 133 Hz), or the
+     toms really are tuned close. Rendered each drum with the room / dry.
+     In the instrument: ROOM as its own control.
