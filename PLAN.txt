@@ -914,3 +914,12 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      10" 173 Hz (+4 st), 12" 140 Hz, 14" 105 Hz (-5 st). The room can be
      put back around dry drums at its own fixed pitches (roomfilter.add).
      In the instrument: per-tom TUNING control.
+     USER hears unwanted noise / distortion in the models ("recorded too
+     hot"; wants a clean, clinical baseline). Checked: peaks sharp, not
+     flattened (no hard digital clipping); highs grow 0.2-0.5 dB per dB
+     harder (normal); toms hit ~0 dBFS repeatedly (normalised / limiter?).
+     Suspects: analogue preamp overdrive, and/or the model's "sympathetic
+     buzz" layer on kick/toms (44% of the kick's top end, 11-21% of the
+     toms') reproducing that grit. Sent with / without the layer to judge.
+     If the grit stays: re-record (peaks ~-12 dBFS, no normalising or
+     limiting), with the toms re-recorded with everything else muted.
