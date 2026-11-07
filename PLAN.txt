@@ -862,4 +862,12 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      own hit-to-hit spread there). NEXT: his ears; then what changes
      between the drums -> size / material / tuning controls.
      USER: the GEL versions (both drums) "already sound ready to use, very
-     impressive". Open and ring: waiting for his notes.
+     impressive". Open and ring: nothing wrong - he's just used to hearing
+     drums processed for the music (the model = a raw close-miked drum,
+     as it should be).
+     NEXT (his plan): he'll record ALL his drums the same way (kick, toms)
+     for a modelled kit. Cymbals left out for now (too random to capture:
+     the ways to play a ride, accents) - the kit aims at rock rather than
+     the layered detail authentic jazz would need. Asked for: a few
+     strengths per drum (soft / medium / hard), the sizes. Then: a
+     playable VST3 instrument (MIDI), drums + damping + velocity.
