@@ -923,3 +923,7 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      toms') reproducing that grit. Sent with / without the layer to judge.
      If the grit stays: re-record (peaks ~-12 dBFS, no normalising or
      limiting), with the toms re-recorded with everything else muted.
+     He'll RE-TUNE the toms before re-recording: he tends to tune high in
+     the studio (mics make drums sound deeper than to the ear), and being
+     out of practice probably overcompensated - consistent with all three
+     measuring ~140 Hz (very high for a 14").
