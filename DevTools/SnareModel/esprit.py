@@ -31,9 +31,9 @@ def fit_band(hit, sr, lo, hi, dec, seg_s, order, start_ms=3.0, max_t60=3.0):
         modes.append({'f': float(fi), 't60': float(6.9078 / di), 'amp': float(amp), 'phase': float(ph)})
     return modes, full
 
-def fit_modes(hit, sr):
-    low, a = fit_band(hit, sr, 60, 1900, 12, 1.2, 90)
-    high, b = fit_band(hit, sr, 1900, 5500, 4, 0.4, 70)
+def fit_modes(hit, sr, lowest=60.0, start_ms=3.0):
+    low, a = fit_band(hit, sr, lowest, 1900, 12, 1.2, 90, start_ms=start_ms)
+    high, b = fit_band(hit, sr, 1900, 5500, 4, 0.4, 70, start_ms=start_ms)
     modes = low + high
     modes.sort(key=lambda m: -m['amp'] * np.sqrt(m['t60']))
     return modes

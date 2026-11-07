@@ -871,3 +871,14 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      the layered detail authentic jazz would need. Asked for: a few
      strengths per drum (soft / medium / hard), the sizes. Then: a
      playable VST3 instrument (MIDI), drums + damping + velocity.
+     KICK: Sonor Designer 20" x 16" maple, Tama Iron Cobra double pedal,
+     synthetic beater (sounds like felt off the batter head; he doesn't
+     close-mic the batter). Recorded: open, cushion (pads), internal pads -
+     BUT "Internal_Pads" is the same audio as "No_Dampening" (asked for the
+     right file). Energy almost all below 60 Hz: rings ~32 and 43 Hz; the
+     cushion adds body at 60-250 Hz. A noisy high part (4-8 kHz) after the
+     hit, pulsing ~30% at 127-133 Hz (= the kick's own 121-141 Hz rings)
+     = the snare / hardware buzzing in sympathy: modelled like the wires
+     (later its own control). Kick model: fit from 20 Hz, beater contact
+     5 ms (best of 3/5/8/12), a sharp-start beater tick. Typically within
+     ~2 dB, peak 2.6-3.5 dB hot.
