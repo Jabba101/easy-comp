@@ -1,5 +1,6 @@
 import sys; sys.path.insert(0, '/home/claude/snare/tools')
-import json, numpy as np, soundfile as sf, model, esprit
+import os, json, numpy as np, soundfile as sf, model, esprit
+DRUM = os.environ.get('DRUM', 'SD296')
 from scipy.signal import butter, sosfiltfilt, sosfilt, firwin2, fftconvolve
 SR = 48000
 def env(y, ms=2.0):
@@ -11,7 +12,7 @@ def colour_of(y):
     grid = np.linspace(0, SR / 2, 257); c = np.interp(grid, fq, sm); return c / c.max()
 out = {}
 for name in sys.argv[1:]:
-    x, sr = sf.read('/home/claude/snare/rec/SD296_%s.wav' % name); m = x.mean(axis=1)
+    x, sr = sf.read('/home/claude/snare/rec/%s_%s.wav' % (DRUM, name)); m = x.mean(axis=1)
     res_all = []; hits = []
     for t0 in (0.0, 2.003):
         j = model.onset(m, t0); hit = m[j:j + int(1.9 * SR)]
@@ -30,4 +31,4 @@ for name in sys.argv[1:]:
     out[name] = {'modes': hits[0][1], 'wireColour': wire_colour.tolist(), 'clickColour': click_colour.tolist(),
                  'wireEnv': (e[::48]).tolist(), 'wireEnvMax': float(env(hp, 3.0).max()), 'wirePeak': float(np.abs(hp).max()), 'hitPeak': float(peak_hit),
                  'clickRms': float(np.sqrt((res_all[0][:int(0.004 * SR)] ** 2).mean()))}
-json.dump(out, open('/home/claude/snare/fit/fits.json', 'w'))
+json.dump(out, open('/home/claude/snare/fit/%s.json' % DRUM, 'w'))

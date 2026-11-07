@@ -3,11 +3,15 @@ import sys; sys.path.insert(0, '/home/claude/snare/tools')
 import json, numpy as np, soundfile as sf
 from scipy.signal import butter, sosfilt, sosfiltfilt, firwin2, fftconvolve
 SR = 48000
-FITS = json.load(open('/home/claude/snare/fit/fits.json'))
+TICK_EDGES = [250, 500, 1000, 2000, 4000, 8000, 16000, 23900]
+import os
+DRUM = os.environ.get('DRUM', 'SD296')
+FITS = json.load(open('/home/claude/snare/fit/%s.json' % DRUM))
 
 def coloured_noise(colour, n, rng):
     taps = firwin2(511, np.linspace(0, 1, len(colour)), colour)
-    return fftconvolve(rng.standard_normal(n), taps)[:n]
+    # (long enough noise that every output sample is fully filtered - no start-up silence)
+    return fftconvolve(rng.standard_normal(n + len(taps) - 1), taps, 'valid')
 
 def wire_drive(modes, n, velocity):
     t = np.arange(n) / SR; low = np.zeros(n)
@@ -27,9 +31,11 @@ def render(damping='No_Dampening', velocity=0.8, wires=1.0, seed=1, length=1.9, 
     lift = 1.0 + 0.010 * (velocity ** 2 - v_ref ** 2) * np.exp(-t / 0.03)
     head = np.zeros(n)
     for m in p['modes']:
+        if m['t60'] < 0.03: continue   # (shorter than 30 ms: the stick's impact, not a ring - the tick carries it)
         g = (velocity / v_ref) ** 1.5 * np.exp(tilt * 0.9 * (m['f'] / 1000.0))
         ph = 2 * np.pi * np.cumsum(m['f'] * lift) / SR + m['phase']
-        head += g * m['amp'] * np.exp(-6.9078 * t / m['t60']) * np.cos(ph)
+        # (the fit is only trusted from 3 ms on: during the stick contact each ring holds its 3 ms strength, rising in)
+        head += g * m['amp'] * np.exp(-6.9078 * np.maximum(t, 0.003) / m['t60']) * np.cos(ph)
     # (the rings build up while the stick is on the head - about 3 ms)
     ramp = np.where(t < 0.003, np.sin(0.5 * np.pi * np.clip(t / 0.003, 0, 1)) ** 2, 1.0)
     head *= ramp
@@ -45,10 +51,18 @@ def render(damping='No_Dampening', velocity=0.8, wires=1.0, seed=1, length=1.9, 
     buzz = coloured_noise(p['wireColour'], n, rng) * env * pulse * wires
     # the stick's own tick on the coated head
     cn = int(0.004 * SR)
-    tc = np.array(p['clickColour']); fq = np.linspace(0, SR / 2, len(tc))
-    tc = tc * np.clip((fq - 1500.0) / 1500.0, 0, 1)        # (the rings already carry the lows: the tick is only the papery top)
-    tick = coloured_noise(tc / (tc.max() + 1e-12), cn, rng) * np.hanning(cn)
-    tick *= p['clickRms'] / (np.sqrt((tick ** 2).mean()) + 1e-12) * (velocity / v_ref) ** 2.2 * p.get('tickGain', 1.0)
+    if 'tickBands' in p:
+        edges = TICK_EDGES; tc = np.zeros(257); fq = np.linspace(0, SR / 2, 257)
+        for (lo, hi), gain in zip(zip(edges[:-1], edges[1:]), p['tickBands']):
+            tc[(fq >= lo) & (fq < hi)] = gain
+        tc = np.convolve(tc, np.ones(5) / 5, 'same')
+        tick = coloured_noise(tc / (tc.max() + 1e-12), cn, rng) * np.hanning(cn)
+        tick *= (tc.max()) * (velocity / v_ref) ** 2.2
+    else:
+        tc = np.array(p['clickColour']); fq = np.linspace(0, SR / 2, len(tc))
+        tc = tc * np.clip((fq - 1500.0) / 1500.0, 0, 1)
+        tick = coloured_noise(tc / (tc.max() + 1e-12), cn, rng) * np.hanning(cn)
+        tick *= p['clickRms'] / (np.sqrt((tick ** 2).mean()) + 1e-12) * (velocity / v_ref) ** 2.2 * p.get('tickGain', 1.0)
     out = head + buzz
     if click: out[:cn] += tick
     return out
@@ -86,8 +100,46 @@ def tune_wires(damping, pulse_hz, depth=0.45):
     p['tickGain'] = float(real_peak / (tick_peak + 1e-12))
     return hold, rate, err
 
+def tune_tick(damping):
+    """The stick's tick, band by band: whatever the real attack (first 6 ms, two hits) has that the rings and wires don't."""
+    import model
+    p = FITS[damping]; p.pop('tickBands', None)
+    x, sr = sf.read('/home/claude/snare/rec/%s_%s.wav' % (DRUM, damping)); m = x.mean(axis=1)
+    reals = [m[model.onset(m, t0):model.onset(m, t0) + int(0.05 * SR)] for t0 in (0.0, 2.003)]
+    bodies = [render(damping, click=False, seed=s, length=0.05) for s in (3, 4, 5)]
+    def energy(y, lo, hi):
+        z = sosfiltfilt(butter(4, [lo, min(hi, 23000)], 'band', fs=SR, output='sos'), y)[:int(0.006 * SR)]
+        return (z ** 2).sum()
+    # a unit tick's energy per band (white, so each band's share is known)
+    probe = np.random.default_rng(0).standard_normal(int(0.004 * SR)) * np.hanning(int(0.004 * SR))
+    probe = sosfiltfilt(butter(2, 30, 'high', fs=SR, output='sos'), probe)
+    gains = []
+    for lo, hi in zip(TICK_EDGES[:-1], TICK_EDGES[1:]):
+        need = np.mean([energy(r, lo, hi) for r in reals]) - np.mean([energy(b, lo, hi) for b in bodies])
+        unit = energy(np.pad(probe, (0, 2000)), lo, hi)
+        gains.append(float(np.sqrt(max(need, 0.0) / unit)) if need > 0 else 0.0)
+    p['tickBands'] = gains
+    return gains
+
+def pulse_of(damping):
+    """How fast, and how strongly, the recorded buzz pulses (the snare-side head swinging into the wires)."""
+    import model
+    x, sr = sf.read('/home/claude/snare/rec/%s_%s.wav' % (DRUM, damping)); m = x.mean(axis=1)
+    j = model.onset(m, 0.0); hit = m[j:j + int(0.6 * SR)]
+    hp = sosfiltfilt(butter(6, 3000, 'high', fs=SR, output='sos'), hit)
+    env = sosfiltfilt(butter(4, 1200, 'low', fs=SR, output='sos'), np.abs(hp))
+    seg = env[int(0.02 * SR):int(0.2 * SR)]
+    seg = seg / np.convolve(seg, np.ones(480) / 480, 'same') - 1
+    sp = np.abs(np.fft.rfft(seg * np.hanning(len(seg)), 1 << 16)); fq = np.fft.rfftfreq(1 << 16, 1 / SR)
+    band = (fq > 80) & (fq < 1000)
+    hz = float(fq[band][np.argmax(sp[band])])
+    depth = float(np.clip(np.sqrt((seg ** 2).mean()) * np.sqrt(2), 0.1, 0.7))
+    return hz, depth
+
 if __name__ == '__main__':
-    for dmp, hz in (('No_Dampening', 166.0), ('Dampening_Gel', 540.0), ('Dampening_Ring', 165.0)):
-        hold, rate, err = tune_wires(dmp, hz)
+    for dmp in FITS:
+        hz, depth = pulse_of(dmp)
+        hold, rate, err = tune_wires(dmp, hz, depth)
         print('%-15s wires: plateau for %.0f ms, then fading %.0f dB per second, pulsing at %.0f Hz (shape within %.1f dB rms)' % (dmp, hold * 1000, rate, hz, err))
-    json.dump(FITS, open('/home/claude/snare/fit/fits.json', 'w'))
+        tune_tick(dmp)
+    json.dump(FITS, open('/home/claude/snare/fit/%s.json' % DRUM, 'w'))
