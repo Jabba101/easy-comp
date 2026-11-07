@@ -63,7 +63,7 @@ def render(damping='No_Dampening', velocity=0.8, wires=1.0, seed=1, length=1.9, 
     edb = np.where(t < 0.002, w['plateau'] + 20 * np.log10(np.clip(t / 0.002, 1e-4, 1)), edb)
     env = 10 ** (edb / 20) * level
     pulse = 1 + w['depth'] * np.cos(2 * np.pi * w['pulseHz'] * t + rng.uniform(0, 6.28))
-    buzz = coloured_noise(p['wireColour'], n, rng) * env * pulse * wires   # (on a kick: the snare and hardware buzzing in sympathy)
+    buzz = coloured_noise(p['wireColour'], n, rng) * env * pulse * wires * p.get('buzz', 1.0)   # (on a kick / toms: the snare and hardware buzzing in sympathy; off for clean recordings)
     # the stick's own tick on the coated head
     cn = int((0.008 if KICK else 0.004) * SR)   # (a beater stays on the head longer than a stick)
     if 'tickBands' in p:

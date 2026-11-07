@@ -927,3 +927,19 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      the studio (mics make drums sound deeper than to the ear), and being
      out of practice probably overcompensated - consistent with all three
      measuring ~140 Hz (very high for a 14").
+     NEW TOMS (7 November, re-tuned, rest of the kit muted; one file per
+     damping, 10/12/14 in order; peaks ~-10 dBFS; a gate on for a cable
+     buzz - it silences only the gaps, the rings run intact to the next
+     hit). Heads: Aquarian twin-ply with built-in gaskets (so "Light" =
+     no extra damping, but some built in), medium = gel, heavy = rings.
+     Pitches now distinct: 10" ~157 Hz, 12" ~138 Hz, 14" ~86-99 Hz.
+     Fits (best of 3/5 ms per tom + damping): typically 1.2-5 dB on what's
+     audible (the score now ignores anything 45 dB below the loudest);
+     the new recordings' own hit-to-hit spread is larger (up to ~6 dB in
+     a band). The buzz layer is NEEDED here: it's each tom's own high
+     content after the attack, not a rattle (without it: 35-50 dB gaps).
+     CORRECTION: the "room" (121/144/61 Hz) almost vanishes with the rest
+     of the kit muted (121 Hz +31 -> +2 dB) = mostly the KIT ringing in
+     sympathy, not the bedroom; 275/352 Hz remain (~+7 dB). The layer
+     still removes it from the earlier recordings - call it KIT
+     RESONANCE in the instrument.
