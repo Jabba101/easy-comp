@@ -143,6 +143,232 @@ namespace
         check (! inPresets, "OUTPUT LEVEL isn't part of presets");
     }
 
+    void testDither()
+    {
+        std::cout << "\n[DITHER]\n";
+        const double lsb = 1.0 / 32768.0;
+        const auto band = [] (const std::vector<float>& x, double lo, double hi)
+        {
+            // (power in a band, from a plain DFT over a few hundred bins)
+            const int n = 8192; double total = 0.0; int count = 0;
+            for (int k = (int) (lo * n / sr); k <= (int) (hi * n / sr); k += 4)
+            {
+                double re = 0, im = 0;
+                for (int i = 0; i < n; ++i) { const double w = 0.5 - 0.5 * std::cos (2 * juce::MathConstants<double>::pi * i / n); re += x[(size_t) i] * w * std::cos (2 * juce::MathConstants<double>::pi * k * i / n); im += x[(size_t) i] * w * std::sin (2 * juce::MathConstants<double>::pi * k * i / n); }
+                total += re * re + im * im; ++count;
+            }
+            return 10.0 * std::log10 (total / count + 1e-30);
+        };
+        const auto run1 = [] (int depth, int shape, std::function<float (int)> input, int n)
+        {
+            Dither d; d.prepare (sr); d.set (depth, shape);
+            juce::AudioBuffer<float> b (2, n);
+            for (int i = 0; i < n; ++i) { b.setSample (0, i, input (i)); b.setSample (1, i, input (i)); }
+            d.process (b.getArrayOfWritePointers(), 2, n);
+            return b;
+        };
+        {
+            // A sine far below the last 16-bit step (-110 dBFS): plain rounding loses it entirely, dither keeps it
+            const auto quiet = [&] (int i) { return (float) (std::pow (10.0, -110.0 / 20.0) * std::sin (2 * juce::MathConstants<double>::pi * 1000.0 * i / sr)); };
+            const int n = 1 << 17;
+            const auto out = run1 (Dither::sixteen, Dither::flat, quiet, n);
+            bool steps = true;
+            for (int i = 0; i < out.getNumSamples(); ++i) { const double q = out.getSample (0, i) / lsb; if (std::abs (q - std::round (q)) > 1.0e-6) steps = false; }
+            check (steps, "16-BIT: every sample lands exactly on a 16-bit step (your DAW writes it untouched)");
+            double rms = 0.0; for (int i = 0; i < out.getNumSamples(); ++i) rms += (double) out.getSample (0, i) * out.getSample (0, i);
+            rms = 10.0 * std::log10 (rms / out.getNumSamples());
+            check (rms > -99.0 && rms < -93.0, "its noise: " + juce::String (rms, 1) + " dBFS (half a 16-bit step: a whisper)");
+            const auto at = [&] (double f)
+            {
+                double re = 0, im = 0;
+                for (int i = 0; i < n; ++i) { const double w = 0.5 - 0.5 * std::cos (2 * juce::MathConstants<double>::pi * i / n);
+                                              re += out.getSample (0, i) * w * std::cos (2 * juce::MathConstants<double>::pi * f * i / sr);
+                                              im += out.getSample (0, i) * w * std::sin (2 * juce::MathConstants<double>::pi * f * i / sr); }
+                return 10.0 * std::log10 (re * re + im * im + 1e-30);
+            };
+            double noise = 0.0; for (int k = 0; k < 24; ++k) noise += std::pow (10.0, at (2100.0 + k * 237.0) / 10.0);
+            const double above = at (1000.0) - 10.0 * std::log10 (noise / 24.0);
+            check (above > 12.0, "a -110 dBFS tone (below the last 16-bit step, which plain rounding would wipe out) survives, "
+                   + juce::String (above, 1) + " dB clear of the noise: fades stay smooth, not gritty");
+        }
+        {
+            const auto zero = [] (int) { return 0.0f; };
+            const auto noiseOnly = [&] (int shape)
+            {
+                // (a little signal so it isn't silence, then the noise it adds)
+                const auto tiny = [] (int i) { return (float) (1.0e-7 * ((i % 7) - 3)); };
+                const auto out = run1 (Dither::sixteen, shape, tiny, 8192);
+                std::vector<float> x (8192); for (int i = 0; i < 8192; ++i) x[(size_t) i] = out.getSample (0, i);
+                return std::make_pair (band (x, 2000.0, 5000.0), band (x, 16000.0, 20000.0));
+            };
+            const auto [flatMid, flatTop] = noiseOnly (Dither::flat);
+            const auto [shapedMid, shapedTop] = noiseOnly (Dither::shaped);
+            check (std::abs (flatMid - flatTop) < 3.0, "FLAT: the noise is even across the range");
+            check (shapedMid < flatMid - 8.0 && shapedTop > shapedMid + 15.0, "SHAPED: " + juce::String (flatMid - shapedMid, 1)
+                   + " dB quieter at 2-5 kHz (where the ear is keenest), pushed up to the very top");
+            const auto silent = run1 (Dither::sixteen, Dither::shaped, zero, (int) sr);
+            bool quietEnd = true;
+            for (int i = (int) (sr * 0.5) + 1; i < silent.getNumSamples(); ++i) if (silent.getSample (0, i) != 0.0f) quietEnd = false;
+            check (quietEnd, "in digital silence it goes silent too (true silence at a song's start and end)");
+        }
+        {
+            // In Easy Master: OFF changes nothing; 16-BIT is the last step
+            const auto mix = loadMix ("band", 30.0, 3.0);
+            P a; prepare (a, sr, 512); const auto plain = run (a, mix, 512);
+            P b; set (b, MasterIDs::dither, 1.0f); prepare (b, sr, 512); const auto dithered = run (b, mix, 512);
+            bool steps = true; double diff = 0.0;
+            for (int i = 0; i < dithered.getNumSamples(); ++i)
+            {
+                const double q = dithered.getSample (0, i) / lsb; if (std::abs (q - std::round (q)) > 1.0e-6) steps = false;
+                diff = std::max (diff, (double) std::abs (dithered.getSample (0, i) - plain.getSample (0, i)));
+            }
+            check (steps && diff < 12.0 * lsb, "DITHER 16-BIT on Easy Master: the master on 16-bit steps, within " + juce::String (diff / lsb, 1) + " steps of the undithered one");
+            bool inPresets = false;
+            for (auto& id : masterPresetIDs()) if (id == MasterIDs::dither || id == MasterIDs::ditherShape) inPresets = true;
+            check (! inPresets, "DITHER isn't part of presets (it's about the file you export)");
+        }
+    }
+
+    void testInflate()
+    {
+        std::cout << "\n[INFLATE]\n";
+        {
+            Inflator f; Inflator::Settings st; st.on = true; st.effect = 1.0f; st.curve = 0.0f; f.setSettings (st);
+            bool smooth = true; float last = 0.0f;
+            for (int i = 1; i <= 1000; ++i) { const float y = f.shape (i / 1000.0f); if (y < last || y > 1.0001f) smooth = false; last = y; }
+            const float lift = 20.0f * std::log10 (f.shape (0.05f) / 0.05f);
+            check (smooth && std::abs (f.shape (1.0f) - 1.0f) < 1.0e-4f, "the curve rises smoothly to exactly full scale (never past it)");
+            check (lift > 3.0f && lift < 3.8f, "at 100%, quiet parts lifted by " + juce::String (lift, 1) + " dB");
+            st.curve = -50.0f; f.setSettings (st); const float soft = 20.0f * std::log10 (f.shape (0.05f) / 0.05f);
+            st.curve = 50.0f; f.setSettings (st); const float big = 20.0f * std::log10 (f.shape (0.05f) / 0.05f);
+            check (soft < lift - 1.0f && big > lift + 1.0f, "CURVE: -50 lifts the quiet parts less (" + juce::String (soft, 1) + " dB), +50 more (" + juce::String (big, 1) + " dB)");
+        }
+        {
+            // Clean: a loud 9 kHz tone at 100%: its harmonics fold back far below it (worked at four times the rate)
+            Inflator f; Inflator::Settings st; st.on = true; st.effect = 1.0f; f.setSettings (st); f.prepare (sr, 512);
+            const int n = 1 << 15;
+            juce::AudioBuffer<float> b (2, n);
+            for (int i = 0; i < n; ++i) { const float x = 0.9f * (float) std::sin (2 * juce::MathConstants<double>::pi * 9000.0 * i / sr); b.setSample (0, i, x); b.setSample (1, i, x); }
+            for (int s0 = 0; s0 < n; s0 += 512) { juce::AudioBuffer<float> part (b.getArrayOfWritePointers(), 2, s0, 512); f.process (part); }
+            const auto at = [&] (double hz)
+            {
+                double re = 0, im = 0; const int from = n / 2, len = n - from;
+                for (int i = from; i < n; ++i) { const double w = 0.5 - 0.5 * std::cos (2 * juce::MathConstants<double>::pi * (i - from) / len);
+                                                 re += b.getSample (0, i) * w * std::cos (2 * juce::MathConstants<double>::pi * hz * i / sr);
+                                                 im += b.getSample (0, i) * w * std::sin (2 * juce::MathConstants<double>::pi * hz * i / sr); }
+                return 20.0 * std::log10 (std::sqrt (re * re + im * im) + 1e-20);
+            };
+            const double tone = at (9000.0), folded = std::max (at (21000.0), at (3000.0));   // (27 and 45 kHz would fold to 21 and 3 kHz)
+            check (tone - folded > 70.0, "a loud 9 kHz tone at 100%: what folds back is " + juce::String (tone - folded, 1) + " dB below it (clean)");
+        }
+        const auto band = loadMix ("band", 30.0, 8.0);
+        {
+            P off; prepare (off, sr, 512); const auto a = run (off, band, 512);
+            P on; set (on, MasterInflateIDs::on, 1.0f); set (on, MasterInflateIDs::effect, 100.0f); prepare (on, sr, 512); const auto b = run (on, band, 512);
+            const double lufs = loudnessDb (b, (int) sr, b.getNumSamples()) - loudnessDb (a, (int) sr, a.getNumSamples());
+            check (lufs > 1.0 && on.getReadings().highestPeak <= off.getReadings().highestPeak + 0.2f,
+                   "on a mix at 100%: " + juce::String (lufs, 1) + " dB louder, the peaks no higher (the limiter after it holds them)");
+            check (on.getLatencySamples() == off.getLatencySamples(), "the same delay on or off (no jump when it's switched)");
+        }
+        {
+            // Switching it on while it plays: a 20 ms crossfade, no click
+            P p; set (p, MasterInflateIDs::effect, 60.0f); prepare (p, sr, 512);
+            const auto tone = [&] { juce::AudioBuffer<float> t (2, (int) sr * 2); for (int i = 0; i < t.getNumSamples(); ++i) { const float x = 0.2f * (float) std::sin (2 * juce::MathConstants<double>::pi * 110.0 * i / sr); t.setSample (0, i, x); t.setSample (1, i, x); } return t; }();
+            juce::AudioBuffer<float> out (tone);
+            juce::MidiBuffer midi;
+            for (int s0 = 0; s0 < out.getNumSamples(); s0 += 512)
+            {
+                if (s0 == (int) sr) set (p, MasterInflateIDs::on, 1.0f);
+                juce::AudioBuffer<float> part (out.getArrayOfWritePointers(), 2, s0, std::min (512, out.getNumSamples() - s0));
+                p.processBlock (part, midi);
+            }
+            float switching = 0.0f, settled = 0.0f;
+            for (int i = (int) sr / 2; i < out.getNumSamples(); ++i)
+            {
+                const float step = std::abs (out.getSample (0, i) - out.getSample (0, i - 1));
+                if (i < (int) (sr * 1.2)) switching = std::max (switching, step); else settled = std::max (settled, step);
+            }
+            check (switching <= std::max (settled, 0.003f) * 1.05f, "switching INFLATE on while it plays: no click");
+        }
+        {
+            // (a picture: INFLATE on, DITHER 16-BIT)
+            P p; set (p, MasterInflateIDs::on, 1.0f); set (p, MasterInflateIDs::effect, 35.0f); set (p, MasterInflateIDs::curve, -10.0f);
+            set (p, MasterIDs::dither, 1.0f); set (p, MasterWidthIDs::on, 1.0f); set (p, MasterWidthIDs::width, 115.0f);
+            prepare (p, sr, 512);
+            run (p, band, 512);
+            std::unique_ptr<juce::AudioProcessorEditor> editor (p.createEditor());
+            auto& console = dynamic_cast<EasyMasterAudioProcessorEditor*> (editor.get())->getConsole();
+            for (int i = 0; i < 20; ++i) { run (p, loadMix ("band", 31.0 + i * 0.2, 0.2), 512); console.updateNow(); }
+            savePng (console, juce::File ("/tmp/claude-0/-home-claude/b1f7da22-616f-5bd8-9beb-5177ec950132/scratchpad/shots/master_inflate_dither.png"));
+        }
+    }
+
+    void testVintage()
+    {
+        std::cout << "\n[VINTAGE: PULTEC EQ and VARI-MU]\n";
+        {
+            PultecEQ eq; PultecEQ::Settings st; st.on = true; st.lowFreq = 2; st.lowBoost = 5; st.lowAtten = 4; eq.setSettings (st); eq.prepare (sr);
+            const float at60 = eq.responseDb (60.0), at40 = eq.responseDb (40.0), at200 = eq.responseDb (200.0), at400 = eq.responseDb (400.0);
+            check (at40 > 2.0f && at200 < -0.5f && std::abs (eq.responseDb (5000.0)) < 0.3f,
+                   "the low-end trick (60 Hz, BOOST 5 + ATTEN 4): +" + juce::String (at40, 1) + " dB at 40 Hz, " + juce::String (at60, 1) + " at 60, "
+                   + juce::String (at200, 1) + " at 200, " + juce::String (at400, 1) + " at 400 - weight with the mud scooped");
+            st = {}; st.on = true; st.highFreq = 5; st.highBoost = 3; st.bandwidth = 7; st.attenFreq = 2; st.highAtten = 2; eq.setSettings (st);
+            check (eq.responseDb (12000.0) > 3.0f && std::abs (eq.responseDb (500.0)) < 0.5f, "Air & Silk: +" + juce::String (eq.responseDb (12000.0), 1)
+                   + " dB at 12k, the mids untouched");
+            // OFF: untouched
+            PultecEQ offEq; offEq.prepare (sr);
+            auto tone = loadMix ("band", 30.0, 1.0); auto copy = tone;
+            offEq.process (copy);
+            check (worstDelayedDifference (copy, tone, 0) == 0.0f, "PULTEC off: the sound untouched, bit for bit");
+        }
+        {
+            check (std::abs (VariMu::reductionFor (-10.0f)) < 1.0e-6f, "VARI-MU: nothing at all 10 dB under the threshold");
+            const float r10 = 10.0f / (10.0f - VariMu::reductionFor (10.0f)), r20 = 20.0f / (20.0f - VariMu::reductionFor (20.0f));
+            check (r10 > 3.0f && r10 < 5.0f && r20 > 5.5f && r20 < 7.5f, "the ratio grows as it's pushed: " + juce::String (r10, 1) + ":1 at 10 dB over, "
+                   + juce::String (r20, 1) + ":1 at 20 (very soft, smooth)");
+            const auto band = loadMix ("band", 30.0, 8.0);
+            P p; set (p, MasterVariMuIDs::on, 1.0f); set (p, MasterVariMuIDs::threshold, -20.0f); prepare (p, sr, 512);
+            run (p, band, 512);
+            const float gr = p.getVariMuReductionDb();
+            check (gr > 0.5f && gr < 12.0f, "on a mix (threshold -20): turning down " + juce::String (gr, 1) + " dB");
+            for (auto& mixName : { "band", "mureka" })
+            {
+                std::cout << "  (" << mixName << ", input loudness " << juce::String (loudnessDb (loadMix (mixName, 30.0, 8.0), 0, (int) (sr * 8)) - 0.691, 1) << " LUFS):";
+                for (auto& pr : MasterModules::presets (MasterModules::varimu))
+                {
+                    P t; t.loadPreset (pr); prepare (t, sr, 512);
+                    const auto m = loadMix (mixName, 30.0, 8.0);
+                    float most = 0.0f, sum = 0.0f; int count = 0;
+                    for (int s0 = 0; s0 + 4800 <= m.getNumSamples(); s0 += 4800)
+                    {
+                        juce::AudioBuffer<float> part (2, 4800); for (int c = 0; c < 2; ++c) part.copyFrom (c, 0, m, c, s0, 4800);
+                        juce::MidiBuffer midi; t.processBlock (part, midi);
+                        if (s0 > (int) sr * 2) { most = std::max (most, t.getVariMuReductionDb()); sum += t.getVariMuReductionDb(); ++count; }
+                    }
+                    std::cout << " [" << pr.name << ": " << juce::String (sum / count, 1) << " avg / " << juce::String (most, 1) << " max]";
+                }
+                std::cout << "\n";
+            }
+            P q; set (q, MasterVariMuIDs::on, 1.0f); set (q, MasterVariMuIDs::threshold, -20.0f); set (q, MasterVariMuIDs::mix, 0.0f); prepare (q, sr, 512);
+            P plain; prepare (plain, sr, 512);
+            check (worstDelayedDifference (run (q, band, 512), run (plain, band, 512), 0) < 1.0e-5f, "MIX at 0%: the mix untouched");
+        }
+        {
+            // The VINTAGE page
+            P p; set (p, MasterPultecIDs::on, 1.0f); set (p, MasterPultecIDs::lowBoost, 4.0f); set (p, MasterPultecIDs::lowAtten, 3.0f);
+            set (p, MasterPultecIDs::highBoost, 2.5f); set (p, MasterPultecIDs::highAtten, 1.5f);
+            set (p, MasterVariMuIDs::on, 1.0f); set (p, MasterVariMuIDs::threshold, -20.0f); set (p, MasterVariMuIDs::makeup, 1.5f);
+            prepare (p, sr, 512);
+            std::unique_ptr<juce::AudioProcessorEditor> editor (p.createEditor());
+            auto& console = dynamic_cast<EasyMasterAudioProcessorEditor*> (editor.get())->getConsole();
+            console.showBay (2);
+            for (int i = 0; i < 20; ++i) { run (p, loadMix ("band", 31.0 + i * 0.2, 0.2), 512); console.updateNow(); }
+            check (console.getModule (MasterModules::pultec)->isVisible() && console.getModule (MasterModules::varimu)->isVisible()
+                   && ! console.getModule (MasterModules::eq)->isVisible(), "VINTAGE shows the PULTEC EQ and the VARI-MU in the big bay");
+            savePng (console, juce::File ("/tmp/claude-0/-home-claude/b1f7da22-616f-5bd8-9beb-5177ec950132/scratchpad/shots/master_vintage.png"));
+        }
+    }
+
     void testCompare()
     {
         std::cout << "\n[compare and listen]\n";
@@ -473,7 +699,7 @@ namespace
                 }
                 return true;
             };
-            const auto isTab = [&] (juce::Component* c) { return c == console.bayTabs[0].get() || c == console.bayTabs[1].get(); };
+            const auto isTab = [&] (juce::Component* c) { return c == console.bayTabs[0].get() || c == console.bayTabs[1].get() || c == console.bayTabs[2].get(); };
             const auto isBay = [&] (juce::Component* c) { return c == console.getModule (MasterModules::eq) || c == console.getModule (MasterModules::multiband); };
             if (! checkInside (console, [&] (juce::Component* a, juce::Component* b2) { return (isTab (a) && isBay (b2)) || (isTab (b2) && isBay (a)); })) return false;
             for (auto& m : console.getModules())
@@ -564,7 +790,8 @@ namespace
                 const bool isSwitch = id == MasterIDs::compOn || id == MasterIDs::compMode || id == MasterIDs::tamerOn || id == MasterIDs::tamerMode
                                       || id == MasterIDs::reactsTo || id == MasterIDs::character || id == MasterIDs::releaseMode
                                       || id == MasterEQIDs::on || id == MasterEQIDs::mode || id == MasterMBIDs::on || id == MasterMBIDs::mode
-                                      || id == MasterPunchIDs::on || id == MasterPunchIDs::mode || id == MasterWidthIDs::on || id.startsWith ("mb") && id.endsWith ("on");
+                                      || id == MasterPunchIDs::on || id == MasterPunchIDs::mode || id == MasterWidthIDs::on || id == MasterInflateIDs::on || id == MasterPultecIDs::on || id == MasterVariMuIDs::on || id == MasterVariMuIDs::time || id == MasterPultecIDs::lowFreq
+                                      || id == MasterPultecIDs::highFreq || id == MasterPultecIDs::attenFreq || (id.startsWith ("mb") && id.endsWith ("on"));
                 if (isSwitch) continue;
                 if (c == nullptr) { all = false; missing = id; continue; }
                 console.showBay (juce::String (id).startsWith ("mb") ? 1 : 0);
@@ -814,6 +1041,9 @@ int main (int argc, char** argv)
     testChain();
     testMidSide();
     testOutput();
+    testDither();
+    testInflate();
+    testVintage();
     testCompare();
     testTamer();
     testEQ();

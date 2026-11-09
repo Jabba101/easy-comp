@@ -14,6 +14,8 @@ namespace MasterIDs
     inline constexpr const char* trim         = "trim";          // dB
     // OUTPUT (after the limiter; not part of presets - the final level is yours)
     inline constexpr const char* outLevel     = "outlevel";      // dB, 0 or down (so the CEILING always holds)
+    inline constexpr const char* dither       = "dither";        // OFF / 16-BIT / 24-BIT (the very last step; not in presets)
+    inline constexpr const char* ditherShape  = "dithershape";   // FLAT / SHAPED
     // RESONANCE TAMER (MID settings are also the STEREO settings)
     inline constexpr const char* tamerOn      = "tameron";
     inline constexpr const char* tamerMode    = "tamermode";     // STEREO or MID + SIDE
@@ -101,6 +103,34 @@ namespace MasterWidthIDs
     inline constexpr const char* on       = "widthon";
     inline constexpr const char* width    = "width";      // % of the sides (100 = as it is)
     inline constexpr const char* monoBass = "monobass";   // Hz: the sides below it removed (20 = off)
+}
+
+namespace MasterInflateIDs
+{
+    inline constexpr const char* on     = "inflateon";
+    inline constexpr const char* effect = "inflate";        // % of the curve blended in
+    inline constexpr const char* curve  = "inflatecurve";   // -50 (the loud parts) .. +50 (the quiet parts lifted more)
+}
+
+namespace MasterPultecIDs
+{
+    inline constexpr const char* on        = "pulteon";
+    inline constexpr const char* lowFreq   = "plowfreq";     // 20 / 30 / 60 / 100 Hz
+    inline constexpr const char* lowBoost  = "plowboost";    // 0..10
+    inline constexpr const char* lowAtten  = "plowatten";    // 0..10
+    inline constexpr const char* highFreq  = "phighfreq";    // 3k / 4k / 5k / 8k / 10k / 12k / 16k
+    inline constexpr const char* bandwidth = "pbandwidth";   // 0 (sharp) .. 10 (broad)
+    inline constexpr const char* highBoost = "phighboost";   // 0..10
+    inline constexpr const char* attenFreq = "pattenfreq";   // 5k / 10k / 20k
+    inline constexpr const char* highAtten = "phighatten";   // 0..10
+}
+namespace MasterVariMuIDs
+{
+    inline constexpr const char* on        = "varimuon";
+    inline constexpr const char* threshold = "vmthresh";     // dB
+    inline constexpr const char* time      = "vmtime";       // FAST / MEDIUM / SLOW / AUTO
+    inline constexpr const char* makeup    = "vmmakeup";     // dB
+    inline constexpr const char* mix       = "vmmix";        // %
 }
 
 namespace MasterMode   { enum { stereo = 0, midSide }; }
@@ -247,7 +277,7 @@ inline juce::StringArray masterPresetIDs()
         for (int b = 0; b < 5; ++b) { ids.add (MasterEQIDs::freq[part][b]); ids.add (MasterEQIDs::gain[part][b]); }
         ids.add (MasterEQIDs::lowCut[part]);
     }
-    for (int m : { 4, 5, 6 })   // (the MULTIBAND, PUNCH and WIDTH)
+    for (int m : { 4, 5, 6, 7, 8, 9 })   // (the MULTIBAND, PUNCH, WIDTH, INFLATE, PULTEC and VARI-MU)
         for (auto& id : MasterModules::ids (m)) ids.add (id);
     return ids;
 }
@@ -260,8 +290,8 @@ inline juce::StringArray masterPresetIDs()
 */
 namespace MasterModules
 {
-    enum { tamer = 0, eq, comp, limiter, multiband, punch, width, count };
-    inline const char* names[count] { "Resonance Tamer", "EQ", "Compressor", "Limiter", "Multiband", "Punch", "Width" };
+    enum { tamer = 0, eq, comp, limiter, multiband, punch, width, inflate, pultec, varimu, count };
+    inline const char* names[count] { "Resonance Tamer", "EQ", "Compressor", "Limiter", "Multiband", "Punch", "Width", "Inflate", "Pultec EQ", "Vari-Mu" };
 
     /** The settings each module's presets (and its INIT) cover. */
     inline juce::StringArray ids (int module)
@@ -274,6 +304,9 @@ namespace MasterModules
         if (module == punch)   return { MasterPunchIDs::on, MasterPunchIDs::mode, MasterPunchIDs::punch[0], MasterPunchIDs::sustain[0],
                                         MasterPunchIDs::punch[1], MasterPunchIDs::sustain[1], MasterPunchIDs::mix };
         if (module == width)   return { MasterWidthIDs::on, MasterWidthIDs::width, MasterWidthIDs::monoBass };
+        if (module == inflate) return { MasterInflateIDs::on, MasterInflateIDs::effect, MasterInflateIDs::curve };
+        if (module == pultec)  { using namespace MasterPultecIDs; return { on, lowFreq, lowBoost, lowAtten, highFreq, bandwidth, highBoost, attenFreq, highAtten }; }
+        if (module == varimu)  return { MasterVariMuIDs::on, MasterVariMuIDs::threshold, MasterVariMuIDs::time, MasterVariMuIDs::makeup, MasterVariMuIDs::mix };
         if (module == multiband)
         {
             juce::StringArray list { MasterMBIDs::on, MasterMBIDs::mode };
@@ -369,8 +402,58 @@ namespace MasterModules
         return { "", name, tip, { { MasterWidthIDs::on, 1.0f }, { MasterWidthIDs::width, w }, { MasterWidthIDs::monoBass, mono } } };
     }
 
+    inline Preset inflatePreset (const char* name, const char* tip, float effect, float curve)
+    {
+        return { "", name, tip, { { MasterInflateIDs::on, 1.0f }, { MasterInflateIDs::effect, effect }, { MasterInflateIDs::curve, curve } } };
+    }
+
+    /** lowFreq / highFreq / attenFreq: indexes (20/30/60/100 Hz; 3/4/5/8/10/12/16k; 5/10/20k). */
+    inline Preset pultecPreset (const char* name, const char* tip, int lowFreq, float lowBoost, float lowAtten,
+                                int highFreq, float bandwidth, float highBoost, int attenFreq, float highAtten)
+    {
+        using namespace MasterPultecIDs;
+        return { "", name, tip, { { on, 1.0f }, { MasterPultecIDs::lowFreq, (float) lowFreq }, { MasterPultecIDs::lowBoost, lowBoost }, { MasterPultecIDs::lowAtten, lowAtten },
+                                  { MasterPultecIDs::highFreq, (float) highFreq }, { MasterPultecIDs::bandwidth, bandwidth }, { MasterPultecIDs::highBoost, highBoost },
+                                  { MasterPultecIDs::attenFreq, (float) attenFreq }, { MasterPultecIDs::highAtten, highAtten } } };
+    }
+
+    /** time: FAST / MEDIUM / SLOW / AUTO. */
+    inline Preset variMuPreset (const char* name, const char* tip, float threshold, int time, float makeup, float mix)
+    {
+        using namespace MasterVariMuIDs;
+        return { "", name, tip, { { on, 1.0f }, { MasterVariMuIDs::threshold, threshold }, { MasterVariMuIDs::time, (float) time },
+                                  { MasterVariMuIDs::makeup, makeup }, { MasterVariMuIDs::mix, mix } } };
+    }
+
     inline std::vector<Preset> presets (int module)
     {
+        if (module == pultec)
+            return {
+                pultecPreset ("The Low-End Trick (60 Hz)", "BOOST and ATTEN together at 60 Hz: a big, round low end with the mud just above it scooped out.", 2, 5, 4, 4, 5, 0, 2, 0),
+                pultecPreset ("Air & Silk (12k)", "A broad lift at 12k for air, the very top smoothed above 20k: open and expensive, never harsh.", 2, 0, 0, 5, 7, 3, 2, 2),
+                pultecPreset ("Classic Master Polish", "A touch of the low-end trick at 30 Hz and a broad 10k lift: weight and sheen together.", 1, 3, 2, 4, 6, 2.5f, 2, 1.5f),
+                pultecPreset ("Kick & Bass Weight (100 Hz)", "More body in the kick and bass, the boxiness just above it held back.", 3, 4, 3, 4, 5, 0, 2, 0),
+                pultecPreset ("Presence & Sheen (5k)", "Vocals and guitars forward with a broad 5k lift, the top smoothed a little at 20k.", 2, 0, 0, 2, 5, 2.5f, 2, 1),
+                pultecPreset ("Warm & Round (Jazz)", "A gentle low lift at 30 Hz and the top softened above 10k: warm, round, vintage.", 1, 3, 1, 4, 5, 0, 1, 3),
+            };
+        if (module == varimu)
+            return {
+                variMuPreset ("Gentle Glue (1-2 dB)", "The classic mastering touch: AUTO time, 1-2 dB on the loud parts of a mix coming in around -14 LUFS (set THRESHOLD by the GR meter). Holds the mix together without you hearing it work.", -18, 3, 1, 100),
+                variMuPreset ("Valve Warmth", "A little more squeeze at MEDIUM speed: thicker, warmer, the valves just audible.", -20, 1, 2, 100),
+                variMuPreset ("Slow & Smooth (Jazz)", "SLOW: it rides the level of whole phrases, never the notes - acoustic music stays natural.", -19, 2, 1.5f, 100),
+                variMuPreset ("Dense Rock Bus", "FAST and deeper: a dense, solid rock master. Watch the readings - 3-4 dB is plenty.", -23, 0, 3, 100),
+                variMuPreset ("Parallel Valve Squash (40%)", "Squashed hard and blended in at 40%: the body and sustain come up, the transients stay.", -34, 0, 8, 40),
+                variMuPreset ("Breathing 60s", "AUTO and pushed: the slow recovery after loud passages gives that 60s breathing. Use with taste.", -24, 3, 4, 100),
+            };
+        if (module == inflate)
+            return {
+                inflatePreset ("A Touch Fuller (25%)", "Just a little: denser and a hair louder, the dynamics untouched. A good start for any master.", 25, 0),
+                inflatePreset ("Fuller (50%)", "Clearly fuller and louder at the same peak: richer, more solid, the limiter works less.", 50, 0),
+                inflatePreset ("Dense & Loud (100%)", "All of it: about 3 dB louder on the quieter parts, the loudest rounded off. For loud rock and electronic masters.", 100, 0),
+                inflatePreset ("Rounder Peaks (curve -40)", "Works mostly on the loud parts: the peaks rounded and softened, the quiet parts barely touched.", 60, -40),
+                inflatePreset ("Big & Inflated (curve +40)", "Lifts the quieter parts more: everything bigger and more present. Check the fades and quiet passages.", 50, 40),
+                inflatePreset ("Warm Jazz Lift (20%, curve -20)", "Very gentle and mostly on the peaks: a touch of warmth and roundness for acoustic music.", 20, -20),
+            };
         if (module == punch)
             return {
                 punchPreset ("Bring Back the Snap", "The attack of kick and snare brought back after all the levelling: +20% PUNCH.", 0, 20, 0, 20, 0, 100),

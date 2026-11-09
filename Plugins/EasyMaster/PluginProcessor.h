@@ -10,6 +10,10 @@
 #include "MixPunch.h"
 #include "StereoWidth.h"
 #include "ReferenceTrack.h"
+#include "Dither.h"
+#include "Inflator.h"
+#include "PultecEQ.h"
+#include "VariMu.h"
 #include "Presets.h"
 
 //==============================================================================
@@ -163,6 +167,23 @@ private:
     ReferenceTrack reference;
     juce::SmoothedValue<float> trimGain, outGain, matchGain, bypassFade;
     std::atomic<float>* outLevelValue = nullptr;
+    std::atomic<float>* ditherValue = nullptr;
+    std::array<std::atomic<float>*, 3> inflateValues {};
+    Inflator inflate;
+    Inflator::Settings inflateSettings() const noexcept;
+    std::array<std::atomic<float>*, 9> pultecValues {};
+    std::array<std::atomic<float>*, 5> variMuValues {};
+    PultecEQ pultec;
+    VariMu variMu;
+    juce::AudioBuffer<float> monoPair;   // (a mono master through INFLATE, which works on two channels)
+public:
+    PultecEQ::Settings pultecSettings() const noexcept;
+    VariMu::Settings variMuSettings() const noexcept;
+    float getVariMuReductionDb() const noexcept   { return variMu.getReductionDb(); }
+    const PultecEQ& getPultec() const noexcept    { return pultec; }
+private:
+    std::atomic<float>* ditherShapeValue = nullptr;
+    Dither dither;
     std::array<std::atomic<float>, 2> outputMeterPeaks {};
     std::array<juce::SmoothedValue<float>, 4> listenFades;   // STEREO, MID, SIDE, MONO
     int playingMode = MasterMode::stereo;

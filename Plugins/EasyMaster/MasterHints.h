@@ -74,6 +74,41 @@ namespace MasterHints
     inline constexpr const char* matchHint =
         "Plays the whole chain exactly as loud as the original (it follows the loudness over a few seconds). Click BYPASS "
         "on and off with MATCH on: you're judging the sound, not the volume. Switch it off when you're done.";
+    inline constexpr const char* pultecLowFreqHint =
+        "PULTEC LOW: the one frequency both LOW knobs work at - 20 or 30 Hz for sub weight, 60 Hz for the kick and bass body, 100 Hz for punch.";
+    inline constexpr const char* pultecLowBoostHint =
+        "LOW BOOST (0-10): a broad, round lift at the LOW frequency (up to about +15 dB - on a master 2-5 is plenty). "
+        "The famous trick: turn up ATTEN too. Its curve is much gentler and wider, so you get the weight AND a dip just above it - less mud.";
+    inline constexpr const char* pultecLowAttenHint =
+        "LOW ATTEN (0-10): a very gentle, wide cut around the LOW frequency. On its own it thins the low end; with BOOST it scoops "
+        "the mud above the boost (the Pultec low-end trick). Watch THE CURVE.";
+    inline constexpr const char* pultecHighFreqHint =
+        "HIGH BOOST frequency: 3-5k for presence (vocals, guitars forward), 8-12k for sheen, 16k for air.";
+    inline constexpr const char* pultecBandwidthHint =
+        "BANDWIDTH: how wide the HIGH BOOST is - 0 sharp, 10 very broad. Broad (5-8) is the classic, silky Pultec sound.";
+    inline constexpr const char* pultecHighBoostHint =
+        "HIGH BOOST (0-10): a broad, musical lift at the HIGH frequency (up to about +18 dB - on a master 1-3 is plenty).";
+    inline constexpr const char* pultecAttenSelHint =
+        "ATTEN SEL: where HIGH ATTEN starts - 5k (smooths harshness), 10k (softens the top), 20k (just takes off the fizz).";
+    inline constexpr const char* pultecHighAttenHint =
+        "HIGH ATTEN (0-10): a gentle shelf down at ATTEN SEL. Often used with HIGH BOOST: lift the presence, tame the very top.";
+    inline constexpr const char* variMuThresholdHint =
+        "VARI-MU THRESHOLD: where it starts to work. A vari-mu valve has no fixed ratio - just over it, about 1.5:1; 10 dB over, about 4:1; "
+        "20 dB over, about 6.5:1 - so it's very soft and smooth. On a master, set it for 1-3 dB on the GR meter.";
+    inline constexpr const char* variMuMakeupHint =
+        "MAKE-UP: back up by what it takes off (watch the GR meter, and use MATCH to compare fairly).";
+    inline constexpr const char* variMuTimeHint =
+        "TIME: FAST (5 ms / 0.3 s) for dense rock; MEDIUM (15 ms / 0.8 s); SLOW (30 ms / 2 s) rides whole phrases; AUTO - the Fairchild's "
+        "famous setting - recovers quickly after short peaks but slowly (4 s) after long loud passages: smooth, glue-like.";
+    inline constexpr const char* variMuMixHint =
+        "MIX: 100% for normal compression; lower for parallel valve compression - squash it hard and blend it in for body and sustain.";
+    inline constexpr const char* inflateEffectHint =
+        "INFLATE: more loudness and fullness without squashing (like the Oxford Inflator), just before the limiter. EFFECT is how much: "
+        "the quieter parts of the waveform are lifted (up to about 3.5 dB at 100%), the loudest rounded off - denser and louder at the "
+        "same peak, and the limiter has less to do. 20-50% is plenty for most masters. Use MATCH to hear what it does, not just that it's louder.";
+    inline constexpr const char* inflateCurveHint =
+        "CURVE: where INFLATE works. Below 0 it works more on the loud parts (rounder, softer peaks - gentle on acoustic music); "
+        "above 0 it lifts the quiet parts more (bigger, more inflated - check fades and quiet passages). 0 is the classic, balanced curve.";
     inline constexpr const char* refHint =
         "REF swaps what you hear between your master and a finished song you admire (the REFERENCE page loads it). It plays "
         "along while your DAW plays, never goes through the chain, and is turned up or down to be exactly as loud as your "

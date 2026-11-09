@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.32.1)
+project(EasyPlugins VERSION 1.33.0)
 
 # Link-time optimisation squeezes a few more percent of speed out of the
 # finished plugins, but makes every build much slower (each plugin is
@@ -301,7 +301,7 @@ add_easy_plugin(EasyLimiter
 add_easy_plugin(EasyMaster
     NAME        "Easy Master"
     CODE        Ezms
-    VERSION     1.7.0
+    VERSION     1.8.0
     BUNDLE_ID   com.homestudio.easymaster
     CATEGORIES  Fx Dynamics Mastering
     SOURCES     Effects/Compressor.h
@@ -313,6 +313,10 @@ add_easy_plugin(EasyMaster
                 Effects/TransientShaper.h
                 Effects/StereoWidth.h
                 Effects/ReferenceTrack.h
+                Effects/Dither.h
+                Effects/Inflator.h
+                Effects/PultecEQ.h
+                Effects/VariMu.h
                 Plugins/EasyMaster/Presets.h
                 Plugins/EasyMaster/PluginProcessor.h
                 Plugins/EasyMaster/PluginProcessor.cpp
@@ -328,7 +332,7 @@ add_easy_plugin(EasyMaster
                 Plugins/EasyStrip/HoloControls.h
                 Plugins/EasyStrip/HoloControls.cpp)
 
-target_link_libraries(EasyMaster PRIVATE pffft)
+target_link_libraries(EasyMaster PRIVATE pffft juce::juce_dsp)   # (INFLATE's oversampling)
 target_include_directories(EasyMaster PRIVATE Plugins/EasyStrip)
 
 add_easy_plugin(EasyUnbleed

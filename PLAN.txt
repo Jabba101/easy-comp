@@ -1013,3 +1013,18 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      hears. Test: with EQ MASTER at HIGH before it (2048 samples) the square tremolo's edges land 0.00 ms out (43 ms before the fix).
    - StripTests 152/152.
 
+== EASY MASTER 1.8.0: DITHER + INFLATE (9 November 2026) - built, waiting for the user's OK on the look ==
+   - DITHER (Effects/Dither.h): the very last step. OFF / 16-BIT / 24-BIT, FLAT (TPDF +-1 step) or SHAPED (3-tap error feedback
+     1.623 / -0.982 / 0.109: ~17 dB quieter at 2-5 kHz). Rounds to the exact steps; silent after 0.5 s of digital silence. In the OUTPUT
+     column (meter shortened to 380). Not in presets. Noise -96.2 dBFS at 16 bits; a -110 dBFS tone survives 28 dB clear.
+   - INFLATE (Effects/Inflator.h): Oxford-Inflator-style curve (A=1.5+c, B=-2c, C=c-0.5, D=1/16-c/4+c^2/4, c = CURVE/100), EFFECT blend,
+     CURVE -50..+50, x4 oversampled (FIR equiripple, integer latency - always running, so on/off crossfades 20 ms and the delay never
+     changes), just before the limiter. Its own module (MasterModules::inflate, 6 presets) sharing WIDTH's old space (each 196 wide).
+     Quiet parts +3.5 dB at 100%; a mix 2.4 dB louder at the same peak. MasterTests 110/110.
+   - VINTAGE page in the big bay (third tab beside EQ / MULTIBAND): PULTEC EQ (Effects/PultecEQ.h) and VARI-MU (Effects/VariMu.h), each its
+     own module (MasterModules::pultec / varimu, 6 presets each, INIT / Pr), chain: tamer > EQ > PULTEC > VARI-MU > multiband > comp > punch
+     > width > INFLATE > limiter. PULTEC: LOW 20/30/60/100 with BOOST (shelf f*1.22, 1.535 dB/step, S 1.27) and ATTEN (shelf f*0.89,
+     -1.8 dB/step, S 0.3) - fitted to the known curves (B5+A4 @60: +3.3 dB at 40, -1.1 at 200); HIGH BOOST bell 3k-16k, BANDWIDTH Q 2.5..0.35,
+     1.8 dB/step; HIGH ATTEN shelf 5/10/20k, -1.6 dB/step; faint valve 2nd. THE CURVE drawn in the panel. VARI-MU: ratio 1.5 + over/4
+     (6 dB soft knee), 5 ms RMS detector, linked, FAST/MEDIUM/SLOW/AUTO (AUTO = fast 0.3 s + slow 4 s release), MAKE-UP, MIX, valve
+     2nd growing with GR. Presets calibrated for mixes around -14 LUFS in. MasterTests 118/118.

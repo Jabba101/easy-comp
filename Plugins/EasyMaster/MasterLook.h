@@ -38,6 +38,9 @@ namespace MasterSkin
     inline const juce::Colour comp       { 0xff5a9bff };
     inline const juce::Colour punch      { 0xffff5fd2 };
     inline const juce::Colour width      { 0xff7ad0ff };
+    inline const juce::Colour inflate    { 0xffffd06a };
+    inline const juce::Colour pultec     { 0xffe8a25a };   // (warm valve amber)
+    inline const juce::Colour varimu     { 0xffd98c6a };
     inline const juce::Colour limiter    { 0xffe8eef5 };
 
     /** Barlow Condensed at a size matching the old font's (it's narrower, so a touch bigger). */

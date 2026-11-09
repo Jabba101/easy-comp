@@ -17,7 +17,7 @@ namespace MasterHolo
                                         "< and > step through them. Each module also has its own (its Pr button).";
         const juce::String focusHint = "What the big screen shows. Each module has its own picture: the resonances, the EQ curve, the four "
                                        "bands, the last six seconds of compressor and limiter, PUNCH at work, the stereo picture - and REFERENCE, a finished song to compare yours with.";
-        const juce::String bayHint = "The big bay holds the EQ or the MULTIBAND - click to switch. Both keep working whichever is showing.";
+        const juce::String bayHint = "The big bay holds the EQ, the MULTIBAND or VINTAGE (a Pultec-style EQ and a vari-mu valve compressor) - click to switch. All of them keep working whichever is showing.";
         const juce::String matchInfoHint = matchHint;
 
         /** A plain component that paints with a function (the preset window). */
@@ -682,37 +682,176 @@ namespace MasterHolo
         {
             width = &ring (MasterWidthIDs::width, "WIDTH", Holo::Format::percent, "%", Ring::medium, Module::sideTint, "WIDTH", widthHint);
             monoBass = &ring (MasterWidthIDs::monoBass, "MONO BASS", Holo::Format::hertz, "Hz", Ring::medium, Colours::frequency, "MONO BASS", monoBassHint);
-            sidesReading = &caption ("", Colours::dim, 13.0f);
-            monoNote = &caption ("below it:|bass + kick|in the centre", Colours::dim, 13.0f);
-            monoNote->setText ("below it: the bass\nand kick in the centre", juce::dontSendNotification);
-            sidesReading->setJustificationType (juce::Justification::centredLeft);
-            monoNote->setJustificationType (juce::Justification::centredLeft);
         }
 
         void resized() override
         {
             clearSections();
             auto body = placeHeader (getLocalBounds().reduced (9, 6));
-            auto s1 = section (body.removeFromLeft (body.getWidth() / 2 - 4), 1, "HOW WIDE");
-            body.removeFromLeft (8);
-            auto s2 = section (body, 2, "MONO BASS");
-            centreIn (*width, s1.removeFromLeft (84));
-            sidesReading->setBounds (s1.reduced (2, 8));
-            centreIn (*monoBass, s2.removeFromLeft (84));
-            monoNote->setBounds (s2.reduced (2, 8));
-        }
-
-        void refresh() override
-        {
-            const auto r = processor.getReadings();
-            sidesReading->setText (r.sideToMidDb <= -99.0f ? juce::String ("sides: --")
-                                                           : "sides " + juce::String (r.sideToMidDb, 1) + " dB\nnext to the middle\ncorrelation " + juce::String (r.correlation, 2),
-                                   juce::dontSendNotification);
+            auto s1 = section (body, 1, "HOW WIDE / MONO BASS");
+            centreIn (*width, s1.removeFromLeft (s1.getWidth() / 2));
+            centreIn (*monoBass, s1);
         }
 
     private:
         Ring *width = nullptr, *monoBass = nullptr;
-        juce::Label *sidesReading = nullptr, *monoNote = nullptr;
+    };
+
+    //==========================================================================
+    // INFLATE
+    //==========================================================================
+    class InflateModule : public Module
+    {
+    public:
+        explicit InflateModule (Console& c) : Module (c, MasterModules::inflate, MasterSkin::inflate, "INFLATE", MasterInflateIDs::on)
+        {
+            effect = &ring (MasterInflateIDs::effect, "EFFECT", Holo::Format::percent, "%", Ring::medium, tint, "INFLATE - EFFECT", inflateEffectHint);
+            curve = &ring (MasterInflateIDs::curve, "CURVE", Holo::Format::signedPercent, "", Ring::medium, Colours::gold, "INFLATE - CURVE", inflateCurveHint);
+        }
+
+        void resized() override
+        {
+            clearSections();
+            auto body = placeHeader (getLocalBounds().reduced (9, 6));
+            auto s1 = section (body, 1, "HOW MUCH / WHERE");
+            centreIn (*effect, s1.removeFromLeft (s1.getWidth() / 2));
+            centreIn (*curve, s1);
+        }
+
+    private:
+        Ring *effect = nullptr, *curve = nullptr;
+    };
+
+    //==========================================================================
+    // PULTEC (in the bay's VINTAGE page)
+    //==========================================================================
+    class PultecModule : public Module
+    {
+    public:
+        explicit PultecModule (Console& c) : Module (c, MasterModules::pultec, MasterSkin::pultec, "PULTEC EQ", MasterPultecIDs::on)
+        {
+            using namespace MasterPultecIDs;
+            juce::StringArray lows, highs, attens;
+            for (int i = 0; i < PultecEQ::numLowFreqs; ++i)   lows.add (Holo::formatValue (Holo::Format::hertz, PultecEQ::lowFreqHz (i)) + " Hz");
+            for (int i = 0; i < PultecEQ::numHighFreqs; ++i)  highs.add (Holo::formatValue (Holo::Format::hertz, PultecEQ::highFreqHz (i)));
+            for (int i = 0; i < PultecEQ::numAttenFreqs; ++i) attens.add (Holo::formatValue (Holo::Format::hertz, PultecEQ::attenFreqHz (i)));
+            lowFreqChoice = &choice (lowFreq, lows, "LOW FREQUENCY", pultecLowFreqHint, false, Colours::frequency);
+            highFreqChoice = &choice (highFreq, highs, "HIGH FREQUENCY", pultecHighFreqHint, false, Colours::frequency);
+            attenChoice = &choice (attenFreq, attens, "ATTEN SEL", pultecAttenSelHint, false, Colours::frequency);
+            for (auto* ch : { lowFreqChoice, highFreqChoice, attenChoice }) { ch->segmentHeight = 22; ch->fontSize = 12.5f; }
+            lowBoostRing = &ring (lowBoost, "BOOST", Holo::Format::ratio, "", Ring::medium, tint, "LOW BOOST", pultecLowBoostHint);
+            lowAttenRing = &ring (lowAtten, "ATTEN", Holo::Format::ratio, "", Ring::medium, Colours::reduction, "LOW ATTEN", pultecLowAttenHint);
+            bandwidthRing = &ring (bandwidth, "BANDWIDTH", Holo::Format::ratio, "", Ring::medium, Colours::frequency, "BANDWIDTH", pultecBandwidthHint);
+            highBoostRing = &ring (highBoost, "BOOST", Holo::Format::ratio, "", Ring::medium, tint, "HIGH BOOST", pultecHighBoostHint);
+            highAttenRing = &ring (highAtten, "ATTEN", Holo::Format::ratio, "", Ring::medium, Colours::reduction, "HIGH ATTEN", pultecHighAttenHint);
+        }
+
+        void resized() override
+        {
+            clearSections();
+            auto body = placeHeader (getLocalBounds().reduced (9, 6), nullptr, 0, 330);   // (the bay's tabs sit top left)
+            const int w = (body.getWidth() - 16) / 3;
+            auto s1 = section (body.removeFromLeft (w), 1, "LOW");
+            body.removeFromLeft (8);
+            auto s2 = section (body.removeFromLeft (w), 2, "HIGH BOOST");
+            body.removeFromLeft (8);
+            auto s3 = section (body, 3, "HIGH ATTEN");
+            const auto column = [] (juce::Rectangle<int> area, Choice& freq, Ring& a, Ring* b)
+            {
+                freq.setBounds (area.removeFromTop (freq.getIdealHeight()).reduced (14, 0));
+                area.removeFromTop (8);
+                auto rings = area.removeFromTop (110);
+                if (b == nullptr) centreIn (a, rings);
+                else { centreIn (a, rings.removeFromLeft (rings.getWidth() / 2)); centreIn (*b, rings); }
+                return area;
+            };
+            column (s1, *lowFreqChoice, *lowBoostRing, lowAttenRing);
+            column (s2, *highFreqChoice, *bandwidthRing, highBoostRing);
+            curveArea = column (s3, *attenChoice, *highAttenRing, nullptr).reduced (6, 8).toFloat();
+        }
+
+        void paint (juce::Graphics& g) override
+        {
+            Module::paint (g);
+            // The curve it makes (20 Hz - 20 kHz, +-18 dB)
+            if (curveArea.getHeight() < 40.0f) return;
+            const auto r = curveArea;
+            g.setColour (juce::Colour (0x66040c16));
+            g.fillRoundedRectangle (r, 4.0f);
+            g.setColour (Colours::dim.withAlpha (0.35f));
+            g.drawHorizontalLine (juce::roundToInt (r.getCentreY()), r.getX(), r.getRight());
+            juce::Path p;
+            for (int i = 0; i <= 120; ++i)
+            {
+                const double hz = 20.0 * std::pow (1000.0, i / 120.0);
+                const float db = juce::jlimit (-18.0f, 18.0f, processor.getPultec().responseDb (hz));
+                const float x = r.getX() + r.getWidth() * (float) i / 120.0f, y = r.getCentreY() - db / 18.0f * (r.getHeight() * 0.5f - 4.0f);
+                if (i == 0) p.startNewSubPath (x, y); else p.lineTo (x, y);
+            }
+            g.setColour (tint);
+            g.strokePath (p, juce::PathStrokeType (1.8f));
+            g.setColour (Colours::dim);
+            g.setFont (Holo::text (11.0f, 0));
+            g.drawText ("THE CURVE", r.reduced (6.0f, 3.0f), juce::Justification::topLeft, false);
+        }
+
+        void refresh() override   { repaint(); }
+
+    private:
+        Choice *lowFreqChoice = nullptr, *highFreqChoice = nullptr, *attenChoice = nullptr;
+        Ring *lowBoostRing = nullptr, *lowAttenRing = nullptr, *bandwidthRing = nullptr, *highBoostRing = nullptr, *highAttenRing = nullptr;
+        juce::Rectangle<float> curveArea;
+    };
+
+    //==========================================================================
+    // VARI-MU (in the bay's VINTAGE page)
+    //==========================================================================
+    class VariMuModule : public Module
+    {
+    public:
+        explicit VariMuModule (Console& c) : Module (c, MasterModules::varimu, MasterSkin::varimu, "VARI-MU", MasterVariMuIDs::on)
+        {
+            using namespace MasterVariMuIDs;
+            thresholdBar = &bar (threshold, "THRESH", Holo::Format::db, "dB", Colours::level, false, "THRESHOLD", variMuThresholdHint);
+            gr = std::make_unique<GainBar> (12.0f, false, Colours::reduction);
+            addAndMakeVisible (*gr);
+            hint (*gr, "VARI-MU - TURNING DOWN", "How much the vari-mu is turning the mix down right now. On a master, 1-3 dB is the classic amount.");
+            grName = &caption ("GR", Colours::reduction, 11.5f);
+            makeupRing = &ring (makeup, "MAKE-UP", Holo::Format::signedDb, "dB", Ring::medium, Colours::level, "MAKE-UP", variMuMakeupHint);
+            timeLabel = &caption ("TIME", Colours::dim, 13.0f);
+            timeChoice = &choice (MasterVariMuIDs::time, { "FAST", "MEDIUM", "SLOW", "AUTO" }, "TIME", variMuTimeHint, false);
+            timeChoice->segmentHeight = 26; timeChoice->fontSize = 13.0f;
+            mixRing = &ring (mix, "MIX", Holo::Format::percent, "%", Ring::medium, tint, "MIX", variMuMixHint);
+        }
+
+        void resized() override
+        {
+            clearSections();
+            auto body = placeHeader (getLocalBounds().reduced (9, 6));
+            auto s1 = section (body.removeFromLeft (body.getWidth() / 2 + 20), 1, "HOW MUCH");
+            body.removeFromLeft (8);
+            auto s2 = section (body, 2, "HOW FAST");
+            auto top = s1.removeFromTop (juce::jmin (300, s1.getHeight()));
+            thresholdBar->setBounds (top.removeFromLeft (54));
+            top.removeFromLeft (4);
+            auto grCol = top.removeFromLeft (16);
+            grName->setBounds (grCol.removeFromTop (17));
+            gr->setBounds (grCol.withTrimmedBottom (14));
+            top.removeFromLeft (4);
+            centreIn (*makeupRing, top);
+            placeStack (*timeLabel, *timeChoice, s2.removeFromTop (150), 100);
+            s2.removeFromTop (12);
+            centreIn (*mixRing, s2.removeFromTop (110));
+        }
+
+        void refresh() override   { gr->setGainDb (processor.getVariMuReductionDb()); }
+
+    private:
+        Bar* thresholdBar = nullptr;
+        std::unique_ptr<GainBar> gr;
+        juce::Label *grName = nullptr, *timeLabel = nullptr;
+        Ring *makeupRing = nullptr, *mixRing = nullptr;
+        Choice* timeChoice = nullptr;
     };
 
     //==========================================================================
@@ -880,6 +1019,9 @@ namespace MasterHolo
         modules.push_back (std::make_unique<CompModule> (*this));
         modules.push_back (std::make_unique<PunchModule> (*this));
         modules.push_back (std::make_unique<WidthModule> (*this));
+        modules.push_back (std::make_unique<InflateModule> (*this));
+        modules.push_back (std::make_unique<PultecModule> (*this));
+        modules.push_back (std::make_unique<VariMuModule> (*this));
         modules.push_back (std::make_unique<LimiterModule> (*this));
         modules.push_back (std::make_unique<CompareModule> (*this));
         for (auto& m : modules) addAndMakeVisible (*m);
@@ -918,11 +1060,11 @@ namespace MasterHolo
             addAndMakeVisible (*focusButtons[(size_t) f]);
             addHint (*focusButtons[(size_t) f], "DISPLAY FOCUS", focusHint);
         }
-        for (int b = 0; b < 2; ++b)
+        for (int b = 0; b < 3; ++b)
         {
-            bayTabs[(size_t) b] = std::make_unique<Button> (b == 0 ? "EQ" : "MULTIBAND", Colours::selected, Button::Style::view);
+            bayTabs[(size_t) b] = std::make_unique<Button> (b == 0 ? "EQ" : (b == 1 ? "MULTIBAND" : "VINTAGE"), Colours::selected, Button::Style::view);
             bayTabs[(size_t) b]->fontSize = 14.5f;
-            bayTabs[(size_t) b]->onClick = [this, b] { showBay (b); showFocus (b == 0 ? eqFocus : mbFocus); };
+            bayTabs[(size_t) b]->onClick = [this, b] { showBay (b); if (b < 2) showFocus (b == 0 ? eqFocus : mbFocus); };
             addAndMakeVisible (*bayTabs[(size_t) b]);
             addHint (*bayTabs[(size_t) b], "THE BIG BAY", bayHint);
         }
@@ -955,6 +1097,21 @@ namespace MasterHolo
         addHint (*outLevel, "OUTPUT LEVEL", "The final level, after everything (the limiter included). It only turns down - so the limiter's CEILING "
                  "always holds. Handy to match a quieter target, or to drop the whole master a touch without touching the limiter. Not part of presets.");
         registerControl (MasterIDs::outLevel, *outLevel);
+        ditherDepth = std::make_unique<Choice> (*p.parameters.getParameter (MasterIDs::dither), juce::StringArray { "OFF", "16-BIT", "24-BIT" }, Colours::cyan, false);
+        ditherShape = std::make_unique<Choice> (*p.parameters.getParameter (MasterIDs::ditherShape), juce::StringArray { "FLAT", "SHAPED" }, Colours::cyan, true);
+        for (auto* c : { ditherDepth.get(), ditherShape.get() })
+        {
+            c->segmentHeight = 22;
+            c->fontSize = 12.0f;
+            addAndMakeVisible (*c);
+        }
+        const juce::String ditherHint = "DITHER: the very last step, for the file you export. Set it to the file's bit depth - 16-BIT for a CD or a "
+            "16-bit WAV, 24-BIT for a 24-bit file (leave it OFF for 32-bit float). It adds a whisper of noise (about -96 dBFS at 16 bits) so fades "
+            "and quiet tails stay smooth instead of turning gritty, then rounds every sample to the file's exact steps. SHAPED moves that noise "
+            "up where the ear barely hears it (best for a final 16-bit master); FLAT is the plain, neutral kind. Nothing should change the level "
+            "after it. In digital silence it goes silent too.";
+        addHint (*ditherDepth, "DITHER", ditherHint);
+        addHint (*ditherShape, "DITHER", ditherHint);
         for (auto* l : { &outputState, &lufsShort, &lufsIntegrated })
         {
             l->setFont (Holo::text (13.0f, 1));
@@ -1097,15 +1254,19 @@ namespace MasterHolo
         tamer.setBounds (100, 104, 330, 396);
         getModule (MasterModules::eq)->setBounds (100, 508, 972, 456);
         getModule (MasterModules::multiband)->setBounds (100, 508, 972, 456);
+        getModule (MasterModules::pultec)->setBounds (100, 508, 560, 456);
+        getModule (MasterModules::varimu)->setBounds (668, 508, 404, 456);
         getModule (MasterModules::comp)->setBounds (1080, 104, 400, 480);
         getModule (MasterModules::punch)->setBounds (1080, 592, 400, 192);
-        getModule (MasterModules::width)->setBounds (1080, 792, 400, 172);
+        getModule (MasterModules::width)->setBounds (1080, 792, 196, 172);
+        getModule (MasterModules::inflate)->setBounds (1284, 792, 196, 172);
         getModule (MasterModules::limiter)->setBounds (1488, 412, 300, 280);
         modules.back()->setBounds (1488, 700, 300, 264);   // COMPARE
 
         // The bay's tabs, in the top left of the bay
         bayTabs[0]->setBounds (112, 514, 90, 28);
         bayTabs[1]->setBounds (208, 514, 118, 28);
+        bayTabs[2]->setBounds (332, 514, 100, 28);
 
         for (int f = 0; f < numFocus; ++f)
             focusButtons[(size_t) f]->setBounds (focusRow.getX() + f * 91, focusRow.getY(), 85, focusRow.getHeight());
@@ -1124,10 +1285,14 @@ namespace MasterHolo
             c.removeFromTop (40);
             outputMode->setBounds (c.removeFromTop (outputMode->getIdealHeight()));
             c.removeFromTop (10);
-            outputMeter.setBounds (c.removeFromTop (470).reduced (6, 0));
-            c.removeFromTop (10);
-            lufsShort.setBounds (c.removeFromTop (36));
-            lufsIntegrated.setBounds (c.removeFromTop (36));
+            outputMeter.setBounds (c.removeFromTop (380).reduced (6, 0));
+            c.removeFromTop (8);
+            lufsShort.setBounds (c.removeFromTop (34));
+            lufsIntegrated.setBounds (c.removeFromTop (34));
+            c.removeFromTop (34);   // (DITHER's title)
+            ditherDepth->setBounds (c.removeFromTop (ditherDepth->getIdealHeight()));
+            c.removeFromTop (6);
+            ditherShape->setBounds (c.removeFromTop (22).expanded (6, 0));
             outLevel->setTopLeftPosition (outputColumn.getCentreX() - outLevel->getWidth() / 2, outputColumn.getBottom() - outLevel->getHeight() - 52);
             outputState.setBounds (outputColumn.getX() + 4, outputColumn.getBottom() - 46, outputColumn.getWidth() - 8, 36);
         }
@@ -1189,6 +1354,9 @@ namespace MasterHolo
         drawModule (g, inputColumn.toFloat(), Colours::cyan);
         drawModule (g, outputColumn.toFloat(), Colours::cyan);
         drawGlowText (g, "OUTPUT", outputColumn.toFloat().removeFromTop (34.0f).withTrimmedTop (8.0f), juce::Justification::centred, Holo::text (15.5f, 2), Colours::cyan);
+        if (ditherDepth != nullptr)
+            drawGlowText (g, "DITHER", juce::Rectangle<float> ((float) outputColumn.getX(), (float) ditherDepth->getY() - 26.0f, (float) outputColumn.getWidth(), 20.0f),
+                          juce::Justification::centred, Holo::text (13.5f, 2), Colours::cyan, 0.5f);
         drawGlowText (g, "INPUT", inputColumn.toFloat().removeFromTop (34.0f).withTrimmedTop (8.0f), juce::Justification::centred, Holo::text (15.5f, 2), Colours::cyan);
         drawModule (g, screenArea.toFloat(), Colours::cyan);
         drawModule (g, metersArea.toFloat(), Colours::cyan);
@@ -1239,17 +1407,19 @@ namespace MasterHolo
 
     void Console::showBay (int b)
     {
-        bay = juce::jlimit (0, 1, b);
+        bay = juce::jlimit (0, 2, b);
         processor.shownBay = bay;
         getModule (MasterModules::eq)->setVisible (bay == 0);
         getModule (MasterModules::multiband)->setVisible (bay == 1);
-        for (int i = 0; i < 2; ++i)
+        getModule (MasterModules::pultec)->setVisible (bay == 2);
+        getModule (MasterModules::varimu)->setVisible (bay == 2);
+        for (int i = 0; i < 3; ++i)
         {
             bayTabs[(size_t) i]->setToggleState (i == bay, juce::dontSendNotification);
             bayTabs[(size_t) i]->toFront (false);
         }
         if (focus == eqFocus && bay == 1) showFocus (mbFocus);
-        else if (focus == mbFocus && bay == 0) showFocus (eqFocus);
+        else if (focus == mbFocus && bay != 1) showFocus (eqFocus);
         repaint();
     }
 

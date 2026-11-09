@@ -130,7 +130,7 @@ namespace MasterHolo
         void showFocus (int focus);
         int getFocus() const noexcept   { return focus; }
 
-        /** The big bay: 0 = EQ, 1 = MULTIBAND. */
+        /** The big bay: 0 = EQ, 1 = MULTIBAND, 2 = VINTAGE (PULTEC EQ and VARI-MU). */
         void showBay (int bay);
         int getBay() const noexcept     { return bay; }
 
@@ -151,7 +151,7 @@ namespace MasterHolo
 
         // (public so the parts can be found and tested)
         std::array<std::unique_ptr<Holo::Button>, numFocus> focusButtons;
-        std::array<std::unique_ptr<Holo::Button>, 2> bayTabs;
+        std::array<std::unique_ptr<Holo::Button>, 3> bayTabs;
         Holo::Button initAll { "INIT", Holo::Colours::warn, Holo::Button::Style::init };
         Holo::Button bypass { "BYPASS", Holo::Colours::warn };
         Holo::Button presetPrevious { "<", Holo::Colours::selected }, presetNext { ">", Holo::Colours::selected };
@@ -171,6 +171,7 @@ namespace MasterHolo
         // OUTPUT (the right-hand column, like Easy Strip's): PEAK / LUFS, the meter, LUFS S and I, LEVEL
         Holo::BigMeter outputMeter;
         std::unique_ptr<Holo::Choice> outputMode;
+        std::unique_ptr<Holo::Choice> ditherDepth, ditherShape;   // DITHER (16-bit / 24-bit, FLAT / SHAPED)
         std::unique_ptr<Holo::Ring> outLevel;
         juce::Label outputState, lufsShort, lufsIntegrated;
         float outputPeakHeld = -200.0f;

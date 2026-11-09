@@ -29,6 +29,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyMasterAudioProcessor::cr
 
     layout.add (makeKnob (trim, 1, "Input Trim", trimRange, d.trimDb, Format::signedDecibels));
     layout.add (makeKnob (outLevel, 1, "Output Level", { -24.0f, 0.0f, 0.1f }, 0.0f, Format::signedDecibels));
+    layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { MasterIDs::dither, 1 }, "Dither", juce::StringArray { "Off", "16-bit", "24-bit" }, 0));
+    layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { MasterIDs::ditherShape, 1 }, "Dither Shape", juce::StringArray { "Flat", "Shaped" }, 1));
 
     // EQ
     {
@@ -102,6 +104,38 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyMasterAudioProcessor::cr
             layout.add (makeKnob (MasterPunchIDs::sustain[part], 5, juce::String ("Punch ") + partName[part] + " Sustain", shapeRange, 0.0f, signedPercent));
         }
         layout.add (makeKnob (MasterPunchIDs::mix, 5, "Punch Mix", percentRange, 100.0f, Format::percent));
+        {
+            using namespace MasterPultecIDs;
+            juce::StringArray lows, highs, attens;
+            for (int i = 0; i < PultecEQ::numLowFreqs; ++i)   lows.add (Format::hertz (PultecEQ::lowFreqHz (i)));
+            for (int i = 0; i < PultecEQ::numHighFreqs; ++i)  highs.add (Format::hertz (PultecEQ::highFreqHz (i)));
+            for (int i = 0; i < PultecEQ::numAttenFreqs; ++i) attens.add (Format::hertz (PultecEQ::attenFreqHz (i)));
+            const juce::NormalisableRange<float> tenRange (0.0f, 10.0f, 0.1f);
+            const auto tenth = [] (float v) { return juce::String (v, 1); };
+            const auto fromText = [] (const juce::String& t) { return t.getFloatValue(); };
+            layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { MasterPultecIDs::on, 7 }, "Pultec On", false));
+            layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { MasterPultecIDs::lowFreq, 7 }, "Pultec Low Freq", lows, 2));
+            layout.add (makeKnob (MasterPultecIDs::lowBoost, 7, "Pultec Low Boost", tenRange, 0.0f, tenth, fromText));
+            layout.add (makeKnob (MasterPultecIDs::lowAtten, 7, "Pultec Low Atten", tenRange, 0.0f, tenth, fromText));
+            layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { MasterPultecIDs::highFreq, 7 }, "Pultec High Freq", highs, 4));
+            layout.add (makeKnob (MasterPultecIDs::bandwidth, 7, "Pultec Bandwidth", tenRange, 5.0f, tenth, fromText));
+            layout.add (makeKnob (MasterPultecIDs::highBoost, 7, "Pultec High Boost", tenRange, 0.0f, tenth, fromText));
+            layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { MasterPultecIDs::attenFreq, 7 }, "Pultec Atten Sel", attens, 2));
+            layout.add (makeKnob (MasterPultecIDs::highAtten, 7, "Pultec High Atten", tenRange, 0.0f, tenth, fromText));
+        }
+        {
+            juce::StringArray times;
+            for (int i = 0; i < VariMu::numTimes; ++i) times.add (juce::String (VariMu::timeName (i)).toLowerCase());
+            layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { MasterVariMuIDs::on, 7 }, "Vari-Mu On", false));
+            layout.add (makeKnob (MasterVariMuIDs::threshold, 7, "Vari-Mu Threshold", { -40.0f, 0.0f, 0.1f }, -18.0f, Format::decibels));
+            layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { MasterVariMuIDs::time, 7 }, "Vari-Mu Time", times, VariMu::autoTime));
+            layout.add (makeKnob (MasterVariMuIDs::makeup, 7, "Vari-Mu Make-up", { 0.0f, 18.0f, 0.1f }, 0.0f, Format::signedDecibels));
+            layout.add (makeKnob (MasterVariMuIDs::mix, 7, "Vari-Mu Mix", { 0.0f, 100.0f, 1.0f }, 100.0f, Format::percent));
+        }
+        layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { MasterInflateIDs::on, 6 }, "Inflate On", false));
+        layout.add (makeKnob (MasterInflateIDs::effect, 6, "Inflate", { 0.0f, 100.0f, 0.1f }, 0.0f, Format::percent));
+        layout.add (makeKnob (MasterInflateIDs::curve, 6, "Inflate Curve", { -50.0f, 50.0f, 0.1f }, 0.0f,
+                              [] (float c) { return (c > 0.05f ? "+" : "") + juce::String (c, 1); }, [] (const juce::String& t) { return t.getFloatValue(); }));
         layout.add (std::make_unique<juce::AudioParameterBool> (juce::ParameterID { MasterWidthIDs::on, 5 }, "Width On", false));
         layout.add (makeKnob (MasterWidthIDs::width, 5, "Width", widthRange, 100.0f, Format::percent));
         layout.add (makeKnob (MasterWidthIDs::monoBass, 5, "Mono Bass", monoRange, StereoWidth::monoBassOffHz,
@@ -165,6 +199,7 @@ EasyMasterAudioProcessor::EasyMasterAudioProcessor()
 {
     using namespace MasterIDs;
     outLevelValue = v (outLevel);
+    ditherValue = v (MasterIDs::dither); ditherShapeValue = v (MasterIDs::ditherShape);
     trimValue = v (trim); compOnValue = v (compOn); compModeValue = v (compMode); mixValue = v (compMix);
     ignoreValue = v (ignoreBelow); reactsValue = v (reactsTo); characterValue = v (character);
     limitGainValue = v (limitGain); ceilingValue = v (ceiling); releaseModeValue = v (releaseMode); releaseValue = v (release);
@@ -186,6 +221,12 @@ EasyMasterAudioProcessor::EasyMasterAudioProcessor()
     punchValues = { v (MasterPunchIDs::on), v (MasterPunchIDs::mode), v (MasterPunchIDs::punch[0]), v (MasterPunchIDs::sustain[0]),
                     v (MasterPunchIDs::punch[1]), v (MasterPunchIDs::sustain[1]), v (MasterPunchIDs::mix) };
     widthValues = { v (MasterWidthIDs::on), v (MasterWidthIDs::width), v (MasterWidthIDs::monoBass) };
+    inflateValues = { v (MasterInflateIDs::on), v (MasterInflateIDs::effect), v (MasterInflateIDs::curve) };
+    {
+        using namespace MasterPultecIDs;
+        pultecValues = { v (on), v (lowFreq), v (lowBoost), v (lowAtten), v (highFreq), v (bandwidth), v (highBoost), v (attenFreq), v (highAtten) };
+    }
+    variMuValues = { v (MasterVariMuIDs::on), v (MasterVariMuIDs::threshold), v (MasterVariMuIDs::time), v (MasterVariMuIDs::makeup), v (MasterVariMuIDs::mix) };
     midValues  = { v (midThreshold),  v (midRatio),  v (midAttack),  v (midRelease),  v (midMakeup) };
     sideValues = { v (sideThreshold), v (sideRatio), v (sideAttack), v (sideRelease), v (sideMakeup) };
 }
@@ -282,6 +323,41 @@ MixPunch::Settings EasyMasterAudioProcessor::punchSettings (int part) const noex
     return s;
 }
 
+PultecEQ::Settings EasyMasterAudioProcessor::pultecSettings() const noexcept
+{
+    PultecEQ::Settings s;
+    s.on = pultecValues[0]->load() > 0.5f;
+    s.lowFreq = juce::roundToInt (pultecValues[1]->load());
+    s.lowBoost = pultecValues[2]->load();
+    s.lowAtten = pultecValues[3]->load();
+    s.highFreq = juce::roundToInt (pultecValues[4]->load());
+    s.bandwidth = pultecValues[5]->load();
+    s.highBoost = pultecValues[6]->load();
+    s.attenFreq = juce::roundToInt (pultecValues[7]->load());
+    s.highAtten = pultecValues[8]->load();
+    return s;
+}
+
+VariMu::Settings EasyMasterAudioProcessor::variMuSettings() const noexcept
+{
+    VariMu::Settings s;
+    s.on = variMuValues[0]->load() > 0.5f;
+    s.thresholdDb = variMuValues[1]->load();
+    s.time = juce::roundToInt (variMuValues[2]->load());
+    s.makeupDb = variMuValues[3]->load();
+    s.mix = variMuValues[4]->load() / 100.0f;
+    return s;
+}
+
+Inflator::Settings EasyMasterAudioProcessor::inflateSettings() const noexcept
+{
+    Inflator::Settings s;
+    s.on = inflateValues[0]->load() > 0.5f;
+    s.effect = inflateValues[1]->load() / 100.0f;
+    s.curve = inflateValues[2]->load();
+    return s;
+}
+
 StereoWidth::Settings EasyMasterAudioProcessor::widthSettings() const noexcept
 {
     StereoWidth::Settings s;
@@ -315,6 +391,13 @@ void EasyMasterAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     shapers[0].prepare (sampleRate, block, 2, punchSettings (0));
     shapers[1].prepare (sampleRate, block, 2, punchSettings (1));
     width.prepare (sampleRate, widthSettings());
+    inflate.setSettings (inflateSettings());
+    inflate.prepare (sampleRate, block);
+    pultec.setSettings (pultecSettings());
+    pultec.prepare (sampleRate);
+    variMu.setSettings (variMuSettings());
+    variMu.prepare (sampleRate);
+    monoPair.setSize (2, block);
     punchPlayingMode = juce::roundToInt (punchValues[1]->load());
     punchModeChanging = false;
     punchFade = 1.0f;
@@ -329,6 +412,7 @@ void EasyMasterAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
 
     trimGain.reset (sampleRate, 0.05);
     outGain.reset (sampleRate, 0.05);
+    dither.prepare (sampleRate);
     outGain.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (outLevelValue->load()));
     trimGain.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (trimValue->load()));
     matchGain.reset (sampleRate, 0.5);
@@ -345,7 +429,7 @@ void EasyMasterAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     modeChanging = false;
     modeFade = 1.0f;
 
-    latency = tamer.getLatencySamples() + limiter.getLatencySamples();
+    latency = tamer.getLatencySamples() + inflate.getLatencySamples() + limiter.getLatencySamples();
     setLatencySamples (latency);
     for (auto& d : dryDelay)
         d.assign ((size_t) juce::jmax (1, latency), 0.0f);
@@ -498,10 +582,25 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         tamer.process (buffer);
         eq.setSettings (eqSettings());
         eq.process (buffer);
+        pultec.setSettings (pultecSettings());
+        pultec.process (buffer);
+        variMu.setSettings (variMuSettings());
+        variMu.process (buffer);
         multiband.setSettings (multibandSettings());
         multiband.process (buffer);
         shapers[0].setSettings (punchSettings (0));
         shapers[0].process (buffer);
+        // (INFLATE works on two channels: the mono master through it as a pair, a block at a time - so the delay is the same)
+        inflate.setSettings (inflateSettings());
+        for (int s0 = 0; s0 < total; s0 += monoPair.getNumSamples())
+        {
+            const int n = juce::jmin (monoPair.getNumSamples(), total - s0);
+            juce::AudioBuffer<float> pair (monoPair.getArrayOfWritePointers(), 2, 0, n);
+            pair.copyFrom (0, 0, buffer, 0, s0, n);
+            pair.copyFrom (1, 0, buffer, 0, s0, n);
+            inflate.process (pair);
+            buffer.copyFrom (0, s0, pair, 0, 0, n);
+        }
         limiter.setSettings (limiterSettings());
         limiter.process (buffer, 1);
         return;
@@ -518,6 +617,9 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     shapers[0].setSettings (punchSettings (0));
     shapers[1].setSettings (punchSettings (1));
     width.setSettings (widthSettings());
+    inflate.setSettings (inflateSettings());
+    pultec.setSettings (pultecSettings());
+    variMu.setSettings (variMuSettings());
     trimGain.setTargetValue (juce::Decibels::decibelsToGain (trimValue->load()));
     outGain.setTargetValue (juce::Decibels::decibelsToGain (outLevelValue->load()));
     bypassFade.setTargetValue (bypassValue->load() > 0.5f ? 1.0f : 0.0f);
@@ -583,6 +685,10 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         // EQ
         eq.process (part);
 
+        // PULTEC, then VARI-MU (the warmer, vintage pair)
+        pultec.process (part);
+        variMu.process (part);
+
         // MULTIBAND
         multiband.process (part);
         for (int b = 0; b < 4; ++b)
@@ -600,6 +706,9 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
         // WIDTH
         width.process (part);
+
+        // INFLATE (just before the limiter)
+        inflate.process (part);
 
         // LIMITER
         building.inDb = juce::jmax (building.inDb, juce::Decibels::gainToDecibels (juce::jmax (part.getMagnitude (0, 0, n), part.getMagnitude (1, 0, n)) * limitGain, -100.0f));
@@ -674,6 +783,10 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             right[i] = r * fs + m * (fm + fmo) + s * fsi;
         }
         reference.measureOurs (heardL, heardR, n, hostPlaying);
+
+        // DITHER: the very last step (for a 16-bit or 24-bit file)
+        dither.set (juce::roundToInt (ditherValue->load()), juce::roundToInt (ditherShapeValue->load()));
+        dither.process (part.getArrayOfWritePointers(), 2, n);
 
         momentFilled += n;
         if (momentFilled >= momentLength)
