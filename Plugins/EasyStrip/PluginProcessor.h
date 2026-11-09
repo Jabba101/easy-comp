@@ -247,6 +247,32 @@ private:
     void updateAutoGain (double heardIn, double heardOut, int numSamples) noexcept;
 
     // One module setting and its twin in the strip's list
+    /** What each module is told about the song's position: the DAW's, moved on to the chunk it's working on and back
+        by the delay of the modules before it - so TREMOLO, WAH, FLANGE and FILTER lock to the beat the listener hears,
+        whatever comes before them (the EQ's MASTER mode delays the sound by up to 43 ms). */
+    struct ModuleHead : public juce::AudioPlayHead
+    {
+        juce::Optional<PositionInfo> getPosition() const override
+        {
+            if (! valid) return {};
+            auto p = info;
+            if (shift != 0)
+            {
+                if (auto t = p.getTimeInSamples()) p.setTimeInSamples (*t + shift);
+                if (auto t = p.getTimeInSeconds()) p.setTimeInSeconds (*t + (double) shift / rate);
+                if (auto q = p.getPpqPosition())
+                    if (auto bpm = p.getBpm())
+                        p.setPpqPosition (*q + (double) shift / rate * *bpm / 60.0);
+            }
+            return p;
+        }
+        PositionInfo info;
+        bool valid = false;
+        int64_t shift = 0;
+        double rate = 48000.0;
+    };
+    std::array<ModuleHead, StripModules::numModules> moduleHeads;
+
     struct Link : public juce::AudioProcessorParameter::Listener
     {
         EasyStripAudioProcessor* owner = nullptr;

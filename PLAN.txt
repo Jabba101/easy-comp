@@ -1004,3 +1004,12 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      PEAK / LUFS, a stereo meter (after OUTPUT LEVEL), LUFS S and I (click I to reset), LEVEL ring, the held peak.
    - OUTPUT LEVEL ("outlevel", -24..0 dB, after the limiter, not in presets): only down, so the CEILING holds; peak readings include it.
    - The top-right numbers panel renamed READINGS. MasterTests 95/95.
+
+== EASY STRIP 0.16.1: beat lock through the strip's delay (9 November 2026) ==
+   USER's order for what's next: 1 TREMOLO beat lock, 2 DITHER (16-bit), 3 light INFLATE, 4 Pultec-style EQ + vari-mu, 5 hologram look
+   for the individual plugins. The COLD WAR look is shelved (too much screen space for the strip and master; maybe for single plugins).
+   - Each module now gets its own ModuleHead (an AudioPlayHead): the DAW's position moved on to the chunk being worked on and back by
+     the delay of the modules before it in the ORDER. TREMOLO, WAH, FLANGE and FILTER (and VERB's sync) lock to the beat the listener
+     hears. Test: with EQ MASTER at HIGH before it (2048 samples) the square tremolo's edges land 0.00 ms out (43 ms before the fix).
+   - StripTests 152/152.
+

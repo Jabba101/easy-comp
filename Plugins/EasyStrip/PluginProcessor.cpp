@@ -459,10 +459,20 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 
     pushSettings();
 
-    for (auto* module : all)
+    // The song's position for each module (moved on per chunk, and back by the delay before it: see ModuleHead)
     {
-        module->setPlayHead (getPlayHead());     // (VERB's SYNC follows the song's tempo)
-        module->setNonRealtime (isNonRealtime());
+        juce::Optional<juce::AudioPlayHead::PositionInfo> hostPosition;
+        if (auto* head = getPlayHead()) hostPosition = head->getPosition();
+        for (size_t m = 0; m < all.size(); ++m)
+        {
+            auto& h = moduleHeads[m];
+            h.valid = hostPosition.hasValue();
+            if (h.valid) h.info = *hostPosition;
+            h.shift = 0;
+            h.rate = getSampleRate() > 0.0 ? getSampleRate() : 48000.0;
+            all[m]->setPlayHead (getPlayHead() != nullptr ? &h : nullptr);   // (VERB's SYNC follows the song's tempo too)
+            all[m]->setNonRealtime (isNonRealtime());
+        }
     }
 
     inputGain.setTargetValue (juce::Decibels::decibelsToGain (trimValue->load()) * (polarityValue->load() > 0.5f ? -1.0f : 1.0f));
@@ -525,12 +535,15 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         }
 
         // The modules, in order
+        int delayBefore = 0;   // (how far behind the song the sound reaching this module is)
         for (int step = 0; step < numModules; ++step)
         {
             const int m = order[(size_t) step];
             auto& link = links[(size_t) m];
             auto& module = *all[(size_t) m];
             const int latency = juce::jmin (module.getLatencySamples(), maxRingLatency);
+            moduleHeads[(size_t) m].shift = (int64_t) start - delayBefore;
+            delayBefore += latency;
             const bool off = link.stripBypass->getValue() > 0.5f;
 
             // Keep what goes in, for while it's skipped (or warming up)

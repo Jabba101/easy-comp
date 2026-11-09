@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.32.0)
+project(EasyPlugins VERSION 1.32.1)
 
 # Link-time optimisation squeezes a few more percent of speed out of the
 # finished plugins, but makes every build much slower (each plugin is
@@ -373,7 +373,7 @@ endforeach()
 add_easy_plugin(EasyStrip
     NAME        "Easy Strip"
     CODE        Ezst
-    VERSION     0.16.0
+    VERSION     0.16.1
     BUNDLE_ID   com.homestudio.easystrip
     CATEGORIES  Fx
     SOURCES     Effects/LoudnessMeter.h

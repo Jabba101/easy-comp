@@ -886,6 +886,61 @@ check (tidy, "full-mix presets in one list, Mixing & Mastering; drum bus presets
         }
     }
 
+    //==========================================================================
+    void testBeatLockWithDelay()
+    {
+        std::cout << "\n[TREMOLO locked to the beat, whatever delays the sound before it]\n";
+        struct SongHead : juce::AudioPlayHead
+        {
+            juce::Optional<PositionInfo> getPosition() const override
+            {
+                PositionInfo i; i.setIsPlaying (true); i.setBpm (120.0);
+                i.setTimeInSamples (at); i.setTimeInSeconds (at / sr); i.setPpqPosition (at / sr * 2.0);
+                return i;
+            }
+            int64_t at = 0;
+        };
+        // Where the tremolo's square edges land in the SONG (each output sample k is the song's k - the strip's delay)
+        const auto edges = [&] (bool masterEQ)
+        {
+            S s;
+            if (masterEQ)
+            {
+                switchOn (s, 2, true);
+                setStrip (s, StripIDs::moduleID (2, EQIDs::master), 1.0f);
+                setStrip (s, StripIDs::moduleID (2, EQIDs::precision), 2.0f);
+            }
+            switchOn (s, 10, true);
+            setStrip (s, StripIDs::moduleID (10, TremoloIDs::sync), 1.0f);
+            setStrip (s, StripIDs::moduleID (10, TremoloIDs::note), 8.0f);    // (a 1/4 note)
+            setStrip (s, StripIDs::moduleID (10, TremoloIDs::depth), 100.0f);
+            setStrip (s, StripIDs::moduleID (10, TremoloIDs::shape), 2.0f);   // (SQUARE: clear edges)
+            prepareStereo (s, true);
+            SongHead head; s.setPlayHead (&head);
+            const auto out = process (s, sine (sr, 1000.0, 0.3f, 4.0), [&] (int start) { head.at = start; });
+            s.setPlayHead (nullptr);
+            const int delay = s.getLatencySamples();
+            // The level, every millisecond; rising edges through half way
+            std::vector<double> found;
+            const int hop = (int) (sr / 1000.0);
+            float before = 0.0f;
+            for (int i = delay + (int) sr; i + hop < out.getNumSamples(); i += hop)
+            {
+                float peak = 0.0f; for (int k = 0; k < hop; ++k) peak = std::max (peak, std::abs (out.getSample (0, i + k)));
+                if (before < 0.15f && peak >= 0.15f) found.push_back ((i - delay) / sr);
+                before = peak;
+            }
+            return std::make_pair (found, delay);
+        };
+        const auto [plain, d0] = edges (false);
+        const auto [master, d1] = edges (true);
+        double worst = 0.0;
+        for (size_t i = 0; i < std::min (plain.size(), master.size()); ++i) worst = std::max (worst, std::abs (plain[i] - master[i]));
+        check (! plain.empty() && plain.size() == master.size() && worst < 0.0025,
+               "the EQ's MASTER mode before it (" + juce::String (d1 - d0) + " samples, " + juce::String ((d1 - d0) / sr * 1000.0, 1)
+               + " ms of delay): the pulse still lands on the beat (" + juce::String (worst * 1000.0, 2) + " ms out)");
+    }
+
     void testOrder()
     {
         std::cout << "\n[ORDER]\n";
@@ -1535,6 +1590,7 @@ int main (int argc, char** argv)
     testLearn();
     testMix (outDir);
     testDesk();
+    testBeatLockWithDelay();
     testOrder();
     testLufs();
     testSaving();
