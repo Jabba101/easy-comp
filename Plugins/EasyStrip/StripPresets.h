@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include "ConsoleColour.h"
 
 //==============================================================================
 /**
@@ -30,6 +31,7 @@ namespace StripPresetRecipes
         std::vector<Use> uses;
         std::vector<const char*> order = {};   // ORDER swaps this preset switches on (StripIDs), if any
         std::vector<Set> sets = {};            // knobs set on top of the module presets
+        int desk = -1, deskDrive = 1;          // DESK this preset puts the track through (-1: leaves the strip's DESK as it is)
     };
 
     // (shorthands for the EQ's choices)
@@ -341,6 +343,111 @@ namespace StripPresetRecipes
               { { amp, "Vocal - Distorted Shout" }, { eq, "Vocal - Radio Telephone" }, { ds, "Classic (Whole Sound)" }, { comp, "Vocal - Rock & Metal" } },
               {},
               { { ds, "range", 9.0f }, { ds, "from", 4000.0f } } },
+
+            //==== Vintage & valve: through the new DESKs ======================
+            // (Each of these also chooses the strip's DESK - the rest of the strip presets leave it as it is.)
+            { "Vintage & Valve", "Vocal - Valve Crooner (610)",
+              "A 50s / 60s crooner: through the UA 610 valve desk, valve warmth, slow smooth compression, a little tape and a 60s plate. Check the DS on the S's.",
+              { { amp, "Vocal - Valve Warmth" }, { eq, "Vocal - Clear & Present" }, { ds, "Male Vocal" }, { comp, "Vocal - Vintage Smooth" },
+                { tape, "Vocal - Subtle Tape" }, { slap, "Vocal - 60s Plate" } },
+              {}, {}, ConsoleColour::ua610, 1 },
+            { "Vintage & Valve", "Vocal - 60s Abbey Road (REDD)",
+              "The 60s British studio sound: the EMI REDD valve desk, the boxiness taken out, thick tape and the plate.",
+              { { eq, "Vocal - Less Boxy" }, { comp, "Vocal - Vintage Smooth" }, { tape, "Vocal - Warm & Thick" }, { slap, "Vocal - 60s Plate" } },
+              {}, {}, ConsoleColour::redd, 1 },
+            { "Vintage & Valve", "Vocal - 70s Rock (Trident)",
+              "Big 70s rock vocal: the Trident desk's sweet top, rock compression, a slapback echo.",
+              { { eq, "Vocal - Clear & Present" }, { ds, "Male Vocal" }, { comp, "Vocal - Rock & Metal" }, { delay, "Vocal - Slapback" } },
+              {}, {}, ConsoleColour::trident, 1 },
+            { "Vintage & Valve", "Upright Bass - Valve Jazz (610)",
+              "Warm, round upright bass through the 610 valve desk and 15 ips tape - the notes even, the wood kept.",
+              { { eq, "Bass - Clear & Solid" }, { comp, "Upright Bass - Jazz & Folk" }, { tape, "Bass - Warm & Round" } },
+              {}, {}, ConsoleColour::ua610, 1 },
+            { "Vintage & Valve", "Bass - Valve Thump (REDD)",
+              "A thick 60s bass: the REDD desk driven hot, valve warmth, vintage compression, pushed into tape.",
+              { { amp, "Bass - Valve Warmth" }, { comp, "Bass - Vintage Thick" }, { tape, "Bass - Pushed Into Tape" } },
+              {}, {}, ConsoleColour::redd, 2 },
+            { "Vintage & Valve", "Jazz Kit - Valve Overheads (610)",
+              "Overheads for a jazz kit: the 610 valve desk, smooth cymbals, a small club around them.",
+              { { eq, "Overheads - Cymbals Not Kit" }, { comp, "Overheads - Smooth" }, { tape, "Overheads - Smoother Cymbals" }, { slap, "Jazz Kit - Small Club" } },
+              {}, {}, ConsoleColour::ua610, 1 },
+            { "Vintage & Valve", "Snare - 60s Valve (REDD)",
+              "A fat 60s snare: the REDD desk driven hot, thick vintage compression, softened by tape, on the plate.",
+              { { comp, "Snare - Vintage Thick" }, { tape, "Snare - Softened Crack" }, { slap, "Snare - Plate" } },
+              {}, {}, ConsoleColour::redd, 2 },
+            { "Vintage & Valve", "Piano - Valve Ballad & Jazz (610)",
+              "A warm, intimate piano: the 610 valve desk, gentle compression, 30 ips tape warmth.",
+              { { eq, "Piano - Clear" }, { comp, "Piano - Ballad & Jazz" }, { tape, "Mix Bus - 30 ips Clean Warmth" } },
+              {}, {}, ConsoleColour::ua610, 1 },
+            { "Vintage & Valve", "Organ - Broadcast Valve Grit (V72)",
+              "A gritty organ: the German broadcast valve desk driven hot, the amp on the edge of breaking up, a Leslie-style warble.",
+              { { amp, "Guitar - Edge of Breakup" }, { comp, "Organ - Steady" }, { flange, "Organ - Leslie Warble" } },
+              {}, {}, ConsoleColour::broadcastValve, 2 },
+            { "Vintage & Valve", "Horns - Valve Jazz Club (610)",
+              "A solo trumpet or sax in a jazz club: the 610 valve desk, gentle compression, a touch of tape, the club's room.",
+              { { comp, "Horns - Solo Trumpet & Sax" }, { tape, "Vocal - Subtle Tape" }, { slap, "Horns - Jazz Club" } },
+              {}, {}, ConsoleColour::ua610, 1 },
+            { "Vintage & Valve", "Guitar - Helios Crunch",
+              "Late-60s / 70s British rock guitar: the Helios desk driven hot, classic crunch, tightened and compressed.",
+              { { amp, "Guitar - Classic Rock Crunch" }, { eq, "Distorted Guitar - Tighten" }, { comp, "Electric Guitar - Distorted" } },
+              {}, {}, ConsoleColour::helios, 2 },
+            { "Drums", "Drum Bus - Helios Smash",
+              "Big 70s rock drums: the Helios desk DRIVEN, parallel smash, more punch, the peaks glued.",
+              { { eq, "Drum Bus - Polish" }, { comp, "Drum Bus - Parallel Smash" }, { trans, "Drum Bus - Punchier" }, { clip, "Drum Bus - Glue the Peaks" } },
+              {}, {}, ConsoleColour::helios, 3 },
+            { "Vintage & Valve", "Synth Pad - Harrison Gloss",
+              "A glossy 80s pad: the Harrison desk's clean, polished top, out of the way of the vocal, a wide chorus.",
+              { { eq, "Synth Pad - Out of the Way" }, { comp, "Synth Pad - Smooth" }, { flange, "Synth Pad - Wide Chorus" } },
+              {}, {}, ConsoleColour::harrison, 1 },
+            { "Mixing & Mastering", "Mix Bus - Valve Jazz Desk (610)",
+              "The whole jazz mix through the 610 valve desk: 15 ips tape glue, gentle polish, slow compression that keeps the dynamics.",
+              { { tape, "Mix Bus - 15 ips Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Jazz, Folk & Classical" }, { clip, "Master - Gentle Safety Net" } },
+              { "eqaftercomp" }, {}, ConsoleColour::ua610, 1 },
+            { "Mixing & Mastering", "Mix Bus - 70s Rock Desk (Helios)",
+              "The whole rock mix through the Helios desk: tape glue, vintage compression, a safety net on the peaks.",
+              { { tape, "Mix Bus - 15 ips Glue" }, { eq, "Mix Bus - Gentle Polish" }, { comp, "Mix Bus - Vintage Glue" }, { clip, "Master - Gentle Safety Net" } },
+              { "eqaftercomp" }, {}, ConsoleColour::helios, 1 },
+
+            //==== Stereo tracks: MID / SIDE ===================================
+            { "Stereo (Mid / Side)", "Overheads - Steady Centre, Open Sides (M/S)",
+              "Overheads that stay solid in the middle (snare and kick steady) while the cymbals spread wide and airy on the sides.",
+              { { eq, "Overheads - Cymbals Not Kit" }, { comp, "Overheads - Smooth" } },
+              {},
+              { { comp, "workson", 1.0f },
+                { eq, "highfreq", 10000.0f }, { eq, "highgain", 2.0f }, { eq, "highshelf", shelf }, { eq, "hightarget", side } } },
+            { "Stereo (Mid / Side)", "Room Mics - Wide & Crushed (M/S)",
+              "Room mics crushed on the SIDES only: the room explodes outwards while the centre keeps its punch. Mono bass keeps the lows solid.",
+              { { eq, "Room Mics - Big & Dark" }, { comp, "Room Mics - Crushed" } },
+              {},
+              { { comp, "workson", 2.0f }, { eq, "monobass", 150.0f } } },
+            { "Drums", "Drum Bus - Punchy Middle, Open Sides (M/S)",
+              "The kick and snare punch in the middle; the cymbals and room stay open on the sides.",
+              { { eq, "Drum Bus - Polish" }, { comp, "Drum Bus - Punchy Middle, Open Sides (M/S)" }, { trans, "Drum Bus - Punchier" } } },
+            { "Stereo (Mid / Side)", "Stereo Guitars - Tame the Doubles (M/S)",
+              "Double-tracked guitars panned wide: the sides evened out so neither side jumps, the low end kept in the middle.",
+              { { eq, "Distorted Guitar - Tighten" }, { comp, "Guitars - Tame the Wide Doubles (M/S)" } },
+              {},
+              { { eq, "monobass", 120.0f } } },
+            { "Stereo (Mid / Side)", "Synth Pad - Steady Width (M/S)",
+              "A wide stereo pad that keeps its width steady, out of the vocal's way, with the bass in mono.",
+              { { eq, "Synth Pad - Out of the Way" }, { comp, "Synth Pads - Steady Width (M/S)" }, { flange, "Synth Pad - Wide Chorus" } },
+              {},
+              { { eq, "monobass", 150.0f } } },
+            { "Stereo (Mid / Side)", "Piano - Solid Centre, Airy Sides (M/S)",
+              "A stereo piano: the middle compressed so the melody stays steady, air added to the sides for width.",
+              { { eq, "Piano - Clear" }, { comp, "Piano - Pop & Rock" } },
+              {},
+              { { comp, "workson", 1.0f },
+                { eq, "highfreq", 9000.0f }, { eq, "highgain", 1.5f }, { eq, "highshelf", shelf }, { eq, "hightarget", side },
+                { eq, "monobass", 100.0f } } },
+            { "Stereo (Mid / Side)", "Backing Vocals - Centre Focus (M/S)",
+              "A stereo stack of backing vocals: the centre held steady, the S's tamed, the width left free.",
+              { { eq, "Vocal - Clear & Present" }, { ds, "Backing Vocals" }, { comp, "Vocal Bus - Centre Focus (M/S)" } } },
+            { "Mixing & Mastering", "Mix Bus - Wide Top, Mono Bass (M/S)",
+              "The whole mix: air added to the sides, the middle and sides glued separately, everything under 100 Hz in mono.",
+              { { eq, "Mix Bus - Wider (Side Air)" }, { comp, "Mix Bus - Mid & Side Glue" }, { clip, "Master - Gentle Safety Net" } },
+              {},
+              { { eq, "monobass", 100.0f } } },
 
             //==== Mix bus: genres =============================================
             // (Heavy low end throughout, boosted across the whole bass range (the shelf's corner around

@@ -585,6 +585,307 @@ check (tidy, "full-mix presets in one list, Mixing & Mastering; drum bus presets
                && ! s.getPresetParameterIDs().contains (CommonIDs::autoGain), "starts off, and presets / A / B leave it alone");
     }
 
+    //==========================================================================
+    struct Transport : juce::AudioPlayHead
+    {
+        juce::Optional<PositionInfo> getPosition() const override { PositionInfo i; i.setIsPlaying (playing); return i; }
+        bool playing = true;
+    };
+
+    void testLearn()
+    {
+        std::cout << "\n[LEARN: gain staging]\n";
+        const auto repeat = [] (const juce::AudioBuffer<float>& b, double seconds)
+        {
+            juce::AudioBuffer<float> out (2, (int) (sr * seconds));
+            for (int i = 0; i < out.getNumSamples(); i += b.getNumSamples())
+                for (int ch = 0; ch < 2; ++ch) out.copyFrom (ch, i, b, ch, 0, std::min (b.getNumSamples(), out.getNumSamples() - i));
+            return out;
+        };
+        {
+            // A quiet, steady track (a synth pad at about -33 dBFS): brought up to -18 average
+            S s; prepareStereo (s, false);
+            const auto quiet = sine (sr, 220.0, 0.03f, 32.0);
+            s.startLearning();
+            check (s.isLearning(), "LEARN: listening");
+            process (s, quiet);
+            s.applyPendingUpdates();
+            const float trim = getParam (s, StripIDs::trim);
+            const auto r = s.getLastLearn();
+            check (! s.isLearning() && s.getLearnCount() == 1, "it finishes by itself after 30 seconds of playing");
+            check (near (trim, -18.0f - toDb (0.03f / std::sqrt (2.0f)), 0.15f), "a quiet pad (average " + juce::String (r.averageDb, 1) + " dBFS): TRIM set to "
+                   + juce::String (trim, 1) + " dB, so it averages -18");
+        }
+        {
+            // A spiky track (drums): the peaks decide it, kept at -6 dBFS
+            S s; prepareStereo (s, false);
+            const auto drums = repeat (drumLoop (sr, 4.0, -8.0f, -10.0f, -22.0f), 31.0);
+            s.startLearning();
+            process (s, drums);
+            s.applyPendingUpdates();
+            const auto r = s.getLastLearn();
+            const float trim = getParam (s, StripIDs::trim);
+            check (r.peakLimited && near (r.peakDb + trim, -6.0f, 0.15f), "drums peaking at " + juce::String (r.peakDb, 1) + " dBFS: TRIM " + juce::String (trim, 1)
+                   + " dB puts the peaks at -6 (the average then " + juce::String (r.averageDb + trim, 1) + " dBFS)");
+        }
+        {
+            // Only time with the DAW playing, and with sound, counts
+            S s; prepareStereo (s, false);
+            Transport t; t.playing = false; s.setPlayHead (&t);
+            s.startLearning();
+            process (s, sine (sr, 220.0, 0.1f, 5.0));
+            check (s.getLearnSeconds() < 0.01, "with the DAW stopped it doesn't listen");
+            t.playing = true;
+            juce::AudioBuffer<float> gap (2, (int) (sr * 3.0)); gap.clear();
+            process (s, gap);
+            s.finishLearning();
+            check (s.getLearnCount() == 0, "3 seconds of nothing but silence: no TRIM set");
+            s.startLearning();
+            process (s, sine (sr, 220.0, 0.1f, 5.0));
+            check (std::abs (s.getLearnSeconds() - 5.0) < 0.2, "5 seconds played: " + juce::String (s.getLearnSeconds(), 1) + " s heard");
+            s.finishLearning();
+            check (! s.isLearning() && s.getLearnCount() == 1 && near (getParam (s, StripIDs::trim), -18.0f - toDb (0.1f / std::sqrt (2.0f)), 0.15f),
+                   "clicking LEARN again after 5 s: TRIM set from what it heard (" + juce::String (getParam (s, StripIDs::trim), 1) + " dB)");
+            s.setPlayHead (nullptr);
+        }
+        {
+            // Too little heard: nothing changes; a hot track: turned down
+            S s; prepareStereo (s, false);
+            setStrip (s, StripIDs::trim, 3.0f);
+            s.startLearning();
+            process (s, sine (sr, 220.0, 0.1f, 1.0));
+            s.finishLearning();
+            check (s.getLearnCount() == 0 && near (getParam (s, StripIDs::trim), 3.0f, 0.01f), "stopped after 1 second: TRIM left as it was");
+            s.startLearning();
+            process (s, sine (sr, 220.0, 0.6f, 31.0));
+            s.applyPendingUpdates();
+            check (getParam (s, StripIDs::trim) < -9.0f, "a hot track (0.6 sine, peaks -4.4 dBFS): TRIM " + juce::String (getParam (s, StripIDs::trim), 1) + " dB");
+            // ... and nothing rides the level afterwards
+            const float set = getParam (s, StripIDs::trim);
+            process (s, sine (sr, 220.0, 0.01f, 5.0));
+            check (near (getParam (s, StripIDs::trim), set, 0.001f), "after LEARN, TRIM stays put (it doesn't ride the level)");
+        }
+    }
+
+    //==========================================================================
+    void testMix (const juce::File& outDir)
+    {
+        std::cout << "\n[THE MIX: LEARN ALL and BALANCE]\n";
+        auto& network = Mix::Network::get();
+        const auto repeat = [] (const juce::AudioBuffer<float>& b, double seconds)
+        {
+            juce::AudioBuffer<float> out (2, (int) (sr * seconds));
+            for (int i = 0; i < out.getNumSamples(); i += b.getNumSamples())
+                for (int ch = 0; ch < 2; ++ch) out.copyFrom (ch, i, b, ch, 0, std::min (b.getNumSamples(), out.getNumSamples() - i));
+            return out;
+        };
+        const auto mixOf = [] (std::initializer_list<juce::AudioBuffer<float>> parts)
+        {
+            juce::AudioBuffer<float> out (*parts.begin());
+            bool first = true;
+            for (auto& p : parts) { if (first) { first = false; continue; } for (int ch = 0; ch < 2; ++ch) out.addFrom (ch, 0, p, ch, 0, out.getNumSamples()); }
+            return out;
+        };
+        struct Track { juce::String name, preset; juce::AudioBuffer<float> audio; int role; };
+        const double secs = 12.0;
+        std::vector<Track> tracks;
+        tracks.push_back ({ "Kick In", "Kick - Rock", repeat (drumLoop (sr, 4.0, -12.0f, -90.0f, -90.0f), secs), Mix::kick });
+        tracks.push_back ({ "Snare Top", "Snare - Rock", repeat (drumLoop (sr, 4.0, -90.0f, -14.0f, -90.0f), secs), Mix::snare });
+        tracks.push_back ({ "Bass DI", "Bass - Rock", sine (sr, 55.0, 0.25f, secs), Mix::bass });
+        tracks.push_back ({ "Gtr L", "Distorted Guitar - Rock", mixOf ({ sine (sr, 330.0, 0.05f, secs), sine (sr, 990.0, 0.02f, secs) }), Mix::rhythmGuitar });
+        tracks.push_back ({ "Gtr R", "Distorted Guitar - Rock", mixOf ({ sine (sr, 247.0, 0.08f, secs), sine (sr, 741.0, 0.03f, secs) }), Mix::rhythmGuitar });
+        tracks.push_back ({ "Lead Vox", "Vocal - Rock", mixOf ({ sine (sr, 220.0, 0.01f, secs), sine (sr, 1760.0, 0.004f, secs) }), Mix::leadVocal });
+        tracks.push_back ({ "Tambourine", "", juce::AudioBuffer<float> (2, (int) (sr * secs)), Mix::percussion });
+        tracks.back().audio.clear();
+        tracks.push_back ({ "Drum Bus", "Drum Bus - Rock & Pop", repeat (drumLoop (sr, 4.0), secs), Mix::leaveAlone });
+
+        std::vector<std::unique_ptr<S>> strips;
+        bool guessed = true; juce::String wrong;
+        for (auto& t : tracks)
+        {
+            auto s = std::make_unique<S>();
+            juce::AudioProcessor::TrackProperties tp; tp.name = t.name; s->updateTrackProperties (tp);
+            if (t.preset.isNotEmpty()) loadPresetNamed (*s, t.preset);
+            prepareStereo (*s, false);
+            if (s->getRole() != t.role) { guessed = false; wrong = t.name + " -> " + Mix::roleName (s->getRole()); }
+            strips.push_back (std::move (s));
+        }
+        check ((int) network.getMembers().size() == (int) tracks.size(), "the strips find each other: " + juce::String ((int) network.getMembers().size()) + " in the network");
+        check (guessed, "each track's ROLE guessed from its name and preset (kick, snare, bass, two guitars, lead vocal, tambourine; the drum bus left alone)"
+               + (guessed ? juce::String() : " - wrong: " + wrong));
+
+        // LEARN ALL: every track's TRIM (not the bus)
+        network.learnAll();
+        check (strips[0]->isLearning() && strips[5]->isLearning() && ! strips[7]->isLearning(), "LEARN ALL: every track listens (the bus is left alone)");
+        for (size_t i = 0; i < strips.size(); ++i) { process (*strips[i], repeat (tracks[i].audio, 31.0)); strips[i]->applyPendingUpdates(); }
+        check (getParam (*strips[5], StripIDs::trim) > 10.0f && std::abs (getParam (*strips[7], StripIDs::trim)) < 0.01f,
+               "... the quiet vocal brought up (TRIM " + juce::String (getParam (*strips[5], StripIDs::trim), 1) + " dB), the bus untouched");
+
+        // BALANCE
+        network.style.store (Mix::rock);
+        network.startListening();
+        for (size_t i = 0; i < strips.size(); ++i) process (*strips[i], tracks[i].audio);
+        check (network.playedSeconds() > secs - 0.5, "BALANCE listens while the song plays (" + juce::String (network.playedSeconds(), 1) + " s)");
+        const auto changes = network.balance();
+        // Listen again with the new LEVELs: where did each land, against the vocal?
+        network.startListening();
+        for (size_t i = 0; i < strips.size(); ++i) process (*strips[i], tracks[i].audio);
+        network.stopListening();
+        const float vox = strips[5]->getMixListener().busyLufs();
+        bool placed = true; juce::String report;
+        double total = 0.0;
+        for (size_t i = 0; i < strips.size(); ++i)
+        {
+            const int role = tracks[i].role;
+            if (role == Mix::leaveAlone || role == Mix::percussion) continue;
+            const float l = strips[i]->getMixListener().busyLufs();
+            total += std::pow (10.0, l / 10.0);
+            const float wanted = Mix::target (Mix::rock, role) - (role == Mix::rhythmGuitar ? 3.01f : 0.0f);
+            report << tracks[i].name << " " << juce::String (l - vox, 1) << " (" << juce::String (wanted, 1) << "), ";
+            if (std::abs ((l - vox) - wanted) > 0.6f) placed = false;
+        }
+        check (placed, "each track lands where its role sits in a ROCK mix, against the vocal: " + report.dropLastCharacters (2));
+        const float mixLufs = (float) (10.0 * std::log10 (total));
+        check (std::abs (mixLufs - Mix::mixTargetLufs) < 1.0f, "the whole rough mix around -18 LUFS (" + juce::String (mixLufs, 1) + ", adding the tracks' loudness)");
+        bool tambourine = false, bus = false;
+        for (auto& c : changes)
+        {
+            if (c.member == strips[6].get()) tambourine = ! c.heard && std::abs (getParam (*strips[6], StripIDs::level)) < 0.01f;
+            if (c.member == strips[7].get()) bus = ! c.heard && std::abs (getParam (*strips[7], StripIDs::level)) < 0.01f;
+        }
+        check (tambourine && bus, "a track silent in that part (the tambourine) and the bus: left as they were");
+        check (std::abs (getParam (*strips[0], StripIDs::level)) > 0.5f, "BALANCE moves the strips' own LEVEL (your DAW's faders stay yours)");
+
+        // UNDO
+        const float before = changes[0].oldLevel;
+        network.undo();
+        check (std::abs (getParam (*strips[0], StripIDs::level) - before) < 0.01f && ! network.canUndo(), "UNDO: every LEVEL back as it was");
+
+        // A role chosen by hand sticks (saved with the project)
+        strips[3]->setChosenRole (Mix::leadGuitar);
+        {
+            juce::MemoryBlock state; strips[3]->getStateInformation (state);
+            S again; again.setStateInformation (state.getData(), (int) state.getSize());
+            check (again.getChosenRole() == Mix::leadGuitar, "a ROLE you choose is saved with the project");
+        }
+        strips[3]->setChosenRole (Mix::automatic);
+
+        // The MIX page
+        {
+            std::unique_ptr<juce::AudioProcessorEditor> editor (strips[0]->createEditorAndMakeActive());
+            auto* outer = dynamic_cast<EasyStripAudioProcessorEditor*> (editor.get());
+            auto* view = outer != nullptr ? outer->getHologram() : nullptr;
+            check (view != nullptr, "the strip's window");
+            if (view != nullptr)
+            {
+                network.setDeskForAll (ConsoleColour::helios, 1);
+                view->updateNow();
+                view->mixButton.onClick();
+                check (view->getMixPanel() != nullptr && view->getMixPanel()->isVisible(), "MIX opens THE MIX");
+                network.balance (true);
+                network.startListening();
+                for (size_t i = 0; i < strips.size(); ++i) process (*strips[i], tracks[i].audio);
+                network.stopListening();
+                network.balance();
+                juce::Thread::sleep (150);
+                for (int k = 0; k < 3; ++k) { editor->repaint(); }
+                // (let the panel's timer pick up the state)
+                if (auto* panel = view->getMixPanel()) panel->repaint();
+                view->showMix (false);
+                view->showMix (true);   // (the panel shows the latest at once)
+                view->updateNow();
+                savePng (*editor, outDir.getChildFile ("strip-mix.png"));
+                view->showMix (false);
+                view->updateNow();
+                savePng (*editor, outDir.getChildFile ("strip-desk.png"));
+                network.setDeskForAll (ConsoleColour::off, 1);
+            }
+            if (editor) strips[0]->editorBeingDeleted (editor.get());
+        }
+        strips.clear();
+        check (network.getMembers().empty(), "closing the strips takes them out of the network");
+    }
+
+    //==========================================================================
+    void testDesk()
+    {
+        std::cout << "\n[DESK: the console's colour]\n";
+        const auto harmonics = [] (int desk, int drive, double amp, double& h2, double& h3, double& gainDb)
+        {
+            ConsoleColour c; c.set (desk, drive); c.prepare (sr);
+            const int n = (int) sr * 2;
+            juce::AudioBuffer<float> b (2, n);
+            for (int i = 0; i < n; ++i) { const float x = (float) (amp * std::sin (2.0 * juce::MathConstants<double>::pi * 1000.0 * i / sr)); b.setSample (0, i, x); b.setSample (1, i, x); }
+            c.process (b.getArrayOfWritePointers(), 2, n);
+            const auto bin = [&] (double f)
+            {
+                double re = 0, im = 0; const int from = n / 2;
+                for (int i = from; i < n; ++i) { const double w = 0.5 - 0.5 * std::cos (2.0 * juce::MathConstants<double>::pi * (i - from) / (n - from)); re += b.getSample (0, i) * w * std::cos (2.0 * juce::MathConstants<double>::pi * f * i / sr); im += b.getSample (0, i) * w * std::sin (2.0 * juce::MathConstants<double>::pi * f * i / sr); }
+                return std::sqrt (re * re + im * im);
+            };
+            const double f1 = bin (1000.0);
+            h2 = 20.0 * std::log10 (bin (2000.0) / f1 + 1e-12);
+            h3 = 20.0 * std::log10 (bin (3000.0) / f1 + 1e-12);
+            gainDb = 20.0 * std::log10 (f1 / (amp * (n - n / 2) * 0.25));
+        };
+        const double zeroVU = std::pow (10.0, -18.0 / 20.0) * std::sqrt (2.0);   // (a sine at -18 dBFS RMS)
+        bool subtle = true, character = true, louder = true, levels = true;
+        juce::String table;
+        for (int d = 1; d < ConsoleColour::numDesks; ++d)
+        {
+            double h2, h3, g, h2d, h3d, gd;
+            harmonics (d, 1, zeroVU, h2, h3, g);
+            harmonics (d, 3, zeroVU, h2d, h3d, gd);
+            const bool valve = d == ConsoleColour::ua610 || d == ConsoleColour::redd || d == ConsoleColour::broadcastValve;
+            table << "\n          " << juce::String (ConsoleColour::desk (d).name).paddedRight (' ', 42) << " 2nd " << juce::String (h2, 1) << "  3rd " << juce::String (h3, 1)
+                  << " dB   (DRIVEN: " << juce::String (h2d, 1) << " / " << juce::String (h3d, 1) << ")   1 kHz " << juce::String (g, 2) << " dB";
+            if (juce::jmax (h2, h3) > -30.0 || juce::jmax (h2, h3) < -75.0) subtle = false;
+            if ((d == ConsoleColour::ua610 || d == ConsoleColour::redd) && h2 < h3 + 8.0) character = false;
+            if ((d == ConsoleColour::american || d == ConsoleColour::helios) && h3 < h2 - 0.5) character = false;
+            if (juce::jmax (h2d, h3d) < juce::jmax (h2, h3) + 5.0) louder = false;
+            if (std::abs (g) > 1.5) levels = false;
+        }
+        std::cout << "  (at 0 VU = -18 dBFS, a 1 kHz sine:" << table << ")\n";
+        check (subtle, "at 0 VU every desk is subtle: its strongest harmonic between -30 and -75 dB (0.003% - 3%)");
+        check (character, "the valve desks (610, REDD) lean on the 2nd harmonic (by 8 dB+); API and Helios on the 3rd");
+        check (louder, "DRIVEN (+12 dB) brings out at least 5 dB more harmonics on every desk");
+        check (levels, "a desk doesn't change the track's level (within 1.5 dB at 1 kHz)");
+
+        // In the strip: OFF is untouched, a change is click-free, THE MIX sets every track's desk (not the buses)
+        {
+            S s; prepareStereo (s, false);
+            const auto in = music (1.0);
+            S plain; prepareStereo (plain, false);
+            check (maxDifference (process (s, in), process (plain, in)) < 1.0e-7f, "DESK at NONE: the strip sounds exactly as before");
+            const auto tone = sine (sr, 110.0, 0.2f, 2.0);
+            S fresh; prepareStereo (fresh, false);   // (nothing left over from before in its delay line)
+            auto& s2 = fresh;
+            const auto out = process (s2, tone, [&] (int start) { if (start == (int) sr) s2.setMixDesk (ConsoleColour::helios, 2); });
+            float worst = 0.0f, normal = 0.0f; int worstAt = 0;
+            for (int i = 1; i < out.getNumSamples(); ++i)
+            {
+                const float step = std::abs (out.getSample (0, i) - out.getSample (0, i - 1));
+                if (i < (int) (sr * 1.5)) { if (step > worst) { worst = step; worstAt = i; } } else normal = std::max (normal, step);   // (the switch, and HELIOS once settled)
+            }
+            normal = std::max (normal, 2.0f * juce::MathConstants<float>::pi * 110.0f / (float) sr * 0.2f) * 1.05f;
+            check (worst <= normal, "switching to HELIOS (HOT) while it plays: a 20 ms dip, no click (biggest step " + juce::String (worst, 5) + ", settled " + juce::String (normal, 5) + ")"); juce::ignoreUnused (worstAt);
+        }
+        {
+            S a, b; juce::AudioProcessor::TrackProperties ta, tb; ta.name = "Snare"; tb.name = "Drum Bus"; a.updateTrackProperties (ta); b.updateTrackProperties (tb);
+            Mix::Network::get().setDeskForAll (ConsoleColour::ua610, 1);
+            check (a.getMixDesk() == ConsoleColour::ua610 && b.getMixDesk() == ConsoleColour::off, "THE MIX: one desk (UA 610) on every track - the bus left clean");
+            juce::MemoryBlock state; a.getStateInformation (state);
+            S c; c.setStateInformation (state.getData(), (int) state.getSize());
+            check (c.getMixDesk() == ConsoleColour::ua610, "the desk is saved with the project");
+            loadPresetNamed (a, "Snare - Rock");
+            check (a.getMixDesk() == ConsoleColour::ua610, "loading a strip preset keeps the desk (and TRIM and LEVEL: they belong to the track)");
+            loadPresetNamed (a, "Guitar - Helios Crunch");
+            check (a.getMixDesk() == ConsoleColour::helios && a.getMixDeskDrive() == 2, "a Vintage & Valve preset chooses its own desk (Guitar - Helios Crunch: HELIOS, HOT)");
+            loadPresetNamed (a, "Kick - Rock");
+            check (a.getMixDesk() == ConsoleColour::helios, "... and the next ordinary preset leaves that desk alone");
+        }
+    }
+
     void testOrder()
     {
         std::cout << "\n[ORDER]\n";
@@ -764,7 +1065,7 @@ check (tidy, "full-mix presets in one list, Mixing & Mastering; drum bus presets
         window->initAllButton.onClick();
         bool allOff = true;
         for (int m = 0; m < S::numModules; ++m) allOff = allOff && ! s.isModuleOn (m);
-        check (allOff && near (getParam (s, StripIDs::trim), 0.0f, 0.01f), "INIT: every module off, TRIM back to 0");
+        check (allOff && near (getParam (s, StripIDs::trim), 5.0f, 0.01f), "INIT: every module off - TRIM kept (it belongs to the track: LEARN sets it)");
 
         switchOn (s, 4, true); switchOn (s, 2, true);
         window->tabs[4].onClick();
@@ -1231,6 +1532,9 @@ int main (int argc, char** argv)
     testPrecision();
     testPresetsAndAB();
     testStripAutoGain();
+    testLearn();
+    testMix (outDir);
+    testDesk();
     testOrder();
     testLufs();
     testSaving();

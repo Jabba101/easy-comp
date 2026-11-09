@@ -94,12 +94,18 @@ namespace Holo
         Button initAllButton { "INIT", Colours::warn, Button::Style::init };
         Button bypassButton { "BYPASS", Colours::warn };
         Button setupButton { "SETUP", Colours::cyan };
+        Button mixButton { "MIX", Colours::selected };
+        void showMix (bool);
+        juce::Component* getMixPanel() const noexcept   { return mixPanel.get(); }
         Button presetPrevious { "<", Colours::selected }, presetNext { ">", Colours::selected };
         Button orderButton { "ORDER", Colours::selected };   // the four swaps, as a menu
         void showOrderMenu();
         Button slotA { "A", Colours::selected }, slotB { "B", Colours::selected }, copySlot { "A > B", Colours::selected };   // the strip's A / B
         Button weaponSelect { "WEAPON SELECT", Colours::hazard };
         Button polarityButton { juce::String::fromUTF8 ("\xc3\x98"), Colours::cyan };
+        Button learnButton { "LEARN", Colours::cyan };   // gain staging: sets TRIM
+        Button deskButton { "DESK", Colours::tape };     // the console's colour
+        int shownLearnCount = 0;
         Button autoGainButton { "AUTO|GAIN", Colours::gate, Button::Style::square };   // the whole strip's
         juce::Label autoGainReadout;
         std::unique_ptr<Choice> oversampling, meterMode;
@@ -165,6 +171,7 @@ namespace Holo
 
         // SETUP
         std::unique_ptr<juce::Component> setupPanel;
+        std::unique_ptr<juce::Component> mixPanel;   // THE MIX
 
         // Per-module preset menus (each module's own list, as in its standalone)
         std::array<std::unique_ptr<PresetBrowser>, StripModules::numModules> modulePresets;

@@ -973,3 +973,28 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      Drop a file on the page to load. LOAD SONG / REMOVE / MATCH LOUDNESS on the page.
    - Saved with the project as state properties (referenceFile/Start/End/Match), not in presets or A / B; never starts switched on.
    - Tests: 89/89 (reference: 17 new checks incl. resampling, match within 1 dB, no clicks at switch/loop, stopped = silent, state).
+== EASY STRIP: LEARN + THE MIX (9 November 2026) - built, not pushed yet ==
+   USER: "an automatic gain-staging and summing plugin would save a lot of time"; meant console COLOUR by summing, but wants the
+   rough auto-balance experiment too ("only tweaking rather than the hard slog - more time for the creative side").
+   - LEARN (INPUT, above TRIM; classic skin too): Effects/GainStager.h. Listens while the DAW plays (30 s of playing, needs >= 1 s of
+     sound; click again to finish from 3 s), unweighted RMS in 400 ms windows (gated -60 dBFS and 20 dB under the busy average),
+     TRIM = min(-18 - average, -6 - peak), +-24. Set once (setValueNotifyingHost on the message thread); never rides.
+   - THE MIX (header MIX button, panel like SETUP): Shared/MixNetwork.h. All strips in the DAW process find each other (static
+     singleton). ROLE per strip (state property "mixRole"; automatic = guessed from track name, then preset - bus/send/whole-mix
+     presets = leave alone). STYLE: ROCK / PUNK & METAL / SYNTHWAVE / JAZZ - per-role targets in dB vs the lead vocal (role group
+     total, shared between its tracks). LEARN ALL. BALANCE: listens to each strip's output (K-weighted busy LUFS) while playing,
+     30 s or click; sets each strip's LEVEL so roles land on target with the whole mix ~-18 LUFS; not-heard tracks and buses left;
+     UNDO. DAW faders untouched.
+   - Tests: StripTests 140/140 (11 LEARN + 15 MIX).
+   - DESK (console colour): Effects/ConsoleColour.h, right after TRIM (LEARN's -18 dBFS = the desk's 0 VU). OFF (bit-identical) +
+     British (Neve), American (API), Clean British (SSL), Valve UA 610, Valve EMI REDD, Valve German broadcast (V72/V76), Helios
+     (user likes it), Trident A-Range, EMI TG12345, Harrison 32 - "in the style of", from known behaviour; user asked for esoteric/valve
+     (jazz). Engine: 3rd via tanh, 2nd via a lean (DC removed), transformer LF saturation, valve sag, small shelves/bumps/roll-offs.
+     DRIVE: GENTLE -6 / NORMAL / HOT +6 / DRIVEN +12. At 0 VU strongest harmonic -41 (610) to -55 dB (SSL/Harrison); levels within 0.6 dB.
+     Per strip: DESK button in INPUT (menu); THE MIX section 3 sets one desk on every track (buses left clean).
+   - Strip presets (and A / B, INIT) no longer cover TRIM, polarity, LEVEL (they belong to the track: LEARN / BALANCE) or DESK.
+   - NEW STRIP PRESETS (user: "more mid-side stuff and vintage vibe using our new valves"): 15 in "Vintage & Valve" (each picks a DESK:
+     Recipe.desk / deskDrive; strip loadPreset (now virtual in EasyProcessor) sets DESK only when a preset names one; ordinary presets
+     leave it) and 8 in "Stereo (Mid / Side)" (comp WORKS ON mid/side, EQ side air, MONO BASS). Mix Bus / Drum Bus ones kept in
+     Mixing & Mastering / Drums (the earlier rule). 131 strip presets in all.
+   - Easy Strip 0.16.0, project 1.31.0. StripTests 151/151, MasterTests 91/91. Pushed with the user's OK.

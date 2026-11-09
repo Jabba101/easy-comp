@@ -2,6 +2,9 @@
 
 #include "EasyProcessor.h"
 #include "LoudnessMeter.h"
+#include "GainStager.h"
+#include "MixNetwork.h"
+#include "ConsoleColour.h"
 #include "../EasyGate/PluginProcessor.h"
 #include "../EasyAmp/PluginProcessor.h"
 #include "../EasyEQ/PluginProcessor.h"
@@ -104,6 +107,8 @@ namespace StripIDs
     inline constexpr const char* polarity     = "polarity";
     inline constexpr const char* level        = "level";
     inline constexpr const char* oversampling = "oversampling";
+    inline constexpr const char* desk         = "desk";          // DESK: the console colour (0 = none)
+    inline constexpr const char* deskDrive    = "deskdrive";     // ... and how hard it's driven
 
     // ORDER: five switches (the panels never move; only the order the sound goes through)
     inline constexpr const char* eqAfterComp      = "eqaftercomp";       // COMP, then EQ
@@ -120,6 +125,7 @@ namespace StripIDs
 //==============================================================================
 class EasyStripAudioProcessor : private StripModules,
                                 public EasyProcessor,
+                                public Mix::Member,
                                 private juce::AsyncUpdater
 {
 public:
@@ -183,6 +189,36 @@ public:
     static juce::String describe (const Order&);
     bool isStandardOrder() const noexcept   { return getWantedOrder() == orderFor (false, false, false, false); }
 
+    //==== LEARN: gain staging (INPUT) =========================================
+    /** Starts listening to the track coming in (while the DAW plays); it sets TRIM by itself after 30 s of sound. */
+    void startLearning();
+    /** Pressed again: finishes early and sets TRIM (from 3 s of sound on; otherwise just stops). */
+    void finishLearning();
+    bool isLearning() const noexcept                    { return stager.isListening(); }
+    double getLearnSeconds() const noexcept             { return stager.heardSeconds(); }
+    /** The last time LEARN set TRIM (message thread). learnCount goes up each time. */
+    GainStager::Result getLastLearn() const noexcept    { return lastLearn; }
+    int getLearnCount() const noexcept                  { return learnCount; }
+    void applyPendingUpdates()                          { handleUpdateNowIfNeeded(); }   // (tests: what the message thread would do next)
+
+    //==== THE MIX (every Easy Strip in the project) ==========================
+    juce::String getMixName() const override             { return trackName.isNotEmpty() ? trackName : juce::String ("Easy Strip"); }
+    juce::String getMixPreset() const override;
+    int getChosenRole() const override                   { return (int) parameters.state.getProperty ("mixRole", (int) Mix::automatic); }
+    void setChosenRole (int role) override               { parameters.state.setProperty ("mixRole", role, nullptr); }
+    float getMixLevelDb() const override                 { return levelValue->load(); }
+    void setMixLevelDb (float db) override;
+    float getMixTrimDb() const override                  { return trimValue->load(); }
+    void startMixLearn() override                        { startLearning(); }
+    int getMixDesk() const override                      { return juce::roundToInt (deskValue->load()); }
+    int getMixDeskDrive() const override                 { return juce::roundToInt (deskDriveValue->load()); }
+    void setMixDesk (int desk, int drive) override;
+    /** A strip preset, and - if it names one - its DESK (other presets leave the DESK as it is). */
+    void loadPreset (const Preset&) override;
+    bool isMixLearning() const override                  { return isLearning(); }
+    Mix::Listener& getMixListener() override             { return mixListener; }
+    float getLevelWhileListening() const override        { return levelWhileListening.load(); }
+
     /** How many dB the strip's AUTO-GAIN would add (or take away) right now. */
     float getAutoGainDb() const noexcept               { return autoGainDb.load(); }
 
@@ -243,6 +279,9 @@ private:
     std::atomic<float>* levelValue = nullptr;
     std::atomic<float>* bypassValue = nullptr;
     std::atomic<float>* autoGainValue = nullptr;
+    std::atomic<float>* deskValue = nullptr;
+    std::atomic<float>* deskDriveValue = nullptr;
+    ConsoleColour desk;
 
     // AUTO-GAIN for the whole strip
     LoudnessMatcher autoIn, autoOut;   // (only their ear filters are used)
@@ -266,6 +305,14 @@ private:
     float orderGain = 1.0f;
     int orderHold = 0;   // (after swapping, stay silent while the new order's filters settle)
     LoudnessMeter loudness;
+    GainStager stager;
+    Mix::Listener mixListener;
+    int mixRound = -1;
+    double mixPlayed = 0.0;
+    std::atomic<float> levelWhileListening { 0.0f };
+    GainStager::Result lastLearn;
+    int learnCount = 0;
+    void applyLearned();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EasyStripAudioProcessor)
 };

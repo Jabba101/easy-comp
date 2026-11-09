@@ -49,6 +49,7 @@ public:
     std::array<std::unique_ptr<LightButton>, EasyStripAudioProcessor::numModules> onLamps;
     juce::TextButton initAllButton { "INIT" };
     LightButton polarityButton { juce::String::fromUTF8 ("\xc3\x98"), Palette::meterHigh };
+    LightButton learnButton { "LEARN", Palette::accent };   // gain staging: sets TRIM
     juce::Slider trimKnob, levelKnob;
     ChoiceSwitch oversamplingSwitch;
     LevelMeter inputMeter, outputMeter;

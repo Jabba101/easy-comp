@@ -29,6 +29,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyStripAudioProcessor::cre
                                                                 "Order: " + juce::String (StripIDs::orderNames[i]).toLowerCase(), false));
     layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { StripIDs::oversampling, 1 }, "Oversampling (Amp, Tape, Clip)",
                                                               juce::StringArray { "4x Mixing / 8x Export", "Off", "4x", "8x" }, 0));
+    {
+        juce::StringArray desks, drives;
+        for (int d = 0; d < ConsoleColour::numDesks; ++d) desks.add (ConsoleColour::desk (d).name);
+        for (int d = 0; d < ConsoleColour::numDrives; ++d) drives.add (juce::String (ConsoleColour::driveName (d)).toLowerCase());
+        layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { StripIDs::desk, 1 }, "Desk", desks, 0));
+        layout.add (std::make_unique<juce::AudioParameterChoice> (juce::ParameterID { StripIDs::deskDrive, 1 }, "Desk Drive", drives, 1));
+    }
 
     // Every module's settings, with the module's name in front
     for (int m = 0; m < StripModules::numModules; ++m)
@@ -107,6 +114,12 @@ std::vector<Preset> EasyStripAudioProcessor::makeStripPresets (StripModules& mod
         for (auto* swap : recipe.order)
             preset.values.push_back ({ swap, 1.0f });
 
+        if (recipe.desk >= 0)   // (outside the preset settings: loadPreset sets these only when a preset names them)
+        {
+            preset.values.push_back ({ StripIDs::desk, (float) recipe.desk });
+            preset.values.push_back ({ StripIDs::deskDrive, (float) recipe.deskDrive });
+        }
+
         // Knobs set on top of the module presets
         for (auto& set : recipe.sets)
         {
@@ -127,10 +140,12 @@ std::vector<Preset> EasyStripAudioProcessor::makeStripPresets (StripModules& mod
 
 juce::StringArray EasyStripAudioProcessor::stripPresetIDs (StripModules& modules)
 {
-    // What strip presets (and A / B) cover: INPUT and OUTPUT, which modules are on,
-    // and each module's own preset settings. (Not each module's AUTO-GAIN,
-    // the EQ's MASTER and PRECISION, or OVERSAMPLING - as in the standalones.)
-    juce::StringArray ids { StripIDs::trim, StripIDs::polarity, StripIDs::level };
+    // What strip presets (and A / B) cover: which modules are on, and each module's own
+    // preset settings. (Not TRIM, polarity or LEVEL - they belong to the track: LEARN and
+    // THE MIX's BALANCE set them, and a preset mustn't undo that. Not DESK either - the
+    // whole mix's desk. Nor each module's AUTO-GAIN, the EQ's MASTER and PRECISION, or
+    // OVERSAMPLING - as in the standalones.)
+    juce::StringArray ids;
     for (auto* id : StripIDs::orderSwitches)
         ids.add (id);   // (the ORDER is part of presets and A / B too)
 
@@ -152,6 +167,9 @@ EasyStripAudioProcessor::EasyStripAudioProcessor()
     trimValue     = parameters.getRawParameterValue (StripIDs::trim);
     polarityValue = parameters.getRawParameterValue (StripIDs::polarity);
     levelValue    = parameters.getRawParameterValue (StripIDs::level);
+    deskValue      = parameters.getRawParameterValue (StripIDs::desk);
+    deskDriveValue = parameters.getRawParameterValue (StripIDs::deskDrive);
+    Mix::Network::get().add (this);
     bypassValue   = parameters.getRawParameterValue (CommonIDs::bypass);
     autoGainValue = parameters.getRawParameterValue (CommonIDs::autoGain);
     for (int i = 0; i < StripIDs::numOrderSwitches; ++i)
@@ -166,6 +184,7 @@ EasyStripAudioProcessor::EasyStripAudioProcessor()
 
 EasyStripAudioProcessor::~EasyStripAudioProcessor()
 {
+    Mix::Network::get().remove (this);
     cancelPendingUpdate();
 
     for (auto& module : links)
@@ -266,6 +285,78 @@ int EasyStripAudioProcessor::totalLatency() const noexcept
 void EasyStripAudioProcessor::handleAsyncUpdate()
 {
     setLatencySamples (reportedLatency);
+    if (stager.takeFinished()) applyLearned();
+}
+
+//==============================================================================
+// THE MIX
+juce::String EasyStripAudioProcessor::getMixPreset() const
+{
+    // (a strip on a bus or a send, or with a whole-mix preset, is best left alone: say so for the guess)
+    const auto name = getPresetName();
+    for (auto& p : getBuiltInPresets())
+        if (p.name == name)
+            return (p.category == "Mixing & Mastering" || p.category == "FX Send" || name.startsWith ("Drum Bus")) ? "bus " + name : name;
+    return name;
+}
+
+void EasyStripAudioProcessor::loadPreset (const Preset& preset)
+{
+    EasyProcessor::loadPreset (preset);
+    int deskIndex = -1, drive = 1;
+    for (auto& [id, value] : preset.values)
+    {
+        if (id == StripIDs::desk)      deskIndex = juce::roundToInt (value);
+        if (id == StripIDs::deskDrive) drive = juce::roundToInt (value);
+    }
+    if (deskIndex >= 0) setMixDesk (deskIndex, drive);
+}
+
+void EasyStripAudioProcessor::setMixDesk (int deskIndex, int drive)
+{
+    for (auto [id, value] : { std::pair<const char*, int> { StripIDs::desk, deskIndex }, { StripIDs::deskDrive, drive } })
+        if (auto* p = parameters.getParameter (id))
+        {
+            p->beginChangeGesture();
+            p->setValueNotifyingHost (p->convertTo0to1 ((float) value));
+            p->endChangeGesture();
+        }
+}
+
+void EasyStripAudioProcessor::setMixLevelDb (float db)
+{
+    if (auto* p = parameters.getParameter (StripIDs::level))
+    {
+        p->beginChangeGesture();
+        p->setValueNotifyingHost (p->convertTo0to1 (db));
+        p->endChangeGesture();
+    }
+}
+
+//==============================================================================
+// LEARN
+void EasyStripAudioProcessor::startLearning()
+{
+    stager.start();
+}
+
+void EasyStripAudioProcessor::finishLearning()
+{
+    if (stager.finish()) applyLearned();
+}
+
+void EasyStripAudioProcessor::applyLearned()
+{
+    const auto r = stager.getResult();
+    if (! r.valid) return;
+    if (auto* p = parameters.getParameter (StripIDs::trim))
+    {
+        p->beginChangeGesture();
+        p->setValueNotifyingHost (p->convertTo0to1 (r.trimDb));
+        p->endChangeGesture();
+    }
+    lastLearn = r;
+    ++learnCount;
 }
 
 //==============================================================================
@@ -273,6 +364,11 @@ void EasyStripAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 {
     const int block = juce::jmax (64, samplesPerBlock);
     channelsInUse = juce::jlimit (1, 2, getMainBusNumInputChannels());
+    stager.prepare (sampleRate);
+    mixListener.prepare (sampleRate);
+    desk.set (juce::roundToInt (deskValue->load()), juce::roundToInt (deskDriveValue->load()));
+    desk.prepare (sampleRate);
+    mixRound = -1;
     const auto mainSet = channelsInUse == 1 ? juce::AudioChannelSet::mono() : juce::AudioChannelSet::stereo();
 
     // Every setting handed over afresh first (so each module starts as it's set: on or off)
@@ -370,6 +466,11 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     }
 
     inputGain.setTargetValue (juce::Decibels::decibelsToGain (trimValue->load()) * (polarityValue->load() > 0.5f ? -1.0f : 1.0f));
+    bool hostPlaying = true;   // (with no DAW transport - e.g. standalone - LEARN just listens)
+    if (auto* head = getPlayHead())
+        if (auto position = head->getPosition())
+            hostPlaying = position->getIsPlaying();
+    const bool wasLearning = stager.isListening();
     outputGain.setTargetValue (juce::Decibels::decibelsToGain (levelValue->load()));
     bypassFade.setTargetValue (bypassValue->load() > 0.5f ? 1.0f : 0.0f);
 
@@ -382,6 +483,9 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
     {
         const int n = juce::jmin (maxChunk, total - start);
         float* main[2] { buffer.getWritePointer (0, start), channels > 1 ? buffer.getWritePointer (1, start) : nullptr };
+
+        // LEARN listens to the track as it comes in (before TRIM)
+        stager.process (main, channels, n, hostPlaying);
 
         // The original (for the strip's own BYPASS), then INPUT: TRIM and polarity
         float loudestIn = 0.0f;
@@ -396,6 +500,10 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
             }
         }
         storeIfBigger (inputPeak, loudestIn);
+
+        // DESK: the console's colour, right after TRIM (so LEARN's -18 dBFS is the desk's 0 VU)
+        desk.set (juce::roundToInt (deskValue->load()), juce::roundToInt (deskDriveValue->load()));
+        desk.process (main, channels, n);
 
         // The sidechain for GATE and COMP (silence if nothing's sent to it)
         for (int ch = 0; ch < channels; ++ch)
@@ -507,10 +615,24 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         juce::AudioBuffer<float> out (main, channels, n);
         loudness.process (out);
 
+        // THE MIX: while BALANCE listens (and the DAW plays), how loud this track comes out
+        {
+            auto& network = Mix::Network::get();
+            if (network.isListening() && hostPlaying)
+            {
+                if (network.getRound() != mixRound) { mixRound = network.getRound(); mixListener.reset(); mixPlayed = 0.0; }
+                mixListener.process (main, channels, n);
+                levelWhileListening.store (levelValue->load());
+                mixPlayed += n / getSampleRate();
+                network.notePlayed (mixPlayed);
+            }
+        }
+
         writePos = (writePos + n) & ringMask;
     }
 
     blocksProcessed.fetch_add (1);
+    if (wasLearning && ! stager.isListening()) triggerAsyncUpdate();   // (LEARN heard its 30 s: TRIM is set on the message thread)
 
     const int latency = totalLatency();
     if (latency != reportedLatency)

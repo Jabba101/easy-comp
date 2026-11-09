@@ -22,6 +22,11 @@ namespace Holo
         const juce::String polarityHint =
             "Polarity: flips the waveform upside down. Try it on a second mic of the same drum (snare top and bottom) "
             "if they sound thin together - whichever sounds fuller is right.";
+        const juce::String learnHint =
+            "LEARN (gain staging): click it and play the song - a busy part is best. It listens to the track for 30 seconds "
+            "(click again to stop sooner), then sets TRIM once so the track sits where the strip works best: an average of "
+            "-18 dBFS on the busy parts (a console's 0 VU), with the peaks no higher than -6 dBFS. It doesn't ride the level "
+            "afterwards - TRIM stays where it put it, and you can still move it.";
         const juce::String levelHint = "Level: the final output of the strip, after everything else.";
         const juce::String stripAutoGainHint =
             "Auto gain (the whole strip): keeps the strip's output as loud as what comes in, so BYPASS compares the sound, "
@@ -252,6 +257,306 @@ namespace Holo
             juce::String shownFlow;
             Button close { "CLOSE", Colours::cyan };
         };
+
+        //======================================================================
+        /** THE MIX: every Easy Strip in the project - LEARN ALL (gain staging) and BALANCE (a rough mix). */
+        struct MixPanel : public juce::Component,
+                          private juce::Timer
+        {
+            explicit MixPanel (View& v) : view (v)
+            {
+                setDrawsOwnGlows (*this);
+                auto& network = Mix::Network::get();
+                juce::StringArray styles;
+                for (int s = 0; s < Mix::numStyles; ++s) styles.add (Mix::styleName (s));
+                style = std::make_unique<Choice> (styles, Colours::selected, true);
+                style->setChosen (network.style.load());
+                style->onUserChoice = [] (int s) { Mix::Network::get().style.store (s); };
+                addAndMakeVisible (*style);
+
+                for (auto* b : { &learnAll, &balance, &undo, &close })
+                {
+                    b->fontSize = 15.0f;
+                    b->setClickingTogglesState (false);
+                    addAndMakeVisible (*b);
+                }
+                learnAll.onClick = [this]
+                {
+                    Mix::Network::get().learnAll();
+                    view.announce ("LEARN ALL", "Every track is listening - play the song. Each one sets its own TRIM after 30 seconds of playing.", 8);
+                };
+                balance.onClick = [this]
+                {
+                    auto& n = Mix::Network::get();
+                    if (! n.isListening())
+                    {
+                        n.startListening();
+                        view.announce ("BALANCE", "Listening - play the busiest part of the song (a chorus is ideal). After 30 seconds it sets every LEVEL; click again to set them sooner.", 10);
+                    }
+                    else finish();
+                };
+                undo.onClick = [this]
+                {
+                    Mix::Network::get().undo();
+                    view.announce ("UNDO", "Every LEVEL is back where it was before BALANCE.", 5);
+                };
+                close.onClick = [this] { view.showMix (false); };
+                deskButton.fontSize = 15.0f;
+                deskButton.setClickingTogglesState (false);
+                deskButton.onClick = [this] { showDeskMenu(); };
+                addAndMakeVisible (deskButton);
+                juce::StringArray drives;
+                for (int d = 0; d < ConsoleColour::numDrives; ++d) drives.add (ConsoleColour::driveName (d));
+                deskDrive = std::make_unique<Choice> (drives, Colours::tape, true);
+                deskDrive->onUserChoice = [this] (int d) { Mix::Network::get().setDeskForAll (view.getStrip().getMixDesk(), d); announceDesk(); };
+                addAndMakeVisible (*deskDrive);
+                setSize (1120, 870);
+                timerCallback();   // (showing how things stand at once)
+                startTimerHz (10);
+            }
+
+            void showDeskMenu()
+            {
+                juce::PopupMenu menu;
+                const int current = view.getStrip().getMixDesk();
+                for (int d = 0; d < ConsoleColour::numDesks; ++d)
+                {
+                    if (d == 1 || d == ConsoleColour::ua610 || d == ConsoleColour::helios || d == ConsoleColour::harrison) menu.addSeparator();
+                    menu.addItem (d + 1, ConsoleColour::desk (d).name, true, d == current);
+                }
+                juce::Component::SafePointer<MixPanel> safe (this);
+                menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&deskButton), [safe] (int chosen)
+                {
+                    if (safe == nullptr || chosen == 0) return;
+                    Mix::Network::get().setDeskForAll (chosen - 1, safe->view.getStrip().getMixDeskDrive());
+                    safe->announceDesk();
+                });
+            }
+
+            void announceDesk()
+            {
+                const int d = view.getStrip().getMixDesk();
+                view.announce ("DESK", d == ConsoleColour::off ? juce::String ("Every track clean again - no desk colour.")
+                                                               : juce::String ("Every track now goes through the ") + ConsoleColour::desk (d).name + " desk, driven "
+                                                                 + juce::String (ConsoleColour::driveName (view.getStrip().getMixDeskDrive())).toLowerCase()
+                                                                 + ". Buses and sends are left clean. Each strip can still have its own: click DESK in its INPUT.", 10);
+            }
+
+            void finish()
+            {
+                auto& n = Mix::Network::get();
+                if (n.playedSeconds() < 3.0)
+                {
+                    n.stopListening();
+                    view.announce ("BALANCE", "Stopped - it needs a few seconds of the song playing to hear the tracks.", 6);
+                    return;
+                }
+                const auto changes = n.balance();
+                int set = 0, notHeard = 0;
+                for (auto& c : changes) { if (c.heard) ++set; else if (c.role != Mix::leaveAlone) ++notHeard; }
+                view.announce ("BALANCE", juce::String (set) + " track" + (set == 1 ? "" : "s") + " balanced for " + juce::String (Mix::styleName (n.style.load())).toLowerCase()
+                               + (notHeard > 0 ? " (" + juce::String (notHeard) + " not heard in that part - left as they were)" : juce::String())
+                               + ". Your faders are untouched: use them for the final touches. UNDO puts it all back.", 12);
+            }
+
+            void timerCallback() override
+            {
+                auto& n = Mix::Network::get();
+                if (n.isListening() && n.playedSeconds() >= Mix::Network::listenSeconds) finish();
+                balance.setToggleState (n.isListening(), juce::dontSendNotification);
+                balance.setButtonText (n.isListening() ? "LISTENING  " + juce::String ((int) n.playedSeconds()) + " s" : juce::String ("BALANCE"));
+                undo.setEnabled (n.canUndo());
+                undo.setAlpha (n.canUndo() ? 1.0f : 0.4f);
+                bool anyLearning = false;
+                for (auto* m : n.getMembers()) anyLearning = anyLearning || m->isMixLearning();
+                learnAll.setToggleState (anyLearning, juce::dontSendNotification);
+                if (style->getChosen() != n.style.load()) style->setChosen (n.style.load());
+                {
+                    const int d = view.getStrip().getMixDesk();
+                    const auto t = "DESK:  " + juce::String (d == ConsoleColour::off ? "NONE" : ConsoleColour::desk (d).shortName);
+                    if (deskButton.getButtonText() != t) deskButton.setButtonText (t);
+                    deskButton.setToggleState (d != ConsoleColour::off, juce::dontSendNotification);
+                    if (deskDrive->getChosen() != view.getStrip().getMixDeskDrive()) deskDrive->setChosen (view.getStrip().getMixDeskDrive());
+                }
+                repaint();
+            }
+
+            static constexpr int tableTop = 360, rowHeight = 28, maxRows = 15;
+            static constexpr int colTrack = 24, colRole = 330, colTrim = 600, colHeard = 690, colLevel = 810, colChange = 910;
+
+            void resized() override
+            {
+                style->setBounds (200, 66, 560, 30);
+                learnAll.setBounds (24, 140, 150, 40);
+                balance.setBounds (24, 214, 150, 40);
+                undo.setBounds (184, 214, 90, 40);
+                deskButton.setBounds (24, 288, 190, 40);
+                deskDrive->setBounds (224, 293, 380, 30);
+                close.setBounds (getWidth() - 24 - 100, getHeight() - 20 - 32, 100, 32);
+            }
+
+            juce::Rectangle<int> roleCell (int row) const   { return { colRole, tableTop + 30 + row * rowHeight, colTrim - colRole - 10, rowHeight }; }
+
+            void mouseDown (const juce::MouseEvent& e) override
+            {
+                const auto members = Mix::Network::get().getMembers();
+                for (int r = 0; r < juce::jmin (maxRows, (int) members.size()); ++r)
+                    if (roleCell (r).contains (e.getPosition()))
+                    {
+                        auto* m = members[(size_t) r];
+                        juce::PopupMenu menu;
+                        menu.addItem (1000, juce::String ("Automatic (") + Mix::roleName (Mix::guessRole (m->getMixName(), m->getMixPreset())) + ")", true, m->getChosenRole() == Mix::automatic);
+                        menu.addSeparator();
+                        for (int role = 0; role < Mix::numRoles; ++role)
+                            menu.addItem (role + 1, Mix::roleName (role), true, m->getChosenRole() == role);
+                        juce::Component::SafePointer<MixPanel> safe (this);
+                        menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this).withTargetScreenArea (localAreaToGlobal (roleCell (r))),
+                                            [safe, m] (int chosen)
+                                            {
+                                                if (safe == nullptr || chosen == 0) return;
+                                                // (still in the project?)
+                                                for (auto* still : Mix::Network::get().getMembers())
+                                                    if (still == m) m->setChosenRole (chosen == 1000 ? (int) Mix::automatic : chosen - 1);
+                                                safe->repaint();
+                                            });
+                        return;
+                    }
+            }
+
+            void paint (juce::Graphics& g) override
+            {
+                const auto r = getLocalBounds().toFloat();
+                g.setColour (juce::Colour (0xf4061220));
+                g.fillPath (chamfered (r, 12.0f));
+                strokeGlow (g, chamfered (r.reduced (0.5f), 12.0f), Colours::selected, 1.2f);
+                auto& n = Mix::Network::get();
+                const auto members = n.getMembers();
+                const auto lastChanges = n.getLastChanges();
+
+                drawGlowText (g, "THE MIX", { 24.0f, 16.0f, 300.0f, 30.0f }, juce::Justification::centredLeft, text (24.0f, 2), Colours::selected);
+                g.setColour (Colours::dim);
+                g.setFont (text (13.5f, 0));
+                g.drawText ("Every Easy Strip in this project: " + juce::String ((int) members.size()) + " track" + (members.size() == 1 ? "" : "s")
+                            + ". A rough mix to start from - your faders stay yours.", juce::Rectangle<float> (300.0f, 20.0f, r.getWidth() - 324.0f, 24.0f),
+                            juce::Justification::centredRight, false);
+
+                g.setFont (text (15.0f, 1));
+                g.setColour (Colours::ink);
+                g.drawText ("STYLE", juce::Rectangle<float> (24.0f, 66.0f, 170.0f, 30.0f), juce::Justification::centredLeft, false);
+                g.setColour (Colours::dim);
+                g.setFont (text (13.0f, 0));
+                g.drawText ("where each kind of track usually sits", juce::Rectangle<float> (772.0f, 66.0f, 320.0f, 30.0f), juce::Justification::centredLeft, false);
+
+                // 1: gain staging, 2: the balance
+                const auto step = [&] (int number, const juce::String& title, float y)
+                {
+                    g.setColour (Colours::selected);
+                    g.fillEllipse (24.0f, y, 18.0f, 18.0f);
+                    g.setColour (Colours::background);
+                    g.setFont (text (12.0f, 2));
+                    g.drawText (juce::String (number), juce::Rectangle<float> (24.0f, y, 18.0f, 18.0f), juce::Justification::centred, false);
+                    g.setColour (Colours::selected);
+                    g.setFont (text (15.0f, 2));
+                    g.drawText (title, juce::Rectangle<float> (50.0f, y - 2.0f, 400.0f, 22.0f), juce::Justification::centredLeft, false);
+                };
+                step (1, "GAIN STAGING (first)", 114.0f);
+                step (2, "ROUGH BALANCE", 188.0f);
+                step (3, "CONSOLE COLOUR (every track)", 262.0f);
+                g.setColour (Colours::ink.withAlpha (0.85f));
+                g.setFont (text (13.5f, 0));
+                g.drawFittedText ("The desk the whole mix runs through: each track picks up its colour - valve warmth, transformer weight, a sweeter or rawer top. "
+                                  "Subtle at NORMAL (as real desks are); HOT and DRIVEN push it harder.", juce::Rectangle<int> (620, 284, (int) r.getWidth() - 644, 48),
+                                  juce::Justification::centredLeft, 3);
+                g.setColour (Colours::ink.withAlpha (0.85f));
+                g.setFont (text (13.5f, 0));
+                g.drawFittedText ("Every track's LEARN at once: play the song for 30 seconds and each strip sets its own TRIM, so every track comes into its strip "
+                                  "at the level the strip works best at (busy parts around -18 dBFS, peaks no higher than -6).",
+                                  juce::Rectangle<int> (190, 138, (int) r.getWidth() - 214, 44), juce::Justification::centredLeft, 2);
+                g.drawFittedText (n.isListening()
+                                      ? juce::String ("Listening to every track - keep the busy part playing. It sets every LEVEL after 30 seconds; click to set them now.")
+                                      : juce::String ("Press BALANCE and play the busiest part of the song (a chorus is ideal). It hears how loud each track is and sets each strip's "
+                                                      "LEVEL so they sit where their roles usually do, with the whole mix around -18 LUFS (room for Easy Master). UNDO puts them back."),
+                                  juce::Rectangle<int> (290, 210, (int) r.getWidth() - 314, 48), juce::Justification::centredLeft, 3);
+
+                // The table
+                g.setColour (Colours::selected.withAlpha (0.3f));
+                g.fillRect (24.0f, (float) tableTop - 6.0f, r.getWidth() - 48.0f, 1.0f);
+                g.setFont (text (13.0f, 2));
+                g.setColour (Colours::dim);
+                const auto head = [&] (const char* t, int x, int w, juce::Justification j) { g.drawText (t, juce::Rectangle<int> (x, tableTop, w, 24), j, false); };
+                head ("TRACK", colTrack, 290, juce::Justification::centredLeft);
+                head ("ROLE (click to change)", colRole, 260, juce::Justification::centredLeft);
+                head ("TRIM", colTrim, 80, juce::Justification::centredRight);
+                head ("HEARD", colHeard, 100, juce::Justification::centredRight);
+                head ("LEVEL", colLevel, 80, juce::Justification::centredRight);
+                head ("BALANCE DID", colChange + 20, 170, juce::Justification::centredLeft);
+
+                for (int i = 0; i < juce::jmin (maxRows, (int) members.size()); ++i)
+                {
+                    auto* m = members[(size_t) i];
+                    const int y = tableTop + 30 + i * rowHeight;
+                    if (i % 2 == 0) { g.setColour (Colours::glass.brighter (0.15f).withAlpha (0.6f)); g.fillRect (20, y, (int) r.getWidth() - 40, rowHeight); }
+                    const bool mine = m == static_cast<Mix::Member*> (&view.getStrip());
+                    const int role = m->getRole();
+                    const bool leave = role == Mix::leaveAlone;
+                    g.setFont (text (14.5f, mine ? 2 : 1));
+                    g.setColour (mine ? Colours::cyan : Colours::ink);
+                    g.drawText (m->getMixName() + (mine ? "  (this one)" : ""), juce::Rectangle<int> (colTrack, y, 300, rowHeight), juce::Justification::centredLeft, true);
+                    // The role: a button-like cell
+                    const auto cell = roleCell (i).reduced (0, 3).toFloat();
+                    g.setColour ((leave ? Colours::offEdge : Colours::selected).withAlpha (0.18f));
+                    g.fillRoundedRectangle (cell, 3.0f);
+                    g.setColour (leave ? Colours::offText : Colours::selected);
+                    g.drawRoundedRectangle (cell, 3.0f, 1.0f);
+                    g.setFont (text (13.5f, 1));
+                    g.drawText (juce::String (Mix::roleName (role)) + (m->isRoleGuessed() ? (role == Mix::automatic ? "" : "  (guess)") : ""), cell.reduced (8.0f, 0.0f),
+                                juce::Justification::centredLeft, true);
+                    if (role == Mix::automatic)
+                    {
+                        g.setColour (Colours::warn);
+                        g.drawText ("?  pick a role", cell.reduced (8.0f, 0.0f), juce::Justification::centredLeft, true);
+                    }
+                    g.setFont (text (14.0f, 0));
+                    g.setColour (m->isMixLearning() ? Colours::cyan : Colours::ink);
+                    g.drawText (m->isMixLearning() ? juce::String ("learning") : Holo::formatValue (Format::signedDb, m->getMixTrimDb()) + " dB",
+                                juce::Rectangle<int> (colTrim, y, 80, rowHeight), juce::Justification::centredRight, false);
+                    const float heard = m->getMixListener().busyLufs();
+                    g.setColour (Colours::ink);
+                    g.drawText (heard > -70.0f ? juce::String (heard, 1) + " LUFS" : juce::String ("--"), juce::Rectangle<int> (colHeard, y, 100, rowHeight), juce::Justification::centredRight, false);
+                    g.drawText (Holo::formatValue (Format::signedDb, m->getMixLevelDb()) + " dB", juce::Rectangle<int> (colLevel, y, 80, rowHeight), juce::Justification::centredRight, false);
+                    for (auto& c : lastChanges)
+                        if (c.member == m)
+                        {
+                            g.setFont (text (13.5f, 1));
+                            if (c.heard)
+                            {
+                                g.setColour (c.limited ? Colours::reduction : Colours::gate);
+                                g.drawText ("LEVEL " + Holo::formatValue (Format::signedDb, c.oldLevel) + " > " + Holo::formatValue (Format::signedDb, c.newLevel)
+                                            + (c.limited ? "  (as far as it goes)" : ""), juce::Rectangle<int> (colChange + 20, y, 190, rowHeight), juce::Justification::centredLeft, true);
+                            }
+                            else
+                            {
+                                g.setColour (Colours::dim);
+                                g.drawText (leave ? "left alone" : "not heard: left as it was", juce::Rectangle<int> (colChange + 20, y, 190, rowHeight), juce::Justification::centredLeft, true);
+                            }
+                        }
+                }
+                if ((int) members.size() > maxRows)
+                {
+                    g.setColour (Colours::dim);
+                    g.setFont (text (13.0f, 0));
+                    g.drawText ("... and " + juce::String ((int) members.size() - maxRows) + " more (they're balanced too)",
+                                juce::Rectangle<int> (colTrack, tableTop + 30 + maxRows * rowHeight, 400, rowHeight), juce::Justification::centredLeft, false);
+                }
+                paintGlows (g, *this);
+            }
+
+            View& view;
+            std::unique_ptr<Choice> style;
+            Button learnAll { "LEARN ALL", Colours::cyan }, balance { "BALANCE", Colours::selected }, undo { "UNDO", Colours::dim }, close { "CLOSE", Colours::cyan };
+            Button deskButton { "DESK:  NONE", Colours::tape };
+            std::unique_ptr<Choice> deskDrive;
+        };
     }
 
     //==========================================================================
@@ -442,6 +747,10 @@ namespace Holo
         addHint (bypassButton, "BYPASS", bypassHint);
 
         setupButton.onClick = [this] { showSetup (! isSetupShowing()); };
+        mixButton.onClick = [this] { showMix (mixPanel == nullptr); };
+        addAndMakeVisible (mixButton);
+        addHint (mixButton, "THE MIX", "Every Easy Strip in this project on one page: LEARN ALL sets every track's TRIM (gain staging), and BALANCE listens "
+                 "to the song and sets every strip's LEVEL for a rough mix in your STYLE - a start to tweak from.");
         addAndMakeVisible (setupButton);
         addHint (setupButton, "SETUP", setupHint);
 
@@ -473,6 +782,58 @@ namespace Holo
         polarityButton.fontSize = 16.0f;
         addAndMakeVisible (polarityButton);
         addHint (polarityButton, "POLARITY", polarityHint);
+        learnButton.fontSize = 14.0f;
+        learnButton.setClickingTogglesState (false);
+        learnButton.onClick = [this]
+        {
+            if (strip.isLearning())
+            {
+                const bool enough = strip.getLearnSeconds() >= GainStager::minimumSeconds;
+                strip.finishLearning();
+                if (! enough) announce ("LEARN", "Stopped - it needs at least 3 seconds of the song playing (with the track heard) to set TRIM.", 5);
+            }
+            else
+            {
+                strip.startLearning();
+                announce ("LEARN", "Listening - play the song (a busy part is best). TRIM is set after 30 seconds of playing; click LEARN again to stop sooner.", 8);
+            }
+        };
+        addAndMakeVisible (learnButton);
+        addHint (learnButton, "LEARN", learnHint);
+        deskButton.fontSize = 12.5f;
+        deskButton.setClickingTogglesState (false);
+        deskButton.onClick = [this]
+        {
+            juce::PopupMenu menu, drives;
+            const int current = strip.getMixDesk(), drive = strip.getMixDeskDrive();
+            for (int d = 0; d < ConsoleColour::numDrives; ++d)
+                drives.addItem (100 + d, ConsoleColour::driveName (d), current != ConsoleColour::off, d == drive);
+            for (int d = 0; d < ConsoleColour::numDesks; ++d)
+            {
+                if (d == 1 || d == ConsoleColour::ua610 || d == ConsoleColour::helios || d == ConsoleColour::harrison) menu.addSeparator();
+                menu.addItem (d + 1, ConsoleColour::desk (d).name, true, d == current);
+            }
+            menu.addSeparator();
+            menu.addSubMenu ("How hard it's driven", drives);
+            menu.addItem (200, "The same desk on every track... (THE MIX)");
+            juce::Component::SafePointer<View> safe (this);
+            menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&deskButton), [safe] (int chosen)
+            {
+                if (safe == nullptr || chosen == 0) return;
+                auto& s = safe->strip;
+                if (chosen == 200) { safe->showMix (true); return; }
+                if (chosen >= 100) s.setMixDesk (s.getMixDesk(), chosen - 100);
+                else               s.setMixDesk (chosen - 1, s.getMixDeskDrive());
+                safe->announce ("DESK", s.getMixDesk() == ConsoleColour::off ? juce::String ("This track: clean, no desk colour.")
+                                         : "This track goes through the " + juce::String (ConsoleColour::desk (s.getMixDesk()).name) + " desk, driven "
+                                           + juce::String (ConsoleColour::driveName (s.getMixDeskDrive())).toLowerCase() + ".", 6);
+            });
+        };
+        addAndMakeVisible (deskButton);
+        addHint (deskButton, "DESK", "The console this track runs through - its colour, right after TRIM. Valve desks (610, REDD, V72) add warmth and a "
+                 "sweet top; British, Helios and Trident weight and edge; SSL and Harrison stay clean and polished. Subtle, like the real thing. "
+                 "Click to choose (and how hard it's driven); THE MIX puts one desk on every track.");
+        shownLearnCount = strip.getLearnCount();
 
         // The rack (WEAPON SELECT), behind the modules' panels
         rack = std::make_unique<RackPanel>();
@@ -631,6 +992,8 @@ namespace Holo
             auto h = headerArea.reduced (14, 6);
 
             setupButton.setBounds (h.removeFromRight (96));
+            h.removeFromRight (8);
+            mixButton.setBounds (h.removeFromRight (72));
             h.removeFromRight (12);
             bypassButton.setBounds (h.removeFromRight (90));
             h.removeFromRight (12);
@@ -652,7 +1015,7 @@ namespace Holo
             h.removeFromRight (16);
             presetNext.setBounds (h.removeFromRight (30));
             h.removeFromRight (4);
-            presetWindow = h.removeFromRight (560);
+            presetWindow = h.removeFromRight (480);
             presetWindowComponent->setBounds (presetWindow);
             h.removeFromRight (4);
             presetPrevious.setBounds (h.removeFromRight (30));
@@ -686,6 +1049,10 @@ namespace Holo
             polarityButton.setBounds (c.removeFromBottom (30).withSizeKeepingCentre (46, 30));
             c.removeFromBottom (8);
             trim->setBounds (c.removeFromBottom (trim->getIdealHeight()).withSizeKeepingCentre (trim->getIdealWidth(), trim->getIdealHeight()));
+            c.removeFromBottom (6);
+            learnButton.setBounds (c.removeFromBottom (30).withSizeKeepingCentre (58, 30));
+            c.removeFromBottom (6);
+            deskButton.setBounds (c.removeFromBottom (30).withSizeKeepingCentre (58, 30));
             c.removeFromBottom (12);
             inputMeter.setBounds (c.withTrimmedTop (8));
         }
@@ -1073,6 +1440,30 @@ namespace Holo
             autoGainReadout.setColour (juce::Label::textColourId, on ? Colours::gate : Colours::dim);
         }
 
+        // DESK: its short name, lit when there is one
+        {
+            const int d = strip.getMixDesk();
+            const auto t = d == ConsoleColour::off ? juce::String ("DESK") : juce::String (ConsoleColour::desk (d).shortName);
+            if (deskButton.getButtonText() != t) deskButton.setButtonText (t);
+            deskButton.setToggleState (d != ConsoleColour::off, juce::dontSendNotification);
+        }
+
+        // LEARN: lit while it listens, counting the seconds heard; then what it set
+        {
+            const bool learning = strip.isLearning();
+            learnButton.setToggleState (learning, juce::dontSendNotification);
+            const auto text = learning ? juce::String ((int) strip.getLearnSeconds()) + " s" : juce::String ("LEARN");
+            if (learnButton.getButtonText() != text) learnButton.setButtonText (text);
+            if (strip.getLearnCount() != shownLearnCount)
+            {
+                shownLearnCount = strip.getLearnCount();
+                const auto r = strip.getLastLearn();
+                announce ("LEARN", "TRIM set to " + Holo::formatValue (Format::signedDb, r.trimDb) + " dB. The track came in averaging "
+                          + juce::String (r.averageDb, 1) + " dBFS on its busy parts, peaking at " + juce::String (r.peakDb, 1) + " dBFS"
+                          + (r.peakLimited ? " - its peaks decided it (kept at -6 dBFS), so the average sits a little lower than -18." : " - now -18 average, peaks to spare."), 12);
+            }
+        }
+
         static_cast<Readout*> (lufsShortTerm.get())->set (strip.getShortTermLufs());
         static_cast<Readout*> (lufsIntegrated.get())->set (strip.getIntegratedLufs());
 
@@ -1225,6 +1616,20 @@ namespace Holo
     }
 
     bool View::isSetupShowing() const   { return setupPanel != nullptr; }
+
+    void View::showMix (bool show)
+    {
+        if (show && mixPanel == nullptr)
+        {
+            showSetup (false);
+            mixPanel = std::make_unique<MixPanel> (*this);
+            addAndMakeVisible (*mixPanel);
+            mixPanel->setCentrePosition (width / 2, 506);
+        }
+        else if (! show)
+            mixPanel.reset();
+        mixButton.setToggleState (show, juce::dontSendNotification);
+    }
 
     //==========================================================================
     // Presets

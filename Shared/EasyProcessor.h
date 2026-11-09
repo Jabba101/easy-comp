@@ -49,7 +49,7 @@ public:
 
     /** Sets the knobs to a preset (BYPASS and AUTO-GAIN are left alone). Any
         knob the preset doesn't mention goes back to its default. */
-    void loadPreset (const Preset&);
+    virtual void loadPreset (const Preset&);
 
     /** The current knob settings, in the form a preset stores them. */
     std::vector<std::pair<juce::String, float>> getCurrentPresetValues() const;

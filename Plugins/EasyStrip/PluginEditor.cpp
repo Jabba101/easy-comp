@@ -147,6 +147,12 @@ ClassicStripWindow::ClassicStripWindow (EasyStripAudioProcessor& p)
     polarityAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (easyProcessor.parameters, StripIDs::polarity, polarityButton);
     addHint (polarityButton, "POLARITY", polarityHint);
 
+    addAndMakeVisible (learnButton);
+    learnButton.setClickingTogglesState (false);
+    learnButton.onClick = [this] { if (strip.isLearning()) strip.finishLearning(); else strip.startLearning(); };
+    addHint (learnButton, "LEARN", "Gain staging: click and play the song. After 30 seconds of playing (or when you click again) it sets TRIM once: "
+             "the busy parts averaging -18 dBFS, the peaks no higher than -6 dBFS.");
+
     addAndMakeVisible (inputMeter);
     addHint (inputMeter, "INPUT", "How loud the sound is going in, after TRIM (0 dB at the top mark).");
     addAndMakeVisible (outputMeter);
@@ -250,6 +256,8 @@ void ClassicStripWindow::layoutBody (juce::Rectangle<int> area)
     placeKnob (trimKnob, trimLabel, input);
     input.removeFromTop (10);
     polarityButton.setBounds (input.removeFromTop (32).withSizeKeepingCentre (60, 32));
+    input.removeFromTop (6);
+    learnButton.setBounds (input.removeFromTop (28).withSizeKeepingCentre (64, 28));
     input.removeFromTop (16);
     inputMeter.setBounds (input.withSizeKeepingCentre (28, input.getHeight()));
 
@@ -307,6 +315,8 @@ void ClassicStripWindow::refreshLiveDisplays()
     outputMeter.setLevel (strip.takeOutputPeak());
     shortTermReadout.setText (lufsText ("S  ", strip.getShortTermLufs()), juce::dontSendNotification);
     integratedReadout.setText (lufsText ("I  ", strip.getIntegratedLufs()), juce::dontSendNotification);
+    learnButton.setToggleState (strip.isLearning(), juce::dontSendNotification);
+    learnButton.setButtonText (strip.isLearning() ? juce::String ((int) strip.getLearnSeconds()) + " s" : juce::String ("LEARN"));
 
     for (int m = 0; m < EasyStripAudioProcessor::numModules; ++m)
         onLamps[(size_t) m]->setToggleState (strip.isModuleOn (m), juce::dontSendNotification);
