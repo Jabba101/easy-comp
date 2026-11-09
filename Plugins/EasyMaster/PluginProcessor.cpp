@@ -321,6 +321,9 @@ void EasyMasterAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     mid.setSize (1, block);
     sides.setSize (1, block);
     original.setSize (2, block);
+    referenceAudio.setSize (2, block);
+    heardAudio.setSize (2, block);
+    reference.prepare (sampleRate, block);
 
     trimGain.reset (sampleRate, 0.05);
     trimGain.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (trimValue->load()));
@@ -528,6 +531,13 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
 
     const float limitGain = juce::Decibels::decibelsToGain (limitGainValue->load());
 
+    // REFERENCE: plays while the DAW plays (with no DAW transport - e.g. standalone - it just plays)
+    bool hostPlaying = true;
+    if (auto* head = getPlayHead())
+        if (auto position = head->getPosition())
+            hostPlaying = position->getIsPlaying();
+    reference.beginBlock (hostPlaying);
+
     for (int start = 0; start < total;)
     {
         const int n = std::min ({ total - start, momentLength - momentFilled, mid.getNumSamples() });
@@ -616,29 +626,37 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
             if ((n % 2) == 1) scopeSkip = ! scopeSkip;
         }
 
-        // MATCH, LISTEN, BYPASS
+        // MATCH, BYPASS, the REFERENCE, then LISTEN (which checks either in mono, mid or side)
         float* left = part.getWritePointer (0);
         float* right = part.getWritePointer (1);
+        float* refL = referenceAudio.getWritePointer (0);
+        float* refR = referenceAudio.getWritePointer (1);
+        float* heardL = heardAudio.getWritePointer (0);
+        float* heardR = heardAudio.getWritePointer (1);
+        reference.render (refL, refR, n);
         for (int i = 0; i < n; ++i)
         {
             const float g = matchGain.getNextValue();
-            float l = left[i] * g, r = right[i] * g;
-            const float m = 0.5f * (l + r), s = 0.5f * (l - r);
-            const float fs = listenFades[0].getNextValue(), fm = listenFades[1].getNextValue(),
-                        fsi = listenFades[2].getNextValue(), fmo = listenFades[3].getNextValue();
-            // (MID and MONO: the middle in both speakers; SIDE: the difference, in both speakers)
-            const float heardL = l * fs + m * (fm + fmo) + s * fsi;
-            const float heardR = r * fs + m * (fm + fmo) + s * fsi;
-
             const float dryL = dryDelay[0][(size_t) dryPos], dryR = dryDelay[1][(size_t) dryPos];
             dryDelay[0][(size_t) dryPos] = original.getSample (0, i);
             dryDelay[1][(size_t) dryPos] = original.getSample (1, i);
             dryPos = (dryPos + 1) % (int) dryDelay[0].size();
 
             const float b = bypassFade.getNextValue();
-            left[i]  = b >= 1.0f ? dryL : heardL * (1.0f - b) + dryL * b;
-            right[i] = b >= 1.0f ? dryR : heardR * (1.0f - b) + dryR * b;
+            const float ourL = b >= 1.0f ? dryL : left[i] * g * (1.0f - b) + dryL * b;
+            const float ourR = b >= 1.0f ? dryR : right[i] * g * (1.0f - b) + dryR * b;
+            heardL[i] = ourL; heardR[i] = ourR;
+
+            const float x = reference.nextListen();
+            const float l = ourL * (1.0f - x) + refL[i] * x, r = ourR * (1.0f - x) + refR[i] * x;
+            const float m = 0.5f * (l + r), s = 0.5f * (l - r);
+            const float fs = listenFades[0].getNextValue(), fm = listenFades[1].getNextValue(),
+                        fsi = listenFades[2].getNextValue(), fmo = listenFades[3].getNextValue();
+            // (MID and MONO: the middle in both speakers; SIDE: the difference, in both speakers)
+            left[i]  = l * fs + m * (fm + fmo) + s * fsi;
+            right[i] = r * fs + m * (fm + fmo) + s * fsi;
         }
+        reference.measureOurs (heardL, heardR, n, hostPlaying);
 
         momentFilled += n;
         if (momentFilled >= momentLength)
@@ -706,6 +724,47 @@ EasyMasterAudioProcessor::TamerPicture EasyMasterAudioProcessor::getTamerPicture
 }
 
 //==============================================================================
+//==============================================================================
+// REFERENCE (remembered as properties of the settings, outside the presets and A / B)
+void EasyMasterAudioProcessor::loadReference (const juce::File& file)
+{
+    parameters.state.setProperty ("referenceFile", file.getFullPathName(), nullptr);
+    parameters.state.setProperty ("referenceStart", 0.0, nullptr);
+    parameters.state.setProperty ("referenceEnd", 0.0, nullptr);
+    reference.setSection (0.0, 0.0);
+    reference.load (file);
+}
+
+void EasyMasterAudioProcessor::clearReference()
+{
+    parameters.state.removeProperty ("referenceFile", nullptr);
+    reference.clear();
+}
+
+void EasyMasterAudioProcessor::setReferenceSection (double startSeconds, double endSeconds)
+{
+    reference.setSection (startSeconds, endSeconds);
+    parameters.state.setProperty ("referenceStart", reference.getStart(), nullptr);
+    parameters.state.setProperty ("referenceEnd", reference.getEnd(), nullptr);
+}
+
+void EasyMasterAudioProcessor::setReferenceMatching (bool shouldMatch)
+{
+    reference.setMatching (shouldMatch);
+    parameters.state.setProperty ("referenceMatch", shouldMatch, nullptr);
+}
+
+void EasyMasterAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+{
+    EasyProcessor::setStateInformation (data, sizeInBytes);
+    const auto& state = parameters.state;
+    reference.setMatching ((bool) state.getProperty ("referenceMatch", true));
+    reference.setSection ((double) state.getProperty ("referenceStart", 0.0), (double) state.getProperty ("referenceEnd", 0.0));
+    const juce::File file (state.getProperty ("referenceFile", juce::String()).toString());
+    if (file.existsAsFile()) { if (file != reference.getFile()) reference.load (file); }
+    else if (reference.getStatus() != ReferenceTrack::empty) reference.clear();
+}
+
 juce::AudioProcessorEditor* EasyMasterAudioProcessor::createEditor()
 {
     return new EasyMasterAudioProcessorEditor (*this);

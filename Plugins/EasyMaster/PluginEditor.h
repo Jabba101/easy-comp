@@ -174,6 +174,61 @@ private:
 };
 
 //==============================================================================
+/** The REFERENCE page: a finished song to compare with. Its frequency picture
+    (gold) over the master's (cyan) - both at the same loudness, so only the
+    balance differs - and underneath, the whole song's loudness: click to
+    start there, drag to choose a part to loop. LOAD SONG (or drop a file
+    on the page); MATCH LOUDNESS keeps the two equally loud. */
+class ReferenceDisplay : public juce::Component,
+                         public juce::FileDragAndDropTarget
+{
+public:
+    explicit ReferenceDisplay (EasyMasterAudioProcessor&);
+    void update();                    // (the console's timer: the master's picture, the cursor)
+    void chooseFile();                // LOAD SONG
+    void paint (juce::Graphics&) override;
+    void resized() override;
+    void mouseDown (const juce::MouseEvent&) override;
+    void mouseDrag (const juce::MouseEvent&) override;
+    void mouseUp (const juce::MouseEvent&) override;
+    void mouseDoubleClick (const juce::MouseEvent&) override;
+    bool isInterestedInFileDrag (const juce::StringArray&) override;
+    void filesDropped (const juce::StringArray&, int, int) override;
+    void fileDragEnter (const juce::StringArray&, int, int) override   { dropping = true; repaint(); }
+    void fileDragExit (const juce::StringArray&) override              { dropping = false; repaint(); }
+
+    Holo::Button load { "LOAD SONG", MasterSkin::cyan }, remove { "REMOVE", MasterSkin::textDim }, match { "MATCH LOUDNESS", juce::Colour (0xffffd257) };
+
+    /** The biggest differences, in words (public so it can be tested). */
+    juce::String describeDifference() const;
+    const std::vector<float>& getReferencePicture() const noexcept   { return refBands; }
+    const std::vector<float>& getMasterPicture() const noexcept      { return ourBands; }
+
+private:
+    juce::Rectangle<float> plotArea() const;
+    juce::Rectangle<float> overviewArea() const;
+    float xOf (double hz) const;
+    double secondsAt (float x) const;
+    float xOfSeconds (double seconds) const;
+    static std::vector<float> smoothed (const std::vector<float>&);
+
+    EasyMasterAudioProcessor& processor;
+    BandSpectrum analyser;
+    std::vector<float> incoming, frame;
+    int frameFilled = 0;
+    std::array<double, BandSpectrum::numBands> ourAverage {};
+    bool haveOurs = false;
+    std::vector<float> ourBands, refBands, overview;
+    juce::String shownName;
+    int shownStatus = -1;
+    double shownStart = -1.0, shownEnd = -1.0, analyserRate = 0.0;
+    double dragFrom = -1.0;
+    float downX = 0.0f;
+    bool dragged = false, dropping = false;
+    std::unique_ptr<juce::FileChooser> chooser;
+};
+
+//==============================================================================
 namespace MasterHolo { class Console; }
 
 /** The Easy Master window: the console (laid out at 1800 x 1030) at any size -

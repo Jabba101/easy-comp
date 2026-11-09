@@ -74,6 +74,20 @@ namespace MasterHints
     inline constexpr const char* matchHint =
         "Plays the whole chain exactly as loud as the original (it follows the loudness over a few seconds). Click BYPASS "
         "on and off with MATCH on: you're judging the sound, not the volume. Switch it off when you're done.";
+    inline constexpr const char* refHint =
+        "REF swaps what you hear between your master and a finished song you admire (the REFERENCE page loads it). It plays "
+        "along while your DAW plays, never goes through the chain, and is turned up or down to be exactly as loud as your "
+        "master - so you compare the sound, not the volume. Click it on and off as often as you like.";
+    inline constexpr const char* refPageHint =
+        "Gold: the reference's balance from deep bass to air; cyan: your master's (the last few seconds). Both are drawn at the "
+        "same loudness, so where they part is a real difference in balance. Underneath, the whole song: click to start there, "
+        "drag across to loop just that part (a chorus against your chorus), double-click for the whole song. Drop a file here to load it.";
+    inline constexpr const char* refLoadHint =
+        "Choose a finished song to compare with (WAV, FLAC, MP3, AIFF or OGG). It's remembered with your project. Pick one in "
+        "the same style, mastered the way you'd like yours to sound.";
+    inline constexpr const char* refMatchHint =
+        "On (normally): the reference is turned up or down to be as loud as your master over the last 20 seconds - commercial "
+        "masters are often louder, and louder always sounds better. Off: you hear it as it is, to judge how loud it really is.";
     inline constexpr const char* listenHint =
         "For checking, not for exporting: STEREO as normal; MID = only the middle; SIDE = only the difference between "
         "left and right (the width - reverb, wide guitars); MONO = how it sounds on a phone or club speaker.";

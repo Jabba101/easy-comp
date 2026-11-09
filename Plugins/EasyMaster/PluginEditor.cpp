@@ -1151,6 +1151,416 @@ void MultibandDisplay::paint (juce::Graphics& g)
 
 
 //==============================================================================
+//==============================================================================
+// REFERENCE
+//==============================================================================
+namespace
+{
+    const juce::Colour refColour { 0xffffd257 };   // the reference: gold
+    const juce::Colour ourColour = MasterSkin::cyan;  // the master: cyan
+
+    juce::String timeText (double seconds)
+    {
+        const int s = juce::jmax (0, (int) std::floor (seconds + 0.05));
+        return juce::String (s / 60) + ":" + juce::String (s % 60).paddedLeft ('0', 2);
+    }
+}
+
+ReferenceDisplay::ReferenceDisplay (EasyMasterAudioProcessor& p) : processor (p)
+{
+    incoming.resize (16384);
+    frame.resize ((size_t) BandSpectrum::fftSize);
+    for (auto* b : { &load, &remove, &match })
+    {
+        b->fontSize = 13.5f;
+        addAndMakeVisible (*b);
+    }
+    load.onClick = [this] { chooseFile(); };
+    remove.onClick = [this] { processor.clearReference(); repaint(); };
+    match.setClickingTogglesState (false);
+    match.onClick = [this] { processor.setReferenceMatching (! processor.getReference().isMatching()); };
+}
+
+void ReferenceDisplay::resized()
+{
+    auto top = getLocalBounds().reduced (12, 8).removeFromTop (28);
+    load.setBounds (top.removeFromLeft (104));
+    top.removeFromLeft (6);
+    remove.setBounds (top.removeFromLeft (72));
+    match.setBounds (top.removeFromRight (132));
+}
+
+juce::Rectangle<float> ReferenceDisplay::plotArea() const
+{
+    return getLocalBounds().toFloat().reduced (14.0f, 8.0f).withTrimmedTop (60.0f).withTrimmedLeft (30.0f).withTrimmedBottom (112.0f);
+}
+
+juce::Rectangle<float> ReferenceDisplay::overviewArea() const
+{
+    const auto all = getLocalBounds().toFloat().reduced (14.0f, 8.0f);
+    return { all.getX(), all.getBottom() - 62.0f, all.getWidth(), 44.0f };
+}
+
+float ReferenceDisplay::xOf (double hz) const
+{
+    const auto p = plotArea();
+    return p.getX() + p.getWidth() * (float) (std::log (hz / 20.0) / std::log (1000.0));
+}
+
+double ReferenceDisplay::secondsAt (float x) const
+{
+    const auto o = overviewArea();
+    return juce::jlimit (0.0, processor.getReference().getLengthSeconds(), (double) ((x - o.getX()) / o.getWidth()) * processor.getReference().getLengthSeconds());
+}
+
+float ReferenceDisplay::xOfSeconds (double seconds) const
+{
+    const auto o = overviewArea();
+    const double length = juce::jmax (0.001, processor.getReference().getLengthSeconds());
+    return o.getX() + o.getWidth() * (float) juce::jlimit (0.0, 1.0, seconds / length);
+}
+
+std::vector<float> ReferenceDisplay::smoothed (const std::vector<float>& bands)
+{
+    // (each band with its neighbours: half an octave - the shape, not every wiggle)
+    std::vector<float> out (bands.size());
+    for (size_t b = 0; b < bands.size(); ++b)
+    {
+        double e = 0.0; int n = 0;
+        for (size_t k = b > 1 ? b - 1 : 0; k <= juce::jmin (bands.size() - 1, b + 1); ++k) { e += std::pow (10.0, bands[k] / 10.0); ++n; }
+        out[b] = (float) (10.0 * std::log10 (e / n));
+    }
+    return out;
+}
+
+void ReferenceDisplay::update()
+{
+    auto& ref = processor.getReference();
+
+    // The master's picture: every half window of what you hear, averaged over about six seconds
+    const double rate = processor.getSampleRate() > 0 ? processor.getSampleRate() : 48000.0;
+    if (std::abs (rate - analyserRate) > 0.5) { analyser.prepare (rate); analyser.setRate (rate); analyserRate = rate; frameFilled = 0; haveOurs = false; }
+    const int count = ref.takeOurs (incoming.data(), (int) incoming.size());
+    bool changed = false;
+    for (int i = 0; i < count; ++i)
+    {
+        frame[(size_t) frameFilled++] = incoming[(size_t) i];
+        if (frameFilled == BandSpectrum::fftSize)
+        {
+            std::array<float, BandSpectrum::numBands> bands {};
+            analyser.analyse (frame.data(), bands.data());
+            const double hop = BandSpectrum::fftSize / 2 / rate, keep = std::exp (-hop / 6.0);
+            for (int b = 0; b < BandSpectrum::numBands; ++b)
+                ourAverage[(size_t) b] = haveOurs ? ourAverage[(size_t) b] * keep + bands[(size_t) b] * (1.0 - keep) : bands[(size_t) b];
+            haveOurs = true;
+            changed = true;
+            // (slide the window on by half)
+            std::copy (frame.begin() + BandSpectrum::fftSize / 2, frame.end(), frame.begin());
+            frameFilled = BandSpectrum::fftSize / 2;
+        }
+    }
+    if (changed && ref.getOurLufs() > -70.0f)
+    {
+        ourBands.resize ((size_t) BandSpectrum::numBands);
+        for (int b = 0; b < BandSpectrum::numBands; ++b)
+            ourBands[(size_t) b] = (float) (10.0 * std::log10 (ourAverage[(size_t) b] + 1.0e-20)) - ref.getOurLufs();
+    }
+
+    // The reference's picture and overview: when the song or the part changes
+    if (ref.getStatus() != shownStatus || ref.getName() != shownName || std::abs (ref.getStart() - shownStart) > 1.0e-6 || std::abs (ref.getEnd() - shownEnd) > 1.0e-6)
+    {
+        shownStatus = ref.getStatus(); shownName = ref.getName(); shownStart = ref.getStart(); shownEnd = ref.getEnd();
+        refBands = ref.getSectionSpectrum();
+        overview = ref.getOverview();
+    }
+    match.setToggleState (ref.isMatching(), juce::dontSendNotification);
+    remove.setEnabled (ref.getStatus() != ReferenceTrack::empty);
+    repaint();
+}
+
+void ReferenceDisplay::chooseFile()
+{
+    chooser = std::make_unique<juce::FileChooser> ("Choose a reference song", processor.getReference().getFile(), "*.wav;*.flac;*.mp3;*.aif;*.aiff;*.ogg");
+    chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles, [this] (const juce::FileChooser& c)
+    {
+        if (c.getResult().existsAsFile()) processor.loadReference (c.getResult());
+    });
+}
+
+bool ReferenceDisplay::isInterestedInFileDrag (const juce::StringArray& files)
+{
+    for (auto& f : files)
+        if (juce::File (f).hasFileExtension ("wav;flac;mp3;aif;aiff;ogg")) return true;
+    return false;
+}
+
+void ReferenceDisplay::filesDropped (const juce::StringArray& files, int, int)
+{
+    dropping = false;
+    for (auto& f : files)
+        if (juce::File (f).hasFileExtension ("wav;flac;mp3;aif;aiff;ogg")) { processor.loadReference (juce::File (f)); break; }
+    repaint();
+}
+
+void ReferenceDisplay::mouseDown (const juce::MouseEvent& e)
+{
+    dragFrom = -1.0; dragged = false; downX = e.position.x;
+    if (processor.getReference().getStatus() == ReferenceTrack::ready && overviewArea().expanded (0.0f, 6.0f).contains (e.position))
+        dragFrom = secondsAt (e.position.x);
+}
+
+void ReferenceDisplay::mouseDrag (const juce::MouseEvent& e)
+{
+    if (dragFrom < 0.0 || std::abs (e.position.x - downX) < 4.0f) return;
+    dragged = true;
+    const double t = secondsAt (e.position.x);
+    processor.setReferenceSection (juce::jmin (dragFrom, t), juce::jmax (dragFrom, t));
+}
+
+void ReferenceDisplay::mouseUp (const juce::MouseEvent&)
+{
+    if (dragFrom >= 0.0 && ! dragged)
+    {
+        // A click: START here (the loop's end stays if it's still after it)
+        const auto& ref = processor.getReference();
+        processor.setReferenceSection (dragFrom, ref.getEnd() > dragFrom + 1.0 ? ref.getEnd() : 0.0);
+    }
+    dragFrom = -1.0;
+}
+
+void ReferenceDisplay::mouseDoubleClick (const juce::MouseEvent& e)
+{
+    if (overviewArea().expanded (0.0f, 6.0f).contains (e.position))
+        processor.setReferenceSection (0.0, 0.0);   // the whole song
+}
+
+juce::String ReferenceDisplay::describeDifference() const
+{
+    if (refBands.size() != (size_t) BandSpectrum::numBands || ourBands.size() != (size_t) BandSpectrum::numBands) return {};
+    // In plain regions (a third of an octave smoothed); the biggest one each way
+    const auto r = smoothed (refBands), o = smoothed (ourBands);
+    int more = -1, less = -1; float mostMore = 1.5f, mostLess = -1.5f;   // (under 1.5 dB: not worth mentioning)
+    for (int b = 6; b < BandSpectrum::numBands - 2; ++b)   // (40 Hz - 16 kHz: below that, too little to judge by)
+    {
+        const float d = r[(size_t) b] - o[(size_t) b];
+        if (d > mostMore) { mostMore = d; more = b; }
+        if (d < mostLess) { mostLess = d; less = b; }
+    }
+    const auto hz = [] (int b) { const double f = BandSpectrum::centreHz (b); return f >= 1000.0 ? juce::String (f / 1000.0, 1) + " kHz" : juce::String (juce::roundToInt (f / (f > 200.0 ? 10.0 : 5.0)) * (f > 200.0 ? 10 : 5)) + " Hz"; };
+    juce::StringArray parts;
+    if (more >= 0) parts.add ("the reference has more around " + hz (more) + " (+" + juce::String (mostMore, 1) + " dB)");
+    if (less >= 0) parts.add ("yours has more around " + hz (less) + " (+" + juce::String (-mostLess, 1) + " dB)");
+    if (parts.isEmpty()) return "Very close: no difference bigger than 1.5 dB.";
+    auto text = parts.joinIntoString ("; ") + ".";
+    return text.substring (0, 1).toUpperCase() + text.substring (1);
+}
+
+void ReferenceDisplay::paint (juce::Graphics& g)
+{
+    const auto& ref = processor.getReference();
+    const auto area = getLocalBounds().toFloat();
+    g.setColour (MasterSkin::background);
+    g.fillRoundedRectangle (area, 6.0f);
+    const auto plot = plotArea();
+    const int status = ref.getStatus();
+
+    // The song's name (beside the buttons)
+    {
+        auto line = getLocalBounds().reduced (12, 8).removeFromTop (28).toFloat().withTrimmedLeft (190.0f).withTrimmedRight (140.0f);
+        g.setFont (MasterSkin::font (13.5f, true));
+        juce::String text; juce::Colour colour = MasterSkin::textBright;
+        if (status == ReferenceTrack::ready)   text = ref.getName();
+        else if (status == ReferenceTrack::loading) { text = "Reading the song..."; colour = MasterSkin::accent; }
+        else if (status == ReferenceTrack::failed)  { text = ref.getError(); colour = MasterSkin::meterHigh; }
+        else { text = "No reference loaded"; colour = MasterSkin::textDim; }
+        g.setColour (colour);
+        g.drawFittedText (text, line.toNearestInt(), juce::Justification::centredLeft, 1, 0.8f);
+    }
+    // ... and under them, the loudness numbers
+    {
+        auto line = juce::Rectangle<float> (area.getX() + 14.0f, area.getY() + 40.0f, area.getWidth() - 28.0f, 18.0f);
+        g.setFont (MasterSkin::font (12.0f));
+        g.setColour (MasterSkin::textDim);
+        juce::String text;
+        if (status == ReferenceTrack::ready)
+        {
+            const float refLufs = ref.getSectionLufs(), ourLufs = ref.getOurLufs();
+            text = "Reference " + (refLufs > -70.0f ? juce::String (refLufs, 1) + " LUFS" : juce::String ("--"))
+                 + (ref.getEnd() > 0.0 ? " (" + timeText (ref.getStart()) + " to " + timeText (ref.getEnd()) + ")" : (ref.getStart() > 0.0 ? " (from " + timeText (ref.getStart()) + ")" : juce::String()))
+                 + "   -   yours " + (ourLufs > -70.0f ? juce::String (ourLufs, 1) + " LUFS (last 20 s)" : juce::String ("-- (press play)"));
+            if (refLufs > -70.0f && ourLufs > -70.0f)
+            {
+                const float d = refLufs - ourLufs;
+                text << "   -   " << (std::abs (d) < 0.25f ? juce::String ("the same loudness")
+                                       : "the reference is " + juce::String (std::abs (d), 1) + " dB " + (d > 0 ? "louder" : "quieter"))
+                     << (ref.isMatching() ? ", matched" : "");
+            }
+        }
+        g.drawText (text, line, juce::Justification::centredLeft, true);
+    }
+
+    // The frequency pictures (the same loudness: only the balance differs)
+    const float topDbShown = [&]
+    {
+        float m = -100.0f;
+        for (auto* v : { &refBands, &ourBands }) for (float x : *v) m = juce::jmax (m, x);
+        return m > -99.0f ? std::ceil ((m + 3.0f) / 6.0f) * 6.0f : 0.0f;
+    }();
+    const float spanDb = 36.0f;
+    const auto yOf = [&] (float db) { return plot.getY() + plot.getHeight() * juce::jlimit (0.0f, 1.0f, (topDbShown - db) / spanDb); };
+    g.setFont (MasterSkin::font (11.0f));
+    for (float db = topDbShown; db >= topDbShown - spanDb - 0.01f; db -= 6.0f)
+    {
+        g.setColour (MasterSkin::panelEdge);
+        g.drawHorizontalLine (juce::roundToInt (yOf (db)), plot.getX(), plot.getRight());
+    }
+    g.setColour (MasterSkin::textDim);
+    g.drawText ("6 dB", juce::Rectangle<float> (plot.getX() - 34.0f, yOf (topDbShown - 6.0f) - 7.0f, 30.0f, 14.0f), juce::Justification::centredRight, false);
+    for (double hz : { 50.0, 100.0, 200.0, 500.0, 1000.0, 2000.0, 5000.0, 10000.0 })
+    {
+        g.setColour (MasterSkin::panelEdge);
+        g.drawVerticalLine (juce::roundToInt (xOf (hz)), plot.getY(), plot.getBottom());
+        g.setColour (MasterSkin::textDim);
+        g.drawText (hz >= 1000.0 ? juce::String ((int) (hz / 1000.0)) + "k" : juce::String ((int) hz),
+                    juce::Rectangle<float> (xOf (hz) - 20.0f, plot.getBottom() + 3.0f, 40.0f, 14.0f), juce::Justification::centred, false);
+    }
+    const auto curvePath = [&] (const std::vector<float>& bands)
+    {
+        juce::Path path;
+        const auto s = smoothed (bands);
+        for (int b = 0; b < BandSpectrum::numBands; ++b)
+        {
+            const float x = xOf (BandSpectrum::centreHz (b)), y = yOf (s[(size_t) b]);
+            if (b == 0) path.startNewSubPath (x, y); else path.lineTo (x, y);
+        }
+        return path;
+    };
+    {
+        juce::Graphics::ScopedSaveState save (g);
+        g.reduceClipRegion (plot.toNearestInt());
+        const bool both = refBands.size() == (size_t) BandSpectrum::numBands && ourBands.size() == (size_t) BandSpectrum::numBands;
+        if (both)
+        {
+            // Between the two: gold where the reference has more, cyan where yours has
+            const auto r = smoothed (refBands), o = smoothed (ourBands);
+            for (int b = 0; b + 1 < BandSpectrum::numBands; ++b)
+            {
+                const float x0 = xOf (BandSpectrum::centreHz (b)), x1 = xOf (BandSpectrum::centreHz (b + 1));
+                juce::Path strip;
+                strip.startNewSubPath (x0, yOf (r[(size_t) b])); strip.lineTo (x1, yOf (r[(size_t) b + 1]));
+                strip.lineTo (x1, yOf (o[(size_t) b + 1])); strip.lineTo (x0, yOf (o[(size_t) b])); strip.closeSubPath();
+                g.setColour ((r[(size_t) b] + r[(size_t) b + 1] > o[(size_t) b] + o[(size_t) b + 1] ? refColour : ourColour).withAlpha (0.16f));
+                g.fillPath (strip);
+            }
+        }
+        if (ourBands.size() == (size_t) BandSpectrum::numBands)
+        {
+            g.setColour (ourColour);
+            g.strokePath (curvePath (ourBands), juce::PathStrokeType (2.0f));
+        }
+        if (refBands.size() == (size_t) BandSpectrum::numBands)
+        {
+            g.setColour (refColour);
+            g.strokePath (curvePath (refBands), juce::PathStrokeType (2.0f));
+        }
+    }
+    // Words over the picture: what's missing, or the biggest differences
+    {
+        juce::String text; juce::Colour colour = MasterSkin::textDim;
+        if (status == ReferenceTrack::empty || status == ReferenceTrack::failed)
+            text = "Click LOAD SONG, or drop a song here (WAV, FLAC, MP3, AIFF, OGG): a finished track to compare yours with.";
+        else if (status == ReferenceTrack::loading)
+            text = "Reading and measuring the song...";
+        else if (ourBands.empty())
+            text = "Press play in your DAW: the reference plays along, and your master's picture appears here.";
+        else { text = describeDifference(); colour = MasterSkin::textBright; }
+        g.setColour (colour);
+        g.setFont (MasterSkin::font (13.0f, true));
+        g.drawFittedText (text, plot.reduced (8.0f, 4.0f).removeFromTop (34.0f).toNearestInt(), juce::Justification::centredTop, 2);
+    }
+    if (ref.isListening())
+    {
+        auto badge = juce::Rectangle<float> (230.0f, 24.0f).withCentre ({ plot.getCentreX(), plot.getBottom() - 20.0f });
+        g.setColour (refColour.withAlpha (0.2f));
+        g.fillRoundedRectangle (badge, 4.0f);
+        g.setColour (refColour);
+        g.drawRoundedRectangle (badge, 4.0f, 1.2f);
+        g.setFont (MasterSkin::font (13.0f, true));
+        g.drawText ("YOU'RE HEARING THE REFERENCE", badge, juce::Justification::centred, false);
+    }
+
+    // The key
+    {
+        auto key = juce::Rectangle<float> (plot.getX(), plot.getBottom() + 20.0f, plot.getWidth(), 16.0f);
+        g.setFont (MasterSkin::font (12.0f));
+        const auto item = [&] (juce::Colour c, const juce::String& t, float w)
+        {
+            g.setColour (c);
+            g.fillRect (key.removeFromLeft (12.0f).withSizeKeepingCentre (12.0f, 3.0f));
+            key.removeFromLeft (6.0f);
+            g.setColour (MasterSkin::textDim);
+            g.drawText (t, key.removeFromLeft (w), juce::Justification::centredLeft, false);
+            key.removeFromLeft (12.0f);
+        };
+        item (refColour, "the reference", 80.0f);
+        item (ourColour, "your master", 70.0f);
+        g.setColour (MasterSkin::textDim);
+        g.drawText ("both at the same loudness: only the balance differs", key, juce::Justification::centredRight, false);
+    }
+
+    // The overview: the whole song's loudness, the part being compared, where it's playing
+    const auto o = overviewArea();
+    g.setColour (MasterSkin::panel);
+    g.fillRoundedRectangle (o, 3.0f);
+    if (status == ReferenceTrack::ready && ! overview.empty())
+    {
+        const double length = juce::jmax (0.001, ref.getLengthSeconds());
+        const float sx = xOfSeconds (ref.getStart()), ex = ref.getEnd() > 0.0 ? xOfSeconds (ref.getEnd()) : o.getRight();
+        g.setColour (refColour.withAlpha (0.13f));
+        g.fillRect (juce::Rectangle<float> (sx, o.getY(), ex - sx, o.getHeight()));
+        const int columns = juce::jmax (1, (int) o.getWidth());
+        const float loudestOfAll = *std::max_element (overview.begin(), overview.end());   // (the top of the strip: the song's loudest moment; 30 dB below it, nothing)
+        for (int c = 0; c < columns; ++c)
+        {
+            const size_t a = (size_t) ((double) c / columns * (double) overview.size()), b = juce::jmax (a + 1, (size_t) ((double) (c + 1) / columns * (double) overview.size()));
+            float loudest = -200.0f;
+            for (size_t k = a; k < juce::jmin (b, overview.size()); ++k) loudest = juce::jmax (loudest, overview[k]);
+            const float h = o.getHeight() * juce::jlimit (0.0f, 1.0f, (loudest - loudestOfAll + 30.0f) / 30.0f);
+            const float x = o.getX() + (float) c;
+            g.setColour ((x >= sx && x <= ex ? refColour : MasterSkin::textDim).withAlpha (0.75f));
+            g.fillRect (x, o.getBottom() - h, 1.0f, h);
+        }
+        g.setColour (refColour);
+        g.fillRect (sx - 1.0f, o.getY(), 2.0f, o.getHeight());
+        if (ref.getEnd() > 0.0) g.fillRect (ex - 1.0f, o.getY(), 2.0f, o.getHeight());
+        if (ref.isPlaying())
+        {
+            g.setColour (juce::Colours::white);
+            g.fillRect (xOfSeconds (ref.getPositionSeconds()) - 0.5f, o.getY() - 2.0f, 1.5f, o.getHeight() + 4.0f);
+        }
+        g.setFont (MasterSkin::font (11.5f));
+        g.setColour (MasterSkin::textDim);
+        g.drawText ("0:00", juce::Rectangle<float> (o.getX(), o.getBottom() + 2.0f, 40.0f, 14.0f), juce::Justification::centredLeft, false);
+        g.drawText (timeText (length), juce::Rectangle<float> (o.getRight() - 40.0f, o.getBottom() + 2.0f, 40.0f, 14.0f), juce::Justification::centredRight, false);
+        g.drawText ("click: start there   -   drag: choose a part to loop   -   double-click: the whole song",
+                    juce::Rectangle<float> (o.getX() + 44.0f, o.getBottom() + 2.0f, o.getWidth() - 88.0f, 14.0f), juce::Justification::centred, false);
+    }
+    else
+    {
+        g.setColour (MasterSkin::textDim.withAlpha (0.6f));
+        g.setFont (MasterSkin::font (12.0f));
+        g.drawText ("the song's loudness from start to finish will show here", o, juce::Justification::centred, false);
+    }
+
+    if (dropping)
+    {
+        g.setColour (ourColour.withAlpha (0.12f));
+        g.fillRoundedRectangle (area, 6.0f);
+        g.setColour (ourColour);
+        g.drawRoundedRectangle (area.reduced (2.0f), 6.0f, 2.0f);
+    }
+}
+
 EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioProcessor& p)
     : AudioProcessorEditor (&p), masterProcessor (p)
 {

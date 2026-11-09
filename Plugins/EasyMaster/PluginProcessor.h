@@ -9,6 +9,7 @@
 #include "MultibandCompressor.h"
 #include "MixPunch.h"
 #include "StereoWidth.h"
+#include "ReferenceTrack.h"
 #include "Presets.h"
 
 //==============================================================================
@@ -97,6 +98,16 @@ public:
 
     bool isMidSide() const noexcept   { return juce::roundToInt (compModeValue->load()) == MasterMode::midSide; }
 
+    //==== REFERENCE: a finished song to compare with (never through the chain) ====
+    /** Reads the song (on its own thread) and remembers it with the project. */
+    void loadReference (const juce::File&);
+    void clearReference();
+    /** START and END (seconds; END at or before START = to the end of the song): remembered with the project. */
+    void setReferenceSection (double startSeconds, double endSeconds);
+    void setReferenceMatching (bool);
+    ReferenceTrack& getReference() noexcept   { return reference; }
+    void setStateInformation (const void* data, int sizeInBytes) override;
+
     /** Every 200 ms: is the input clipping (above 0 dBFS)? For the INPUT warning. */
     float getInputPeakDb() const noexcept   { return inputPeak.load(); }
 
@@ -145,7 +156,8 @@ private:
     bool punchModeChanging = false;
     float punchFade = 1.0f;
     LoudnessMeter loudness, originalLoudness;
-    juce::AudioBuffer<float> mid, sides, original;
+    juce::AudioBuffer<float> mid, sides, original, referenceAudio, heardAudio;
+    ReferenceTrack reference;
     juce::SmoothedValue<float> trimGain, matchGain, bypassFade;
     std::array<juce::SmoothedValue<float>, 4> listenFades;   // STEREO, MID, SIDE, MONO
     int playingMode = MasterMode::stereo;

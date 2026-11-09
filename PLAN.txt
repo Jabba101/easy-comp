@@ -943,3 +943,33 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      sympathy, not the bedroom; 275/352 Hz remain (~+7 dB). The layer
      still removes it from the earlier recordings - call it KIT
      RESONANCE in the instrument.
+
+== Drum model: distortion hunt (Nov 7) ==
+- Recordings: no clipping (peaks about -8 dBFS on kick/toms). Exact harmonics grow 5-10 dB on loud tom hits: head tension (real) or mild preamp, not hard clipping.
+- MODEL culprit: the buzz layer pulsing at the drum's pitch on kick/toms = the sound of a straining preamp. Kick: buzz about -3 dB vs the drum's top end, 44% pulse at 130 Hz.
+- Fix (snare.py): pulse only for snares (p['pulse'] overrides). Accuracy unchanged (kick 2.07/2.19 dB, toms within +-0.25 dB). Kick fizz locked to pitch 21 dB -> 8 dB.
+- User will re-record the kick in mono (incl. internal pads).
+- New mono kick "standard setting" (user's default, deeper): rec/Kick20_Standard.wav (trimmed so hit 1 sits at 3 ms), fit/KickStd.json (start 5 ms). Its two long hits differ by 5-14 dB, so it's judged per hit: v0.8 vs hit 1 2.4 dB typical, v0.54 vs hit 2 4.0 dB.
+- FEEL (velocity sensitivity) added to snare.py render(feel=): v_eff = 0.8*(v/0.8)^feel, so every loudness/tone change with velocity scales together. Kick default 0.5 (user: soft kicks dropped too much), others 1.0. Real soft kicks actually drop even more than the model did (-8 dB peak hit loses ~25 dB above 120 Hz) - this is a musical choice, not accuracy. Offered 50% and 30%; plugin knob later.
+- User chose FEEL 30% for the kick (now the default).
+- New mono SD296 recordings: Open / Gel / Ring (rec/SD296_{Open,Gel,Ring}.wav, loudest long hit at 8 ms), fit/SD296m.json (start 3 ms, lowest 60 Hz).
+  * Scoring bug found: cutting the real hit exactly at its onset made the filters see a fake deep thump. Score and tune_tick now use 2 ms of lead-in.
+  * The snare's tick and wires now sit above a clean 150 Hz high-pass (they were leaking deep bass). Everything audible (120 Hz up) is within about 1-4 dB; the only bigger gaps are 30-60 dB down (inaudible).
+  * push.py (air-push template) was written but isn't used - the "push" was the scoring artifact.
+- residual.py: LOWEST env override for the lowest ring.
+- Snare buzz/distortion: pulse_of took ALL the top end's wobble as pulsing (depth 0.4-0.5); really only about 0.08-0.1 is at the wire rate (the rest is random flutter). Now measures the line at that rate: about 5x shallower. All snare fits retuned (SD296m, SD296, Sonor_Maple_35); accuracy unchanged.
+- RESONANCE control (render(resonance=)): rings outlasting the drum's own sustain (max(1.2 s, T60 of rings within 6 dB of the loudest)) get T60 = own*(t60/own)^resonance. 1 = as recorded, 0 = none ring longer than the drum. New toms' long tails were 2.6-3 s rings near their pitch (kit/room singing along); no reverb in the model. At 0 the tom late tail (0.6-1.2 s) drops ~10-16 dB, near the snare's. Offered half and off.
+- User chose tom RESONANCE off (now the default for toms); plans to add room reverb to the whole kit later.
+- CLOSED HI-HAT (hat.py, separate from the drum model): metallic noise in the recording's fine colour (4096-pt, flattened per band) x per-band power envelopes (14 bands, 300 Hz-24 kHz, 300 ms) from the loud clean hits; strength changes each band by a measured slope that differs from start to tail (tail slope never negative). Random phases per hit = natural variation. rec/HatClosed.wav holds three 10-hit sets: 0-9.9 s tight (-20 dB in ~44 ms) -> fit/HatTight.json; 9.9-19.3 s loose (~120 ms) -> HatLoose; 19.3-28 s medium (~90 ms) -> HatMedium. Match 1.2-2.2 dB typical. Asked the user what the three sets are.
+- HI-HAT SPLASH: the loose set has one splash at 16.0 s (rings 1.5 s to -40 dB) that hit-finding read as 3 closed hits (the 'delay pedal' the user heard). hat.fit_splash -> fit/HatSplash.json (3 s fades, own colour, strength slopes borrowed from HatLoose), 1.2 dB typical. In playing, the next hat hit chokes it (25 ms fade) - for the instrument: a choke on the next closed/pedal hit.
+== EASY MASTER 1.6.0: REFERENCE (8 November 2026) - pushed with the user's OK; drop a song anywhere on the window loads it ==
+   - Effects/ReferenceTrack.h: LOAD (WAV/FLAC/MP3/AIFF/OGG, up to 15 min) on its own thread, windowed-sinc to the session rate,
+     K-weighted loudness per 100 ms, mid's 1/6-octave band powers per second (BandSpectrum, pffft 4096).
+   - Plays while the DAW plays (no transport = plays); every press of play starts at START; loops START-END (10 ms crossfade seam).
+   - REF (COMPARE module, section 2): 25 ms fade between your master (after MATCH/BYPASS) and the reference; LISTEN (mid/side/mono)
+     applies to either. MATCH LOUDNESS (default on): reference gain = your heard loudness over the last 20 s (gated) - the part's integrated LUFS.
+   - REFERENCE focus page (7th DISPLAY FOCUS): both pictures at equal loudness, fill between (gold = ref has more, cyan = yours),
+     biggest differences in words (40 Hz-16 kHz, >1.5 dB), the song's loudness overview: click = START, drag = loop part, double-click = whole.
+     Drop a file on the page to load. LOAD SONG / REMOVE / MATCH LOUDNESS on the page.
+   - Saved with the project as state properties (referenceFile/Start/End/Match), not in presets or A / B; never starts switched on.
+   - Tests: 89/89 (reference: 17 new checks incl. resampling, match within 1 dB, no clicks at switch/loop, stopped = silent, state).

@@ -16,7 +16,7 @@ namespace MasterHolo
         const juce::String presetHint = "The whole chain's presets - starting points to fine-tune. Click for the list (and to save your own); "
                                         "< and > step through them. Each module also has its own (its Pr button).";
         const juce::String focusHint = "What the big screen shows. Each module has its own picture: the resonances, the EQ curve, the four "
-                                       "bands, the last six seconds of compressor and limiter, PUNCH at work, the stereo picture.";
+                                       "bands, the last six seconds of compressor and limiter, PUNCH at work, the stereo picture - and REFERENCE, a finished song to compare yours with.";
         const juce::String bayHint = "The big bay holds the EQ or the MULTIBAND - click to switch. Both keep working whichever is showing.";
         const juce::String matchInfoHint = matchHint;
 
@@ -780,33 +780,49 @@ namespace MasterHolo
         {
             power.setVisible (false);
             match = &toggle (MasterIDs::match, "MATCH", "MATCH", matchHint, Button::Style::square, Colours::gold);
-            match->fontSize = 17.0f;
-            info = &caption ("", Colours::ink, 15.0f);
+            match->fontSize = 16.0f;
+            info = &caption ("", Colours::ink, 14.0f);
             info->setJustificationType (juce::Justification::centredLeft);
-            listenLabel = &caption ("LISTEN (for checking)", Colours::dim, 13.0f);
+            reference.fontSize = 16.0f;
+            reference.setClickingTogglesState (false);
+            reference.onClick = [this]
+            {
+                auto& ref = processor.getReference();
+                if (ref.getStatus() == ReferenceTrack::ready) ref.setListening (! ref.isListening());
+                else { console.showFocus (Console::refFocus); if (ref.getStatus() != ReferenceTrack::loading) console.referenceDisplay.chooseFile(); }
+            };
+            addAndMakeVisible (reference);
+            hint (reference, "REFERENCE", refHint);
+            refInfo = &caption ("", Colours::ink, 14.0f);
+            refInfo->setJustificationType (juce::Justification::centredLeft);
+            hint (*refInfo, "REFERENCE", refHint);
             listen = &choice (MasterIDs::listen, { "STEREO", "MID", "SIDE", "MONO" }, "LISTEN", listenHint, true, Colours::selected);
-            listen->segmentHeight = 28; listen->fontSize = 14.0f;
+            listen->segmentHeight = 26; listen->fontSize = 13.5f;
         }
 
         void resized() override
         {
             clearSections();
             auto area = getLocalBounds().reduced (9, 6);
-            area.removeFromTop (30);
-            auto s1 = section (area.removeFromTop (110), 1, "SAME LOUDNESS");
-            area.removeFromTop (8);
-            auto s2 = section (area, 2, "LISTEN");
-            match->setBounds (s1.removeFromLeft (80).withSizeKeepingCentre (76, 54));
+            area.removeFromTop (28);
+            auto s1 = section (area.removeFromTop (78), 1, "SAME LOUDNESS");
+            area.removeFromTop (4);
+            auto s2 = section (area.removeFromTop (78), 2, "REFERENCE");
+            area.removeFromTop (4);
+            auto s3 = section (area, 3, "LISTEN (for checking)");
+            match->setBounds (s1.removeFromLeft (84).withSizeKeepingCentre (80, 40));
             s1.removeFromLeft (8);
             info->setBounds (s1);
-            listen->setBounds (s2.withSizeKeepingCentre (s2.getWidth(), 28).withY (s2.getY() + 8));
-            listenLabel->setBounds (s2.withTrimmedTop (44).withHeight (16));
+            reference.setBounds (s2.removeFromLeft (84).withSizeKeepingCentre (80, 40));
+            s2.removeFromLeft (8);
+            refInfo->setBounds (s2);
+            listen->setBounds (s3.withSizeKeepingCentre (s3.getWidth(), 26));
         }
 
         void paint (juce::Graphics& g) override
         {
             Module::paint (g);
-            drawGlowText (g, "COMPARE", getLocalBounds().reduced (12, 8).removeFromTop (24).toFloat(), juce::Justification::centredLeft,
+            drawGlowText (g, "COMPARE", getLocalBounds().reduced (12, 6).removeFromTop (22).toFloat(), juce::Justification::centredLeft,
                           Holo::text (17.0f, 2), tint, 0.6f);
         }
 
@@ -815,13 +831,37 @@ namespace MasterHolo
             const bool matching = match->getToggleState();
             const float db = processor.getReadings().matchDb;
             const auto text = matching ? "Matched: " + juce::String (db >= 0.0f ? "+" : "") + juce::String (db, 1) + " dB.\nNow click BYPASS on and off."
-                                       : juce::String ("The chain as loud as the original, so BYPASS compares the sound, not the volume.");
+                                       : juce::String ("The chain as loud as the original, so BYPASS compares the sound.");
             if (info->getText() != text) info->setText (text, juce::dontSendNotification);
+
+            // REFERENCE: lit while you hear it
+            auto& ref = processor.getReference();
+            reference.setToggleState (ref.isListening(), juce::dontSendNotification);
+            juce::String r;
+            switch (ref.getStatus())
+            {
+                case ReferenceTrack::ready:
+                {
+                    const float d = ref.getGainDb();
+                    const bool matched = ref.isMatching() && ref.getOurLufs() > -70.0f && ref.getSectionLufs() > -70.0f;
+                    r = ref.isListening() ? juce::String ("HEARING THE REFERENCE") : juce::String ("Hearing your master.");
+                    r << "\n" << (matched ? (std::abs (d) < 0.05f ? juce::String ("Equally loud.") : "Reference " + juce::String (d > 0 ? "up " : "down ") + juce::String (std::abs (d), 1) + " dB to match.")
+                                           : (ref.isMatching() ? juce::String ("Press play to match the loudness.") : juce::String ("Not matched: as it is.")));
+                    break;
+                }
+                case ReferenceTrack::loading: r = "Reading the song..."; break;
+                case ReferenceTrack::failed:  r = "Couldn't read that file.\nClick to choose another."; break;
+                case ReferenceTrack::empty:
+                default:                      r = "No song loaded.\nClick to choose one."; break;
+            }
+            if (refInfo->getText() != r) refInfo->setText (r, juce::dontSendNotification);
+            refInfo->setColour (juce::Label::textColourId, ref.isListening() ? Colours::gold : Colours::ink);
         }
 
     private:
         Button* match = nullptr;
-        juce::Label *info = nullptr, *listenLabel = nullptr;
+        Button reference { "REF", Colours::gold, Button::Style::square };
+        juce::Label *info = nullptr, *refInfo = nullptr;
         Choice* listen = nullptr;
     };
 
@@ -829,7 +869,7 @@ namespace MasterHolo
     // THE CONSOLE
     //==========================================================================
     Console::Console (EasyMasterAudioProcessor& p)
-        : processor (p), eqDisplay (p.parameters), mbDisplay (p.parameters), incoming ((size_t) MasterDisplay::numMoments)
+        : processor (p), eqDisplay (p.parameters), mbDisplay (p.parameters), referenceDisplay (p), incoming ((size_t) MasterDisplay::numMoments)
     {
         setOpaque (true);
 
@@ -846,7 +886,8 @@ namespace MasterHolo
 
         // The big screen's pictures
         for (auto* c : { (juce::Component*) &compDisplay, (juce::Component*) &tamerDisplay, (juce::Component*) &eqDisplay,
-                         (juce::Component*) &mbDisplay, (juce::Component*) &punchDisplay, (juce::Component*) &widthDisplay })
+                         (juce::Component*) &mbDisplay, (juce::Component*) &punchDisplay, (juce::Component*) &widthDisplay,
+                         (juce::Component*) &referenceDisplay })
             addChildComponent (*c);
         addHint (compDisplay, "WHAT THE COMPRESSOR AND LIMITER ARE DOING", displayHint);
         addHint (tamerDisplay, "WHAT THE TAMER IS DOING", tamerDisplayHint);
@@ -857,6 +898,10 @@ namespace MasterHolo
                  "(green: the attacks, or longer tails) and down (blue: softer attacks, shorter tails).");
         addHint (widthDisplay, "THE STEREO PICTURE", "The master's stereo picture: the middle up and down, the sides across. Tall and thin = "
                  "nearly mono; a wide, round cloud = very wide; flat and sideways = trouble in mono.");
+        addHint (referenceDisplay, "THE REFERENCE", refPageHint);
+        addHint (referenceDisplay.load, "LOAD SONG", refLoadHint);
+        addHint (referenceDisplay.remove, "REMOVE", "Forgets the reference song (the file itself isn't touched).");
+        addHint (referenceDisplay.match, "MATCH LOUDNESS", refMatchHint);
         eqDisplay.onEdit = [this] { markEdited(); };
         mbDisplay.onEdit = [this] { markEdited(); };
         addAndMakeVisible (meters);
@@ -864,11 +909,11 @@ namespace MasterHolo
         meters.onReset = [this] { processor.resetMeters(); };
 
         // DISPLAY FOCUS and the bay's tabs
-        const char* focusNames[numFocus] { "TAMER", "EQ", "MULTIBAND", "COMP", "PUNCH", "WIDTH" };
+        const char* focusNames[numFocus] { "TAMER", "EQ", "MULTIBAND", "COMP", "PUNCH", "WIDTH", "REFERENCE" };
         for (int f = 0; f < numFocus; ++f)
         {
             focusButtons[(size_t) f] = std::make_unique<Button> (focusNames[f], Colours::selected, Button::Style::view);
-            focusButtons[(size_t) f]->fontSize = 14.5f;
+            focusButtons[(size_t) f]->fontSize = 14.0f;
             focusButtons[(size_t) f]->onClick = [this, f] { showFocus (f); };
             addAndMakeVisible (*focusButtons[(size_t) f]);
             addHint (*focusButtons[(size_t) f], "DISPLAY FOCUS", focusHint);
@@ -996,6 +1041,7 @@ namespace MasterHolo
             case mbFocus:    return const_cast<MultibandDisplay*> (&mbDisplay);
             case punchFocus: return const_cast<PunchDisplay*> (&punchDisplay);
             case widthFocus: return const_cast<WidthDisplay*> (&widthDisplay);
+            case refFocus:   return const_cast<ReferenceDisplay*> (&referenceDisplay);
             default:         return const_cast<MasterDisplay*> (&compDisplay);
         }
     }
@@ -1034,7 +1080,7 @@ namespace MasterHolo
         bayTabs[1]->setBounds (208, 514, 118, 28);
 
         for (int f = 0; f < numFocus; ++f)
-            focusButtons[(size_t) f]->setBounds (focusRow.getX() + f * 107, focusRow.getY(), 100, focusRow.getHeight());
+            focusButtons[(size_t) f]->setBounds (focusRow.getX() + f * 91, focusRow.getY(), 85, focusRow.getHeight());
         for (int f = 0; f < numFocus; ++f)
             getScreenComponent (f)->setBounds (screenArea.reduced (10, 10).withTrimmedTop (2));
         meters.setBounds (metersArea.reduced (12, 8).withTrimmedTop (28));
@@ -1410,6 +1456,7 @@ namespace MasterHolo
             }
         }
 
+        if (focus == refFocus || processor.getReference().isListening()) referenceDisplay.update();
         meters.setReadings (readings, processor.isMidSide(), params.getRawParameterValue (MasterIDs::compOn)->load() > 0.5f,
                             params.getRawParameterValue (MasterIDs::tamerOn)->load() > 0.5f);
 

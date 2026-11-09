@@ -464,7 +464,7 @@ namespace
                 if (m->isVisible() && ! checkInside (*m, [] (juce::Component*, juce::Component*) { return false; })) return false;
             return true;
         };
-        const char* names[C::numFocus] { "tamer", "eq", "multiband", "comp", "punch", "width" };
+        const char* names[C::numFocus] { "tamer", "eq", "multiband", "comp", "punch", "width", "reference" };
         for (int f = 0; f < C::numFocus; ++f)
         {
             console.showFocus (f);
@@ -569,6 +569,209 @@ namespace
         savePng (console, outDir.getChildFile ("master_stereo.png"));
     }
 
+    //==========================================================================
+    // REFERENCE
+    struct StoppedHead : juce::AudioPlayHead
+    {
+        juce::Optional<PositionInfo> getPosition() const override { PositionInfo i; i.setIsPlaying (playing); return i; }
+        bool playing = false;
+    };
+
+    bool waitForReference (P& p)
+    {
+        for (int i = 0; i < 400 && p.getReference().getStatus() == ReferenceTrack::loading; ++i) juce::Thread::sleep (25);
+        return p.getReference().getStatus() == ReferenceTrack::ready;
+    }
+
+    juce::AudioBuffer<float> runBlocks (P& p, const juce::AudioBuffer<float>& in, int block, std::function<void (int)> beforeBlock = {})
+    {
+        juce::AudioBuffer<float> out (in);
+        juce::MidiBuffer midi;
+        for (int s = 0, k = 0; s < out.getNumSamples(); s += block, ++k)
+        {
+            if (beforeBlock) beforeBlock (k);
+            const int n = std::min (block, out.getNumSamples() - s);
+            juce::AudioBuffer<float> part (out.getArrayOfWritePointers(), 2, s, n);
+            p.processBlock (part, midi);
+        }
+        return out;
+    }
+
+    void testReference (const juce::File& outDir)
+    {
+        std::cout << "\n[reference]\n";
+        const auto band = loadMix ("band", 30.0, 20.0);
+        // The reference: another mix, written as a 44.1 kHz WAV, 3 dB hotter than it was (a "louder commercial master")
+        auto song = loadMix ("mureka", 20.0, 30.0);
+        song.applyGain (juce::Decibels::decibelsToGain (3.0f));
+        for (int c = 0; c < 2; ++c) for (int i = 0; i < song.getNumSamples(); ++i) song.setSample (c, i, juce::jlimit (-1.0f, 1.0f, song.getSample (c, i)));
+        const auto file = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("easy_master_reference_test.wav");
+        {
+            file.deleteFile();
+            juce::WavAudioFormat wav;
+            std::unique_ptr<juce::AudioFormatWriter> w (wav.createWriterFor (file.createOutputStream().release(), sr, 2, 24, {}, 0));
+            w->writeFromAudioSampleBuffer (song, 0, song.getNumSamples());
+        }
+        const double songLufs = loudnessDb (song, 0, song.getNumSamples()) - 0.691;
+
+        {
+            P p; prepare (p, 48000.0, 512);
+            p.loadReference (file);
+            const bool ok = waitForReference (p);
+            auto& ref = p.getReference();
+            check (ok && std::abs (ref.getLengthSeconds() - 30.0) < 0.01, "a 44.1 kHz WAV loads and is converted for a 48 kHz session (" + juce::String (ref.getLengthSeconds(), 3) + " s)");
+            check (std::abs (ref.getSectionLufs() - (float) songLufs) < 1.0f, "its loudness is measured: " + juce::String (ref.getSectionLufs(), 1) + " LUFS (the test's own: "
+                   + juce::String (songLufs, 1) + ")");
+        }
+
+        P p; prepare (p, sr, 512);
+        p.loadReference (file);
+        waitForReference (p);
+        auto& ref = p.getReference();
+        {
+            // Nothing changes until you switch to it
+            P plain; prepare (plain, sr, 512);
+            const auto a = runBlocks (plain, band, 512), b = runBlocks (p, band, 512);
+            check (worstDelayedDifference (b, a, 0) < 1.0e-6f, "loaded but not switched on: your master is untouched");
+        }
+        {
+            // REF on: the reference, as loud as your master
+            const auto ours = runBlocks (p, band, 512);   // (the last 20 s measured)
+            const double ourLevel = loudnessDb (ours, (int) (sr * 10), ours.getNumSamples());
+            ref.setListening (true);
+            const auto heard = runBlocks (p, band, 512);
+            const double refLevel = loudnessDb (heard, (int) (sr * 10), heard.getNumSamples());
+            check (std::abs (refLevel - ourLevel) < 1.0, "REF on, MATCH LOUDNESS: the reference plays as loud as your master (" + juce::String (refLevel - ourLevel, 2)
+                   + " dB apart; turned " + juce::String (ref.getGainDb(), 1) + " dB)");
+            // ... and it really is the reference, not your mix
+            juce::AudioBuffer<float> silence (2, band.getNumSamples()); silence.clear();
+            ref.setListening (true);
+            const auto onlyRef = runBlocks (p, silence, 512);
+            check (rms (onlyRef, 0, (int) sr, onlyRef.getNumSamples()) > 0.01f, "with your mix silent, REF still plays the reference");
+            ref.setMatching (false);
+            ref.setListening (true);
+            const auto asIs = runBlocks (p, silence, 512);
+            const double asIsLevel = loudnessDb (asIs, (int) (sr * 2), asIs.getNumSamples()) - 0.691;
+            const double songPart = loudnessDb (song, (int) (sr * (2.0 + 20.0)), song.getNumSamples()) - 0.691;   // (where playback has got to: 20-40 s... wrapped)
+            juce::ignoreUnused (songPart);
+            check (std::abs (asIsLevel - songLufs) < 1.5, "MATCH LOUDNESS off: the reference at its own level (" + juce::String (asIsLevel, 1) + " vs " + juce::String (songLufs, 1) + " LUFS)");
+            ref.setMatching (true);
+        }
+        {
+            // Switching back and forth while it plays: no clicks
+            ref.setListening (false);
+            const auto out = runBlocks (p, band, 512, [&] (int k) { if (k > 0 && k % 40 == 0) ref.setListening (! ref.isListening()); });
+            float worstSwitch = 0.0f, worstNormal = 0.0f;
+            for (int k = 40; k * 512 < out.getNumSamples() - 4096; k += 40) worstSwitch = std::max (worstSwitch, biggestJump (out, k * 512, k * 512 + 2048));
+            worstNormal = biggestJump (out, 0, out.getNumSamples());
+            check (worstSwitch <= worstNormal * 1.0001f && worstSwitch < 0.5f, "switching REF on and off while it plays: a 25 ms fade, no click (biggest step at a switch "
+                   + juce::String (worstSwitch, 3) + ", in the music itself " + juce::String (worstNormal, 3) + ")");
+        }
+        {
+            // A part of the song, looped: the seam fades - no click
+            juce::AudioBuffer<float> silence (2, (int) (sr * 9)); silence.clear();
+            p.setReferenceSection (5.0, 7.0);
+            ref.setMatching (false);
+            ref.setListening (true);
+            const auto out = runBlocks (p, silence, 512);
+            // (the reference's own biggest step in that part, for comparison)
+            const float own = biggestJump (song, (int) (sr * 5.0), (int) (sr * 7.0));
+            float seam = 0.0f;
+            for (double t = 2.0; t < 8.9; t += 2.0) { const int i = (int) (sr * t); seam = std::max (seam, biggestJump (out, i - 600, i + 600)); }
+            check (seam <= own * 1.05f + 1.0e-4f, "looping 0:05 to 0:07: no click where it goes round (" + juce::String (seam, 3) + ", the song's own " + juce::String (own, 3) + ")");
+            const double partLufs = loudnessDb (song, (int) (sr * 5.0), (int) (sr * 7.0)) - 0.691;
+            check (std::abs (ref.getSectionLufs() - (float) partLufs) < 1.5f, "the part's own loudness is what's matched: " + juce::String (ref.getSectionLufs(), 1)
+                   + " LUFS (whole song " + juce::String (songLufs, 1) + ")");
+            ref.setMatching (true);
+        }
+        {
+            // The DAW stopped: silence (and every press of play starts at START)
+            StoppedHead head; p.setPlayHead (&head);
+            ref.setListening (true);
+            const auto out = runBlocks (p, band, 512);
+            check (rms (out, 0, (int) (sr * 0.1), out.getNumSamples()) < 1.0e-6f && rms (out, 1, (int) (sr * 0.1), out.getNumSamples()) < 1.0e-6f, "DAW stopped: the reference is silent");
+            head.playing = true;
+            runBlocks (p, loadMix ("band", 30.0, 0.5), 512);
+            check (std::abs (ref.getPositionSeconds() - 5.5) < 0.05, "pressing play starts it at START (0:05): " + juce::String (ref.getPositionSeconds(), 2) + " s after half a second");
+            p.setPlayHead (nullptr);
+        }
+        {
+            // Saved with the project (but never in presets or A / B, and it never starts switched on)
+            juce::MemoryBlock state; p.getStateInformation (state);
+            P r; prepare (r, sr, 512); r.setStateInformation (state.getData(), (int) state.getSize());
+            const bool ok = waitForReference (r);
+            check (ok && r.getReference().getFile() == file && std::abs (r.getReference().getStart() - 5.0) < 0.01 && std::abs (r.getReference().getEnd() - 7.0) < 0.01
+                   && ! r.getReference().isListening(), "saved with the project: the song and the part come back (switched to your master)");
+            bool inPresets = false;
+            for (auto& id : masterPresetIDs()) if (id.startsWith ("ref")) inPresets = true;
+            check (! inPresets, "... and it isn't part of any preset");
+        }
+        {
+            // A file that isn't audio: a plain message, nothing breaks
+            P bad; prepare (bad, sr, 512);
+            const auto junk = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("not_a_song.wav");
+            junk.replaceWithText ("hello");
+            bad.loadReference (junk);
+            waitForReference (bad);
+            check (bad.getReference().getStatus() == ReferenceTrack::failed && bad.getReference().getError().isNotEmpty(),
+                   "a file that isn't audio: '" + bad.getReference().getError() + "'");
+            junk.deleteFile();
+        }
+
+        // The window: the REFERENCE page and COMPARE's REF switch
+        p.setReferenceSection (0.0, 0.0);
+        ref.setListening (false);
+        std::unique_ptr<juce::AudioProcessorEditor> editor (p.createEditor());
+        auto& console = dynamic_cast<EasyMasterAudioProcessorEditor*> (editor.get())->getConsole();
+        using C = MasterHolo::Console;
+        console.showFocus (C::refFocus);
+        for (int i = 0; i < 60; ++i) { run (p, loadMix ("band", 30.0 + i * 0.2, 0.2), 512); console.updateNow(); }
+        auto& view = console.referenceDisplay;
+        check (view.getReferencePicture().size() == (size_t) BandSpectrum::numBands && view.getMasterPicture().size() == (size_t) BandSpectrum::numBands,
+               "the REFERENCE page draws both pictures");
+        std::cout << "  (it says: " << view.describeDifference() << ")\n";
+        check (view.describeDifference().isNotEmpty(), "... and names the biggest differences in words");
+        savePng (console, outDir.getChildFile ("master_reference.png"));
+        // Dragging across the overview chooses a part
+        {
+            const auto o = view.getLocalBounds().toFloat().reduced (14.0f, 8.0f);
+            const float y = o.getBottom() - 40.0f, x0 = o.getX() + o.getWidth() * 0.4f, x1 = o.getX() + o.getWidth() * 0.6f;
+            view.mouseDown (mouseAt (&view, { x0, y }, true));
+            view.mouseDrag (mouseAt (&view, { x1, y }, true));
+            view.mouseUp (mouseAt (&view, { x1, y }, false));
+            check (std::abs (ref.getStart() - 12.0) < 0.5 && std::abs (ref.getEnd() - 18.0) < 0.5, "dragging across the song chooses a part: "
+                   + juce::String (ref.getStart(), 1) + " to " + juce::String (ref.getEnd(), 1) + " s");
+        }
+        // A song dropped anywhere on the window loads as the reference, and the page opens
+        {
+            console.showFocus (C::compFocus);
+            const auto other = juce::File::getSpecialLocation (juce::File::tempDirectory).getChildFile ("easy_master_dropped.wav");
+            file.copyFileTo (other);
+            check (console.isInterestedInFileDrag ({ other.getFullPathName() }) && ! console.isInterestedInFileDrag ({ "notes.txt" }), "the window takes a dragged song (and ignores other files)");
+            console.filesDropped ({ other.getFullPathName() }, 300, 700);
+            const bool ok = waitForReference (p);
+            check (ok && p.getReference().getFile() == other && console.getFocus() == C::refFocus, "dropping it on the EQ: loaded as the reference, the REFERENCE page shows");
+            p.loadReference (file); waitForReference (p);
+            other.deleteFile();
+        }
+        // COMPARE's REF: switches to the reference, lit
+        auto* compare = console.getModules().back().get();
+        Holo::Button* refButton = nullptr;
+        for (auto* c : compare->getChildren()) if (auto* b = dynamic_cast<Holo::Button*> (c)) if (b->getButtonText() == "REF") refButton = b;
+        check (refButton != nullptr, "COMPARE has a REF button");
+        if (refButton != nullptr)
+        {
+            refButton->onClick();
+            for (int i = 0; i < 4; ++i) { run (p, loadMix ("band", 40.0 + i * 0.2, 0.2), 512); console.updateNow(); }
+            check (ref.isListening() && refButton->getToggleState(), "clicking REF: you hear the reference, and REF is lit");
+            savePng (console, outDir.getChildFile ("master_reference_listening.png"));
+            refButton->onClick();
+            console.updateNow();
+            check (! ref.isListening() && ! refButton->getToggleState(), "clicking it again: back to your master");
+        }
+        file.deleteFile();
+    }
+
     void testSpeed()
     {
        #if ! JUCE_DEBUG
@@ -600,6 +803,7 @@ int main (int argc, char** argv)
     testMultiband();
     testPunchWidth();
     testParts (outDir);
+    testReference (outDir);
     testSpeed();
     return finish();
 }

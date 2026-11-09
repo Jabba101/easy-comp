@@ -87,6 +87,7 @@ namespace MasterHolo
     //==========================================================================
     class Console : public juce::Component,
                     public Holo::Host,
+                    public juce::FileDragAndDropTarget,
                     private juce::Timer
     {
         EasyMasterAudioProcessor& processor;   // (first: the displays below are made from it)
@@ -101,6 +102,10 @@ namespace MasterHolo
         void resized() override;
         void mouseEnter (const juce::MouseEvent&) override;
         void mouseExit (const juce::MouseEvent&) override;
+
+        // A song dropped anywhere on the window: the REFERENCE (the page opens to show it)
+        bool isInterestedInFileDrag (const juce::StringArray& files) override   { return referenceDisplay.isInterestedInFileDrag (files); }
+        void filesDropped (const juce::StringArray& files, int x, int y) override { showFocus (refFocus); referenceDisplay.filesDropped (files, x, y); }
 
         //==== Host ===============================================================
         void showValue (const juce::String& title, const juce::String& valueWithUnits) override;
@@ -120,7 +125,7 @@ namespace MasterHolo
         void markEdited();
 
         /** DISPLAY FOCUS: what the big screen shows. */
-        enum Focus { tamerFocus = 0, eqFocus, mbFocus, compFocus, punchFocus, widthFocus, numFocus };
+        enum Focus { tamerFocus = 0, eqFocus, mbFocus, compFocus, punchFocus, widthFocus, refFocus, numFocus };
         void showFocus (int focus);
         int getFocus() const noexcept   { return focus; }
 
@@ -157,6 +162,7 @@ namespace MasterHolo
         MultibandDisplay mbDisplay;
         PunchDisplay punchDisplay;
         WidthDisplay widthDisplay;
+        ReferenceDisplay referenceDisplay;
         MasterMeters meters;
         Holo::BigMeter inputMeter;
         std::unique_ptr<Holo::Ring> trim;
