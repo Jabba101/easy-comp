@@ -169,7 +169,7 @@ endforeach()
 
 # ---- The single plugins' HOLOGRAM look (one test program per plugin) ----
 set(HOLO_SOLO ${P}/Plugins/EasyStrip/StripSettings.cpp ${P}/Plugins/EasyStrip/HoloLook.cpp ${P}/Plugins/EasyStrip/HoloControls.cpp
-              ${P}/Plugins/EasyStrip/HoloScreen.cpp ${P}/Plugins/EasyStrip/HoloSlabs.cpp ${P}/Plugins/EasyStrip/HoloSolo.cpp)
+              ${P}/Plugins/EasyStrip/HoloScreen.cpp ${P}/Plugins/EasyStrip/HoloSlabs.cpp ${P}/Plugins/EasyStrip/HoloSolo.cpp ${P}/Plugins/EasyStrip/HoloUnbleed.cpp)
 function(add_solo_test target dir moduleIndex pluginName processorClass)
     juce_add_console_app(${target} PRODUCT_NAME "${target}")
     target_sources(${target} PRIVATE SoloTests.cpp ${P}/Plugins/${dir}/PluginProcessor.cpp ${P}/Plugins/${dir}/PluginEditor.cpp ${HOLO_SOLO} ${SHARED})
@@ -194,3 +194,4 @@ add_solo_test(SoloWah EasyWah 11 "Easy Wah" EasyWahAudioProcessor)
 add_solo_test(SoloFlange EasyFlange 12 "Easy Flange" EasyFlangeAudioProcessor)
 add_solo_test(SoloFilter EasyFilter 13 "Easy Filter" EasyFilterAudioProcessor)
 add_solo_test(SoloLimiter EasyLimiter 14 "Easy Limiter" EasyLimiterAudioProcessor)
+add_solo_test(SoloUnbleed EasyUnbleed 15 "Easy Unbleed" EasyUnbleedAudioProcessor)

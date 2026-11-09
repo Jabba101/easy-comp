@@ -1,6 +1,9 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "Parameters.h"
+#if EASY_HOLO_SOLO
+ #include "HoloSolo.h"
+#endif
 #include "FastMath.h"
 
 juce::AudioProcessorValueTreeState::ParameterLayout EasyUnbleedAudioProcessor::createParameterLayout()
@@ -110,7 +113,12 @@ EasyUnbleedAudioProcessor::Picture EasyUnbleedAudioProcessor::getPicture() const
 
 juce::AudioProcessorEditor* EasyUnbleedAudioProcessor::createEditor()
 {
+   #if EASY_HOLO_SOLO   // (the HOLOGRAM look, or CLASSIC - chosen in SETUP)
+    return new Holo::SoloEditor (*this, Holo::unbleedModule,
+                                 [this] { return std::make_unique<EasyUnbleedAudioProcessorEditor> (*this); });
+   #else
     return new EasyUnbleedAudioProcessorEditor (*this);
+   #endif
 }
 
 // JUCE calls this to create the plugin.

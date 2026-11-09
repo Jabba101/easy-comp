@@ -51,7 +51,19 @@ int main (int argc, char** argv)
     SoloSettings::useFileForTesting (settingsFile);
 
     SOLO_PROCESSOR p;
+   #if SOLO_MODULE == 15   // (Easy Unbleed: the stem, plus the other stems on the sidechain)
+    {
+        juce::AudioProcessor::BusesLayout layout;
+        layout.inputBuses.add (juce::AudioChannelSet::stereo());
+        layout.inputBuses.add (juce::AudioChannelSet::stereo());
+        layout.outputBuses.add (juce::AudioChannelSet::stereo());
+        p.setBusesLayout (layout);
+        p.setRateAndBufferSizeDetails (48000.0, 512);
+        p.prepareToPlay (48000.0, 512);
+    }
+   #else
     th::prepare (p, 48000.0, 512);
+   #endif
     const juce::String name = p.getName();
     std::cout << "\n" << name << " - HOLOGRAM look\n";
 
@@ -73,10 +85,27 @@ int main (int argc, char** argv)
     // Play something, let it draw
     {
         auto audio = drums (48000.0, 4.0);
+        const int channels = p.getTotalNumInputChannels();
+        if (channels > 2)   // (the sidechain: a tone the stem has a little bleed of, plus a bass line)
+        {
+            juce::AudioBuffer<float> wide (channels, audio.getNumSamples());
+            for (int i = 0; i < audio.getNumSamples(); ++i)
+            {
+                const double t = i / 48000.0;
+                const float other = 0.5f * (float) std::sin (2.0 * juce::MathConstants<double>::pi * 110.0 * t)
+                                  + 0.3f * (float) std::sin (2.0 * juce::MathConstants<double>::pi * 1760.0 * t);
+                for (int ch = 0; ch < 2; ++ch)
+                {
+                    wide.setSample (ch, i, audio.getSample (ch, i) * 0.6f + 0.05f * other);
+                    wide.setSample (2 + ch, i, other);
+                }
+            }
+            audio = std::move (wide);
+        }
         juce::MidiBuffer midi;
         for (int start = 0; start + 512 <= audio.getNumSamples(); start += 512)
         {
-            juce::AudioBuffer<float> block (audio.getArrayOfWritePointers(), 2, start, 512);
+            juce::AudioBuffer<float> block (audio.getArrayOfWritePointers(), audio.getNumChannels(), start, 512);
             p.processBlock (block, midi);
             if ((start / 512) % 3 == 0)
                 view.updateNow();

@@ -338,7 +338,7 @@ target_include_directories(EasyMaster PRIVATE Plugins/EasyStrip)
 add_easy_plugin(EasyUnbleed
     NAME        "Easy Unbleed"
     CODE        Ezub
-    VERSION     1.0.0
+    VERSION     1.1.0
     BUNDLE_ID   com.homestudio.easyunbleed
     CATEGORIES  Fx Restoration
     SOURCES     Effects/SpectralUnbleed.h
@@ -433,7 +433,8 @@ set(HOLO_SOLO_SOURCES
     Plugins/EasyStrip/HoloSlabs.h
     Plugins/EasyStrip/HoloSlabs.cpp
     Plugins/EasyStrip/HoloSolo.h
-    Plugins/EasyStrip/HoloSolo.cpp)
+    Plugins/EasyStrip/HoloSolo.cpp
+    Plugins/EasyStrip/HoloUnbleed.cpp)
 
 function(add_holo_look target moduleIndex)
     target_sources(${target} PRIVATE ${HOLO_SOLO_SOURCES})
@@ -458,3 +459,4 @@ add_holo_look(EasyWah 11)
 add_holo_look(EasyFlange 12)
 add_holo_look(EasyFilter 13)
 add_holo_look(EasyLimiter 14)
+add_holo_look(EasyUnbleed 15)   # (not in the strip: its own panel, HoloUnbleed.cpp)

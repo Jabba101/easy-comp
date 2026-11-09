@@ -7,7 +7,7 @@ namespace Holo
     {
         constexpr int margin = 16, headerHeight = 44, gap = 10, tickerHeight = 46;
 
-        enum ScreenPlace { noScreen, screenAbove, screenRight, logoRight };
+        enum ScreenPlace { noScreen, screenAbove, screenRight, logoRight, ownDisplayRight };
 
         /** Each module's panel at the size the Easy Strip gives it, and where its screen page goes. */
         struct Shape { int width, height; ScreenPlace screen; };
@@ -25,6 +25,7 @@ namespace Holo
                 case StripModules::slapIndex:  return { 180, 600, screenRight };
                 case StripModules::clipIndex:  return { 760, 110, screenRight };
                 case StripModules::tapeIndex:  return { 250, 298, screenRight };
+                case unbleedModule:            return { 500, 430, ownDisplayRight };   // (Easy Unbleed: its own band display)
                 default:                       return { 180, 726, logoRight };   // (the rack effects: no screen page - the name beside them)
             }
         }
@@ -109,6 +110,8 @@ namespace Holo
         jassert (slab != nullptr);
         tint = slab->power.tint;
         addAndMakeVisible (*slab);
+        if (auto* side = slab->getSideDisplay())
+            addAndMakeVisible (*side);
 
        #if HOLO_WANTS(7)
         if (module == StripModules::clipIndex)
@@ -168,7 +171,7 @@ namespace Holo
             int contentW = shape.width, contentH = shape.height;
             if (clipAdvanced != nullptr)      contentH += gap + clipAdvancedHeight;
             if (shape.screen == screenAbove)  contentH += screenHeightAbove + gap;
-            if (shape.screen == screenRight || shape.screen == logoRight)  contentW += gap + screenWidthBeside;
+            if (shape.screen == screenRight || shape.screen == logoRight || shape.screen == ownDisplayRight)  contentW += gap + screenWidthBeside;
             twoRowHeader = contentW < 720;
             const int headerH = twoRowHeader ? 2 * headerHeight + 6 : headerHeight;
             native = { contentW + 2 * margin, margin + headerH + gap + contentH + margin + (settings.ticker ? tickerHeight + gap : 0) };
@@ -274,6 +277,9 @@ namespace Holo
         }
         if (shape.screen == logoRight)
             logoArea = content.withTrimmedLeft (gap);
+        if (shape.screen == ownDisplayRight)
+            if (auto* side = slab->getSideDisplay())
+                side->setBounds (content.withTrimmedLeft (gap));
 
         backdrop->setBounds (getLocalBounds());
         glowLayer->setBounds (getLocalBounds());

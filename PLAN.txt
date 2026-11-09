@@ -1053,4 +1053,6 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      CLASSIC (the old window, with a HOLOGRAM button at the end of its help bar). SoloSettings: "Easy Plugins.settings".
    - Each plugin's createEditor: #if EASY_HOLO_SOLO -> Holo::SoloEditor (CMake add_holo_look(target index)). The tests' builds
      don't define it, so the classic editor tests are unchanged. verify2: SoloTests.cpp, one program per plugin (Solo<Name>).
-   - Easy Unbleed has no strip slab: still classic.
+   - Easy Unbleed 1.1.0 (9 November 2026): its own panel in HoloUnbleed.cpp (module 15, only built into Easy Unbleed): 1 HOW MUCH
+     (AMOUNT), 2 HOW (SENSITIVITY, SMOOTHNESS), 3 WHERE (FROM, TO), 4 LISTEN (REMOVED ONLY), with its band display beside it
+     (this stem amber, the other stems blue, turned down red from the top; the sidechain warnings in red). Slab::getSideDisplay().

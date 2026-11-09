@@ -24,7 +24,7 @@ namespace Holo
         power.fontSize = 16.0f;
         powerLink = std::make_unique<ButtonLink> (param (CommonIDs::bypass), power, true);
         addAndMakeVisible (power);
-        view.addHint (power, juce::String (StripModules::tabs[m]) + " ON / OFF", powerHint);
+        view.addHint (power, (m < StripModules::numModules ? juce::String (StripModules::tabs[m]) : powerText) + " ON / OFF", powerHint);
 
         init.fontSize = 13.0f;
         init.onClick = [this]
@@ -1726,6 +1726,9 @@ namespace Holo
            #endif
            #if HOLO_WANTS(7)
             case 7: return std::make_unique<ClipSlab> (v);
+           #endif
+           #if HOLO_ONLY_MODULE == 15
+            case 15: return makeUnbleedSlab (v);
            #endif
             default: break;
         }

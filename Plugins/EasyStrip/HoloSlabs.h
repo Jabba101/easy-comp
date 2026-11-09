@@ -24,6 +24,9 @@ namespace Holo
 
         int getModule() const noexcept   { return module; }
 
+        /** A display of the panel's own that the window places beside it (Easy Unbleed's). */
+        virtual juce::Component* getSideDisplay()   { return nullptr; }
+
         Button power, init, pr;
 
     protected:
@@ -83,4 +86,8 @@ namespace Holo
     };
 
     std::unique_ptr<Slab> makeSlab (SlabHost&, int module);
+
+    /** Easy Unbleed's panel (module 15: not part of the strip - only in its own window). */
+    std::unique_ptr<Slab> makeUnbleedSlab (SlabHost&);
+    inline constexpr int unbleedModule = 15;
 }
