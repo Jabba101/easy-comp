@@ -998,3 +998,9 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      leave it) and 8 in "Stereo (Mid / Side)" (comp WORKS ON mid/side, EQ side air, MONO BASS). Mix Bus / Drum Bus ones kept in
      Mixing & Mastering / Drums (the earlier rule). 131 strip presets in all.
    - Easy Strip 0.16.0, project 1.31.0. StripTests 151/151, MasterTests 91/91. Pushed with the user's OK.
+== EASY MASTER 1.7.0: OUTPUT column (9 November 2026) ==
+   USER: "Easy Master doesn't have its output module?... if there needs to be more space, add it."
+   - Console 1800 -> 1888 wide (opens at 1699 x 927, still fits 1080p). OUTPUT column on the right, mirroring INPUT (like Easy Strip):
+     PEAK / LUFS, a stereo meter (after OUTPUT LEVEL), LUFS S and I (click I to reset), LEVEL ring, the held peak.
+   - OUTPUT LEVEL ("outlevel", -24..0 dB, after the limiter, not in presets): only down, so the CEILING holds; peak readings include it.
+   - The top-right numbers panel renamed READINGS. MasterTests 95/95.

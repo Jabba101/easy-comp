@@ -28,6 +28,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout EasyMasterAudioProcessor::cr
     const auto ignoreText = [] (float hz) { return hz <= 20.5f ? juce::String ("Off") : Format::hertz (hz); };
 
     layout.add (makeKnob (trim, 1, "Input Trim", trimRange, d.trimDb, Format::signedDecibels));
+    layout.add (makeKnob (outLevel, 1, "Output Level", { -24.0f, 0.0f, 0.1f }, 0.0f, Format::signedDecibels));
 
     // EQ
     {
@@ -163,6 +164,7 @@ EasyMasterAudioProcessor::EasyMasterAudioProcessor()
     : EasyProcessor ("EasyMasterSettings", createParameterLayout(), makeMasterPresets(), masterPresetIDs())
 {
     using namespace MasterIDs;
+    outLevelValue = v (outLevel);
     trimValue = v (trim); compOnValue = v (compOn); compModeValue = v (compMode); mixValue = v (compMix);
     ignoreValue = v (ignoreBelow); reactsValue = v (reactsTo); characterValue = v (character);
     limitGainValue = v (limitGain); ceilingValue = v (ceiling); releaseModeValue = v (releaseMode); releaseValue = v (release);
@@ -326,6 +328,8 @@ void EasyMasterAudioProcessor::prepareToPlay (double sampleRate, int samplesPerB
     reference.prepare (sampleRate, block);
 
     trimGain.reset (sampleRate, 0.05);
+    outGain.reset (sampleRate, 0.05);
+    outGain.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (outLevelValue->load()));
     trimGain.setCurrentAndTargetValue (juce::Decibels::decibelsToGain (trimValue->load()));
     matchGain.reset (sampleRate, 0.5);
     matchGain.setCurrentAndTargetValue (1.0f);
@@ -515,6 +519,7 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
     shapers[1].setSettings (punchSettings (1));
     width.setSettings (widthSettings());
     trimGain.setTargetValue (juce::Decibels::decibelsToGain (trimValue->load()));
+    outGain.setTargetValue (juce::Decibels::decibelsToGain (outLevelValue->load()));
     bypassFade.setTargetValue (bypassValue->load() > 0.5f ? 1.0f : 0.0f);
     const int listening = juce::roundToInt (listenValue->load());
     for (size_t i = 0; i < listenFades.size(); ++i)
@@ -599,10 +604,22 @@ void EasyMasterAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, j
         // LIMITER
         building.inDb = juce::jmax (building.inDb, juce::Decibels::gainToDecibels (juce::jmax (part.getMagnitude (0, 0, n), part.getMagnitude (1, 0, n)) * limitGain, -100.0f));
         limiter.process (part, 2);
-        building.outDb = juce::jmax (building.outDb, limiter.getOutputPeakDb());
+        const float levelDb = outLevelValue->load();   // (what leaves: the limiter's true peak, then OUTPUT LEVEL)
+        building.outDb = juce::jmax (building.outDb, limiter.getOutputPeakDb() + levelDb);
         building.limitCutDb = juce::jmax (building.limitCutDb, limiter.getReductionDb());
         nowLimitCut.store (limiter.getReductionDb());
-        highestPeak.store (juce::jmax (highestPeak.load(), limiter.getOutputPeakDb()));
+        highestPeak.store (juce::jmax (highestPeak.load(), limiter.getOutputPeakDb() + levelDb));
+
+        // OUTPUT: LEVEL (only down, so the CEILING still holds)
+        if (outGain.isSmoothing() || std::abs (outGain.getTargetValue() - 1.0f) > 1.0e-6f)
+            for (int i = 0; i < n; ++i)
+            {
+                const float g = outGain.getNextValue();
+                part.getWritePointer (0)[i] *= g;
+                part.getWritePointer (1)[i] *= g;
+            }
+        storeIfBigger (outputMeterPeaks[0], part.getMagnitude (0, 0, n));
+        storeIfBigger (outputMeterPeaks[1], part.getMagnitude (1, 0, n));
 
         // The meters read the master here
         loudness.process (part);

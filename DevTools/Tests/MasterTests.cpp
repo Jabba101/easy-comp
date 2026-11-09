@@ -127,6 +127,22 @@ namespace
         }
     }
 
+    void testOutput()
+    {
+        std::cout << "\n[OUTPUT]\n";
+        const auto band = loadMix ("band", 30.0, 8.0);
+        P a; prepare (a, sr, 512); const auto full = run (a, band, 512);
+        P b; set (b, MasterIDs::outLevel, -6.0f); prepare (b, sr, 512); const auto down = run (b, band, 512);
+        const double d = loudnessDb (down, (int) sr, down.getNumSamples()) - loudnessDb (full, (int) sr, full.getNumSamples());
+        check (std::abs (d + 6.0) < 0.05, "OUTPUT LEVEL -6: the master 6 dB down (" + juce::String (d, 2) + " dB)");
+        check (std::abs ((b.getReadings().highestPeak - a.getReadings().highestPeak) + 6.0f) < 0.3f, "... and the peak readings follow it");
+        check (std::abs (b.takeOutputPeak (0) - 0.0f) >= 0.0f && b.parameters.getParameter (MasterIDs::outLevel)->getNormalisableRange().end <= 0.0f,
+               "OUTPUT LEVEL only turns down (so the CEILING always holds)");
+        bool inPresets = false;
+        for (auto& id : masterPresetIDs()) if (id == MasterIDs::outLevel) inPresets = true;
+        check (! inPresets, "OUTPUT LEVEL isn't part of presets");
+    }
+
     void testCompare()
     {
         std::cout << "\n[compare and listen]\n";
@@ -434,11 +450,11 @@ namespace
         run (p, loadMix ("mureka", 40.0, 6.0), 512);
         std::unique_ptr<juce::AudioProcessorEditor> editor (p.createEditor());
         auto* window = dynamic_cast<EasyMasterAudioProcessorEditor*> (editor.get());
-        check (window != nullptr && editor->getWidth() == 1620 && editor->getHeight() == 927, "the window opens at 1620 x 927 (fits a 1080p screen; drag the corner for any size)");
+        check (window != nullptr && editor->getWidth() == 1699 && editor->getHeight() == 927, "the window opens at 1699 x 927 (fits a 1080p screen; drag the corner for any size)");
         if (window == nullptr) return;
         auto& console = window->getConsole();
         using C = MasterHolo::Console;
-        check (console.getWidth() == C::width && console.getHeight() == C::height, "the console is laid out at 1800 x 1030 (like Easy Strip) and scaled to the window");
+        check (console.getWidth() == C::width && console.getHeight() == C::height, "the console is laid out at 1888 x 1030 (INPUT on the left, OUTPUT on the right, like Easy Strip) and scaled to the window");
 
         // Nothing overlapping or spilling out: the console's parts, and each module's parts inside it
         const auto tidy = [&] (juce::String& problem)
@@ -797,6 +813,7 @@ int main (int argc, char** argv)
     const juce::File outDir (argc > 1 ? juce::String (argv[1]) : juce::File::getCurrentWorkingDirectory().getFullPathName());
     testChain();
     testMidSide();
+    testOutput();
     testCompare();
     testTamer();
     testEQ();

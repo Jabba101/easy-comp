@@ -94,6 +94,9 @@ public:
 
     /** The loudest sample going into the chain (after TRIM) since the window last asked (not in dB). */
     float takeInputPeak() noexcept   { return inputMeterPeak.exchange (0.0f); }
+    /** The loudest sample leaving (after OUTPUT LEVEL), left and right, since the window last asked (not in dB). */
+    float takeOutputPeak (int channel) noexcept   { return outputMeterPeaks[(size_t) juce::jlimit (0, 1, channel)].exchange (0.0f); }
+    bool outputMeterShowsLufs = false;   // (the window's OUTPUT meter: PEAK or LUFS - kept while it's closed)
     std::array<juce::String, MasterModules::count> modulePresetNames;   // (which module preset each module's Pr loaded last - shown beside it)   // (the window's page - kept while the window is closed; 0 = RESONANCE TAMER)
 
     bool isMidSide() const noexcept   { return juce::roundToInt (compModeValue->load()) == MasterMode::midSide; }
@@ -158,7 +161,9 @@ private:
     LoudnessMeter loudness, originalLoudness;
     juce::AudioBuffer<float> mid, sides, original, referenceAudio, heardAudio;
     ReferenceTrack reference;
-    juce::SmoothedValue<float> trimGain, matchGain, bypassFade;
+    juce::SmoothedValue<float> trimGain, outGain, matchGain, bypassFade;
+    std::atomic<float>* outLevelValue = nullptr;
+    std::array<std::atomic<float>, 2> outputMeterPeaks {};
     std::array<juce::SmoothedValue<float>, 4> listenFades;   // STEREO, MID, SIDE, MONO
     int playingMode = MasterMode::stereo;
     bool modeChanging = false;

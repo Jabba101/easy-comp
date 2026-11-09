@@ -12,6 +12,8 @@ namespace MasterIDs
 {
     // INPUT
     inline constexpr const char* trim         = "trim";          // dB
+    // OUTPUT (after the limiter; not part of presets - the final level is yours)
+    inline constexpr const char* outLevel     = "outlevel";      // dB, 0 or down (so the CEILING always holds)
     // RESONANCE TAMER (MID settings are also the STEREO settings)
     inline constexpr const char* tamerOn      = "tameron";
     inline constexpr const char* tamerMode    = "tamermode";     // STEREO or MID + SIDE

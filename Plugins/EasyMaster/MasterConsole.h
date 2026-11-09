@@ -96,12 +96,13 @@ namespace MasterHolo
         explicit Console (EasyMasterAudioProcessor&);
         ~Console() override;
 
-        static constexpr int width = 1800, height = 1030;
+        static constexpr int width = 1888, height = 1030;
 
         void paint (juce::Graphics&) override;
         void resized() override;
         void mouseEnter (const juce::MouseEvent&) override;
         void mouseExit (const juce::MouseEvent&) override;
+        void mouseDown (const juce::MouseEvent& e) override   { if (e.eventComponent == &lufsIntegrated) processor.resetMeters(); }
 
         // A song dropped anywhere on the window: the REFERENCE (the page opens to show it)
         bool isInterestedInFileDrag (const juce::StringArray& files) override   { return referenceDisplay.isInterestedInFileDrag (files); }
@@ -167,6 +168,12 @@ namespace MasterHolo
         Holo::BigMeter inputMeter;
         std::unique_ptr<Holo::Ring> trim;
         juce::Label inputState;
+        // OUTPUT (the right-hand column, like Easy Strip's): PEAK / LUFS, the meter, LUFS S and I, LEVEL
+        Holo::BigMeter outputMeter;
+        std::unique_ptr<Holo::Choice> outputMode;
+        std::unique_ptr<Holo::Ring> outLevel;
+        juce::Label outputState, lufsShort, lufsIntegrated;
+        float outputPeakHeld = -200.0f;
         juce::Component* getScreenComponent (int f) const;
 
     private:
@@ -196,7 +203,7 @@ namespace MasterHolo
         juce::TextEditor entry;
         std::function<void (const juce::String&)> onEntry;
 
-        juce::Rectangle<int> headerArea, focusRow, inputColumn, screenArea, metersArea, tickerArea;
+        juce::Rectangle<int> headerArea, focusRow, inputColumn, outputColumn, screenArea, metersArea, tickerArea;
         std::vector<EasyMasterAudioProcessor::Moment> incoming;
         std::vector<float> scopeLeft, scopeRight;
 

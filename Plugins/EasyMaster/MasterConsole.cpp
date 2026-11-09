@@ -939,6 +939,33 @@ namespace MasterHolo
         addAndMakeVisible (inputState);
         addHint (inputState, "INPUT", trimHint);
 
+        // OUTPUT
+        outputMode = std::make_unique<Choice> (juce::StringArray { "PEAK", "LUFS" }, Colours::cyan, false);
+        outputMode->segmentHeight = 24;
+        outputMode->setChosen (p.outputMeterShowsLufs ? 1 : 0);
+        outputMode->onUserChoice = [this] (int i) { processor.outputMeterShowsLufs = i == 1; };
+        addAndMakeVisible (*outputMode);
+        addHint (*outputMode, "PEAK / LUFS", "What the OUTPUT meter shows: PEAK - the loudest samples leaving (left and right); LUFS - the loudness "
+                 "the way streaming services measure it (the last 3 seconds). The READINGS panel has the exact numbers.");
+        addAndMakeVisible (outputMeter);
+        addHint (outputMeter, "OUTPUT", "The master leaving Easy Master (after the limiter and OUTPUT LEVEL). With the limiter on, the peaks never "
+                 "pass its CEILING.");
+        outLevel = std::make_unique<Ring> (*p.parameters.getParameter (MasterIDs::outLevel), "LEVEL", Holo::Format::signedDb, "dB", Ring::tiny, Colours::cyan);
+        addAndMakeVisible (*outLevel);
+        addHint (*outLevel, "OUTPUT LEVEL", "The final level, after everything (the limiter included). It only turns down - so the limiter's CEILING "
+                 "always holds. Handy to match a quieter target, or to drop the whole master a touch without touching the limiter. Not part of presets.");
+        registerControl (MasterIDs::outLevel, *outLevel);
+        for (auto* l : { &outputState, &lufsShort, &lufsIntegrated })
+        {
+            l->setFont (Holo::text (13.0f, 1));
+            l->setJustificationType (juce::Justification::centred);
+            addAndMakeVisible (*l);
+        }
+        addHint (outputState, "OUTPUT", "The loudest peak leaving right now (dBFS).");
+        addHint (lufsShort, "LUFS S", "Short-term loudness: the last 3 seconds, as streaming services measure it.");
+        addHint (lufsIntegrated, "LUFS I", "Integrated loudness: the whole song so far. Click it to start again (the READINGS panel resets too).");
+        lufsIntegrated.addMouseListener (this, false);
+
         // Header
         auto window = std::make_unique<Painter>();
         window->painter = [this, w = window.get()] (juce::Graphics& g)
@@ -1058,12 +1085,13 @@ namespace MasterHolo
     void Console::resized()
     {
         // (the layout is fixed at 1800 x 1030; the window scales it)
-        headerArea = { 12, 10, 1776, 46 };
+        headerArea = { 12, 10, width - 24, 46 };
         focusRow = { 438, 64, 634, 32 };
         inputColumn = { 12, 104, 80, 860 };
         screenArea = { 438, 104, 634, 396 };
         metersArea = { 1488, 104, 300, 300 };
-        tickerArea = { 12, 972, 1776, 46 };
+        tickerArea = { 12, 972, width - 24, 46 };
+        outputColumn = { width - 12 - 80, 104, 80, 860 };
 
         auto& tamer = *getModule (MasterModules::tamer);
         tamer.setBounds (100, 104, 330, 396);
@@ -1089,6 +1117,20 @@ namespace MasterHolo
         inputMeter.setBounds (inputColumn.getX() + 14, inputColumn.getY() + 44, inputColumn.getWidth() - 28, 640);
         trim->setTopLeftPosition (inputColumn.getCentreX() - trim->getWidth() / 2, inputColumn.getBottom() - trim->getHeight() - 52);
         inputState.setBounds (inputColumn.getX() + 4, inputColumn.getBottom() - 46, inputColumn.getWidth() - 8, 36);
+
+        // OUTPUT
+        {
+            auto c = outputColumn.reduced (8, 0);
+            c.removeFromTop (40);
+            outputMode->setBounds (c.removeFromTop (outputMode->getIdealHeight()));
+            c.removeFromTop (10);
+            outputMeter.setBounds (c.removeFromTop (470).reduced (6, 0));
+            c.removeFromTop (10);
+            lufsShort.setBounds (c.removeFromTop (36));
+            lufsIntegrated.setBounds (c.removeFromTop (36));
+            outLevel->setTopLeftPosition (outputColumn.getCentreX() - outLevel->getWidth() / 2, outputColumn.getBottom() - outLevel->getHeight() - 52);
+            outputState.setBounds (outputColumn.getX() + 4, outputColumn.getBottom() - 46, outputColumn.getWidth() - 8, 36);
+        }
 
         // Header
         auto h = headerArea.reduced (8, 7);
@@ -1145,10 +1187,12 @@ namespace MasterHolo
 
         // INPUT, the screen, the meters
         drawModule (g, inputColumn.toFloat(), Colours::cyan);
+        drawModule (g, outputColumn.toFloat(), Colours::cyan);
+        drawGlowText (g, "OUTPUT", outputColumn.toFloat().removeFromTop (34.0f).withTrimmedTop (8.0f), juce::Justification::centred, Holo::text (15.5f, 2), Colours::cyan);
         drawGlowText (g, "INPUT", inputColumn.toFloat().removeFromTop (34.0f).withTrimmedTop (8.0f), juce::Justification::centred, Holo::text (15.5f, 2), Colours::cyan);
         drawModule (g, screenArea.toFloat(), Colours::cyan);
         drawModule (g, metersArea.toFloat(), Colours::cyan);
-        drawGlowText (g, "OUTPUT", metersArea.toFloat().reduced (12.0f, 8.0f).removeFromTop (22.0f), juce::Justification::centredLeft, Holo::text (16.0f, 2), Colours::cyan, 0.6f);
+        drawGlowText (g, "READINGS", metersArea.toFloat().reduced (12.0f, 8.0f).removeFromTop (22.0f), juce::Justification::centredLeft, Holo::text (16.0f, 2), Colours::cyan, 0.6f);
 
         // The ticker
         {
@@ -1466,6 +1510,25 @@ namespace MasterHolo
         const bool clipping = processor.getInputPeakDb() > -0.01f;
         inputState.setText (clipping ? "CLIPPING\nON THE WAY IN" : "INPUT OK", juce::dontSendNotification);
         inputState.setColour (juce::Label::textColourId, clipping ? Colours::warn : Colours::dim);
+
+        // OUTPUT
+        {
+            const float l = juce::Decibels::gainToDecibels (processor.takeOutputPeak (0), -200.0f);
+            const float r = juce::Decibels::gainToDecibels (processor.takeOutputPeak (1), -200.0f);
+            if (processor.outputMeterShowsLufs) outputMeter.setLevels (readings.shortTerm, readings.shortTerm);
+            else                                outputMeter.setLevels (l, r);
+            if (outputMode->getChosen() != (processor.outputMeterShowsLufs ? 1 : 0)) outputMode->setChosen (processor.outputMeterShowsLufs ? 1 : 0);
+            const float loudest = juce::jmax (l, r);
+            outputPeakHeld = loudest > outputPeakHeld ? loudest : juce::jmax (loudest, outputPeakHeld - 0.5f);
+            const auto peakText = outputPeakHeld > -90.0f ? "PEAK\n" + juce::String (outputPeakHeld, 1) + " dB" : juce::String ("PEAK\n--");
+            if (outputState.getText() != peakText) outputState.setText (peakText, juce::dontSendNotification);
+            outputState.setColour (juce::Label::textColourId, Colours::dim);
+            const auto lufs = [] (float v, const char* which) { return (v <= -69.9f ? juce::String ("--") : juce::String (v, 1)) + "\nLUFS " + which; };
+            if (lufsShort.getText() != lufs (readings.shortTerm, "S")) lufsShort.setText (lufs (readings.shortTerm, "S"), juce::dontSendNotification);
+            if (lufsIntegrated.getText() != lufs (readings.integrated, "I")) lufsIntegrated.setText (lufs (readings.integrated, "I"), juce::dontSendNotification);
+            lufsShort.setColour (juce::Label::textColourId, Colours::ink);
+            lufsIntegrated.setColour (juce::Label::textColourId, Colours::ink);
+        }
 
         // Header
         const int slot = processor.getActiveSlot();
