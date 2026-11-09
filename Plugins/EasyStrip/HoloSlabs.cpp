@@ -14,11 +14,11 @@ namespace Holo
     }
 
     //==========================================================================
-    Slab::Slab (View& v, int m, juce::Colour t, const juce::String& powerText)
+    Slab::Slab (SlabHost& v, int m, juce::Colour t, const juce::String& powerText)
         : power (powerText, t, Button::Style::power),
           init ("INIT", Colours::warn, Button::Style::init),
           pr ("Pr", t),
-          view (v), strip (v.getStrip()), module (m), tint (t)
+          view (v), strip (v), module (m), tint (t)
     {
         setDrawsOwnGlows (*this);
         power.fontSize = 16.0f;
@@ -163,10 +163,11 @@ namespace Holo
     //==========================================================================
     // GATE
     //==========================================================================
+#if HOLO_WANTS(0)
     class GateSlab : public Slab
     {
     public:
-        explicit GateSlab (View& v) : Slab (v, 0, Colours::gate, "GATE"),
+        explicit GateSlab (SlabHost& v) : Slab (v, 0, Colours::gate, "GATE"),
             meter (-80.0f, 0.0f, { 0.0f, -20.0f, -40.0f, -60.0f, -80.0f })
         {
             stateText = &caption ("CLOSED", Colours::ink, 14.5f);
@@ -278,14 +279,16 @@ namespace Holo
         Choice* openedBy = nullptr;
         Button listen { "LISTEN", Colours::gate };
     };
+#endif
 
     //==========================================================================
     // AMP
     //==========================================================================
+#if HOLO_WANTS(1)
     class AmpSlab : public Slab
     {
     public:
-        explicit AmpSlab (View& v) : Slab (v, 1, Colours::amp, "AMP")
+        explicit AmpSlab (SlabHost& v) : Slab (v, 1, Colours::amp, "AMP")
         {
             drive = &ring (AmpIDs::drive, {}, Format::percent, "%", Ring::big, Colours::gold, "DRIVE");
             analog = &caption ("ANALOG");
@@ -325,14 +328,16 @@ namespace Holo
         juce::Label *analog = nullptr, *clean = nullptr, *overdrive = nullptr;
         Button* autoGain = nullptr;
     };
+#endif
 
     //==========================================================================
     // EQ
     //==========================================================================
+#if HOLO_WANTS(2)
     class EQSlab : public Slab
     {
     public:
-        explicit EQSlab (View& v) : Slab (v, 2, Colours::eq, "EQUALIZER")
+        explicit EQSlab (SlabHost& v) : Slab (v, 2, Colours::eq, "EQUALIZER")
         {
             static const char* bandNames[] { "LOW", "LOW MID", "HIGH MID", "HIGH" };
 
@@ -540,14 +545,16 @@ namespace Holo
         Button copy { "A > B", Colours::eq };
         juce::Rectangle<int> headings, refPlate, cleanUp;
     };
+#endif
 
     //==========================================================================
     // DS
     //==========================================================================
+#if HOLO_WANTS(3)
     class DSSlab : public Slab
     {
     public:
-        explicit DSSlab (View& v) : Slab (v, 3, Colours::ds, "DS"),
+        explicit DSSlab (SlabHost& v) : Slab (v, 3, Colours::ds, "DS"),
             meter (-30.0f, 20.0f, { 20.0f, 10.0f, 0.0f, -10.0f, -20.0f, -30.0f })
         {
             addAndMakeVisible (lamp);
@@ -722,14 +729,16 @@ namespace Holo
         int soundFrames = 0, framesSinceSound = 0;
         std::vector<HarshnessFinder::Frame> collected;
     };
+#endif
 
     //==========================================================================
     // COMP
     //==========================================================================
+#if HOLO_WANTS(4)
     class CompSlab : public Slab
     {
     public:
-        explicit CompSlab (View& v) : Slab (v, 4, Colours::comp, "COMP"),
+        explicit CompSlab (SlabHost& v) : Slab (v, 4, Colours::comp, "COMP"),
             meter (-60.0f, 0.0f, { 0.0f, -15.0f, -30.0f, -45.0f, -60.0f }),
             reduction (24.0f, false, Colours::reduction)
         {
@@ -971,14 +980,16 @@ namespace Holo
         juce::Label* msName[4] {};
         bool shownMidSide = false;
     };
+#endif
 
     //==========================================================================
     // TRANS
     //==========================================================================
+#if HOLO_WANTS(5)
     class TransSlab : public Slab
     {
     public:
-        explicit TransSlab (View& v) : Slab (v, 5, Colours::trans, "TRANS"), change (12.0f, true, Colours::gate)
+        explicit TransSlab (SlabHost& v) : Slab (v, 5, Colours::trans, "TRANS"), change (12.0f, true, Colours::gate)
         {
             powerWidth = 76;
             punch = &bar (TransientIDs::punch, "PUNCH", Format::signedPercent, "%", {}, true);
@@ -1037,14 +1048,16 @@ namespace Holo
         Ring *output = nullptr, *mix = nullptr;
         Button* autoGain = nullptr;
     };
+#endif
 
     //==========================================================================
     // VERB (Easy Verb: the gated BITCH-SLAP burst, and the live spaces)
     //==========================================================================
+#if HOLO_WANTS(6)
     class SlapSlab : public Slab
     {
     public:
-        explicit SlapSlab (View& v) : Slab (v, 6, Colours::slap, "VERB")
+        explicit SlapSlab (SlabHost& v) : Slab (v, 6, Colours::slap, "VERB")
         {
             deepRed = true;
             power.fontSize = 14.0f;
@@ -1107,14 +1120,16 @@ namespace Holo
         juce::Label* guide = nullptr;
         Choice *type = nullptr, *sync = nullptr;
     };
+#endif
 
     //==========================================================================
     // TAPE
     //==========================================================================
+#if HOLO_WANTS(8)
     class TapeSlab : public Slab
     {
     public:
-        explicit TapeSlab (View& v) : Slab (v, StripModules::tapeIndex, Colours::tape, "TAPE")
+        explicit TapeSlab (SlabHost& v) : Slab (v, StripModules::tapeIndex, Colours::tape, "TAPE")
         {
             drive = &ring (TapeIDs::drive, "DRIVE", Format::signedDb, "dB", Ring::small, Colours::gold);
             drive->setFromCentre (true);
@@ -1152,14 +1167,16 @@ namespace Holo
         Choice* speed = nullptr;
         Button* autoGain = nullptr;
     };
+#endif
 
     //==========================================================================
     // DELAY (its panel is in the WEAPON SELECT rack: tall and narrow)
     //==========================================================================
+#if HOLO_WANTS(9)
     class DelaySlab : public Slab
     {
     public:
-        explicit DelaySlab (View& v) : Slab (v, StripModules::delayIndex, Colours::delay, "DELAY")
+        explicit DelaySlab (SlabHost& v) : Slab (v, StripModules::delayIndex, Colours::delay, "DELAY")
         {
             time = &ring (DelayIDs::time, "TIME", Format::whole, "ms");
             note = &ring (DelayIDs::note, "TIME", Format::asText, {}, Ring::small, {}, "TIME");
@@ -1212,14 +1229,16 @@ namespace Holo
         Ring *time = nullptr, *note = nullptr, *feedback = nullptr, *lowCut = nullptr, *highCut = nullptr, *duck = nullptr, *mix = nullptr;
         Choice *sync = nullptr, *mode = nullptr, *character = nullptr;
     };
+#endif
 
     //==========================================================================
     // TREMOLO (its panel is in the WEAPON SELECT rack: tall and narrow)
     //==========================================================================
+#if HOLO_WANTS(10)
     class TremoloSlab : public Slab
     {
     public:
-        explicit TremoloSlab (View& v) : Slab (v, StripModules::tremIndex, Colours::trem, "TREMOLO")
+        explicit TremoloSlab (SlabHost& v) : Slab (v, StripModules::tremIndex, Colours::trem, "TREMOLO")
         {
             power.fontSize = 13.0f;
             rate = &ring (TremoloIDs::rate, "RATE", Format::asText, {});
@@ -1261,14 +1280,16 @@ namespace Holo
         Ring *rate = nullptr, *note = nullptr, *depth = nullptr;
         Choice *sync = nullptr, *shape = nullptr, *mode = nullptr;
     };
+#endif
 
     //==========================================================================
     // WAH (its panel is in the WEAPON SELECT rack: tall and narrow)
     //==========================================================================
+#if HOLO_WANTS(11)
     class WahSlab : public Slab
     {
     public:
-        explicit WahSlab (View& v) : Slab (v, StripModules::wahIndex, Colours::wah, "WAH")
+        explicit WahSlab (SlabHost& v) : Slab (v, StripModules::wahIndex, Colours::wah, "WAH")
         {
             mode = &choice (WahIDs::mode, { "AUTO", "TEMPO" }, "MODE", true);
             sensitivity = &ring (WahIDs::sensitivity, "SENSITIVITY", Format::percent, "%");
@@ -1330,14 +1351,16 @@ namespace Holo
         Choice *mode = nullptr, *response = nullptr, *direction = nullptr;
         Button* autoGain = nullptr;
     };
+#endif
 
     //==========================================================================
     // FLANGE (its panel is in the WEAPON SELECT rack: tall and narrow)
     //==========================================================================
+#if HOLO_WANTS(12)
     class FlangeSlab : public Slab
     {
     public:
-        explicit FlangeSlab (View& v) : Slab (v, StripModules::flangeIndex, Colours::flange, "FLANGE")
+        explicit FlangeSlab (SlabHost& v) : Slab (v, StripModules::flangeIndex, Colours::flange, "FLANGE")
         {
             power.fontSize = 14.0f;
             type = &choice (FlangeIDs::type, { "FLANGER", "CHORUS", "VIBRATO" }, "TYPE");
@@ -1386,14 +1409,16 @@ namespace Holo
         Ring *rate = nullptr, *note = nullptr, *depth = nullptr, *feedback = nullptr, *width = nullptr, *mix = nullptr;
         Choice *type = nullptr, *sync = nullptr;
     };
+#endif
 
     //==========================================================================
     // MOD FILTER (Easy Filter; its panel is in the WEAPON SELECT rack: tall and narrow)
     //==========================================================================
+#if HOLO_WANTS(13)
     class FilterSlab : public Slab
     {
     public:
-        explicit FilterSlab (View& v) : Slab (v, StripModules::filterIndex, Colours::filter, "FILTER")
+        explicit FilterSlab (SlabHost& v) : Slab (v, StripModules::filterIndex, Colours::filter, "FILTER")
         {
             power.fontSize = 14.0f;
             type = &choice (FilterIDs::type, { "LOW", "HIGH", "BAND" }, "TYPE", true);
@@ -1449,14 +1474,16 @@ namespace Holo
         Ring *cutoff = nullptr, *resonance = nullptr, *rate = nullptr, *note = nullptr, *depth = nullptr, *width = nullptr, *mix = nullptr;
         Choice *type = nullptr, *shape = nullptr, *sync = nullptr;
     };
+#endif
 
     //==========================================================================
     // LIMITER (Easy Limiter; the very last module, its panel in the WEAPON SELECT rack)
     //==========================================================================
+#if HOLO_WANTS(14)
     class LimiterSlab : public Slab
     {
     public:
-        explicit LimiterSlab (View& v) : Slab (v, StripModules::limiterIndex, Colours::limiter, "LIMITER")
+        explicit LimiterSlab (SlabHost& v) : Slab (v, StripModules::limiterIndex, Colours::limiter, "LIMITER")
         {
             power.fontSize = 14.0f;
             gain = &ring (LimiterIDs::gain, "GAIN", Format::signedDb, "dB");
@@ -1514,14 +1541,16 @@ namespace Holo
         Button* match = nullptr;
         float latest = 0.0f, shown = 0.0f;
     };
+#endif
 
     //==========================================================================
     // CLIP
     //==========================================================================
+#if HOLO_WANTS(7)
     class ClipSlab : public Slab
     {
     public:
-        explicit ClipSlab (View& v) : Slab (v, 7, Colours::clip, "CLIP")
+        explicit ClipSlab (SlabHost& v) : Slab (v, 7, Colours::clip, "CLIP")
         {
             addAndMakeVisible (lamp);
             hint (lamp, "SHAVED OFF");
@@ -1584,11 +1613,13 @@ namespace Holo
         Choice* view_ = nullptr;
         Ring *push = nullptr, *ceiling = nullptr, *softness = nullptr, *protect = nullptr;
     };
+#endif
 
     //==========================================================================
     // CLIP - ADVANCED (3 SOUND DESIGN)
     //==========================================================================
-    ClipAdvanced::ClipAdvanced (View& v) : Slab (v, 7, Colours::clip, "CLIP")
+#if HOLO_WANTS(7)
+    ClipAdvanced::ClipAdvanced (SlabHost& v) : Slab (v, 7, Colours::clip, "CLIP")
     {
         power.setVisible (false);
         pr.setVisible (false);
@@ -1644,26 +1675,61 @@ namespace Holo
         g.drawRoundedRectangle (box.reduced (0.5f), 7.0f, 1.0f);
     }
 
+#endif
+
     //==========================================================================
-    std::unique_ptr<Slab> makeSlab (View& v, int module)
+    std::unique_ptr<Slab> makeSlab (SlabHost& v, int module)
     {
         switch (module)
         {
-            case 0:  return std::make_unique<GateSlab> (v);
-            case 1:  return std::make_unique<AmpSlab> (v);
-            case 2:  return std::make_unique<EQSlab> (v);
-            case 3:  return std::make_unique<DSSlab> (v);
-            case 4:  return std::make_unique<CompSlab> (v);
-            case 5:  return std::make_unique<TransSlab> (v);
-            case 6:  return std::make_unique<SlapSlab> (v);
-            case 8:  return std::make_unique<TapeSlab> (v);
-            case 9:  return std::make_unique<DelaySlab> (v);
+           #if HOLO_WANTS(0)
+            case 0: return std::make_unique<GateSlab> (v);
+           #endif
+           #if HOLO_WANTS(1)
+            case 1: return std::make_unique<AmpSlab> (v);
+           #endif
+           #if HOLO_WANTS(2)
+            case 2: return std::make_unique<EQSlab> (v);
+           #endif
+           #if HOLO_WANTS(3)
+            case 3: return std::make_unique<DSSlab> (v);
+           #endif
+           #if HOLO_WANTS(4)
+            case 4: return std::make_unique<CompSlab> (v);
+           #endif
+           #if HOLO_WANTS(5)
+            case 5: return std::make_unique<TransSlab> (v);
+           #endif
+           #if HOLO_WANTS(6)
+            case 6: return std::make_unique<SlapSlab> (v);
+           #endif
+           #if HOLO_WANTS(8)
+            case 8: return std::make_unique<TapeSlab> (v);
+           #endif
+           #if HOLO_WANTS(9)
+            case 9: return std::make_unique<DelaySlab> (v);
+           #endif
+           #if HOLO_WANTS(10)
             case 10: return std::make_unique<TremoloSlab> (v);
+           #endif
+           #if HOLO_WANTS(11)
             case 11: return std::make_unique<WahSlab> (v);
+           #endif
+           #if HOLO_WANTS(12)
             case 12: return std::make_unique<FlangeSlab> (v);
+           #endif
+           #if HOLO_WANTS(13)
             case 13: return std::make_unique<FilterSlab> (v);
+           #endif
+           #if HOLO_WANTS(14)
             case 14: return std::make_unique<LimiterSlab> (v);
-            default: return std::make_unique<ClipSlab> (v);
+           #endif
+           #if HOLO_WANTS(7)
+            case 7: return std::make_unique<ClipSlab> (v);
+           #endif
+            default: break;
         }
+        juce::ignoreUnused (v);
+        return {};
     }
 }

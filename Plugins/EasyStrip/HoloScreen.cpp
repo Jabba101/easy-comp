@@ -12,7 +12,7 @@ namespace Holo
         constexpr float eqRangeDb = 15.0f;   // the EQ page shows +-15 dB
     }
 
-    Screen::Screen (EasyStripAudioProcessor& p) : strip (p)
+    Screen::Screen (SlabHost& p) : strip (p)
     {
         fft = std::make_unique<juce::dsp::FFT> (fftOrder);
         fftData.assign ((size_t) fftSize * 2, 0.0f);
@@ -22,9 +22,11 @@ namespace Holo
         spectrumDb.assign ((size_t) fftSize / 2, -120.0f);
 
         analyserButton.fontSize = 13.0f;
+       #if HOLO_WANTS(2)
         analyserLink = std::make_unique<ButtonLink> (*strip.getEQ().parameters.getParameter (EQIDs::analyser), analyserButton);
         addChildComponent (analyserButton);
-        setPage (2);
+       #endif
+        setPage (HOLO_ONLY_MODULE < 0 ? 2 : HOLO_ONLY_MODULE);
     }
 
     Screen::~Screen() = default;
@@ -32,7 +34,7 @@ namespace Holo
     void Screen::setPage (int module)
     {
         page = juce::jlimit (0, StripModules::numModules - 1, module);
-        analyserButton.setVisible (page == 2);
+        analyserButton.setVisible (page == 2 && HOLO_WANTS(2));
         dragging = hovering = -1;
         setMouseCursor (juce::MouseCursor::NormalCursor);
         repaint();
@@ -59,11 +61,15 @@ namespace Holo
 
     void Screen::refresh()
     {
+       #if HOLO_WANTS(2)
         if (page == 2 && strip.getEQ().parameters.getRawParameterValue (EQIDs::analyser)->load() > 0.5f)
             readAnalyser();
+       #endif
 
+       #if HOLO_WANTS(8)
         // The VU needle: the reading already swings like one; this smooths the steps between frames
         tapeVu += (juce::jlimit (-22.0f, 4.0f, strip.getTape().getRecordVu()) - tapeVu) * 0.6f;
+       #endif
         repaint();
     }
 
@@ -187,6 +193,7 @@ namespace Holo
 
     juce::Point<float> Screen::eqDotPosition (int band) const
     {
+#if HOLO_WANTS(2)
         auto& eq = strip.getEQ();
         const auto s = eq.getCurrentSettings();
         const auto& b = s.bands[(size_t) band];
@@ -194,6 +201,9 @@ namespace Holo
         const float atDot = (float) juce::Decibels::gainToDecibels (   // (responseAt gives a gain, not dB)
             Equalizer::responseAt (s, b.freqHz, eq.getCurrentSampleRate() > 0.0 ? eq.getCurrentSampleRate() : 48000.0, mid), -60.0);
         return { xForHz (b.freqHz), yForDb (juce::jlimit (-eqRangeDb, eqRangeDb, atDot)) };
+#else
+        return {};
+#endif
     }
 
     int Screen::dotAt (juce::Point<float> p) const
@@ -206,6 +216,7 @@ namespace Holo
 
     void Screen::readAnalyser()
     {
+#if HOLO_WANTS(2)
         strip.getEQ().copyRecentOutput (fftData.data(), fftSize);
         for (int i = 0; i < fftSize; ++i)
             fftData[(size_t) i] *= window[(size_t) i];
@@ -219,10 +230,12 @@ namespace Holo
             auto& shown = spectrumDb[(size_t) i];
             shown = db > shown ? db : shown + (db - shown) * 0.25f;
         }
+#endif
     }
 
     void Screen::paintEQ (juce::Graphics& g)
     {
+#if HOLO_WANTS(2)
         auto& eq = strip.getEQ();
         const auto plot = eqPlot();
         const auto s = eq.getCurrentSettings();
@@ -340,6 +353,7 @@ namespace Holo
             g.setFont (text (11.5f, 2));
             g.drawText (juce::String (b + 1), juce::Rectangle<float> (radius * 2.0f, radius * 2.0f).withCentre (pos), juce::Justification::centred, false);
         }
+#endif
     }
 
     void Screen::mouseMove (const juce::MouseEvent& e)
@@ -357,6 +371,7 @@ namespace Holo
 
     void Screen::mouseDown (const juce::MouseEvent& e)
     {
+#if HOLO_WANTS(2)
         if (page != 2)
             return;
         dragging = dotAt (e.position);
@@ -368,6 +383,7 @@ namespace Holo
         dragGain = params.getParameter (EQIDs::gain[dragging]);
         dragFreq->beginChangeGesture();
         dragGain->beginChangeGesture();
+#endif
     }
 
     void Screen::mouseDrag (const juce::MouseEvent& e)
@@ -402,6 +418,7 @@ namespace Holo
 
     void Screen::mouseDoubleClick (const juce::MouseEvent& e)
     {
+#if HOLO_WANTS(2)
         if (page != 2)
             return;
         const int b = dotAt (e.position);
@@ -413,6 +430,7 @@ namespace Holo
         gain->endChangeGesture();
         if (auto* host = findParentComponentOfClass<Host>())
             host->settingMoved (*gain);
+#endif
     }
 
     //==========================================================================
@@ -420,6 +438,7 @@ namespace Holo
     //==========================================================================
     void Screen::paintGate (juce::Graphics& g)
     {
+#if HOLO_WANTS(0)
         const auto plot = plotArea();
         drawFrame (g, "GATE:  HEARS (GREY)   COMES OUT (GREEN)   THRESHOLD (LINE)");
         drawLevelGrid (g, plot, -80.0f, 0.0f, { 0.0f, -20.0f, -40.0f, -60.0f, -80.0f });
@@ -442,10 +461,12 @@ namespace Holo
         const float dashes[] = { 5.0f, 4.0f };
         g.setColour (Colours::ink);
         g.drawDashedLine (juce::Line<float> (plot.getX(), y, plot.getRight(), y), dashes, 2, 1.3f);
+#endif
     }
 
     void Screen::paintAmp (juce::Graphics& g)
     {
+#if HOLO_WANTS(1)
         auto& amp = strip.getAmp();
         const auto settings = amp.getCurrentSettings();
         const auto plot = plotArea();
@@ -485,10 +506,12 @@ namespace Holo
             g.drawText ("LEVEL MATCH " + formatValue (Format::signedDb, amp.getMatchGainDb()) + " dB",
                         juce::Rectangle<float> (plot.getX() + 4.0f, plot.getY() + 24.0f, 180.0f, 18.0f), juce::Justification::centredLeft, false);
         }
+#endif
     }
 
     void Screen::paintDS (juce::Graphics& g)
     {
+#if HOLO_WANTS(3)
         const auto plot = plotArea();
         drawFrame (g, "DS:  WHOLE SOUND (GREY)   HARSH BAND (VIOLET)   LINE   TURNED DOWN (RED)");
         drawLevelGrid (g, plot, -60.0f, 0.0f, { 0.0f, -20.0f, -40.0f, -60.0f });
@@ -509,10 +532,12 @@ namespace Holo
         down.closeSubPath();
         g.setColour (Colours::warn.withAlpha (0.55f));
         g.fillPath (down);
+#endif
     }
 
     void Screen::paintComp (juce::Graphics& g)
     {
+#if HOLO_WANTS(4)
         auto& comp = strip.getComp();
         const auto settings = comp.getCurrentSettings();
         const auto plot = plotArea();
@@ -585,20 +610,24 @@ namespace Holo
         gr.closeSubPath();
         g.setGradientFill (juce::ColourGradient (Colours::reduction, 0.0f, history.getY(), Colours::reduction.withAlpha (0.25f), 0.0f, history.getBottom(), false));
         g.fillPath (gr);
+#endif
     }
 
     void Screen::paintTrans (juce::Graphics& g)
     {
+#if HOLO_WANTS(5)
         const auto plot = plotArea();
         drawFrame (g, "TRANS:  BEFORE (GREY)   AFTER (MAGENTA)");
         drawLevelGrid (g, plot, -60.0f, 0.0f, { 0.0f, -20.0f, -40.0f, -60.0f });
         g.setColour (traceGrey.withAlpha (0.55f));
         g.fillPath (tracePath (traces[5], 0, plot, -60.0f, 0.0f, true));
         strokeGlow (g, tracePath (traces[5], 1, plot, -60.0f, 0.0f, false), Colours::trans, 1.6f, 0.5f);
+#endif
     }
 
     void Screen::paintSlap (juce::Graphics& g)
     {
+#if HOLO_WANTS(6)
         const auto plot = plotArea();
         drawFrame (g, "VERB:  YOUR SOUND (GREY)   THE REVERB (RED)");
         drawLevelGrid (g, plot, -60.0f, 0.0f, { 0.0f, -20.0f, -40.0f, -60.0f });
@@ -607,10 +636,12 @@ namespace Holo
         g.setColour (Colours::slap.withAlpha (0.5f));
         g.fillPath (tracePath (traces[6], 1, plot, -60.0f, 0.0f, true));
         strokeGlow (g, tracePath (traces[6], 1, plot, -60.0f, 0.0f, false), Colours::slap, 1.4f, 0.5f);
+#endif
     }
 
     void Screen::paintClip (juce::Graphics& g)
     {
+#if HOLO_WANTS(7)
         const auto plot = plotArea();
         drawLevelGrid (g, plot, -12.0f, 12.0f, { 12.0f, 6.0f, 0.0f, -6.0f, -12.0f });
 
@@ -643,6 +674,7 @@ namespace Holo
 
         drawFrame (g, "CLIP:  PUSHED (GREY)   COMES OUT (ORANGE)   SHAVED (RED)   CEILING (LINE)     PEAKS CUT BY UP TO "
                           + juce::String (most, 1) + " dB");
+#endif
     }
 
     //==========================================================================
@@ -650,6 +682,7 @@ namespace Holo
     //==========================================================================
     void Screen::paintTape (juce::Graphics& g)
     {
+#if HOLO_WANTS(8)
         auto& tape = strip.getTape();
         const auto settings = tape.getCurrentSettings();
         const auto plot = plotArea();
@@ -740,5 +773,6 @@ namespace Holo
             }
             strokeGlow (g, p, Colours::tape, 2.2f);
         }
+#endif
     }
 }

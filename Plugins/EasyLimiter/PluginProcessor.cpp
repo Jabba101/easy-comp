@@ -1,6 +1,9 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "Parameters.h"
+#if EASY_HOLO_SOLO
+ #include "HoloSolo.h"
+#endif
 
 juce::AudioProcessorValueTreeState::ParameterLayout EasyLimiterAudioProcessor::createParameterLayout()
 {
@@ -127,7 +130,12 @@ int EasyLimiterAudioProcessor::takeMoments (Moment* destination, int maxMoments)
 //==============================================================================
 juce::AudioProcessorEditor* EasyLimiterAudioProcessor::createEditor()
 {
+   #if EASY_HOLO_SOLO   // (the HOLOGRAM look, or CLASSIC - chosen in SETUP)
+    return new Holo::SoloEditor (*this, StripModules::limiterIndex,
+                                 [this] { return std::make_unique<EasyLimiterAudioProcessorEditor> (*this); });
+   #else
     return new EasyLimiterAudioProcessorEditor (*this);
+   #endif
 }
 
 #if ! EASY_STRIP_MODULE   // (inside the Easy Strip, this plugin is one of its modules, not a plugin of its own)

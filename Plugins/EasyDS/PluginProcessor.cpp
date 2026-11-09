@@ -1,6 +1,9 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "Parameters.h"
+#if EASY_HOLO_SOLO
+ #include "HoloSolo.h"
+#endif
 
 juce::AudioProcessorValueTreeState::ParameterLayout EasyDSAudioProcessor::createParameterLayout()
 {
@@ -167,7 +170,12 @@ DeEsser::Settings EasyDSAudioProcessor::getCurrentSettings() const noexcept
 //==============================================================================
 juce::AudioProcessorEditor* EasyDSAudioProcessor::createEditor()
 {
+   #if EASY_HOLO_SOLO   // (the HOLOGRAM look, or CLASSIC - chosen in SETUP)
+    return new Holo::SoloEditor (*this, StripModules::dsIndex,
+                                 [this] { return std::make_unique<EasyDSAudioProcessorEditor> (*this); });
+   #else
     return new EasyDSAudioProcessorEditor (*this);
+   #endif
 }
 
 #if ! EASY_STRIP_MODULE   // (inside the Easy Strip, this plugin is one of its modules, not a plugin of its own)

@@ -61,6 +61,9 @@ EasyWindow::EasyWindow (EasyProcessor& p, const juce::String& titleText, const j
     addHint (presetBrowser, "PRESETS", presetHint);
 
     addAndMakeVisible (hintBar);
+    addChildComponent (lookButton);
+    addHint (lookButton, "HOLOGRAM", "Switches this window to the HOLOGRAM look - the same panel the Easy Strip shows for this plugin (with its screen). "
+                                     "SETUP there switches back. Remembered for every Easy plugin.");
 }
 
 EasyWindow::~EasyWindow()
@@ -121,7 +124,15 @@ void EasyWindow::resized()
     area.removeFromTop (14);
 
     // Help bar along the bottom
-    hintBar.setBounds (area.removeFromBottom (66));
+    {
+        auto bar = area.removeFromBottom (66);
+        if (lookButton.isVisible())   // (the single plugins' look switch, at the end of the help bar)
+        {
+            lookButton.setBounds (bar.removeFromRight (120).withSizeKeepingCentre (120, 40));
+            bar.removeFromRight (10);
+        }
+        hintBar.setBounds (bar);
+    }
     area.removeFromBottom (14);
 
     layoutBody (area);

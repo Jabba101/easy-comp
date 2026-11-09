@@ -36,6 +36,15 @@ public:
         return all;
     }
 
+    /** Shows the HOLOGRAM button in the header (the single plugins' look switch). */
+    void offerLookSwitch (std::function<void()> switchToHologram)
+    {
+        lookButton.onClick = std::move (switchToHologram);
+        lookButton.setVisible (true);
+        resized();
+    }
+    juce::TextButton lookButton { "HOLOGRAM" };
+
     /** The line under the title. */
     const juce::String& getSubtitle() const noexcept   { return subtitle; }
 

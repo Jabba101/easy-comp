@@ -1,3 +1,4 @@
+#include "HoloView.h"
 #include "HoloSlabs.h"
 #include "EasyWindow.h"
 
@@ -657,7 +658,7 @@ namespace Holo
 
     //==========================================================================
     View::View (EasyStripAudioProcessor& p, StripSettings& s)
-        : strip (p), settings (s), screen (p)
+        : strip (p), settings (s), screen (*this)
     {
         setOpaque (true);
         collectHints();

@@ -29,3 +29,24 @@ struct StripSettings
 
     static constexpr float sizes[] { 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.25f, 1.5f };
 };
+
+//==============================================================================
+/**
+    The single plugins' window choices (Easy Comp, Easy Gate...): one set for
+    all of them, kept beside the Easy Strip's.
+*/
+struct SoloSettings
+{
+    float scale  = 1.0f;                     // 1 = 100%
+    int   skin   = StripSettings::hologram;  // HOLOGRAM or CLASSIC
+    bool  ticker = true;                     // the hint strip along the bottom
+    int   dim    = 2;                        // DISPLAY BRIGHTNESS: 0 LOW, 1 MEDIUM, 2 HIGH
+
+    static SoloSettings load();
+    void save() const;
+
+    /** (Tests) keep the settings somewhere else. */
+    static void useFileForTesting (const juce::File&);
+
+    static constexpr float sizes[] { 0.75f, 0.9f, 1.0f, 1.15f, 1.3f, 1.5f, 1.75f };
+};

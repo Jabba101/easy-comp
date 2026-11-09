@@ -1,6 +1,9 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "Parameters.h"
+#if EASY_HOLO_SOLO
+ #include "HoloSolo.h"
+#endif
 
 juce::AudioProcessorValueTreeState::ParameterLayout EasyAmpAudioProcessor::createParameterLayout()
 {
@@ -93,7 +96,12 @@ ValveAmp::Settings EasyAmpAudioProcessor::getCurrentSettings() const noexcept
 //==============================================================================
 juce::AudioProcessorEditor* EasyAmpAudioProcessor::createEditor()
 {
+   #if EASY_HOLO_SOLO   // (the HOLOGRAM look, or CLASSIC - chosen in SETUP)
+    return new Holo::SoloEditor (*this, StripModules::ampIndex,
+                                 [this] { return std::make_unique<EasyAmpAudioProcessorEditor> (*this); });
+   #else
     return new EasyAmpAudioProcessorEditor (*this);
+   #endif
 }
 
 #if ! EASY_STRIP_MODULE   // (inside the Easy Strip, this plugin is one of its modules, not a plugin of its own)

@@ -2,7 +2,7 @@
 
 #include <juce_dsp/juce_dsp.h>
 #include "HoloControls.h"
-#include "PluginProcessor.h"
+#include "HoloHost.h"
 
 namespace Holo
 {
@@ -28,7 +28,7 @@ namespace Holo
     class Screen : public juce::Component
     {
     public:
-        explicit Screen (EasyStripAudioProcessor&);
+        explicit Screen (SlabHost&);
         ~Screen() override;
 
         void setPage (int module);
@@ -89,7 +89,7 @@ namespace Holo
         int dotAt (juce::Point<float>) const;
         void readAnalyser();
 
-        EasyStripAudioProcessor& strip;
+        SlabHost& strip;
         int page = 2;
         std::array<Trace, StripModules::numModules> traces;
         float tapeVu = -40.0f;

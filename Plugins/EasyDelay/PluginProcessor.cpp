@@ -1,6 +1,9 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "Parameters.h"
+#if EASY_HOLO_SOLO
+ #include "HoloSolo.h"
+#endif
 
 juce::AudioProcessorValueTreeState::ParameterLayout EasyDelayAudioProcessor::createParameterLayout()
 {
@@ -135,7 +138,12 @@ void EasyDelayAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
 //==============================================================================
 juce::AudioProcessorEditor* EasyDelayAudioProcessor::createEditor()
 {
+   #if EASY_HOLO_SOLO   // (the HOLOGRAM look, or CLASSIC - chosen in SETUP)
+    return new Holo::SoloEditor (*this, StripModules::delayIndex,
+                                 [this] { return std::make_unique<EasyDelayAudioProcessorEditor> (*this); });
+   #else
     return new EasyDelayAudioProcessorEditor (*this);
+   #endif
 }
 
 #if ! EASY_STRIP_MODULE   // (inside the Easy Strip, this plugin is one of its modules, not a plugin of its own)

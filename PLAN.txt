@@ -962,6 +962,7 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
 - User chose tom RESONANCE off (now the default for toms); plans to add room reverb to the whole kit later.
 - CLOSED HI-HAT (hat.py, separate from the drum model): metallic noise in the recording's fine colour (4096-pt, flattened per band) x per-band power envelopes (14 bands, 300 Hz-24 kHz, 300 ms) from the loud clean hits; strength changes each band by a measured slope that differs from start to tail (tail slope never negative). Random phases per hit = natural variation. rec/HatClosed.wav holds three 10-hit sets: 0-9.9 s tight (-20 dB in ~44 ms) -> fit/HatTight.json; 9.9-19.3 s loose (~120 ms) -> HatLoose; 19.3-28 s medium (~90 ms) -> HatMedium. Match 1.2-2.2 dB typical. Asked the user what the three sets are.
 - HI-HAT SPLASH: the loose set has one splash at 16.0 s (rings 1.5 s to -40 dB) that hit-finding read as 3 closed hits (the 'delay pedal' the user heard). hat.fit_splash -> fit/HatSplash.json (3 s fades, own colour, strength slopes borrowed from HatLoose), 1.2 dB typical. In playing, the next hat hit chokes it (25 ms fade) - for the instrument: a choke on the next closed/pedal hit.
+
 == EASY MASTER 1.6.0: REFERENCE (8 November 2026) - pushed with the user's OK; drop a song anywhere on the window loads it ==
    - Effects/ReferenceTrack.h: LOAD (WAV/FLAC/MP3/AIFF/OGG, up to 15 min) on its own thread, windowed-sinc to the session rate,
      K-weighted loudness per 100 ms, mid's 1/6-octave band powers per second (BandSpectrum, pffft 4096).
@@ -973,6 +974,7 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      Drop a file on the page to load. LOAD SONG / REMOVE / MATCH LOUDNESS on the page.
    - Saved with the project as state properties (referenceFile/Start/End/Match), not in presets or A / B; never starts switched on.
    - Tests: 89/89 (reference: 17 new checks incl. resampling, match within 1 dB, no clicks at switch/loop, stopped = silent, state).
+
 == EASY STRIP: LEARN + THE MIX (9 November 2026) - built, not pushed yet ==
    USER: "an automatic gain-staging and summing plugin would save a lot of time"; meant console COLOUR by summing, but wants the
    rough auto-balance experiment too ("only tweaking rather than the hard slog - more time for the creative side").
@@ -997,7 +999,8 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      Recipe.desk / deskDrive; strip loadPreset (now virtual in EasyProcessor) sets DESK only when a preset names one; ordinary presets
      leave it) and 8 in "Stereo (Mid / Side)" (comp WORKS ON mid/side, EQ side air, MONO BASS). Mix Bus / Drum Bus ones kept in
      Mixing & Mastering / Drums (the earlier rule). 131 strip presets in all.
-   - Easy Strip 0.16.0, project 1.31.0. StripTests 151/151, MasterTests 91/91. Pushed with the user's OK.
+   - Easy Strip 0.16.0, project 1.31.0. StripTests 151/151, MasterTests 91/91. Waiting for the user's OK on the look before pushing.
+
 == EASY MASTER 1.7.0: OUTPUT column (9 November 2026) ==
    USER: "Easy Master doesn't have its output module?... if there needs to be more space, add it."
    - Console 1800 -> 1888 wide (opens at 1699 x 927, still fits 1080p). OUTPUT column on the right, mirroring INPUT (like Easy Strip):
@@ -1012,6 +1015,7 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      the delay of the modules before it in the ORDER. TREMOLO, WAH, FLANGE and FILTER (and VERB's sync) lock to the beat the listener
      hears. Test: with EQ MASTER at HIGH before it (2048 samples) the square tremolo's edges land 0.00 ms out (43 ms before the fix).
    - StripTests 152/152.
+
 
 == EASY MASTER 1.8.0: DITHER + INFLATE (9 November 2026) - built, waiting for the user's OK on the look ==
    - DITHER (Effects/Dither.h): the very last step. OFF / 16-BIT / 24-BIT, FLAT (TPDF +-1 step) or SHAPED (3-tap error feedback
@@ -1028,3 +1032,25 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      1.8 dB/step; HIGH ATTEN shelf 5/10/20k, -1.6 dB/step; faint valve 2nd. THE CURVE drawn in the panel. VARI-MU: ratio 1.5 + over/4
      (6 dB soft knee), 5 ms RMS detector, linked, FAST/MEDIUM/SLOW/AUTO (AUTO = fast 0.3 s + slow 4 s release), MAKE-UP, MIX, valve
      2nd growing with GR. Presets calibrated for mixes around -14 LUFS in. MasterTests 118/118.
+
+== HOLOGRAM LOOK FOR THE STANDALONES (started 9 November 2026) ==
+   - Tried a plain re-skin (MasterLook on Easy Comp's classic window): knobs and buttons glow but the panels, fonts and layout stay
+     classic - not the Strip's look (the same thing the user rejected for Easy Master's first try). Preview: scratchpad shots/skin_comp.png.
+   - The real way: each standalone shows the SAME panel ("slab") Easy Strip draws for it (its controls already bind straight to the module
+     processor's own parameters - which is the standalone itself), plus the strip's screen page for it, a header (presets, A / B, INIT,
+     BYPASS) and the ticker. Needs: a ModuleSource / SlabHost interface so Slab and Screen talk to either the strip's View or a new
+     SoloView; the feeding of each module's meters factored out of View. Each standalone then compiles the Holo* files (and the module
+     processors they name).
+   - Easy Master 1.8.0 is on branch easy-master-1.8 (run 42568012621) until the user OKs the look; then merge to main.
+
+   BUILT (waiting for the user's OK on the look):
+   - Plugins/EasyStrip/HoloHost.h: SlabHost (what a slab / the screen need: the module processors, hints, controls, the ticker,
+     the preset menu, the screen). The strip's View is one; HoloSolo's SoloView is the other. HOLO_WANTS(m) / HOLO_ONLY_MODULE:
+     a single plugin builds only its own slab class, factory case and screen page (no other module processors linked).
+   - HoloSolo.h/.cpp: SoloView (header: AARDVARK + the name in the module's tint, < presets >, SETUP menu (SIZE, LOOK, TICKER,
+     BRIGHTNESS); the screen page above (wide panels) or beside (narrow ones); the slab at its strip size; Clip's ADVANCED row;
+     the ticker). Hints = the classic window's own (made out of sight once). SoloEditor: HOLOGRAM (scalable, fixed shape) or
+     CLASSIC (the old window, with a HOLOGRAM button at the end of its help bar). SoloSettings: "Easy Plugins.settings".
+   - Each plugin's createEditor: #if EASY_HOLO_SOLO -> Holo::SoloEditor (CMake add_holo_look(target index)). The tests' builds
+     don't define it, so the classic editor tests are unchanged. verify2: SoloTests.cpp, one program per plugin (Solo<Name>).
+   - Easy Unbleed has no strip slab: still classic.

@@ -8,13 +8,20 @@ namespace
         return file;
     }
 
-    std::unique_ptr<juce::PropertiesFile> openFile()
+    juce::File& soloTestFile()
     {
-        if (testFile() != juce::File())
-            return std::make_unique<juce::PropertiesFile> (testFile(), juce::PropertiesFile::Options());
+        static juce::File file;
+        return file;
+    }
+
+    std::unique_ptr<juce::PropertiesFile> openFile (bool solo = false)
+    {
+        auto& test = solo ? soloTestFile() : testFile();
+        if (test != juce::File())
+            return std::make_unique<juce::PropertiesFile> (test, juce::PropertiesFile::Options());
 
         juce::PropertiesFile::Options options;
-        options.applicationName     = "Easy Strip";
+        options.applicationName     = solo ? "Easy Plugins" : "Easy Strip";
         options.folderName          = "Aardvark Easy Suite";
         options.filenameSuffix      = ".settings";
         options.osxLibrarySubFolder = "Application Support";
@@ -49,5 +56,32 @@ void StripSettings::save() const
     file->setValue ("meterZero", meterZero);
     file->setValue ("dim", dim);
     file->setValue ("lufsMeter", lufsMeter);
+    file->saveIfNeeded();
+}
+
+//==============================================================================
+void SoloSettings::useFileForTesting (const juce::File& file)
+{
+    soloTestFile() = file;
+}
+
+SoloSettings SoloSettings::load()
+{
+    SoloSettings s;
+    auto file = openFile (true);
+    s.scale  = juce::jlimit (0.5f, 2.0f, (float) file->getDoubleValue ("scale", s.scale));
+    s.skin   = juce::jlimit (0, 1, file->getIntValue ("skin", s.skin));
+    s.ticker = file->getBoolValue ("ticker", s.ticker);
+    s.dim    = juce::jlimit (0, 2, file->getIntValue ("dim", s.dim));
+    return s;
+}
+
+void SoloSettings::save() const
+{
+    auto file = openFile (true);
+    file->setValue ("scale", (double) scale);
+    file->setValue ("skin", skin);
+    file->setValue ("ticker", ticker);
+    file->setValue ("dim", dim);
     file->saveIfNeeded();
 }

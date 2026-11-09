@@ -1,6 +1,6 @@
 #pragma once
 
-#include "HoloView.h"
+#include "HoloScreen.h"
 
 namespace Holo
 {
@@ -14,7 +14,7 @@ namespace Holo
     class Slab : public juce::Component
     {
     public:
-        Slab (View&, int module, juce::Colour tint, const juce::String& powerText);
+        Slab (SlabHost&, int module, juce::Colour tint, const juce::String& powerText);
         ~Slab() override;
 
         void paint (juce::Graphics&) override;
@@ -49,8 +49,8 @@ namespace Holo
         /** Places a control centred in a column. */
         static void centreIn (juce::Component&, juce::Rectangle<int> column, int top = -1);
 
-        View& view;
-        EasyStripAudioProcessor& strip;
+        SlabHost& view;
+        SlabHost& strip;   // (the same host: its module processors)
         const int module;
         juce::Colour tint;
         bool deepRed = false;
@@ -70,7 +70,7 @@ namespace Holo
     class ClipAdvanced : public Slab
     {
     public:
-        explicit ClipAdvanced (View&);
+        explicit ClipAdvanced (SlabHost&);
         void resized() override;
         void paint (juce::Graphics&) override;
 
@@ -82,5 +82,5 @@ namespace Holo
         juce::Point<int> headingAt;
     };
 
-    std::unique_ptr<Slab> makeSlab (View&, int module);
+    std::unique_ptr<Slab> makeSlab (SlabHost&, int module);
 }

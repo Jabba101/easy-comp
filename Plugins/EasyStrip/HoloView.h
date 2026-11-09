@@ -30,6 +30,7 @@ namespace Holo
     */
     class View : public juce::Component,
                  public Host,
+                 public SlabHost,
                  private juce::Timer
     {
     public:
@@ -57,24 +58,27 @@ namespace Holo
 
         //==== Hints ==============================================================
         /** The hint shown on the ticker while the mouse is over `c` (or anything in it). */
-        void addHint (juce::Component& c, const juce::String& title, const juce::String& text);
+        void addHint (juce::Component& c, const juce::String& title, const juce::String& text) override;
 
         /** The standalone module's own hint, word for word (by its title there, e.g. "THRESHOLD"). */
-        juce::String moduleHint (int module, const juce::String& title) const;
+        juce::String moduleHint (int module, const juce::String& title) const override;
 
         //==== For the parts, and tests ===========================================
         EasyStripAudioProcessor& getStrip() noexcept               { return strip; }
+        EasyProcessor& getModule (int m) override                  { return strip.getModule (m); }
+        bool isModuleOn (int m) const override                     { return strip.isModuleOn (m); }
+        int getMainBusNumInputChannels() const override            { return strip.getMainBusNumInputChannels(); }
         StripSettings& getSettings() noexcept                      { return settings; }
-        Screen& getScreen() noexcept                               { return screen; }
+        Screen& getScreen() noexcept override                      { return screen; }
         ParamControl* findControl (int module, const juce::String& parameterID) const;   // module -1 = the strip's own
-        void registerControl (int module, const juce::String& parameterID, ParamControl&);
+        void registerControl (int module, const juce::String& parameterID, ParamControl&) override;
         const juce::String& getTickerText() const noexcept         { return tickerText; }
         void showPage (int module);
-        void showPresetMenu (int module, juce::Component& under);   // a module's Pr button
+        void showPresetMenu (int module, juce::Component& under) override;   // a module's Pr button
         void showSetup (bool show);
         bool isSetupShowing() const;
         void updateNow()                                            { timerCallback(); }   // (tests)
-        void setClipAdvancedShown (bool);
+        void setClipAdvancedShown (bool) override;
 
         /** WEAPON SELECT: the effects rack in place of the left-hand modules (or back). */
         void showRack (bool);
@@ -88,7 +92,7 @@ namespace Holo
         const juce::String& getShownTrackName() const noexcept   { return shownTrackName; }
 
         /** A message on the ticker for a while (FIND's progress, WEAPON SELECT...). */
-        void announce (const juce::String& title, const juce::String& text, int seconds);
+        void announce (const juce::String& title, const juce::String& text, int seconds) override;
 
         std::array<std::unique_ptr<Button>, StripModules::numModules> pageButtons;   // (by module; the rack effects' aren't shown)
         Button initAllButton { "INIT", Colours::warn, Button::Style::init };

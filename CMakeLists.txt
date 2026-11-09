@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.33.0)
+project(EasyPlugins VERSION 1.34.0)
 
 # Link-time optimisation squeezes a few more percent of speed out of the
 # finished plugins, but makes every build much slower (each plugin is
@@ -109,7 +109,7 @@ endfunction()
 add_easy_plugin(EasyComp
     NAME        "Easy Comp"
     CODE        Ezcp
-    VERSION     1.9.0
+    VERSION     1.10.0
     BUNDLE_ID   com.homestudio.easycomp
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/Compressor.h
@@ -122,7 +122,7 @@ add_easy_plugin(EasyComp
 add_easy_plugin(EasyTransient          # (called Easy Transient up to 1.2.0)
     NAME        "Easy Trans"
     CODE        Eztr
-    VERSION     1.2.1
+    VERSION     1.3.0
     BUNDLE_ID   com.homestudio.easytransient
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/TransientShaper.h
@@ -135,7 +135,7 @@ add_easy_plugin(EasyTransient          # (called Easy Transient up to 1.2.0)
 add_easy_plugin(EasyGate
     NAME        "Easy Gate"
     CODE        Ezgt
-    VERSION     1.0.1
+    VERSION     1.1.0
     BUNDLE_ID   com.homestudio.easygate
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/Gate.h
@@ -148,7 +148,7 @@ add_easy_plugin(EasyGate
 add_easy_plugin(EasyDS
     NAME        "Easy DS"
     CODE        Ezds
-    VERSION     1.0.2
+    VERSION     1.1.0
     BUNDLE_ID   com.homestudio.easyds
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/DeEsser.h
@@ -165,7 +165,7 @@ add_easy_plugin(EasyDS
 add_easy_plugin(BitchSlap
     NAME        "Easy Verb"
     CODE        Ezbs
-    VERSION     2.0.0
+    VERSION     2.1.0
     BUNDLE_ID   com.homestudio.bitchslap
     CATEGORIES  Fx Reverb
     SOURCES     Effects/GatedReverb.h
@@ -181,7 +181,7 @@ target_link_libraries(BitchSlap PRIVATE pffft)
 add_easy_plugin(EasyClip
     NAME        "Easy Clip"
     CODE        Ezcl
-    VERSION     1.0.4
+    VERSION     1.1.0
     BUNDLE_ID   com.homestudio.easyclip
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/Clipper.h
@@ -195,7 +195,7 @@ target_link_libraries(EasyClip PRIVATE juce::juce_dsp)   # (oversampling)
 add_easy_plugin(EasyAmp
     NAME        "Easy Amp"
     CODE        Ezam
-    VERSION     1.0.2
+    VERSION     1.1.0
     BUNDLE_ID   com.homestudio.easyamp
     CATEGORIES  Fx Distortion
     SOURCES     Effects/ValveAmp.h
@@ -209,7 +209,7 @@ target_link_libraries(EasyAmp PRIVATE juce::juce_dsp)   # (oversampling)
 add_easy_plugin(EasyTape
     NAME        "Easy Tape"
     CODE        Eztp
-    VERSION     1.0.0
+    VERSION     1.1.0
     BUNDLE_ID   com.homestudio.easytape
     CATEGORIES  Fx Distortion
     SOURCES     Effects/TapeMachine.h
@@ -223,7 +223,7 @@ target_link_libraries(EasyTape PRIVATE juce::juce_dsp)   # (oversampling)
 add_easy_plugin(EasyDelay
     NAME        "Easy Delay"
     CODE        Ezdl
-    VERSION     1.0.0
+    VERSION     1.1.0
     BUNDLE_ID   com.homestudio.easydelay
     CATEGORIES  Fx Delay
     SOURCES     Effects/StereoDelay.h
@@ -236,7 +236,7 @@ add_easy_plugin(EasyDelay
 add_easy_plugin(EasyTremolo
     NAME        "Easy Tremolo"
     CODE        Eztm
-    VERSION     1.0.0
+    VERSION     1.1.0
     BUNDLE_ID   com.homestudio.easytremolo
     CATEGORIES  Fx Modulation
     SOURCES     Effects/Tremolo.h
@@ -249,7 +249,7 @@ add_easy_plugin(EasyTremolo
 add_easy_plugin(EasyWah
     NAME        "Easy Wah"
     CODE        Ezwh
-    VERSION     1.0.0
+    VERSION     1.1.0
     BUNDLE_ID   com.homestudio.easywah
     CATEGORIES  Fx Filter
     SOURCES     Effects/AutoWah.h
@@ -262,7 +262,7 @@ add_easy_plugin(EasyWah
 add_easy_plugin(EasyFlange
     NAME        "Easy Flange"
     CODE        Ezfl
-    VERSION     1.0.0
+    VERSION     1.1.0
     BUNDLE_ID   com.homestudio.easyflange
     CATEGORIES  Fx Modulation
     SOURCES     Effects/Flanger.h
@@ -275,7 +275,7 @@ add_easy_plugin(EasyFlange
 add_easy_plugin(EasyFilter
     NAME        "Easy Filter"
     CODE        Ezft
-    VERSION     1.0.0
+    VERSION     1.1.0
     BUNDLE_ID   com.homestudio.easyfilter
     CATEGORIES  Fx Filter
     SOURCES     Effects/ModFilter.h
@@ -288,7 +288,7 @@ add_easy_plugin(EasyFilter
 add_easy_plugin(EasyLimiter
     NAME        "Easy Limiter"
     CODE        Ezlm
-    VERSION     1.0.0
+    VERSION     1.1.0
     BUNDLE_ID   com.homestudio.easylimiter
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/TruePeakLimiter.h
@@ -352,7 +352,7 @@ target_link_libraries(EasyUnbleed PRIVATE pffft)
 add_easy_plugin(EasyEQ
     NAME        "Easy EQ"
     CODE        Ezeq
-    VERSION     1.2.1
+    VERSION     1.3.0
     BUNDLE_ID   com.homestudio.easyeq
     CATEGORIES  Fx EQ
     SOURCES     Effects/Equalizer.h
@@ -377,7 +377,7 @@ endforeach()
 add_easy_plugin(EasyStrip
     NAME        "Easy Strip"
     CODE        Ezst
-    VERSION     0.16.1
+    VERSION     0.16.2
     BUNDLE_ID   com.homestudio.easystrip
     CATEGORIES  Fx
     SOURCES     Effects/LoudnessMeter.h
@@ -415,3 +415,46 @@ juce_add_binary_data(StripFonts
 set_target_properties(StripFonts PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(EasyStrip PRIVATE juce::juce_dsp pffft StripFonts)
 target_link_libraries(EasyMaster PRIVATE StripFonts)   # (Easy Master's HOLOGRAM skin uses the same fonts)
+
+# ---- The HOLOGRAM look for the single plugins --------------------------------
+# Each plugin shows the same panel the Easy Strip shows for it (and its page of
+# the strip's big screen). HOLO_ONLY_MODULE builds just that module's parts, so
+# a plugin doesn't need the others' code. (CLASSIC stays a choice in SETUP.)
+set(HOLO_SOLO_SOURCES
+    Plugins/EasyStrip/StripSettings.h
+    Plugins/EasyStrip/StripSettings.cpp
+    Plugins/EasyStrip/HoloHost.h
+    Plugins/EasyStrip/HoloLook.h
+    Plugins/EasyStrip/HoloLook.cpp
+    Plugins/EasyStrip/HoloControls.h
+    Plugins/EasyStrip/HoloControls.cpp
+    Plugins/EasyStrip/HoloScreen.h
+    Plugins/EasyStrip/HoloScreen.cpp
+    Plugins/EasyStrip/HoloSlabs.h
+    Plugins/EasyStrip/HoloSlabs.cpp
+    Plugins/EasyStrip/HoloSolo.h
+    Plugins/EasyStrip/HoloSolo.cpp)
+
+function(add_holo_look target moduleIndex)
+    target_sources(${target} PRIVATE ${HOLO_SOLO_SOURCES})
+    target_include_directories(${target} PRIVATE Plugins/EasyStrip)
+    target_compile_definitions(${target} PRIVATE EASY_HOLO_SOLO=1 HOLO_ONLY_MODULE=${moduleIndex})
+    target_link_libraries(${target} PRIVATE juce::juce_dsp pffft StripFonts)
+endfunction()
+
+# (the numbers are the strip's module numbers: StripModules in Plugins/EasyStrip/PluginProcessor.h)
+add_holo_look(EasyGate 0)
+add_holo_look(EasyAmp 1)
+add_holo_look(EasyEQ 2)
+add_holo_look(EasyDS 3)
+add_holo_look(EasyComp 4)
+add_holo_look(EasyTransient 5)
+add_holo_look(BitchSlap 6)
+add_holo_look(EasyClip 7)
+add_holo_look(EasyTape 8)
+add_holo_look(EasyDelay 9)
+add_holo_look(EasyTremolo 10)
+add_holo_look(EasyWah 11)
+add_holo_look(EasyFlange 12)
+add_holo_look(EasyFilter 13)
+add_holo_look(EasyLimiter 14)
