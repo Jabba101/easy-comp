@@ -32,8 +32,12 @@ def tick_window(n):
     t = np.arange(n) / SR
     return (1 - np.exp(-t / 0.0003)) * np.exp(-t / 0.0025)
 
-def render(damping='No_Dampening', velocity=0.8, wires=1.0, seed=1, length=1.9, threshold=None, power=None, settle=None, slap=None, click=True, pitch=1.0, dry=False):
+def render(damping='No_Dampening', velocity=0.8, wires=1.0, seed=1, length=1.9, threshold=None, power=None, settle=None, slap=None, click=True, pitch=1.0, dry=False, feel=None, resonance=None):
     p = FITS[damping]; rng = np.random.default_rng(seed)
+    # FEEL (velocity sensitivity): 1 = soft hits change as much as on the recordings; lower = soft hits stay
+    # closer to the full hit (every loudness and tone change scales down together). A plugin knob later.
+    if feel is None: feel = p.get('feel', 0.3 if KICK else 1.0)
+    velocity = 0.8 * (max(velocity, 1e-3) / 0.8) ** feel
     n = int(length * SR); t = np.arange(n) / SR
     v_ref = 0.8   # the recorded hits: medium-hard
     # the rings: their measured response to the recorded hit, scaled for this hit -
@@ -41,12 +45,20 @@ def render(damping='No_Dampening', velocity=0.8, wires=1.0, seed=1, length=1.9, 
     tilt = velocity - v_ref
     lift = 1.0 + 0.010 * (velocity ** 2 - v_ref ** 2) * np.exp(-t / 0.03)
     head = np.zeros(n)
+    # RESONANCE: the weak rings that outlast the drum itself are the kit and room singing along (not the drum).
+    # 1 = as recorded; 0 = nothing rings on longer than the drum's own sustain.
+    if resonance is None: resonance = p.get('resonance', 0.0 if TOM else 1.0)   # (toms: off by default - the user's choice; room reverb goes on the whole kit later)
+    live = [m for m in p['modes'] if m['t60'] >= 0.03]
+    loud = max(abs(m['amp']) for m in live)
+    own = max([1.2] + [m['t60'] for m in live if abs(m['amp']) > loud * 0.5])   # (the drum's own sustain: at least 1.2 s)
     for m in p['modes']:
         if m['t60'] < 0.03: continue   # (shorter than 30 ms: the stick's impact, not a ring - the tick carries it)
         g = (velocity / v_ref) ** 1.5 * np.exp(tilt * 0.9 * (m['f'] * pitch / 1000.0))
         if dry: g /= roomfilter.boost(m['f'])   # (the room taken out of this ring, before it's moved)
         # (re-pitched like a real drum: every ring moves together; a lower drum sustains a little longer)
-        f_m = m['f'] * pitch; t60_m = m['t60'] * pitch ** -0.5
+        t60 = m['t60']
+        if t60 > own: t60 = own * (t60 / own) ** resonance
+        f_m = m['f'] * pitch; t60_m = t60 * pitch ** -0.5
         ph = 2 * np.pi * np.cumsum(f_m * lift) / SR + m['phase']
         # (the fit is only trusted from 3 ms on: during the stick contact each ring holds its 3 ms strength, rising in)
         head += g * m['amp'] * np.exp(-6.9078 * np.maximum(t, p.get('contact', CONTACT)) / t60_m) * np.cos(ph)
@@ -62,8 +74,13 @@ def render(damping='No_Dampening', velocity=0.8, wires=1.0, seed=1, length=1.9, 
     edb = np.where(t < hold, w['plateau'], w['plateau'] - rate * (t - hold))
     edb = np.where(t < 0.002, w['plateau'] + 20 * np.log10(np.clip(t / 0.002, 1e-4, 1)), edb)
     env = 10 ** (edb / 20) * level
-    pulse = 1 + w['depth'] * np.cos(2 * np.pi * w['pulseHz'] * t + rng.uniform(0, 6.28))
-    buzz = coloured_noise(p['wireColour'], n, rng) * env * pulse * wires * p.get('buzz', 1.0)   # (on a kick / toms: the snare and hardware buzzing in sympathy; off for clean recordings)
+    # (only snare wires really pulse in time with the head; on a kick or toms a buzz pulsing at the drum's pitch
+    #  is exactly the sound of a straining preamp - so there it stays steady, and the model stays clean)
+    depth = w['depth'] if p.get('pulse', not (KICK or TOM)) else 0.0
+    pulse = 1 + depth * np.cos(2 * np.pi * w['pulseHz'] * t + rng.uniform(0, 6.28))
+    wc = np.array(p['wireColour'])
+    if not (KICK or TOM): wc = wc * np.clip(np.linspace(0, SR / 2, len(wc)) / 200.0, 0, 1)   # (wires don't buzz in the deep bass)
+    buzz = coloured_noise(wc, n, rng) * env * pulse * wires * p.get('buzz', 1.0)   # (on a kick / toms: the snare and hardware buzzing in sympathy; off for clean recordings)
     # the stick's own tick on the coated head
     cn = int((0.008 if KICK else 0.004) * SR)   # (a beater stays on the head longer than a stick)
     if 'tickBands' in p:
@@ -71,6 +88,7 @@ def render(damping='No_Dampening', velocity=0.8, wires=1.0, seed=1, length=1.9, 
         for (lo, hi), gain in zip(zip(edges[:-1], edges[1:]), p['tickBands']):
             tc[(fq >= lo) & (fq < hi)] = gain
         tc = np.convolve(tc, np.ones(5) / 5, 'same')
+        if not KICK: tc[fq < 150] = 0.0   # (a stick's tick has no deep thump: that's the rings' job)
         tick = coloured_noise(tc / (tc.max() + 1e-12), cn, rng) * tick_window(cn)
         tick *= (tc.max()) * (velocity / v_ref) ** 2.2
     else:
@@ -78,8 +96,15 @@ def render(damping='No_Dampening', velocity=0.8, wires=1.0, seed=1, length=1.9, 
         tc = tc * np.clip((fq - 1500.0) / 1500.0, 0, 1)
         tick = coloured_noise(tc / (tc.max() + 1e-12), cn, rng) * np.hanning(cn)
         tick *= p['clickRms'] / (np.sqrt((tick ** 2).mean()) + 1e-12) * (velocity / v_ref) ** 2.2 * p.get('tickGain', 1.0)
+    # the air push: the slow shove of air off the head into the mic (well below the rings - felt more than heard)
+    if 'push' in p:
+        pu = np.array(p['push']); tp = np.arange(len(pu)) / 6000.0
+        k = min(n, int(tp[-1] * SR)); head[:k] += np.interp(t[:k], tp, pu) * (velocity / v_ref) ** 1.5
+    if not (KICK or TOM):   # (snare: the wires and the tick stay out of the deep bass - a clean 150 Hz high-pass)
+        hp150 = butter(4, 150, 'high', fs=SR, output='sos')
+        buzz = sosfilt(hp150, buzz); tick = sosfilt(hp150, np.pad(tick, (0, 480)))
     out = head + buzz
-    if click: out[:cn] += tick
+    if click: out[:len(tick)] += tick[:n]
     return out
 
 def wire_envelope(y):
@@ -120,10 +145,12 @@ def tune_tick(damping):
     import model
     p = FITS[damping]; p.pop('tickBands', None)
     x, sr = sf.read('/home/claude/snare/rec/%s_%s.wav' % (DRUM, damping)); m = x.mean(axis=1)
-    reals = [m[model.onset(m, t0):model.onset(m, t0) + int(0.05 * SR)] for t0 in (0.0, 2.003)]
-    bodies = [render(damping, click=False, seed=s, length=0.05) for s in (3, 4, 5)]
+    PRE = 96   # (2 ms of lead-in, so the filters don't mistake the cut for a thump)
+    m = np.pad(m, (PRE, 0))
+    reals = [m[model.onset(m, t0) - PRE:model.onset(m, t0) + int(0.05 * SR)] for t0 in (0.0, 2.003)]
+    bodies = [np.concatenate([np.zeros(PRE), render(damping, click=False, seed=s, length=0.05)]) for s in (3, 4, 5)]
     def energy(y, lo, hi):
-        z = sosfiltfilt(butter(4, [lo, min(hi, 23000)], 'band', fs=SR, output='sos'), y)[:int((0.010 if KICK else 0.006) * SR)]
+        z = sosfiltfilt(butter(4, [lo, min(hi, 23000)], 'band', fs=SR, output='sos'), y)[PRE:PRE + int((0.010 if KICK else 0.006) * SR)]
         return (z ** 2).sum()
     # a unit tick's energy per band (white, so each band's share is known)
     pn = int((0.008 if KICK else 0.004) * SR)
@@ -132,7 +159,7 @@ def tune_tick(damping):
     gains = []
     for lo, hi in zip(TICK_EDGES[:-1], TICK_EDGES[1:]):
         need = np.mean([energy(r, lo, hi) for r in reals]) - np.mean([energy(b, lo, hi) for b in bodies])
-        unit = energy(np.pad(probe, (0, 2000)), lo, hi)
+        unit = energy(np.pad(probe, (PRE, 2000)), lo, hi)
         gains.append(float(np.sqrt(max(need, 0.0) / unit)) if need > 0 else 0.0)
     p['tickBands'] = gains
     return gains
@@ -149,7 +176,10 @@ def pulse_of(damping):
     sp = np.abs(np.fft.rfft(seg * np.hanning(len(seg)), 1 << 16)); fq = np.fft.rfftfreq(1 << 16, 1 / SR)
     band = (fq > (40 if (KICK or TOM) else 80)) & (fq < (300 if KICK else 1000))
     hz = float(fq[band][np.argmax(sp[band])])
-    depth = float(np.clip(np.sqrt((seg ** 2).mean()) * np.sqrt(2), 0.1, 0.7))
+    # (depth: only the part of the wobble that's really at that rate - the rest is random flutter, which the noise has anyway.
+    #  The old estimate took all the wobble as pulsing: about 5x too deep, a fizzy buzz like distortion.)
+    amp = sp / (np.hanning(len(seg)).sum() / 2)
+    depth = float(np.clip(amp[band].max(), 0.0, 0.7))
     return hz, depth
 
 if __name__ == '__main__':

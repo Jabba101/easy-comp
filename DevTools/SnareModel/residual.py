@@ -20,7 +20,7 @@ for name in sys.argv[1:]:
     res_all = []; hits = []
     for t0 in (0.0, 2.003):
         j = model.onset(m, t0); hit = m[j:j + int(1.9 * SR)]
-        modes = esprit.fit_modes(hit, SR, 20.0 if KICK else (40.0 if TOM else 60.0), START_MS)
+        modes = esprit.fit_modes(hit, SR, float(os.environ.get('LOWEST', 20.0 if KICK else (40.0 if TOM else 60.0))), START_MS)
         res_all.append(hit - esprit.synth(modes, len(hit), SR)); hits.append((hit, modes))
     res = np.mean([r[:int(0.6 * SR)] for r in res_all], axis=0) if False else res_all[0]
     hp = sosfiltfilt(butter(6, 2500, 'high', fs=SR, output='sos'), res)
