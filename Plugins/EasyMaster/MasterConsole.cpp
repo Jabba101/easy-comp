@@ -313,7 +313,7 @@ namespace MasterHolo
         void resized() override
         {
             clearSections();
-            auto body = placeHeader (getLocalBounds().reduced (9, 6), mode, 150, 230);
+            auto body = placeHeader (getLocalBounds().reduced (9, 6), mode, 150, 330);
             auto names = body.removeFromLeft (54);
             body.removeFromLeft (4);
             const int cleanWidth = 112, gap = 8;
@@ -414,7 +414,7 @@ namespace MasterHolo
         void resized() override
         {
             clearSections();
-            auto body = placeHeader (getLocalBounds().reduced (9, 6), mode, 150, 230);
+            auto body = placeHeader (getLocalBounds().reduced (9, 6), mode, 150, 330);
             auto names = body.removeFromLeft (54);
             body.removeFromLeft (4);
             const int splitWidth = 132, gap = 8;

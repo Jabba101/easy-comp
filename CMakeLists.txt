@@ -301,7 +301,7 @@ add_easy_plugin(EasyLimiter
 add_easy_plugin(EasyMaster
     NAME        "Easy Master"
     CODE        Ezms
-    VERSION     1.8.1
+    VERSION     1.8.2
     BUNDLE_ID   com.homestudio.easymaster
     CATEGORIES  Fx Dynamics Mastering
     SOURCES     Effects/Compressor.h
