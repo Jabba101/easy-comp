@@ -1070,3 +1070,13 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
    IDEAS LEFT: AMP + TAPE + CLIP each oversample on their own (one shared 4x stage when they're next to each other would
    about halve their cost, but changes the sound slightly); the windows' 30 Hz redraws; INFLATE resting when off; build the
    hologram code once for all 16 plugins (CI time); the same SLEEP for the single plugins (in EasyProcessor).
+   - FASTER, CLEANER OVERSAMPLING (10 November 2026): Effects/FastOversampler.h replaces juce::dsp::Oversampling in AMP
+     (ValveAmp.h), TAPE (TapeMachine.h), CLIP (Clipper.h) and Easy Master's INFLATE (same calls: initProcessing,
+     processSamplesUp / Down, getLatencyInSamples, reset). Linear-phase half-band equiripple FIRs, block-based (tap-outer /
+     sample-inner loops the compiler vectorises), later stages designed gently (transition 0.22 / 0.30 instead of JUCE's
+     0.10), every stage -100 dB (JUCE: -75..-90, 8x last stage -55..-70), and a whole-number delay by plain high-rate delay
+     (no all-pass). Measured (verify2/OversampleTests.cpp, 12/12): up+down stereo 1.16% -> 0.17% of a core at 4x (6.6x),
+     2.54% -> 0.30% at 8x (8.5x); up-and-back error -95 dB (was -66 / -60); images and aliases -102 dB. Delay 73 samples
+     (4x) / 76 (8x) instead of 61 / 65: the modules report it as before. Strip: TAPE and CLIP 2.0% -> 0.93% each at 4x,
+     Midnight Jazz 7.7% -> 4.4%, every module on 6.3% -> 4.3%. Amp / Tape / Clip / Master / Strip tests all pass unchanged.
+     (This made sharing one stage between AMP, TAPE and CLIP unnecessary.) What's left in them is the curve itself at 4x.

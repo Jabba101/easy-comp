@@ -17,7 +17,7 @@
 # =============================================================================
 cmake_minimum_required(VERSION 3.22)
 
-project(EasyPlugins VERSION 1.35.0)
+project(EasyPlugins VERSION 1.36.0)
 
 # Link-time optimisation squeezes a few more percent of speed out of the
 # finished plugins, but makes every build much slower (each plugin is
@@ -181,7 +181,7 @@ target_link_libraries(BitchSlap PRIVATE pffft)
 add_easy_plugin(EasyClip
     NAME        "Easy Clip"
     CODE        Ezcl
-    VERSION     1.1.0
+    VERSION     1.1.1
     BUNDLE_ID   com.homestudio.easyclip
     CATEGORIES  Fx Dynamics
     SOURCES     Effects/Clipper.h
@@ -195,7 +195,7 @@ target_link_libraries(EasyClip PRIVATE juce::juce_dsp)   # (oversampling)
 add_easy_plugin(EasyAmp
     NAME        "Easy Amp"
     CODE        Ezam
-    VERSION     1.1.0
+    VERSION     1.1.1
     BUNDLE_ID   com.homestudio.easyamp
     CATEGORIES  Fx Distortion
     SOURCES     Effects/ValveAmp.h
@@ -209,7 +209,7 @@ target_link_libraries(EasyAmp PRIVATE juce::juce_dsp)   # (oversampling)
 add_easy_plugin(EasyTape
     NAME        "Easy Tape"
     CODE        Eztp
-    VERSION     1.1.0
+    VERSION     1.1.1
     BUNDLE_ID   com.homestudio.easytape
     CATEGORIES  Fx Distortion
     SOURCES     Effects/TapeMachine.h
@@ -301,7 +301,7 @@ add_easy_plugin(EasyLimiter
 add_easy_plugin(EasyMaster
     NAME        "Easy Master"
     CODE        Ezms
-    VERSION     1.8.0
+    VERSION     1.8.1
     BUNDLE_ID   com.homestudio.easymaster
     CATEGORIES  Fx Dynamics Mastering
     SOURCES     Effects/Compressor.h
@@ -377,7 +377,7 @@ endforeach()
 add_easy_plugin(EasyStrip
     NAME        "Easy Strip"
     CODE        Ezst
-    VERSION     0.17.0
+    VERSION     0.17.1
     BUNDLE_ID   com.homestudio.easystrip
     CATEGORIES  Fx
     SOURCES     Effects/LoudnessMeter.h

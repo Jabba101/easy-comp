@@ -2,6 +2,7 @@
 
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_dsp/juce_dsp.h>
+#include "FastOversampler.h"
 #include <cmath>
 #include <vector>
 #include <array>
@@ -38,7 +39,7 @@ public:
 
     void prepare (double sampleRate, int maxBlock)
     {
-        oversampler = std::make_unique<juce::dsp::Oversampling<float>> (2, 2, juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple, true, true);
+        oversampler = std::make_unique<FastOversampler> (2, 2);
         oversampler->initProcessing ((size_t) maxBlock);
         latency = (int) std::lround (oversampler->getLatencyInSamples());
         for (auto& line : delay) line.assign ((size_t) juce::jmax (1, latency), 0.0f);
@@ -131,7 +132,7 @@ public:
 
 private:
     Settings settings;
-    std::unique_ptr<juce::dsp::Oversampling<float>> oversampler;
+    std::unique_ptr<FastOversampler> oversampler;
     std::array<std::vector<float>, 2> delay;
     int delayPos = 0, latency = 0;
     juce::SmoothedValue<float> blend { 0.0f }, onFade { 0.0f };

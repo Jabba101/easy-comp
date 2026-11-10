@@ -202,3 +202,9 @@ target_sources(StripBench PRIVATE StripBench.cpp ${P}/Plugins/EasyStrip/PluginPr
 target_include_directories(StripBench PRIVATE ${P}/Plugins/EasyStrip ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(StripBench PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Strip" EASY_STRIP_MODULE=1 JUCE_MODAL_LOOPS_PERMITTED=1)
 target_link_libraries(StripBench PRIVATE pffft StripFonts juce::juce_audio_utils juce::juce_audio_formats juce::juce_dsp PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+
+juce_add_console_app(OversampleTests PRODUCT_NAME "OversampleTests")
+target_sources(OversampleTests PRIVATE OversampleTests.cpp)
+target_include_directories(OversampleTests PRIVATE ${P}/Effects ${P}/Shared ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(OversampleTests PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_link_libraries(OversampleTests PRIVATE juce::juce_audio_utils juce::juce_dsp PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)

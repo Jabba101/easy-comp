@@ -2,6 +2,7 @@
 
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_dsp/juce_dsp.h>
+#include "FastOversampler.h"
 #include "FastMath.h"
 #include <array>
 #include <cmath>
@@ -82,9 +83,7 @@ public:
 
         for (int q = 0; q < 2; ++q)
         {
-            oversamplers[(size_t) q] = std::make_unique<juce::dsp::Oversampling<float>> (
-                (size_t) numChannels, (size_t) (q == 0 ? 2 : 3),
-                juce::dsp::Oversampling<float>::filterHalfBandFIREquiripple, true, true);
+            oversamplers[(size_t) q] = std::make_unique<FastOversampler> ((size_t) numChannels, (size_t) (q == 0 ? 2 : 3));
             oversamplers[(size_t) q]->initProcessing ((size_t) chunkSize);
             oversamplerLatency[(size_t) q] = juce::roundToInt (oversamplers[(size_t) q]->getLatencyInSamples());
         }
@@ -623,7 +622,7 @@ private:
     int numChannels = 2;
     Settings settings;
 
-    std::array<std::unique_ptr<juce::dsp::Oversampling<float>>, 2> oversamplers;
+    std::array<std::unique_ptr<FastOversampler>, 2> oversamplers;
     std::array<int, 2> oversamplerLatency { 0, 0 };
     int latency = 0;
 
