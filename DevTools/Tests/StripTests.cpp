@@ -941,6 +941,104 @@ check (tidy, "full-mix presets in one list, Mixing & Mastering; drum bus presets
                + " ms of delay): the pulse still lands on the beat (" + juce::String (worst * 1000.0, 2) + " ms out)");
     }
 
+    //==========================================================================
+    // SLEEP: a silent track's modules rest (and wake without a trace)
+    void testSleep()
+    {
+        std::cout << "\nSLEEP: a silent track costs next to nothing\n";
+        const int second = (int) sr;
+
+        // Drums, 8 s of digital silence, drums again
+        auto song = th::drumLoop (sr, 14.0);
+        for (int ch = 0; ch < 2; ++ch)
+            song.clear (ch, 3 * second, 8 * second);
+
+        const auto build = [] (S& s)
+        {
+            prepareStereo (s, true);
+            for (int m : { (int) StripModules::gateIndex, (int) StripModules::eqIndex, (int) StripModules::compIndex,
+                           (int) StripModules::tapeIndex, (int) StripModules::slapIndex, (int) StripModules::clipIndex })
+                setStrip (s, StripIDs::moduleID (m, CommonIDs::bypass), 0.0f);
+        };
+
+        // 1. It falls asleep in the gap, puts out exact silence, and wakes with the first sound
+        {
+            S s; build (s);
+            int firstAsleep = -1, lastAsleep = -1;
+            bool asleepWithSound = false;
+            const auto out = process (s, song, [&] (int start)
+            {
+                if (s.isAsleep())
+                {
+                    if (firstAsleep < 0) firstAsleep = start;
+                    lastAsleep = start;
+                    if (start > 11 * second + block) asleepWithSound = true;
+                }
+            });
+            check (firstAsleep > 5 * second && firstAsleep < 10 * second, "asleep a few seconds into the silence (after the tails: " + juce::String (firstAsleep / sr - 3.0, 1) + " s)");
+            check (lastAsleep >= 11 * second - block && ! asleepWithSound, "awake again with the first block of sound");
+            check (th::peak (out, 0, firstAsleep + block, 11 * second - block) == 0.0f, "asleep, it puts out exact silence");
+            check (th::peak (out, 0, 11 * second, 14 * second) > 0.05f, "... and plays again afterwards");
+
+            // 2. The same sound as a strip that never sleeps
+            S::setSleepAllowedForTesting (false);
+            S awake; build (awake);
+            const auto reference = process (awake, song);
+            S::setSleepAllowedForTesting (true);
+            check (! awake.isAsleep(), "(the comparison strip never slept)");
+            float before = 0.0f, after = 0.0f, tail = 0.0f;
+            for (int ch = 0; ch < 2; ++ch)
+            {
+                for (int i = 0; i < firstAsleep; ++i)
+                    before = std::max (before, std::abs (out.getSample (ch, i) - reference.getSample (ch, i)));
+                for (int i = firstAsleep; i < 11 * second; ++i)
+                    tail = std::max (tail, std::abs (reference.getSample (ch, i)));
+                for (int i = 11 * second; i < 14 * second; ++i)
+                    after = std::max (after, std::abs (out.getSample (ch, i) - reference.getSample (ch, i)));
+            }
+            // (two strips are never bit-identical: TAPE's wow and VERB use their own random numbers)
+            check (before < 1.0e-6f, "the same up to the moment it falls asleep (within " + juce::String (juce::roundToInt (juce::Decibels::gainToDecibels (before, -200.0f))) + " dB)");
+            check (tail < 1.0e-6f, "what it skips was under -120 dBFS (" + juce::String (juce::roundToInt (juce::Decibels::gainToDecibels (tail, -200.0f))) + " dBFS)");
+            check (after < juce::Decibels::decibelsToGain (-80.0f), "after waking, the same sound as a strip that never slept (within "
+                                                                     + juce::String (juce::roundToInt (juce::Decibels::gainToDecibels (after, -200.0f))) + " dB)");
+        }
+
+        // 3. Something that makes sound on its own (TAPE's HISS) keeps it awake
+        {
+            S s; build (s);
+            setStrip (s, StripIDs::moduleID (StripModules::tapeIndex, TapeIDs::hiss), 50.0f);
+            bool slept = false;
+            const auto out = process (s, song, [&] (int) { slept = slept || s.isAsleep(); });
+            check (! slept && th::peak (out, 0, 8 * second, 10 * second) > 0.0f, "with TAPE's HISS on it stays awake (the hiss carries on)");
+        }
+
+        // 4. A sidechain with sound keeps it awake (COMP's ducking is ready when the track comes in)
+        {
+            S s; build (s);
+            const auto key = th::drumLoop (sr, 14.0);
+            bool slept = false;
+            process (s, song, [&] (int) { slept = slept || s.isAsleep(); }, &key);
+            check (! slept, "with sound on the sidechain it stays awake");
+        }
+
+        // 5. Changing a setting wakes it (so you hear what the change does)
+        {
+            S s; build (s);
+            bool wasAsleep = false, awakeAfterChange = false;
+            process (s, song, [&] (int start)
+            {
+                if (start == 9 * second / block * block)
+                {
+                    wasAsleep = s.isAsleep();
+                    setStrip (s, StripIDs::moduleID (StripModules::tapeIndex, TapeIDs::hiss), 60.0f);
+                }
+                if (start == 10 * second / block * block)
+                    awakeAfterChange = ! s.isAsleep();
+            });
+            check (wasAsleep && awakeAfterChange, "a setting changed while it rests wakes it (HISS turned up is heard)");
+        }
+    }
+
     void testOrder()
     {
         std::cout << "\n[ORDER]\n";
@@ -1592,6 +1690,7 @@ int main (int argc, char** argv)
     testDesk();
     testBeatLockWithDelay();
     testOrder();
+    testSleep();
     testLufs();
     testSaving();
     testClassicWindow (outDir);

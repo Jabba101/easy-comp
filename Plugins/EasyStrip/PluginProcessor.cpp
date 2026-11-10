@@ -231,6 +231,7 @@ void EasyStripAudioProcessor::Link::parameterValueChanged (int, float newValue)
 
     // Changed in the module's own window (a knob, a preset, INIT, A / B): tell the strip, and so the DAW
     last.store (newValue);
+    owner->settingTouched.store (true, std::memory_order_relaxed);
     strip->setValueNotifyingHost (newValue);
     owner->markPresetEdited();   // (the strip's preset name then shows it's been changed)
 }
@@ -252,6 +253,7 @@ void EasyStripAudioProcessor::pushSettings() noexcept
             if (std::abs (value - link->last.load()) > 1.0e-7f)
             {
                 link->last.store (value);
+                settingTouched.store (true, std::memory_order_relaxed);
                 link->pushing.store (true);
                 link->module->setValueNotifyingHost (value);
                 link->pushing.store (false);
@@ -439,6 +441,9 @@ void EasyStripAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBl
 
 void EasyStripAudioProcessor::reset()
 {
+    inputQuietFor = outputQuietFor = 0;
+    asleep = false;
+    asleepNow.store (false);
     for (auto* module : all)
         module->reset();
     for (auto& module : links)
@@ -498,31 +503,62 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
         stager.process (main, channels, n, hostPlaying);
 
         // The original (for the strip's own BYPASS), then INPUT: TRIM and polarity
-        float loudestIn = 0.0f;
+        float loudestIn = 0.0f, loudestRaw = 0.0f;
         for (int i = 0; i < n; ++i)
         {
             const float g = inputGain.getNextValue();
             for (int ch = 0; ch < channels; ++ch)
             {
                 dryRing.setSample (ch, (writePos + i) & ringMask, main[ch][i]);
+                loudestRaw = juce::jmax (loudestRaw, std::abs (main[ch][i]));
                 main[ch][i] *= g;
                 loudestIn = juce::jmax (loudestIn, std::abs (main[ch][i]));
             }
         }
         storeIfBigger (inputPeak, loudestIn);
 
-        // DESK: the console's colour, right after TRIM (so LEARN's -18 dBFS is the desk's 0 VU)
-        desk.set (juce::roundToInt (deskValue->load()), juce::roundToInt (deskDriveValue->load()));
-        desk.process (main, channels, n);
-
         // The sidechain for GATE and COMP (silence if nothing's sent to it)
         for (int ch = 0; ch < channels; ++ch)
         {
             if (sidechainIn.getNumChannels() > 0)
+            {
                 sidechain.copyFrom (ch, 0, sidechainIn, juce::jmin (ch, sidechainIn.getNumChannels() - 1), start, n);
+                loudestRaw = juce::jmax (loudestRaw, sidechain.getMagnitude (ch, 0, n));
+            }
             else
                 sidechain.clear (ch, 0, n);
         }
+
+        // SLEEP: nothing coming in for 2 s and nothing ringing out for 1 s - the modules rest, just as
+        // they are, until sound arrives (digital silence only: a recording's own hiss keeps it awake)
+        {
+            const int rate = (int) getSampleRate();
+            constexpr int longest = 1 << 28;
+            inputQuietFor = loudestRaw < 1.0e-8f ? juce::jmin (longest, inputQuietFor + n) : 0;
+            if (settingTouched.exchange (false, std::memory_order_relaxed))
+            {
+                asleep = false;        // (e.g. TAPE's HISS turned up: it should be heard, then it keeps itself awake)
+                outputQuietFor = 0;
+            }
+            if (asleep && inputQuietFor == 0)
+                asleep = false;
+            else if (! asleep && sleepAllowed().load (std::memory_order_relaxed) && orderFade == OrderFade::steady
+                     && inputQuietFor >= 2 * rate && outputQuietFor >= rate)
+                asleep = true;
+            asleepNow.store (asleep, std::memory_order_relaxed);
+        }
+
+        if (asleep)
+        {
+            for (int ch = 0; ch < channels; ++ch)
+                juce::FloatVectorOperations::clear (main[ch], n);
+            order = getWantedOrder();   // (an ORDER change while resting needs no dip)
+        }
+        else
+        {
+        // DESK: the console's colour, right after TRIM (so LEARN's -18 dBFS is the desk's 0 VU)
+        desk.set (juce::roundToInt (deskValue->load()), juce::roundToInt (deskDriveValue->load()));
+        desk.process (main, channels, n);
 
         // ORDER changed: dip out, swap (once silent), come back in
         if (orderFade == OrderFade::steady && getWantedOrder() != order)
@@ -597,6 +633,7 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
                 }
             }
         }
+        }   // (not asleep)
 
         // AUTO-GAIN (the whole strip), then OUTPUT: LEVEL, then the strip's BYPASS
         // (the original, delayed by the whole strip)
@@ -623,6 +660,7 @@ void EasyStripAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, ju
             }
         }
         storeIfBigger (outputPeak, loudestOut);
+        outputQuietFor = loudestOut < 1.0e-6f ? juce::jmin (1 << 28, outputQuietFor + n) : 0;
         updateAutoGain (heardIn, heardOut, n);
 
         juce::AudioBuffer<float> out (main, channels, n);

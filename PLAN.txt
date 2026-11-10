@@ -1056,3 +1056,17 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
    - Easy Unbleed 1.1.0 (9 November 2026): its own panel in HoloUnbleed.cpp (module 15, only built into Easy Unbleed): 1 HOW MUCH
      (AMOUNT), 2 HOW (SENSITIVITY, SMOOTHNESS), 3 WHERE (FROM, TO), 4 LISTEN (REMOVED ONLY), with its band display beside it
      (this stem amber, the other stems blue, turned down red from the top; the sidechain warnings in red). Slab::getSideDisplay().
+
+== EFFICIENCY (10 November 2026) ==
+   MEASURED (verify2/StripBench.cpp, % of one core on the build server, 48 kHz / 512 / stereo; the user's i7-2600K is slower):
+   a strip with everything off 0.3%; most modules 0.05-0.3% each; FILTER / LIMITER ~0.55%; TAPE and CLIP ~1.7% each at 4x
+   oversampling (0.3% with it off, ~3.2% at 8x); AMP ~3% when driven; every module on ~6.5%; presets 0.7% - 8%
+   (Midnight Jazz 8%: AMP 2.9, TAPE 2.0, CLIP 1.7, VERB 1.1). Before: silence cost the same as sound.
+   - Easy Strip 0.17.0: SLEEP. Track and sidechain digitally silent (< -160 dBFS) for 2 s AND the output under -120 dBFS
+     for 1 s: the desk and the modules are skipped, left exactly as they are (frozen, not reset - a closed gate stays
+     closed), the output is exact silence; the first block with sound (or any setting changed - e.g. TAPE's HISS turned
+     up) wakes it. Hiss / a sidechain with sound / a recording's own noise keep it awake. Asleep: ~0.13% whatever is on.
+     After waking it matches a strip that never slept to -141 dB. isAsleep(); setSleepAllowedForTesting(). StripTests 163/163.
+   IDEAS LEFT: AMP + TAPE + CLIP each oversample on their own (one shared 4x stage when they're next to each other would
+   about halve their cost, but changes the sound slightly); the windows' 30 Hz redraws; INFLATE resting when off; build the
+   hologram code once for all 16 plugins (CI time); the same SLEEP for the single plugins (in EasyProcessor).

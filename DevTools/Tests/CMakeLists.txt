@@ -195,3 +195,10 @@ add_solo_test(SoloFlange EasyFlange 12 "Easy Flange" EasyFlangeAudioProcessor)
 add_solo_test(SoloFilter EasyFilter 13 "Easy Filter" EasyFilterAudioProcessor)
 add_solo_test(SoloLimiter EasyLimiter 14 "Easy Limiter" EasyLimiterAudioProcessor)
 add_solo_test(SoloUnbleed EasyUnbleed 15 "Easy Unbleed" EasyUnbleedAudioProcessor)
+
+# ---- How much computer the Easy Strip uses (a timing program, not a test) ----
+juce_add_console_app(StripBench PRODUCT_NAME "StripBench")
+target_sources(StripBench PRIVATE StripBench.cpp ${P}/Plugins/EasyStrip/PluginProcessor.cpp ${P}/Plugins/EasyStrip/PluginEditor.cpp ${HOLO} ${STRIP_SOURCES} ${SHARED})
+target_include_directories(StripBench PRIVATE ${P}/Plugins/EasyStrip ${P}/Shared ${P}/Effects ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(StripBench PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JucePlugin_Name="Easy Strip" EASY_STRIP_MODULE=1 JUCE_MODAL_LOOPS_PERMITTED=1)
+target_link_libraries(StripBench PRIVATE pffft StripFonts juce::juce_audio_utils juce::juce_audio_formats juce::juce_dsp PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)

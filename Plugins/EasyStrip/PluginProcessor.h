@@ -169,6 +169,11 @@ public:
 
     /** The loudest the sound was going in / coming out since last asked (gain, not dB). */
     float takeInputPeak() noexcept                     { return inputPeak.exchange (0.0f); }
+
+    /** Resting: nothing coming in and nothing ringing out, so the modules are skipped (see SLEEP below). */
+    bool isAsleep() const noexcept                     { return asleepNow.load(); }
+    /** (Tests) switch the resting off, to compare the sound with and without it. */
+    static void setSleepAllowedForTesting (bool allowed) noexcept   { sleepAllowed().store (allowed); }
     float takeOutputPeak() noexcept                    { return outputPeak.exchange (0.0f); }
     float getShortTermLufs() const noexcept            { return loudness.getShortTermLufs(); }
     float getIntegratedLufs() const noexcept           { return loudness.getIntegratedLufs(); }
@@ -323,6 +328,14 @@ private:
 
     std::atomic<float> inputPeak { 0.0f }, outputPeak { 0.0f };
     std::atomic<int> blocksProcessed { 0 };
+
+    // SLEEP: with nothing coming in (track and sidechain digitally silent for 2 s) and nothing still
+    // ringing out (under -120 dBFS for 1 s), the modules are left exactly as they are and skipped,
+    // until sound arrives again. A silent track then costs next to nothing.
+    int inputQuietFor = 0, outputQuietFor = 0;
+    bool asleep = false;
+    std::atomic<bool> asleepNow { false }, settingTouched { false };   // (a setting changed: stay awake to hear what it does)
+    static std::atomic<bool>& sleepAllowed() noexcept   { static std::atomic<bool> allowed { true }; return allowed; }
 
     // ORDER: changing it dips the sound (~30 ms), swaps, and comes back (no clicks)
     std::array<std::atomic<float>*, StripIDs::numOrderSwitches> orderValues {};
