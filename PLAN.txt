@@ -1080,3 +1080,12 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      (4x) / 76 (8x) instead of 61 / 65: the modules report it as before. Strip: TAPE and CLIP 2.0% -> 0.93% each at 4x,
      Midnight Jazz 7.7% -> 4.4%, every module on 6.3% -> 4.3%. Amp / Tape / Clip / Master / Strip tests all pass unchanged.
      (This made sharing one stage between AMP, TAPE and CLIP unnecessary.) What's left in them is the curve itself at 4x.
+   - USER'S MEASURE (10 November 2026): 8 tracks, each Easy Unbleed + Easy Strip, Easy Master on the master: Samplitude's
+     meter ~55% before tonight, 33-35% after (sleep + the new oversampler).
+   - TIMED Easy Unbleed and Easy Master too (verify2/UnbleedBench.cpp, MasterBench.cpp, BenchCommon.h): UNBLEED 0.62% of a
+     core, the same with sound, silence or BYPASS (no resting). MASTER 2.9% as it opens, 2.9% with every module OFF, 3.6%
+     with everything on: the modules keep running while off (limiter 16% of it, compressor 13%, tamer 8%, multiband 7%,
+     inflate 6%, punch 6%). Profile of the strip's heaviest preset (Midnight Jazz): CLIP 15%, TAPE 12%, VERB 11% (+3%
+     per-sample lround in NaturalReverb), AMP 19%, the strip's own housekeeping 7%, EQ 4% - no single big item left.
+     SMALL WINS NOT DONE: Master's off modules resting (~1 point of a core, once per project); NaturalReverb's lround per
+     sample; the strip's rings for skipped zero-delay modules; Unbleed resting in silence / BYPASS.

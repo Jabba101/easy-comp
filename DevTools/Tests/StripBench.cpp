@@ -83,10 +83,22 @@ namespace
     }
 }
 
-int main()
+int main (int argc, char** argv)
 {
     juce::ScopedJuceInitialiser_GUI gui;
     const auto audio = drums (20.0);
+    if (argc > 1)   // (for a profiler: one preset, a few seconds)
+    {
+        EasyStripAudioProcessor p;
+        auto layout = p.getBusesLayout();
+        if (layout.inputBuses.size() > 1) layout.inputBuses.getReference (1) = juce::AudioChannelSet::disabled();
+        p.setBusesLayout (layout); p.setRateAndBufferSizeDetails (sr, block); p.prepareToPlay (sr, block);
+        for (auto& preset : p.getBuiltInPresets())
+            if (preset.name.startsWith (argv[1])) { p.loadPreset (preset); std::cout << preset.name << "\n"; break; }
+        juce::MidiBuffer midi; juce::AudioBuffer<float> work (2, block);
+        for (int b = 0; b < 600; ++b) { for (int ch = 0; ch < 2; ++ch) work.copyFrom (ch, 0, audio, ch, b * block, block); p.processBlock (work, midi); }
+        return 0;
+    }
 
     std::cout << std::unitbuf << "\nEASY STRIP: % of one core (48 kHz, 512 blocks, stereo)\n";
     std::cout << "  " << juce::String ("what's on").paddedRight (' ', 34) << "  playing     silence\n";
