@@ -1089,3 +1089,7 @@ FUTURE IDEAS (brainstorm, 4 November 2026)
      per-sample lround in NaturalReverb), AMP 19%, the strip's own housekeeping 7%, EQ 4% - no single big item left.
      SMALL WINS NOT DONE: Master's off modules resting (~1 point of a core, once per project); NaturalReverb's lround per
      sample; the strip's rings for skipped zero-delay modules; Unbleed resting in silence / BYPASS.
+   - Easy Master 1.8.2: the bay's VINTAGE tab no longer covers the EQ's / multiband's STEREO / MID+SIDE switch.
+     Easy Master 1.9.0 (10 November 2026): SETUP in the header (after BYPASS): SIZE (75 - 175%, or drag the corner; kept
+     with the project as before) and DISPLAY BRIGHTNESS (shared with every Easy plugin: SoloSettings); AARDVARK before the
+     name. (Easy Master was in the hologram skin from the start - MasterLook / MasterConsole.) MasterTests 122/122.

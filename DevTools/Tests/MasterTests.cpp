@@ -682,6 +682,23 @@ namespace
         using C = MasterHolo::Console;
         check (console.getWidth() == C::width && console.getHeight() == C::height, "the console is laid out at 1888 x 1030 (INPUT on the left, OUTPUT on the right, like Easy Strip) and scaled to the window");
 
+        // SETUP: the size and the brightness
+        {
+            const auto settingsFile = juce::File::createTempFile (".settings");
+            SoloSettings::useFileForTesting (settingsFile);
+            check (console.setup.isVisible() && console.setup.getRight() <= C::width - 12 && console.setup.getX() >= console.bypass.getRight() + 8,
+                   "SETUP sits at the end of the header, after BYPASS");
+            console.chooseSize (0.75f);
+            check (editor->getWidth() == juce::roundToInt (C::width * 0.75f) && std::abs (p.windowScale - 0.75f) < 0.01f, "SETUP > SIZE 75% resizes the window (and is remembered with the project)");
+            console.chooseSize (0.9f);
+            check (editor->getWidth() == 1699, "... and back to 90%");
+            console.setBrightness (0);
+            check (console.getBrightness() == 0 && SoloSettings::load().dim == 0, "DISPLAY BRIGHTNESS is remembered for every Easy plugin");
+            console.setBrightness (2);
+            SoloSettings::useFileForTesting ({});
+            settingsFile.deleteFile();
+        }
+
         // Nothing overlapping or spilling out: the console's parts, and each module's parts inside it
         const auto tidy = [&] (juce::String& problem)
         {

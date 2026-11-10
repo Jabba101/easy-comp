@@ -301,7 +301,7 @@ add_easy_plugin(EasyLimiter
 add_easy_plugin(EasyMaster
     NAME        "Easy Master"
     CODE        Ezms
-    VERSION     1.8.2
+    VERSION     1.9.0
     BUNDLE_ID   com.homestudio.easymaster
     CATEGORIES  Fx Dynamics Mastering
     SOURCES     Effects/Compressor.h
@@ -330,7 +330,9 @@ add_easy_plugin(EasyMaster
                 Plugins/EasyStrip/HoloLook.h
                 Plugins/EasyStrip/HoloLook.cpp
                 Plugins/EasyStrip/HoloControls.h
-                Plugins/EasyStrip/HoloControls.cpp)
+                Plugins/EasyStrip/HoloControls.cpp
+                Plugins/EasyStrip/StripSettings.h
+                Plugins/EasyStrip/StripSettings.cpp)
 
 target_link_libraries(EasyMaster PRIVATE pffft juce::juce_dsp)   # (INFLATE's oversampling)
 target_include_directories(EasyMaster PRIVATE Plugins/EasyStrip)

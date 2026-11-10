@@ -1163,6 +1163,12 @@ namespace MasterHolo
         initAll.onClick = [this] { loadMainPreset (processor.getBuiltInPresets().front()); };
         addAndMakeVisible (initAll);
         addHint (initAll, "INIT", initAllHint);
+
+        setup.fontSize = 14.5f;
+        setup.onClick = [this] { showSetupMenu(); };
+        addAndMakeVisible (setup);
+        addHint (setup, "SETUP", "The window's size (or drag its corner) and the display's brightness. The brightness is shared with every Easy plugin.");
+        brightness = SoloSettings::load().dim;
         bypass.fontSize = 14.5f;
         bypassLink = std::make_unique<ButtonLink> (*p.parameters.getParameter (CommonIDs::bypass), bypass);
         addAndMakeVisible (bypass);
@@ -1311,9 +1317,55 @@ namespace MasterHolo
         slotB.setBounds (h.removeFromLeft (36));
         h.removeFromLeft (4);
         copySlot.setBounds (h.removeFromLeft (56));
+        setup.setBounds (h.removeFromRight (86));
+        h.removeFromRight (16);
         bypass.setBounds (h.removeFromRight (110));
         h.removeFromRight (10);
         initAll.setBounds (h.removeFromRight (70));
+    }
+
+    //==========================================================================
+    // SETUP
+    void Console::setBrightness (int dim)
+    {
+        brightness = juce::jlimit (0, 2, dim);
+        auto settings = SoloSettings::load();
+        settings.dim = brightness;
+        settings.save();
+        repaint();
+    }
+
+    void Console::paintOverChildren (juce::Graphics& g)
+    {
+        if (brightness < 2)   // DISPLAY BRIGHTNESS
+        {
+            g.setColour (juce::Colours::black.withAlpha (brightness == 0 ? 0.45f : 0.25f));
+            g.fillAll();
+        }
+    }
+
+    void Console::showSetupMenu()
+    {
+        const float now = getTransform().mat00;   // (the window scales the console)
+        juce::PopupMenu sizes, light;
+        for (int i = 0; i < (int) std::size (SoloSettings::sizes); ++i)
+            sizes.addItem (100 + i, juce::String (juce::roundToInt (SoloSettings::sizes[i] * 100.0f)) + "%", true, std::abs (SoloSettings::sizes[i] - now) < 0.01f);
+        light.addItem (400, "LOW", true, brightness == 0);
+        light.addItem (401, "MEDIUM", true, brightness == 1);
+        light.addItem (402, "HIGH", true, brightness == 2);
+
+        juce::PopupMenu menu;
+        menu.addSectionHeader ("SETUP");
+        menu.addSubMenu ("SIZE", sizes);
+        menu.addSubMenu ("DISPLAY BRIGHTNESS", light);
+
+        juce::Component::SafePointer<Console> safe (this);
+        menu.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&setup), [safe] (int result)
+        {
+            if (safe == nullptr || result == 0) return;
+            if (result >= 100 && result < 200)        safe->chooseSize (SoloSettings::sizes[result - 100]);
+            else if (result >= 400 && result <= 402)  safe->setBrightness (result - 400);
+        });
     }
 
     void Console::paint (juce::Graphics& g)
@@ -1345,7 +1397,12 @@ namespace MasterHolo
             g.fillPath (chamfered (hr, 8.0f));
             g.setColour (Colours::cyan.withAlpha (0.4f));
             g.strokePath (chamfered (hr.reduced (0.5f), 8.0f), juce::PathStrokeType (1.0f));
-            drawGlowText (g, "EASY MASTER", hr.withTrimmedLeft (18.0f).withWidth (280.0f), juce::Justification::centredLeft, display (27.0f), Colours::cyan, 0.9f);
+            // (AARDVARK small, then the name - as on the single plugins)
+            auto line = hr.withTrimmedLeft (18.0f).withWidth (284.0f);
+            const auto small = display (11.0f);
+            drawGlowText (g, "AARDVARK", line.removeFromLeft (widthOf (small, "AARDVARK") + 4.0f), juce::Justification::centredLeft, small, juce::Colour (0xff9fe9ff), 0.7f);
+            line.removeFromLeft (10.0f);
+            drawGlowText (g, "EASY MASTER", line, juce::Justification::centredLeft, display (24.0f), Colours::cyan, 0.9f);
         }
         drawGlowText (g, "DISPLAY FOCUS:", juce::Rectangle<float> ((float) focusRow.getX() - 190.0f, (float) focusRow.getY(), 180.0f, (float) focusRow.getHeight()),
                       juce::Justification::centredRight, Holo::text (16.0f, 2), Colours::cyan, 0.5f);

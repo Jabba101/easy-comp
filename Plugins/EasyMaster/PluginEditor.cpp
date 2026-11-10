@@ -1577,6 +1577,11 @@ EasyMasterAudioProcessorEditor::EasyMasterAudioProcessorEditor (EasyMasterAudioP
     }
     const float scale = juce::jlimit (0.5f, 2.0f, p.windowScale);
     setSize (juce::roundToInt ((float) w * scale), juce::roundToInt ((float) h * scale));
+    console->onSizeChosen = [this] (float chosen)   // (SETUP > SIZE)
+    {
+        const float to = juce::jlimit (0.5f, 2.0f, chosen);
+        setSize (juce::roundToInt ((float) MasterHolo::Console::width * to), juce::roundToInt ((float) MasterHolo::Console::height * to));
+    };
 }
 
 EasyMasterAudioProcessorEditor::~EasyMasterAudioProcessorEditor()

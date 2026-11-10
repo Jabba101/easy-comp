@@ -1,5 +1,7 @@
 #pragma once
 
+#include "StripSettings.h"
+
 #include "PluginEditor.h"
 #include "HoloControls.h"
 #include "PresetBrowser.h"
@@ -154,6 +156,14 @@ namespace MasterHolo
         std::array<std::unique_ptr<Holo::Button>, 3> bayTabs;
         Holo::Button initAll { "INIT", Holo::Colours::warn, Holo::Button::Style::init };
         Holo::Button bypass { "BYPASS", Holo::Colours::warn };
+        Holo::Button setup { "SETUP", Holo::Colours::cyan };
+
+        // SETUP: the window's size and the display's brightness (the brightness is shared with every Easy plugin)
+        std::function<void (float)> onSizeChosen;   // (the window resizes itself)
+        void chooseSize (float scale)               { if (onSizeChosen) onSizeChosen (scale); }
+        void setBrightness (int dim);               // 0 LOW, 1 MEDIUM, 2 HIGH
+        int getBrightness() const noexcept          { return brightness; }
+        void paintOverChildren (juce::Graphics&) override;
         Holo::Button presetPrevious { "<", Holo::Colours::selected }, presetNext { ">", Holo::Colours::selected };
         Holo::Button slotA { "A", Holo::Colours::selected }, slotB { "B", Holo::Colours::selected }, copySlot { "A > B", Holo::Colours::selected };
         std::unique_ptr<juce::Component> presetWindow;
@@ -204,6 +214,8 @@ namespace MasterHolo
         juce::TextEditor entry;
         std::function<void (const juce::String&)> onEntry;
 
+        void showSetupMenu();
+        int brightness = 2;
         juce::Rectangle<int> headerArea, focusRow, inputColumn, outputColumn, screenArea, metersArea, tickerArea;
         std::vector<EasyMasterAudioProcessor::Moment> incoming;
         std::vector<float> scopeLeft, scopeRight;
